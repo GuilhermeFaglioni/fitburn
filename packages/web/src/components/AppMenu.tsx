@@ -11,7 +11,10 @@ interface MenuItem {
 
 // Cada ticket futuro que adicionar uma tela real ganha sua própria entrada
 // aqui — a lista cresce com o produto, o filtro por permissão não muda.
-const MENU_ITEMS: MenuItem[] = [{ module: Module.DASHBOARD, label: "Dashboard", to: "/dashboard" }];
+const MENU_ITEMS: MenuItem[] = [
+  { module: Module.DASHBOARD, label: "Dashboard", to: "/dashboard" },
+  { module: Module.USUARIOS, label: "Usuários", to: "/usuarios" },
+];
 
 export function AppMenu() {
   const { can } = useAuth();

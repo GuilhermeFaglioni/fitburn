@@ -8,6 +8,9 @@ export const ErrorCode = {
   FORBIDDEN: "FORBIDDEN",
   OUT_OF_SCOPE: "OUT_OF_SCOPE",
   SESSION_EXPIRED: "SESSION_EXPIRED",
+  EMAIL_ALREADY_IN_USE: "EMAIL_ALREADY_IN_USE",
+  DOCUMENT_ALREADY_IN_USE: "DOCUMENT_ALREADY_IN_USE",
+  PROFILE_NOT_FOUND: "PROFILE_NOT_FOUND",
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];

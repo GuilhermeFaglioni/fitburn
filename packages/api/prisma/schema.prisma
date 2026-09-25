@@ -74,6 +74,13 @@ model User {
   email        String     @unique
   passwordHash String
   fullName     String
+  /// Opcionais no banco: o admin inicial do seed (T4) não tem esses dados.
+  /// Obrigatoriedade é decidida por fluxo na validação (zod) — cadastro de
+  /// cliente exige todos, cadastro de equipe não.
+  phone        String?
+  birthDate    DateTime?
+  document     String?    @unique
+  address      String?
   status       UserStatus @default(ACTIVE)
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
