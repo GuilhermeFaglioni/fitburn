@@ -1,20 +1,38 @@
 .app-menu {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  width: 232px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  background: var(--color-surface-000);
+  padding: 28px 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.app-menu__brand {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--color-ink-on-dark);
 }
 
 .app-menu__list {
   display: flex;
-  gap: 20px;
+  flex-direction: column;
+  gap: 4px;
   list-style: none;
   margin: 0;
-  padding: 14px 24px;
+  padding: 0;
 }
 
 .app-menu__link {
-  color: rgba(255, 255, 255, 0.75);
+  display: block;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  color: rgba(255, 255, 255, 0.65);
   text-decoration: none;
   font-size: 14px;
-  font-weight: 500;
 }
 
 .app-menu__link:hover {
@@ -22,5 +40,55 @@
 }
 
 .app-menu__link.active {
+  background: rgba(237, 110, 52, 0.14);
   color: var(--color-primary-orange);
+  font-weight: 500;
+}
+
+.app-menu__account {
+  box-sizing: border-box;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.app-menu__account-info {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.app-menu__account-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-ink-on-dark);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.app-menu__account-profile {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.app-menu__logout {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.65);
+  cursor: pointer;
+}
+
+.app-menu__logout:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--color-ink-on-dark);
 }

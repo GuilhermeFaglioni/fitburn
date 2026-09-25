@@ -1,12 +1,12 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AppShell } from "./components/AppShell";
+import { AdminLayout } from "./components/AdminLayout";
 import { AuthProvider } from "./lib/auth/AuthContext";
 import { ProtectedRoute } from "./routes/ProtectedRoute";
 import { LoginPage } from "./pages/LoginPage";
 import { ClientHomePage } from "./pages/ClientHomePage";
 import { DashboardPage } from "./pages/DashboardPage";
-import { UsersPage } from "./pages/UsersPage";
-import { ProfilesPage } from "./pages/ProfilesPage";
+import { UsuariosPerfisPage } from "./pages/UsuariosPerfisPage";
 
 export default function App() {
   return (
@@ -24,29 +24,15 @@ export default function App() {
               }
             />
             <Route
-              path="/dashboard"
               element={
                 <ProtectedRoute>
-                  <DashboardPage />
+                  <AdminLayout />
                 </ProtectedRoute>
               }
-            />
-            <Route
-              path="/usuarios"
-              element={
-                <ProtectedRoute>
-                  <UsersPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/perfis-de-acesso"
-              element={
-                <ProtectedRoute>
-                  <ProfilesPage />
-                </ProtectedRoute>
-              }
-            />
+            >
+              <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/usuarios" element={<UsuariosPerfisPage />} />
+            </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </AppShell>

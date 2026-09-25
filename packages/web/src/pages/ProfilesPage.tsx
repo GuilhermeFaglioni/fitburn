@@ -53,68 +53,72 @@ export function ProfilesPage() {
   }
 
   return (
-    <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h1>Perfis de acesso</h1>
-        <BlockedAction allowed={canCreate} reason="Você não tem permissão para criar perfis.">
-          <button type="button" onClick={() => setShowCreateForm((visible) => !visible)}>
-            {showCreateForm ? "Cancelar" : "Novo perfil"}
-          </button>
-        </BlockedAction>
+    <div className="fb-matrix-layout">
+      <ul className="fb-role-list" style={{ listStyle: "none", margin: 0, padding: 0 }}>
+        {profilesQuery.data?.map((profile) => (
+          <li key={profile.id} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            <button
+              type="button"
+              className={`fb-role-item${selectedId === profile.id ? " active" : ""}`}
+              style={{ flexGrow: 1 }}
+              onClick={() => setSelectedId(profile.id)}
+            >
+              {profile.name}
+              {!profile.isActive && " (inativo)"}
+            </button>
+            {!profile.isSystem && (
+              <BlockedAction allowed={canEdit} reason="Você não tem permissão para alterar perfis.">
+                {profile.isActive ? (
+                  <button type="button" className="fb-row-btn" onClick={() => deactivateMutation.mutate(profile.id)}>
+                    Desativar
+                  </button>
+                ) : (
+                  <button type="button" className="fb-row-btn" onClick={() => activateMutation.mutate(profile.id)}>
+                    Reativar
+                  </button>
+                )}
+              </BlockedAction>
+            )}
+          </li>
+        ))}
+
+        <li>
+          <BlockedAction allowed={canCreate} reason="Você não tem permissão para criar perfis.">
+            <button type="button" className="fb-btn-dashed" onClick={() => setShowCreateForm((visible) => !visible)}>
+              {showCreateForm ? "Cancelar" : "+ Novo perfil"}
+            </button>
+          </BlockedAction>
+        </li>
+      </ul>
+
+      <div className="fb-matrix-content">
+        {showCreateForm && (
+          <form onSubmit={handleCreateSubmit} aria-label="Novo perfil de acesso" className="fb-form">
+            <label htmlFor={`${formId}-name`}>Nome</label>
+            <input
+              id={`${formId}-name`}
+              className="fb-field"
+              value={newName}
+              onChange={(event) => setNewName(event.target.value)}
+              required
+            />
+            <label htmlFor={`${formId}-description`}>Descrição</label>
+            <input
+              id={`${formId}-description`}
+              className="fb-field"
+              value={newDescription}
+              onChange={(event) => setNewDescription(event.target.value)}
+            />
+            <button type="submit" className="fb-btn-primary">
+              Criar perfil
+            </button>
+          </form>
+        )}
+
+        {selectedProfile && catalogQuery.data && (
+          <ProfileMatrix profile={selectedProfile} catalog={catalogQuery.data} onChanged={invalidateProfiles} />
+        )}
       </div>
-
-      {showCreateForm && (
-        <form onSubmit={handleCreateSubmit} aria-label="Novo perfil de acesso">
-          <label htmlFor={`${formId}-name`}>Nome</label>
-          <input
-            id={`${formId}-name`}
-            value={newName}
-            onChange={(event) => setNewName(event.target.value)}
-            required
-          />
-          <label htmlFor={`${formId}-description`}>Descrição</label>
-          <input
-            id={`${formId}-description`}
-            value={newDescription}
-            onChange={(event) => setNewDescription(event.target.value)}
-          />
-          <button type="submit">Criar perfil</button>
-        </form>
-      )}
-
-      {profilesQuery.data && (
-        <ul>
-          {profilesQuery.data.map((profile) => (
-            <li key={profile.id}>
-              <button type="button" onClick={() => setSelectedId(profile.id)}>
-                {profile.name}
-                {!profile.isActive && " (inativo)"}
-              </button>
-              {!profile.isSystem && (
-                <BlockedAction allowed={canEdit} reason="Você não tem permissão para alterar perfis.">
-                  {profile.isActive ? (
-                    <button type="button" onClick={() => deactivateMutation.mutate(profile.id)}>
-                      Desativar
-                    </button>
-                  ) : (
-                    <button type="button" onClick={() => activateMutation.mutate(profile.id)}>
-                      Reativar
-                    </button>
-                  )}
-                </BlockedAction>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {selectedProfile && catalogQuery.data && (
-        <ProfileMatrix
-          profile={selectedProfile}
-          catalog={catalogQuery.data}
-          onChanged={invalidateProfiles}
-        />
-      )}
     </div>
   );
 }

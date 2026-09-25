@@ -1,7 +1,7 @@
 export function DashboardPage() {
   return (
-    <div style={{ padding: 24 }}>
-      <h1>Dashboard</h1>
+    <div>
+      <h1 className="fb-page-title">Dashboard</h1>
     </div>
   );
 }
