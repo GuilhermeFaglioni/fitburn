@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
 import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { http, HttpResponse } from "msw";
 import { MemoryRouter } from "react-router-dom";
 import { AppMenu } from "../src/components/AppMenu";
 import { AuthProvider, useAuth } from "../src/lib/auth/AuthContext";
 import { mockSuccessfulLogin } from "./auth-mocks";
+import { server } from "./msw-server";
 
 function LoggedInMenu() {
   const { login } = useAuth();
@@ -46,5 +49,19 @@ describe("AppMenu", () => {
       expect(screen.getByTestId("menu-ready-marker")).toHaveAttribute("data-ready", "true"),
     );
     expect(screen.queryByRole("link", { name: "Dashboard" })).not.toBeInTheDocument();
+  });
+
+  it("mostra o usuário logado e permite sair pelo botão Sair", async () => {
+    mockSuccessfulLogin("Administrador");
+    server.use(http.post("/api/auth/logout", () => HttpResponse.json({})));
+    renderMenuAsAuthenticated();
+    const user = userEvent.setup();
+
+    expect(await screen.findByText("Usuário de Teste")).toBeInTheDocument();
+    expect(screen.getByText("Administrador")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Sair" }));
+
+    await waitFor(() => expect(screen.queryByRole("button", { name: "Sair" })).not.toBeInTheDocument());
   });
 });

@@ -78,7 +78,7 @@ describe("UsersPage", () => {
 
     expect(await screen.findByText("Cliente Ativo")).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "Novo cliente" }));
+    await user.click(screen.getByRole("button", { name: "+ Novo cliente" }));
     await user.type(screen.getByLabelText("Nome completo"), "Novo Cliente");
     await user.type(screen.getByLabelText("E-mail"), "novo@fitburn.local");
     await user.type(screen.getByLabelText("Telefone"), "31988887777");
@@ -105,7 +105,7 @@ describe("UsersPage", () => {
     renderUsersPage();
     const user = userEvent.setup();
 
-    await user.click(await screen.findByRole("button", { name: "Novo cliente" }));
+    await user.click(await screen.findByRole("button", { name: "+ Novo cliente" }));
     await user.type(screen.getByLabelText("Nome completo"), "Cliente Repetido");
     await user.type(screen.getByLabelText("E-mail"), "existente@fitburn.local");
     await user.type(screen.getByLabelText("Telefone"), "31988887777");

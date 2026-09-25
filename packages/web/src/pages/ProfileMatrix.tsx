@@ -48,11 +48,14 @@ function ModuleRow({
 
   return (
     <tr>
-      <th scope="row">{MODULE_LABELS[module]}</th>
+      <th scope="row" className="fb-td" style={{ fontWeight: 500, textAlign: "left" }}>
+        {MODULE_LABELS[module]}
+      </th>
       {catalog.actions.map((action) => (
-        <td key={action}>
+        <td key={action} className="fb-mtd">
           <input
             type="checkbox"
+            className="fb-checkbox"
             aria-label={`${ACTION_LABELS[action]} em ${MODULE_LABELS[module]}`}
             checked={actions.includes(action)}
             disabled={isAdminLocked}
@@ -60,13 +63,14 @@ function ModuleRow({
           />
         </td>
       ))}
-      <td>
+      <td className="fb-td fb-scope">
         {isClientScopeLocked ? (
           <span title="O isolamento do Cliente aos próprios registros não pode ser alterado.">
             {SCOPE_LABELS.OWN} (fixo)
           </span>
         ) : (
           <select
+            className="fb-field"
             aria-label={`Escopo de ${MODULE_LABELS[module]}`}
             value={scope}
             disabled={isAdminLocked}
@@ -80,9 +84,10 @@ function ModuleRow({
           </select>
         )}
       </td>
-      <td>
+      <td className="fb-td">
         <button
           type="button"
+          className="fb-row-btn"
           disabled={isAdminLocked || mutation.isPending}
           onClick={() => mutation.mutate()}
         >
@@ -106,56 +111,64 @@ export function ProfileMatrix({
   const isClientScopeLocked = profile.isSystem && profile.name === SYSTEM_CLIENT_NAME;
 
   return (
-    <div>
-      <h2>Matriz de permissões — {profile.name}</h2>
+    <div style={{ display: "flex", flexDirection: "column", gap: 12, flexGrow: 1, minHeight: 0 }}>
+      <h2 className="fb-page-title" style={{ fontSize: 16 }}>
+        Matriz de permissões — {profile.name}
+      </h2>
 
       {isAdminLocked && (
-        <p role="note">
+        <p role="note" className="fb-lock-banner">
           O Administrador sempre tem acesso total a todos os módulos — a matriz não pode ser
           alterada.
         </p>
       )}
       {isClientScopeLocked && (
-        <p role="note">
+        <p role="note" className="fb-lock-banner">
           O isolamento do Cliente aos próprios registros é fixo e não pode ser alterado.
         </p>
       )}
 
-      <table>
-        <thead>
-          <tr>
-            <th scope="col">Módulo</th>
-            {catalog.actions.map((action) => (
-              <th scope="col" key={action}>
-                {ACTION_LABELS[action]}
+      <div className="fb-table-wrap" style={{ opacity: isClientScopeLocked ? 0.55 : 1 }}>
+        <table>
+          <thead>
+            <tr>
+              <th scope="col" className="fb-th">
+                Módulo
               </th>
-            ))}
-            <th scope="col">Escopo</th>
-            <th scope="col" />
-          </tr>
-        </thead>
-        <tbody>
-          {catalog.modules.map((module) => {
-            const existing = profile.moduleAccess.find((entry) => entry.module === module);
-            return (
-              <ModuleRow
-                // Precisa incluir o id do perfil: as linhas têm estado local
-                // (checkboxes/escopo) inicializado só no primeiro mount. Sem
-                // isso, trocar de perfil reaproveita as mesmas linhas (mesma
-                // key "module") e mantém os valores do perfil anterior em
-                // vez de reinicializar a partir do moduleAccess do novo.
-                key={`${profile.id}-${module}`}
-                profile={profile}
-                module={module}
-                catalog={catalog}
-                initialActions={existing?.actions ?? []}
-                initialScope={existing?.scope ?? PermissionScope.OWN}
-                onSaved={onChanged}
-              />
-            );
-          })}
-        </tbody>
-      </table>
+              {catalog.actions.map((action) => (
+                <th scope="col" key={action} className="fb-th" style={{ textAlign: "center" }}>
+                  {ACTION_LABELS[action]}
+                </th>
+              ))}
+              <th scope="col" className="fb-th">
+                Escopo
+              </th>
+              <th scope="col" className="fb-th" />
+            </tr>
+          </thead>
+          <tbody>
+            {catalog.modules.map((module) => {
+              const existing = profile.moduleAccess.find((entry) => entry.module === module);
+              return (
+                <ModuleRow
+                  // Precisa incluir o id do perfil: as linhas têm estado local
+                  // (checkboxes/escopo) inicializado só no primeiro mount. Sem
+                  // isso, trocar de perfil reaproveita as mesmas linhas (mesma
+                  // key "module") e mantém os valores do perfil anterior em
+                  // vez de reinicializar a partir do moduleAccess do novo.
+                  key={`${profile.id}-${module}`}
+                  profile={profile}
+                  module={module}
+                  catalog={catalog}
+                  initialActions={existing?.actions ?? []}
+                  initialScope={existing?.scope ?? PermissionScope.OWN}
+                  onSaved={onChanged}
+                />
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

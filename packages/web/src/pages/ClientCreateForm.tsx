@@ -47,12 +47,13 @@ export function ClientCreateForm({ onCreated }: { onCreated: () => void }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} aria-label="Cadastro de cliente">
+    <form onSubmit={handleSubmit} aria-label="Cadastro de cliente" className="fb-form">
       {errorMessage && <p role="alert">{errorMessage}</p>}
 
       <label htmlFor={`${formId}-fullName`}>Nome completo</label>
       <input
         id={`${formId}-fullName`}
+        className="fb-field"
         value={fullName}
         onChange={(event) => setFullName(event.target.value)}
         required
@@ -61,6 +62,7 @@ export function ClientCreateForm({ onCreated }: { onCreated: () => void }) {
       <label htmlFor={`${formId}-email`}>E-mail</label>
       <input
         id={`${formId}-email`}
+        className="fb-field"
         type="email"
         value={email}
         onChange={(event) => setEmail(event.target.value)}
@@ -70,6 +72,7 @@ export function ClientCreateForm({ onCreated }: { onCreated: () => void }) {
       <label htmlFor={`${formId}-phone`}>Telefone</label>
       <input
         id={`${formId}-phone`}
+        className="fb-field"
         value={phone}
         onChange={(event) => setPhone(event.target.value)}
         required
@@ -78,6 +81,7 @@ export function ClientCreateForm({ onCreated }: { onCreated: () => void }) {
       <label htmlFor={`${formId}-birthDate`}>Data de nascimento</label>
       <input
         id={`${formId}-birthDate`}
+        className="fb-field"
         type="date"
         value={birthDate}
         onChange={(event) => setBirthDate(event.target.value)}
@@ -87,6 +91,7 @@ export function ClientCreateForm({ onCreated }: { onCreated: () => void }) {
       <label htmlFor={`${formId}-document`}>Documento</label>
       <input
         id={`${formId}-document`}
+        className="fb-field"
         value={documentNumber}
         onChange={(event) => setDocumentNumber(event.target.value)}
         required
@@ -95,6 +100,7 @@ export function ClientCreateForm({ onCreated }: { onCreated: () => void }) {
       <label htmlFor={`${formId}-address`}>Endereço</label>
       <input
         id={`${formId}-address`}
+        className="fb-field"
         value={address}
         onChange={(event) => setAddress(event.target.value)}
         required
@@ -103,6 +109,7 @@ export function ClientCreateForm({ onCreated }: { onCreated: () => void }) {
       <label htmlFor={`${formId}-password`}>Senha inicial</label>
       <input
         id={`${formId}-password`}
+        className="fb-field"
         type="password"
         value={password}
         onChange={(event) => setPassword(event.target.value)}
@@ -110,7 +117,7 @@ export function ClientCreateForm({ onCreated }: { onCreated: () => void }) {
         minLength={8}
       />
 
-      <button type="submit" disabled={isSubmitting}>
+      <button type="submit" className="fb-btn-primary" disabled={isSubmitting}>
         {isSubmitting ? "Cadastrando…" : "Cadastrar cliente"}
       </button>
     </form>
