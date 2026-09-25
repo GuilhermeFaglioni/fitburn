@@ -11,7 +11,9 @@ const commandArgs = useTestDb ? args.slice(1) : args;
 
 if (useTestDb) {
   if (!process.env.DATABASE_URL_TEST) {
-    console.error("DATABASE_URL_TEST não definido. Copie .env.example para .env na raiz do projeto.");
+    console.error(
+      "DATABASE_URL_TEST não definido. Copie .env.example para .env na raiz do projeto.",
+    );
     process.exit(1);
   }
   process.env.DATABASE_URL = process.env.DATABASE_URL_TEST;

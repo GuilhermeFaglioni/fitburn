@@ -5,16 +5,16 @@ allowBuilds:
   argon2: true
   # esbuild e @parcel/watcher só baixam um binário pré-compilado (ferramentas padrão do ecossistema Vite/Jest).
   esbuild: true
-  '@parcel/watcher': true
+  "@parcel/watcher": true
   # Vieram como transitivas do prisma@8.0.0-rc via alchemy/workerd (Cloudflare) — não usamos essa cadeia
   # depois de pinar prisma em ^7.10.0. Deixadas desligadas de propósito.
   msgpackr-extract: false
   unrs-resolver: false
   workerd: false
   # Baixam o binário do query engine do Prisma — obrigatório para o CLI funcionar.
-  '@prisma/engines': true
+  "@prisma/engines": true
   prisma: true
   # postinstall padrão do MSW (copia o service worker de mock); não usamos o modo browser, mas é inofensivo.
   msw: true
   # Baixa o binário pré-compilado do compilador SWC (usado pelo unplugin-swc nos testes da API).
-  '@swc/core': true
+  "@swc/core": true

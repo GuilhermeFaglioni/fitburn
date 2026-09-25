@@ -17,6 +17,8 @@ export async function cleanDatabase(): Promise<void> {
 
   if (tables.length === 0) return;
 
-  const tableNames = tables.map((t: { tablename: string }) => `"public"."${t.tablename}"`).join(", ");
+  const tableNames = tables
+    .map((t: { tablename: string }) => `"public"."${t.tablename}"`)
+    .join(", ");
   await testPrisma.$executeRawUnsafe(`TRUNCATE TABLE ${tableNames} RESTART IDENTITY CASCADE;`);
 }

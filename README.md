@@ -1,5 +1,7 @@
 # System Design — App da Academia
 
+[![CI](https://github.com/GuilhermeFaglioni/fitburn/actions/workflows/ci.yml/badge.svg)](https://github.com/GuilhermeFaglioni/fitburn/actions/workflows/ci.yml)
+
 Documentação do desenho de alto nível para substituir o aplicativo white-label por uma plataforma própria.
 
 ## Estado atual

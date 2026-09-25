@@ -13,11 +13,20 @@
     "test:api": "pnpm --filter @fitburn/api test",
     "test:web": "pnpm --filter @fitburn/web test",
     "typecheck": "pnpm -r typecheck",
-    "lint": "pnpm -r --if-present lint",
+    "lint": "eslint .",
+    "format": "prettier --write .",
     "prisma:generate": "pnpm --filter @fitburn/api prisma:generate",
     "prisma:migrate": "pnpm --filter @fitburn/api prisma:migrate",
     "prisma:migrate:test": "pnpm --filter @fitburn/api prisma:migrate:test",
     "db:up": "docker compose up -d postgres",
     "db:down": "docker compose down"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.11.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.12.0",
+    "prettier": "^3.9.9",
+    "typescript-eslint": "^8.70.1"
   }
 }

@@ -11,7 +11,6 @@ async function bootstrap(): Promise<void> {
 
   const port = process.env.PORT ? Number(process.env.PORT) : 3333;
   await app.listen(port);
-  // eslint-disable-next-line no-console
   console.log(`Fitburn API rodando em http://localhost:${port}/api`);
 }
 

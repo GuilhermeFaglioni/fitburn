@@ -9,9 +9,17 @@ export class HealthService {
   async check(): Promise<HealthResponse> {
     try {
       await this.prisma.$queryRaw`SELECT 1`;
-      return { status: HealthStatus.OK, database: "connected", timestamp: new Date().toISOString() };
+      return {
+        status: HealthStatus.OK,
+        database: "connected",
+        timestamp: new Date().toISOString(),
+      };
     } catch {
-      return { status: HealthStatus.ERROR, database: "disconnected", timestamp: new Date().toISOString() };
+      return {
+        status: HealthStatus.ERROR,
+        database: "disconnected",
+        timestamp: new Date().toISOString(),
+      };
     }
   }
 }
