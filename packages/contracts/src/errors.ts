@@ -7,6 +7,7 @@ export const ErrorCode = {
   USER_INACTIVE: "USER_INACTIVE",
   FORBIDDEN: "FORBIDDEN",
   OUT_OF_SCOPE: "OUT_OF_SCOPE",
+  SESSION_EXPIRED: "SESSION_EXPIRED",
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];

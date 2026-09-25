@@ -1,5 +1,5 @@
 import { useId, useState, type FormEvent } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { Module, PermissionAction, type CurrentUser } from "@fitburn/contracts";
 import { EyeIcon } from "../components/icons/EyeIcon";
 import { EyeOffIcon } from "../components/icons/EyeOffIcon";
@@ -13,12 +13,23 @@ function defaultRouteFor(user: CurrentUser): string {
   return canViewDashboard ? "/dashboard" : "/";
 }
 
+// "/" não conta como rota original a preservar: é só o destino genérico, e
+// cada perfil tem o seu (Início para cliente, Dashboard para
+// administrador). Uma rota mais específica (ex.: /agenda) é sempre
+// preservada. Usado tanto pelo redirecionamento pós-submit quanto pelo de
+// sessão já restaurada — os dois precisam concordar, ou um sobrescreve o
+// destino com "from" do outro na re-renderização que o login dispara.
+function resolveDestination(user: CurrentUser, from: string | undefined): string {
+  return from && from !== "/" ? from : defaultRouteFor(user);
+}
+
 export function LoginPage() {
   const emailId = useId();
   const passwordId = useId();
-  const { login } = useAuth();
+  const { login, user, isAuthenticated, isInitializing } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const from = (location.state as { from?: string } | null)?.from;
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -26,19 +37,20 @@ export function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showError, setShowError] = useState(false);
 
+  // Sessão já restaurada silenciosamente (reload, ou aba antiga ainda válida)
+  // — não faz sentido mostrar o formulário de novo, manda direto para onde
+  // essa sessão levaria.
+  if (!isInitializing && isAuthenticated && user) {
+    return <Navigate to={resolveDestination(user, from)} replace />;
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setShowError(false);
     setIsSubmitting(true);
     try {
-      const user = await login(email, password);
-      const from = (location.state as { from?: string } | null)?.from;
-      // "/" não conta como rota original a preservar: é só o destino
-      // genérico, e cada perfil tem o seu (Início para cliente, Dashboard
-      // para administrador). Uma rota mais específica (ex.: /agenda) é
-      // sempre preservada.
-      const destination = from && from !== "/" ? from : defaultRouteFor(user);
-      navigate(destination, { replace: true });
+      const loggedInUser = await login(email, password);
+      navigate(resolveDestination(loggedInUser, from), { replace: true });
     } catch {
       setShowError(true);
     } finally {

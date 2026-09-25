@@ -1,4 +1,4 @@
-import { currentUserSchema, loginResponseSchema, type CurrentUser } from "@fitburn/contracts";
+import { loginResponseSchema, type CurrentUser } from "@fitburn/contracts";
 import { tokenStore } from "./token-store";
 
 export class ApiError extends Error {
@@ -10,7 +10,7 @@ export class ApiError extends Error {
   }
 }
 
-async function parseOrThrow(response: Response): Promise<unknown> {
+export async function parseOrThrow(response: Response): Promise<unknown> {
   const data: unknown = await response.json().catch(() => null);
   if (!response.ok) {
     const body = data as { code?: string; message?: string } | null;
@@ -36,10 +36,19 @@ export async function logout(): Promise<void> {
   tokenStore.set(null);
 }
 
-export async function fetchMe(): Promise<CurrentUser> {
-  const response = await fetch("/api/auth/me", {
-    credentials: "include",
-    headers: { Authorization: `Bearer ${tokenStore.get() ?? ""}` },
-  });
-  return currentUserSchema.parse(await parseOrThrow(response));
+/**
+ * Chama /auth/refresh (o cookie httpOnly viaja sozinho). Nunca lança: uma
+ * falha (cookie ausente, expirado ou revogado) só significa "sem sessão",
+ * usada tanto para restaurar a sessão ao carregar a página quanto pelo
+ * authFetch depois de um 401.
+ */
+export async function refreshSession(): Promise<CurrentUser | null> {
+  const response = await fetch("/api/auth/refresh", { method: "POST", credentials: "include" });
+  if (!response.ok) {
+    tokenStore.set(null);
+    return null;
+  }
+  const data = loginResponseSchema.parse(await response.json());
+  tokenStore.set(data.accessToken);
+  return data.user;
 }
