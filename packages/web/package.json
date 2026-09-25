@@ -15,7 +15,8 @@
     "@fitburn/contracts": "workspace:*",
     "@tanstack/react-query": "^5.103.2",
     "react": "^19.3.0",
-    "react-dom": "^19.3.0"
+    "react-dom": "^19.3.0",
+    "react-router-dom": "^7.18.4"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^7.0.1",

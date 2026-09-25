@@ -1,0 +1,229 @@
+.login-page {
+  min-height: 100%;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.login-page__container {
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+}
+
+.login-page__logo {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+}
+
+.login-page__logo-mark {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--color-ink-on-dark);
+}
+
+.login-page__logo-reg {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.4);
+  align-self: flex-start;
+}
+
+.login-form {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--color-surface-raised);
+  border-radius: var(--radius-sm);
+  padding: 28px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.login-form__header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.login-form__title {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 28px;
+  line-height: 1.15;
+  color: var(--color-ink-on-dark);
+}
+
+.login-form__subtitle {
+  margin: 0;
+  font-size: 13px;
+  line-height: 19px;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.login-form__error {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px 14px;
+  background: var(--color-danger-bg);
+  border: 1px solid var(--color-danger-border);
+  border-radius: var(--radius-sm);
+}
+
+.login-form__error-icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.login-form__error-text {
+  font-size: 13px;
+  line-height: 18px;
+  color: #ff9587;
+}
+
+.login-form__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.login-form__label {
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.login-form__input {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 12px 14px;
+  background: #0f0f0f;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: var(--radius-sm);
+  color: var(--color-ink-on-dark);
+  font-size: 15px;
+  font-family: var(--font-sans);
+}
+
+.login-form__input::placeholder {
+  color: rgba(255, 255, 255, 0.32);
+}
+
+.login-form__input:focus {
+  outline: none;
+  border-color: var(--color-primary-orange);
+}
+
+.login-form__password-wrapper {
+  position: relative;
+}
+
+.login-form__password-input {
+  padding-right: 44px;
+}
+
+.login-form__toggle {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.login-form__toggle:focus-visible,
+.login-form__submit:focus-visible {
+  outline: 2px solid var(--color-primary-orange);
+  outline-offset: 2px;
+}
+
+.login-form__submit {
+  margin-top: 4px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 14px;
+  background: var(--color-primary-orange);
+  border: none;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.login-form__submit:disabled {
+  opacity: 0.8;
+  cursor: default;
+}
+
+.login-form__submit-label {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-ink-on-dark);
+}
+
+.login-form__spinner {
+  animation: login-spin 0.8s linear infinite;
+}
+
+@keyframes login-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.login-page__footer {
+  margin: 0;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.4);
+  text-align: center;
+}
+
+@media (min-width: 640px) {
+  .login-page__container {
+    gap: 32px;
+  }
+
+  .login-page__logo-mark {
+    font-size: 22px;
+  }
+
+  .login-page__logo-reg {
+    font-size: 11px;
+  }
+
+  .login-form {
+    padding: 40px 36px;
+    gap: 24px;
+  }
+
+  .login-form__title {
+    font-size: 32px;
+  }
+
+  .login-form__subtitle {
+    font-size: 14px;
+    line-height: 20px;
+  }
+
+  .login-page__footer {
+    font-size: 13px;
+  }
+}

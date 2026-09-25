@@ -1,10 +1,5 @@
-import { http, HttpResponse } from "msw";
-import type { HealthResponse } from "@fitburn/contracts";
+import type { HttpHandler } from "msw";
 
-export const healthyResponse: HealthResponse = {
-  status: "ok",
-  database: "connected",
-  timestamp: new Date().toISOString(),
-};
-
-export const handlers = [http.get("/api/health", () => HttpResponse.json(healthyResponse))];
+// Handlers padrão globais para todos os testes. Cada teste adiciona os seus
+// próprios com server.use(...) para os endpoints que exercita.
+export const handlers: HttpHandler[] = [];
