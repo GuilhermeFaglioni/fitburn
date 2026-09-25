@@ -14,6 +14,7 @@ interface MenuItem {
 const MENU_ITEMS: MenuItem[] = [
   { module: Module.DASHBOARD, label: "Dashboard", to: "/dashboard" },
   { module: Module.USUARIOS, label: "Usuários", to: "/usuarios" },
+  { module: Module.PERFIS_DE_ACESSO, label: "Perfis de acesso", to: "/perfis-de-acesso" },
 ];
 
 export function AppMenu() {

@@ -1,0 +1,11 @@
+import { Module } from "@nestjs/common";
+import { PermissionsModule } from "../permissions/permissions.module.js";
+import { ProfilesController } from "./profiles.controller.js";
+import { ProfilesService } from "./profiles.service.js";
+
+@Module({
+  imports: [PermissionsModule],
+  controllers: [ProfilesController],
+  providers: [ProfilesService],
+})
+export class ProfilesModule {}

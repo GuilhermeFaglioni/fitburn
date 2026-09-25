@@ -41,13 +41,17 @@ enum PermissionScope {
 }
 
 model AccessProfile {
-  id        String   @id @default(uuid())
-  name      String   @unique
-  isSystem  Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  isSystem    Boolean  @default(false)
+  /// Perfil inativo não concede nenhuma permissão (ver PermissionsService) —
+  /// não é só um rótulo cosmético na listagem.
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  users       User[]
+  users        User[]
   moduleAccess ProfileModuleAccess[]
 
   @@map("access_profiles")

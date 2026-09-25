@@ -16,11 +16,12 @@ const SYSTEM_CLIENT_PROFILE_NAME = "Cliente";
 
 /**
  * Motor de autorização: módulo × ação × escopo, lido do banco a cada
- * requisição (sem cache — D-011). Dois invariantes de perfil de sistema são
+ * requisição (sem cache — D-011). Invariantes de perfil de sistema são
  * aplicados aqui, na leitura, como rede de segurança independente de
- * qualquer tela de edição futura (Fase 1 T8):
+ * qualquer regra de edição (Fase 1 T8):
  * - Administrador sempre tem acesso total, sem precisar de linhas na tabela;
- * - Cliente nunca tem escopo mais amplo que "OWN" (registros próprios).
+ * - Cliente nunca tem escopo mais amplo que "OWN" (registros próprios);
+ * - um perfil não-sistema inativo não concede nenhuma permissão.
  */
 @Injectable()
 export class PermissionsService {
@@ -40,6 +41,7 @@ export class PermissionsService {
     action: PermissionActionName,
   ): Promise<boolean> {
     if (this.isSystemAdmin(profile)) return true;
+    if (!profile.isActive) return false;
 
     const access = await this.prisma.profileModuleAccess.findUnique({
       where: { profileId_module: { profileId: profile.id, module } },
@@ -64,6 +66,7 @@ export class PermissionsService {
         scope: PermissionScope.ALL,
       }));
     }
+    if (!profile.isActive) return [];
 
     const rows = await this.prisma.profileModuleAccess.findMany({ where: { profileId: profile.id } });
     return rows.map((row) => ({
