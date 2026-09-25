@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "fitburn-web",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@fitburn/web", "dev"],
+      "port": 5173
+    },
+    {
+      "name": "fitburn-api",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@fitburn/api", "dev"],
+      "port": 3333
+    }
+  ]
+}

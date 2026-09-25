@@ -13,4 +13,5 @@ coverage/
 # Agentes
 .scratch/
 .maestri/
-.claude/
+.claude/*.lock
+.claude/settings.local.json

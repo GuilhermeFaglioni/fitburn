@@ -1,10 +1,11 @@
+import { AppShell } from "./components/AppShell";
 import { HealthStatus } from "./pages/HealthStatus";
 
 export default function App() {
   return (
-    <main>
+    <AppShell>
       <h1>Fitburn</h1>
       <HealthStatus />
-    </main>
+    </AppShell>
   );
 }
