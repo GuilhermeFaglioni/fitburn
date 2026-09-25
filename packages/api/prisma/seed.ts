@@ -12,10 +12,23 @@ async function main(): Promise<void> {
     update: {},
     create: { name: "Administrador", isSystem: true },
   });
-  await prisma.accessProfile.upsert({
+  const clientProfile = await prisma.accessProfile.upsert({
     where: { name: "Cliente" },
     update: {},
     create: { name: "Cliente", isSystem: true },
+  });
+
+  // Administrador não precisa de linhas aqui: o motor de autorização sempre
+  // libera tudo para o perfil de sistema Administrador (PermissionsService).
+  await prisma.profileModuleAccess.upsert({
+    where: { profileId_module: { profileId: clientProfile.id, module: "USUARIOS" } },
+    update: { actions: ["VIEW"], scope: "OWN" },
+    create: {
+      profileId: clientProfile.id,
+      module: "USUARIOS",
+      actions: ["VIEW"],
+      scope: "OWN",
+    },
   });
 
   const email = process.env.INITIAL_ADMIN_EMAIL;

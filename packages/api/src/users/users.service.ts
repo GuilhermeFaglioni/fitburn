@@ -2,12 +2,16 @@ import { Injectable } from "@nestjs/common";
 import type { AccessProfile, User } from "@prisma/client";
 import type { CurrentUser } from "@fitburn/contracts";
 import { PrismaService } from "../prisma/prisma.service.js";
+import { PermissionsService } from "../permissions/permissions.service.js";
 
 export type UserWithProfile = User & { profile: AccessProfile };
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly permissionsService: PermissionsService,
+  ) {}
 
   findByEmail(email: string): Promise<UserWithProfile | null> {
     return this.prisma.user.findUnique({
@@ -23,13 +27,15 @@ export class UsersService {
     });
   }
 
-  toCurrentUser(user: UserWithProfile): CurrentUser {
+  async toCurrentUser(user: UserWithProfile): Promise<CurrentUser> {
+    const permissions = await this.permissionsService.getEffectivePermissions(user.profile);
     return {
       id: user.id,
       email: user.email,
       fullName: user.fullName,
       status: user.status,
       profile: { id: user.profile.id, name: user.profile.name },
+      permissions,
     };
   }
 }

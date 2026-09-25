@@ -1,7 +1,8 @@
 import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import type { Request } from "express";
-import { ErrorCode, ErrorStatus } from "@fitburn/contracts";
+import type { AccessProfile } from "@prisma/client";
+import { ErrorCode, ErrorStatus, type PermissionScopeName } from "@fitburn/contracts";
 import { DomainError } from "../common/errors/domain-error.js";
 
 export interface AuthTokenPayload {
@@ -10,6 +11,9 @@ export interface AuthTokenPayload {
 
 export interface AuthenticatedRequest extends Request {
   authUser: AuthTokenPayload;
+  /** Preenchidos pelo PermissionsGuard quando a rota declara @RequirePermission. */
+  authProfile?: AccessProfile;
+  authScope?: PermissionScopeName;
 }
 
 @Injectable()

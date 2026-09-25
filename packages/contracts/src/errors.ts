@@ -5,6 +5,8 @@ export const ErrorCode = {
   UNAUTHENTICATED: "UNAUTHENTICATED",
   INVALID_CREDENTIALS: "INVALID_CREDENTIALS",
   USER_INACTIVE: "USER_INACTIVE",
+  FORBIDDEN: "FORBIDDEN",
+  OUT_OF_SCOPE: "OUT_OF_SCOPE",
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];

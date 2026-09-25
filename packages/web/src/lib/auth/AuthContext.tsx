@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
-import type { CurrentUser } from "@fitburn/contracts";
+import type { CurrentUser, ModuleName, PermissionActionName } from "@fitburn/contracts";
 import * as authApi from "./api";
 
 interface AuthContextValue {
@@ -7,6 +7,7 @@ interface AuthContextValue {
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<CurrentUser>;
   logout: () => Promise<void>;
+  can: (module: ModuleName, action: PermissionActionName) => boolean;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -25,9 +26,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }, []);
 
+  const can = useCallback(
+    (module: ModuleName, action: PermissionActionName): boolean => {
+      const entry = user?.permissions.find((permission) => permission.module === module);
+      return entry?.actions.includes(action) ?? false;
+    },
+    [user],
+  );
+
   const value = useMemo<AuthContextValue>(
-    () => ({ user, isAuthenticated: user !== null, login, logout }),
-    [user, login, logout],
+    () => ({ user, isAuthenticated: user !== null, login, logout, can }),
+    [user, login, logout, can],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { effectivePermissionSchema } from "./permissions.js";
 
 export const UserStatus = {
   ACTIVE: "ACTIVE",
@@ -23,6 +24,7 @@ export const currentUserSchema = z.object({
   fullName: z.string(),
   status: z.enum([UserStatus.ACTIVE, UserStatus.INACTIVE]),
   profile: profileSummarySchema,
+  permissions: z.array(effectivePermissionSchema),
 });
 export type CurrentUser = z.infer<typeof currentUserSchema>;
 

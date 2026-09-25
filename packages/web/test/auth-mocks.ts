@@ -1,14 +1,30 @@
 import { http, HttpResponse } from "msw";
-import type { CurrentUser } from "@fitburn/contracts";
+import {
+  ALL_MODULES,
+  ALL_PERMISSION_ACTIONS,
+  PermissionScope,
+  type CurrentUser,
+  type EffectivePermission,
+} from "@fitburn/contracts";
 import { server } from "./msw-server";
 
-export function mockSuccessfulLogin(profileName: "Administrador" | "Cliente"): CurrentUser {
+const ADMIN_PERMISSIONS: EffectivePermission[] = ALL_MODULES.map((module) => ({
+  module,
+  actions: ALL_PERMISSION_ACTIONS,
+  scope: PermissionScope.ALL,
+}));
+
+export function mockSuccessfulLogin(
+  profileName: "Administrador" | "Cliente",
+  permissions: EffectivePermission[] = profileName === "Administrador" ? ADMIN_PERMISSIONS : [],
+): CurrentUser {
   const user: CurrentUser = {
     id: "user-1",
     email: "usuario@fitburn.local",
     fullName: "Usuário de Teste",
     status: "ACTIVE",
     profile: { id: "profile-1", name: profileName },
+    permissions,
   };
 
   server.use(

@@ -11,6 +11,35 @@ enum UserStatus {
   INACTIVE
 }
 
+enum Module {
+  USUARIOS
+  PERFIS_DE_ACESSO
+  DASHBOARD
+  TEMPLATES_DE_AULA
+  OCORRENCIAS
+  RESERVAS
+  CLIENTES
+  PLANOS
+  PRESENCA
+  FICHAS_DE_TREINO
+  GAMIFICACAO
+}
+
+enum PermissionAction {
+  VIEW
+  CREATE
+  EDIT
+  DELETE
+  EXECUTE
+}
+
+enum PermissionScope {
+  ALL
+  ASSIGNED_CLIENTS
+  ASSIGNED_CLASSES
+  OWN
+}
+
 model AccessProfile {
   id        String   @id @default(uuid())
   name      String   @unique
@@ -18,9 +47,26 @@ model AccessProfile {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  users User[]
+  users       User[]
+  moduleAccess ProfileModuleAccess[]
 
   @@map("access_profiles")
+}
+
+/// Uma linha por (perfil, módulo): as ações concedidas e o escopo de dados
+/// nesse módulo. Perfil Administrador não precisa de linhas aqui — o motor
+/// de autorização sempre libera tudo para ele (ver PermissionsService).
+model ProfileModuleAccess {
+  id      String            @id @default(uuid())
+  module  Module
+  actions PermissionAction[]
+  scope   PermissionScope
+
+  profileId String
+  profile   AccessProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, module])
+  @@map("profile_module_access")
 }
 
 model User {

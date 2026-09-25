@@ -1,13 +1,17 @@
 import { useId, useState, type FormEvent } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { Module, PermissionAction, type CurrentUser } from "@fitburn/contracts";
 import { EyeIcon } from "../components/icons/EyeIcon";
 import { EyeOffIcon } from "../components/icons/EyeOffIcon";
 import { useAuth } from "../lib/auth/AuthContext";
 import "./LoginPage.css";
 
-const PROFILE_HOME_ROUTE: Record<string, string> = {
-  Administrador: "/dashboard",
-};
+function defaultRouteFor(user: CurrentUser): string {
+  const canViewDashboard = user.permissions
+    .find((permission) => permission.module === Module.DASHBOARD)
+    ?.actions.includes(PermissionAction.VIEW);
+  return canViewDashboard ? "/dashboard" : "/";
+}
 
 export function LoginPage() {
   const emailId = useId();
@@ -33,8 +37,7 @@ export function LoginPage() {
       // genérico, e cada perfil tem o seu (Início para cliente, Dashboard
       // para administrador). Uma rota mais específica (ex.: /agenda) é
       // sempre preservada.
-      const destination =
-        from && from !== "/" ? from : (PROFILE_HOME_ROUTE[user.profile.name] ?? "/");
+      const destination = from && from !== "/" ? from : defaultRouteFor(user);
       navigate(destination, { replace: true });
     } catch {
       setShowError(true);

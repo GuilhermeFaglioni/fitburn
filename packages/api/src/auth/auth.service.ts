@@ -52,7 +52,7 @@ export class AuthService {
       },
     });
 
-    return { accessToken, refreshToken, user: this.usersService.toCurrentUser(user) };
+    return { accessToken, refreshToken, user: await this.usersService.toCurrentUser(user) };
   }
 
   async logout(rawRefreshToken: string | undefined): Promise<void> {
