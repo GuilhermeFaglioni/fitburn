@@ -1,0 +1,112 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum Module {
+  USUARIOS
+  PERFIS_DE_ACESSO
+  DASHBOARD
+  TEMPLATES_DE_AULA
+  OCORRENCIAS
+  RESERVAS
+  CLIENTES
+  PLANOS
+  PRESENCA
+  FICHAS_DE_TREINO
+  GAMIFICACAO
+}
+
+enum PermissionAction {
+  VIEW
+  CREATE
+  EDIT
+  DELETE
+  EXECUTE
+}
+
+enum PermissionScope {
+  ALL
+  ASSIGNED_CLIENTS
+  ASSIGNED_CLASSES
+  OWN
+}
+
+model AccessProfile {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  isSystem    Boolean  @default(false)
+  /// Perfil inativo não concede nenhuma permissão (ver PermissionsService) —
+  /// não é só um rótulo cosmético na listagem.
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users        User[]
+  moduleAccess ProfileModuleAccess[]
+
+  @@map("access_profiles")
+}
+
+/// Uma linha por (perfil, módulo): as ações concedidas e o escopo de dados
+/// nesse módulo. Perfil Administrador não precisa de linhas aqui — o motor
+/// de autorização sempre libera tudo para ele (ver PermissionsService).
+model ProfileModuleAccess {
+  id      String            @id @default(uuid())
+  module  Module
+  actions PermissionAction[]
+  scope   PermissionScope
+
+  profileId String
+  profile   AccessProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, module])
+  @@map("profile_module_access")
+}
+
+model User {
+  id           String     @id @default(uuid())
+  email        String     @unique
+  passwordHash String
+  fullName     String
+  /// Opcionais no banco: o admin inicial do seed (T4) não tem esses dados.
+  /// Obrigatoriedade é decidida por fluxo na validação (zod) — cadastro de
+  /// cliente exige todos, cadastro de equipe não.
+  phone        String?
+  birthDate    DateTime?
+  document     String?    @unique
+  address      String?
+  status       UserStatus @default(ACTIVE)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  profileId String
+  profile   AccessProfile @relation(fields: [profileId], references: [id])
+
+  refreshTokens RefreshToken[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}

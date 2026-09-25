@@ -1,0 +1,31 @@
+/**
+ * Design tokens da marca Fitburn Brasil.
+ * Fonte: project/ds/fitburn/tokens.json do canvas de design (Claude Design),
+ * https://claude.ai/artifact/VncuMf9CffiWGUEQYywLVX — ver docs/Fitburn Brasil
+ * — Design System, Branding e Marketing.md para o histórico da marca.
+ */
+:root {
+  /* Cores */
+  --color-surface-000: #0a0a0a;
+  --color-surface-raised: #1a1a1a;
+  --color-surface-medium: #4a4a4a;
+  --color-surface-white: #ffffff;
+  --color-ink-on-dark: #ffffff;
+  --color-ink-on-light: #0a0a0a;
+  --color-primary-orange: #ed6e34;
+  --color-flame-red: #c23a1f;
+
+  /* Não vem do tokens.json oficial: cor de erro usada de forma consistente
+     nos estados de erro do canvas de design (ex.: Login.dc.html). */
+  --color-danger: #ff6d5a;
+  --color-danger-bg: rgba(255, 109, 90, 0.1);
+  --color-danger-border: rgba(255, 109, 90, 0.35);
+
+  /* Tipografia */
+  --font-serif: "Cormorant", Georgia, "Times New Roman", serif;
+  --font-sans:
+    "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+  /* Raio */
+  --radius-sm: 5px;
+}

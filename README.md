@@ -1,10 +1,41 @@
 # System Design — App da Academia
 
+[![CI](https://github.com/GuilhermeFaglioni/fitburn/actions/workflows/ci.yml/badge.svg)](https://github.com/GuilhermeFaglioni/fitburn/actions/workflows/ci.yml)
+
 Documentação do desenho de alto nível para substituir o aplicativo white-label por uma plataforma própria.
 
 ## Estado atual
 
-Escopo: system design de alto nível. Modelo de dados, padrões de projeto, detalhes de implementação, observabilidade e configuração fina de infraestrutura ainda não foram definidos.
+O MVP Web + PWA está em implementação, por fases, seguindo o roteiro registrado nas issues do GitHub (specs e tickets, uma por fase/ticket). Modelo de dados completo, observabilidade e configuração fina de infraestrutura de produção ainda não foram definidos.
+
+## Como rodar localmente
+
+Pré-requisitos: Node 20+, pnpm, Docker.
+
+```bash
+cp .env.example .env
+pnpm install
+pnpm db:up                          # sobe o PostgreSQL (bancos fitburn_dev e fitburn_test)
+pnpm --filter @fitburn/contracts build
+pnpm prisma:migrate                 # aplica migrations no banco de desenvolvimento
+pnpm prisma:migrate:test            # aplica migrations no banco de teste
+
+pnpm dev:api                        # API em http://localhost:3333/api
+pnpm dev:web                        # Web em http://localhost:5173 (proxy /api -> :3333)
+```
+
+Outros comandos úteis:
+
+```bash
+pnpm typecheck   # typecheck de todos os pacotes
+pnpm test        # suíte completa (api + web)
+pnpm test:api    # só a API (Vitest, seam HTTP contra o banco real)
+pnpm test:web    # só a web (Vitest, Testing Library + MSW)
+pnpm build       # build de produção de todos os pacotes
+pnpm db:down     # derruba o PostgreSQL local
+```
+
+O monorepo (`packages/contracts`, `packages/api`, `packages/web`) é gerenciado com pnpm workspaces — ver `pnpm-workspace.yaml`.
 
 ## Documentos
 
