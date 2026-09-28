@@ -25,8 +25,9 @@ export class ClassTemplatesService {
     private readonly instructors: InstructorsService,
   ) {}
 
-  async list(): Promise<ClassTemplateDetail[]> {
+  async list(filter: { activeOnly?: boolean } = {}): Promise<ClassTemplateDetail[]> {
     const templates = await this.prisma.classTemplate.findMany({
+      where: filter.activeOnly ? { isActive: true } : undefined,
       include: TEMPLATE_INCLUDE,
       orderBy: { name: "asc" },
     });
@@ -100,6 +101,16 @@ export class ClassTemplatesService {
 
   async delete(id: string): Promise<void> {
     await this.findByIdOrThrow(id);
+    // Canceladas também contam: continuam no histórico ligadas ao template.
+    const occurrenceCount = await this.prisma.classOccurrence.count({ where: { templateId: id } });
+    if (occurrenceCount > 0) {
+      throw new DomainError(
+        ErrorCode.TEMPLATE_IN_USE,
+        `Não é possível excluir: há ${occurrenceCount} ${occurrenceCount === 1 ? "aula" : "aulas"} usando este template. Desative o template para tirá-lo de uso.`,
+        ErrorStatus.CONFLICT,
+        { occurrenceCount },
+      );
+    }
     await this.prisma.classTemplate.delete({ where: { id } });
   }
 

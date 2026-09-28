@@ -8,6 +8,7 @@ import { ClientHomePage } from "./pages/ClientHomePage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { UsuariosPerfisPage } from "./pages/UsuariosPerfisPage";
 import { TemplatesModalidadesPage } from "./pages/TemplatesModalidadesPage";
+import { AgendaAdminPage } from "./pages/AgendaAdminPage";
 
 export default function App() {
   return (
@@ -33,6 +34,7 @@ export default function App() {
             >
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/usuarios" element={<UsuariosPerfisPage />} />
+              <Route path="/agenda-administrativa" element={<AgendaAdminPage />} />
               <Route path="/templates-e-modalidades" element={<TemplatesModalidadesPage />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />

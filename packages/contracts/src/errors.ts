@@ -14,6 +14,8 @@ export const ErrorCode = {
   PROFILE_IN_USE: "PROFILE_IN_USE",
   SYSTEM_PROFILE_IMMUTABLE: "SYSTEM_PROFILE_IMMUTABLE",
   MODALITY_IN_USE: "MODALITY_IN_USE",
+  TEMPLATE_IN_USE: "TEMPLATE_IN_USE",
+  OCCURRENCE_OVERLAP: "OCCURRENCE_OVERLAP",
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];

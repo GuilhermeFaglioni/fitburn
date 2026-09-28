@@ -5,6 +5,7 @@ export class ApiError extends Error {
   constructor(
     public readonly code: string,
     message: string,
+    public readonly details?: unknown,
   ) {
     super(message);
   }
@@ -13,8 +14,12 @@ export class ApiError extends Error {
 export async function parseOrThrow(response: Response): Promise<unknown> {
   const data: unknown = await response.json().catch(() => null);
   if (!response.ok) {
-    const body = data as { code?: string; message?: string } | null;
-    throw new ApiError(body?.code ?? "INTERNAL_ERROR", body?.message ?? "Erro inesperado.");
+    const body = data as { code?: string; message?: string; details?: unknown } | null;
+    throw new ApiError(
+      body?.code ?? "INTERNAL_ERROR",
+      body?.message ?? "Erro inesperado.",
+      body?.details,
+    );
   }
   return data;
 }

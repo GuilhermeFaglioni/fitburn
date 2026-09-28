@@ -8,6 +8,7 @@ import { UsersModule } from "./users/users.module.js";
 import { PermissionsModule } from "./permissions/permissions.module.js";
 import { ProfilesModule } from "./profiles/profiles.module.js";
 import { CatalogModule } from "./catalog/catalog.module.js";
+import { AgendaModule } from "./agenda/agenda.module.js";
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { CatalogModule } from "./catalog/catalog.module.js";
     UsersModule,
     ProfilesModule,
     CatalogModule,
+    AgendaModule,
     AuthModule,
   ],
 })

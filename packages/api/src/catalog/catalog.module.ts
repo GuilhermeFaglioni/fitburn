@@ -10,5 +10,6 @@ import { ModalitiesService } from "./modalities.service.js";
   imports: [PermissionsModule],
   controllers: [ModalitiesController, ClassTemplatesController],
   providers: [ModalitiesService, ClassTemplatesService, InstructorsService],
+  exports: [ClassTemplatesService, InstructorsService],
 })
 export class CatalogModule {}
