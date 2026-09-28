@@ -84,7 +84,9 @@ export class OccurrencesService {
         ...this.scopeFilter(requester),
       },
       include: OCCURRENCE_INCLUDE,
-      orderBy: { startsAt: "asc" },
+      // Uma aula cancelada e a que ocupou o horário dela começam juntas:
+      // o desempate por criação mantém a ordem estável.
+      orderBy: [{ startsAt: "asc" }, { createdAt: "asc" }, { id: "asc" }],
     });
     return occurrences.map((occurrence) => this.toDetail(occurrence));
   }
