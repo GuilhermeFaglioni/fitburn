@@ -8,6 +8,7 @@ import {
   UserStatus,
   type ClassFullDetails,
   type CreateReservationRequest,
+  type MyReservationsQuery,
   type ReservationDetail,
   type RescheduleReservationRequest,
   type ScheduleConflictDetails,
@@ -59,6 +60,32 @@ const TRANSACTION_OPTIONS = {
 @Injectable()
 export class ReservationsService {
   constructor(private readonly prisma: PrismaService) {}
+
+  /**
+   * Minhas reservas: futuras (aula ainda não terminou, inclusive em
+   * andamento) em ordem cronológica, ou passadas da mais recente para a mais
+   * antiga; opcionalmente por estado.
+   */
+  async listMine(clientId: string, query: MyReservationsQuery): Promise<ReservationDetail[]> {
+    const now = new Date();
+    const upcoming = query.when === "upcoming";
+    const reservations = await this.prisma.reservation.findMany({
+      where: {
+        clientId,
+        ...(query.status ? { status: query.status } : {}),
+        occurrence: { endsAt: upcoming ? { gt: now } : { lte: now } },
+      },
+      include: DETAIL_INCLUDE,
+      // Cancelar e reservar de novo a mesma aula gera duas linhas no mesmo
+      // horário: a mais recente vem por último.
+      orderBy: [
+        { occurrence: { startsAt: upcoming ? "asc" : "desc" } },
+        { createdAt: "asc" },
+        { id: "asc" },
+      ],
+    });
+    return reservations.map((reservation) => this.toDetail(reservation));
+  }
 
   async create(
     clientId: string,

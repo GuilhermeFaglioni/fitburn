@@ -108,6 +108,12 @@ describe("Reservas (HTTP)", () => {
     return reservation.status;
   }
 
+  function listMine(token: string, query = "") {
+    return request(app.getHttpServer())
+      .get(`/api/reservations${query}`)
+      .set("Authorization", `Bearer ${token}`);
+  }
+
   function agendaItem(token: string, occurrenceId: string) {
     return request(app.getHttpServer())
       .get(`/api/agenda/${occurrenceId}`)
@@ -748,6 +754,105 @@ describe("Reservas (HTTP)", () => {
       expect(response.status).toBe(422);
       expect(response.body.code).toBe("IDEMPOTENCY_KEY_REUSED");
       expect(await statusOf(original.body.id)).toBe("CONFIRMED");
+    });
+  });
+
+  describe("minhas reservas", () => {
+    async function seedHistory() {
+      const ana = await createClient("ana");
+      const bruno = await createClient("bruno");
+      const tomorrow = await createOccurrence(new Date(Date.now() + 24 * HOUR), { name: "Yoga" });
+      const soon = await createOccurrence(new Date(Date.now() + 3 * HOUR));
+      const later = await createOccurrence(new Date(Date.now() + 48 * HOUR), { name: "Pilates" });
+      const confirmedSoon = await reserve(ana.token, soon.id);
+      const confirmedTomorrow = await reserve(ana.token, tomorrow.id);
+      const cancelled = await reserve(ana.token, later.id);
+      await cancel(ana.token, cancelled.body.id);
+      await reserve(bruno.token, soon.id);
+
+      // Aulas passadas: reservas concluída e não compareceu (a presença chega
+      // na Fase 4; aqui o estado é gravado direto).
+      const lastWeek = await createOccurrence(new Date(Date.now() - 7 * 24 * HOUR), {
+        name: "Funcional",
+      });
+      const yesterday = await createOccurrence(new Date(Date.now() - 24 * HOUR), {
+        name: "Muay Thai",
+      });
+      const completed = await testPrisma.reservation.create({
+        data: { clientId: ana.user.id, occurrenceId: lastWeek.id, status: "COMPLETED" },
+      });
+      const noShow = await testPrisma.reservation.create({
+        data: { clientId: ana.user.id, occurrenceId: yesterday.id, status: "NO_SHOW" },
+      });
+      return { ana, confirmedSoon, confirmedTomorrow, cancelled, completed, noShow };
+    }
+
+    it("lista as futuras em ordem cronológica, só do próprio cliente", async () => {
+      const { ana, confirmedSoon, confirmedTomorrow, cancelled } = await seedHistory();
+
+      const response = await listMine(ana.token);
+
+      expect(response.status).toBe(200);
+      expect(response.body.map((r: { id: string }) => r.id)).toEqual([
+        confirmedSoon.body.id,
+        confirmedTomorrow.body.id,
+        cancelled.body.id,
+      ]);
+    });
+
+    it("lista as passadas da mais recente para a mais antiga", async () => {
+      const { ana, completed, noShow } = await seedHistory();
+
+      const response = await listMine(ana.token, "?when=past");
+
+      expect(response.body.map((r: { id: string; status: string }) => [r.id, r.status])).toEqual([
+        [noShow.id, "NO_SHOW"],
+        [completed.id, "COMPLETED"],
+      ]);
+    });
+
+    it("aula em andamento continua entre as futuras", async () => {
+      const ana = await createClient("ana");
+      const running = await createOccurrence(new Date(Date.now() + 3 * HOUR));
+      const reservation = await reserve(ana.token, running.id);
+      await testPrisma.classOccurrence.update({
+        where: { id: running.id },
+        data: {
+          startsAt: new Date(Date.now() - 10 * MINUTE),
+          endsAt: new Date(Date.now() + 50 * MINUTE),
+        },
+      });
+
+      const upcoming = await listMine(ana.token);
+      const past = await listMine(ana.token, "?when=past");
+
+      expect(upcoming.body.map((r: { id: string }) => r.id)).toEqual([reservation.body.id]);
+      expect(past.body).toEqual([]);
+    });
+
+    it("filtra por estado", async () => {
+      const { ana, cancelled, noShow } = await seedHistory();
+
+      const cancelledOnly = await listMine(ana.token, "?when=upcoming&status=CANCELLED");
+      const noShowOnly = await listMine(ana.token, "?when=past&status=NO_SHOW");
+      const invalid = await listMine(ana.token, "?status=QUALQUER");
+
+      expect(cancelledOnly.body).toEqual([
+        expect.objectContaining({ id: cancelled.body.id, status: "CANCELLED" }),
+      ]);
+      expect(noShowOnly.body).toEqual([expect.objectContaining({ id: noShow.id })]);
+      expect(invalid.status).toBe(400);
+    });
+
+    it("não mostra reservas de outros clientes", async () => {
+      await seedHistory();
+      const carla = await createClient("carla");
+
+      const upcoming = await listMine(carla.token);
+      const past = await listMine(carla.token, "?when=past");
+
+      expect(upcoming.body).toEqual([]);
+      expect(past.body).toEqual([]);
     });
   });
 });

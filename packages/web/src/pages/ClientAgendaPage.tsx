@@ -21,6 +21,15 @@ import {
   WEEKDAYS_SHORT,
 } from "../lib/agenda/format";
 import { ClassDetailSheet, type Rescheduling } from "./client/ClassDetailSheet";
+import { ReservationHistory } from "./client/ReservationHistory";
+
+type AgendaTab = "upcoming" | "history";
+
+/** Controle "Próximas | Histórico" de AgendaMobile/AgendaDesktop.dc.html. */
+const AGENDA_TABS: Array<{ value: AgendaTab; label: string }> = [
+  { value: "upcoming", label: "Próximas" },
+  { value: "history", label: "Histórico" },
+];
 
 function availabilityText(item: ClientAgendaItem, style: "card" | "chip"): string {
   const ratio = `${item.available}/${item.capacity}`;
@@ -82,6 +91,7 @@ export function ClientAgendaPage() {
   const [weekStart, setWeekStart] = useState(() => startOfWeek(today));
   const [selectedDay, setSelectedDay] = useState(today);
   const [openItem, setOpenItem] = useState<ClientAgendaItem | null>(null);
+  const [tab, setTab] = useState<AgendaTab>("upcoming");
   const [rescheduling, setRescheduling] = useState<Rescheduling | null>(null);
 
   const weekEnd = addDays(weekStart, 6);
@@ -110,163 +120,189 @@ export function ClientAgendaPage() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 12,
-          flexWrap: "wrap",
-        }}
-      >
+      <div className="fb-client-header">
         <h1 className="fb-client-title">Agenda</h1>
-        <div className="fb-client-week">
-          <button
-            type="button"
-            className="fb-client-icon-btn"
-            aria-label="Semana anterior"
-            onClick={() => goToWeek(-1)}
-          >
-            ‹
-          </button>
-          <span>{formatWeekRange(weekStart)}</span>
-          <button
-            type="button"
-            className="fb-client-icon-btn"
-            aria-label="Próxima semana"
-            onClick={() => goToWeek(1)}
-          >
-            ›
-          </button>
-        </div>
-      </div>
-
-      {rescheduling && (
-        <div className="fb-sheet-alert fb-sheet-alert--success fb-reschedule-banner" role="status">
-          <span>
-            Remarcando {rescheduling.from.name} ({formatClassMoment(rescheduling.from.startsAt)}).
-            Escolha a nova aula na agenda.
-          </span>
-          <button
-            type="button"
-            className="fb-reschedule-banner__dismiss"
-            onClick={() => setRescheduling(null)}
-          >
-            Desistir
-          </button>
-        </div>
-      )}
-
-      <div className="fb-client-note">
-        <InfoIcon />
-        <span>Disponibilidade sujeita a confirmação no momento da reserva.</span>
-      </div>
-
-      {agendaQuery.isError && <p role="alert">Não foi possível carregar a agenda.</p>}
-
-      <section className="fb-client-mobile-only" aria-label="Aulas do dia">
-        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-          <div className="fb-client-days">
-            {days.map((date) => (
+        <div className="fb-client-header__controls">
+          {tab === "upcoming" && (
+            <div className="fb-client-week">
               <button
-                key={date}
                 type="button"
-                className="fb-daychip"
-                aria-label={formatDayLabel(date, weekdayOf(date))}
-                aria-pressed={date === selectedDay}
-                onClick={() => setSelectedDay(date)}
+                className="fb-client-icon-btn"
+                aria-label="Semana anterior"
+                onClick={() => goToWeek(-1)}
               >
-                <span className="fb-daychip__weekday">{WEEKDAYS_SHORT[weekdayOf(date)]}</span>
-                <span className="fb-daychip__day">{Number(date.slice(8))}</span>
+                ‹
+              </button>
+              <span>{formatWeekRange(weekStart)}</span>
+              <button
+                type="button"
+                className="fb-client-icon-btn"
+                aria-label="Próxima semana"
+                onClick={() => goToWeek(1)}
+              >
+                ›
+              </button>
+            </div>
+          )}
+          <div className="fb-client-tabs">
+            {AGENDA_TABS.map(({ value, label }) => (
+              <button
+                key={value}
+                type="button"
+                className="fb-client-tab-btn"
+                aria-pressed={tab === value}
+                onClick={() => setTab(value)}
+              >
+                {label}
               </button>
             ))}
           </div>
+        </div>
+      </div>
 
-          {agendaQuery.data && dayItems.length === 0 && (
-            <div className="fb-client-empty">Nenhuma aula agendada para este dia.</div>
-          )}
-
-          {dayItems.length > 0 && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <span style={{ fontSize: 13, fontWeight: 500, color: "rgba(255,255,255,0.5)" }}>
-                {formatDayHeading(selectedDay, weekdayOf(selectedDay), today)}
+      {tab === "history" ? (
+        <ReservationHistory onOpenClass={setOpenItem} />
+      ) : (
+        <>
+          {rescheduling && (
+            <div
+              className="fb-sheet-alert fb-sheet-alert--success fb-reschedule-banner"
+              role="status"
+            >
+              <span>
+                Remarcando {rescheduling.from.name} ({formatClassMoment(rescheduling.from.startsAt)}
+                ). Escolha a nova aula na agenda.
               </span>
-              {dayItems.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  className="fb-class-card"
-                  onClick={() => setOpenItem(item)}
-                >
-                  <span className="fb-class-card__body">
-                    <span className="fb-class-card__title">{item.modality.name}</span>
-                    <span className="fb-class-card__time">
-                      {formatInstantHour(item.startsAt)} – {formatInstantHour(item.endsAt)}
-                      {item.instructor ? ` · Prof. ${item.instructor.fullName}` : ""}
-                    </span>
-                    <span
-                      className={`fb-class-card__availability fb-availability--${availabilityLevel(item.available, item.capacity)}`}
-                    >
-                      {availabilityText(item, "card")}
-                    </span>
-                  </span>
-                  <ChevronIcon />
-                </button>
-              ))}
+              <button
+                type="button"
+                className="fb-reschedule-banner__dismiss"
+                onClick={() => setRescheduling(null)}
+              >
+                Desistir
+              </button>
             </div>
           )}
-        </div>
-      </section>
 
-      <section className="fb-client-desktop-only" aria-label="Grade da semana">
-        {agendaQuery.data && agendaQuery.data.length === 0 ? (
-          <div className="fb-client-empty">Nenhuma aula agendada para esta semana.</div>
-        ) : (
-          <div className="fb-client-grid">
-            <div className="fb-client-cell fb-client-cell--head" />
-            {days.map((date) => (
-              <div
-                key={date}
-                className={`fb-client-cell fb-client-cell--head${date === today ? " fb-client-cell--today" : ""}`}
-              >
-                <span className="fb-client-cell__weekday">{WEEKDAYS_SHORT[weekdayOf(date)]}</span>
-                <span className="fb-client-cell__day">{Number(date.slice(8))}</span>
+          <div className="fb-client-note">
+            <InfoIcon />
+            <span>Disponibilidade sujeita a confirmação no momento da reserva.</span>
+          </div>
+
+          {agendaQuery.isError && <p role="alert">Não foi possível carregar a agenda.</p>}
+
+          <section className="fb-client-mobile-only" aria-label="Aulas do dia">
+            <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+              <div className="fb-client-days">
+                {days.map((date) => (
+                  <button
+                    key={date}
+                    type="button"
+                    className="fb-daychip"
+                    aria-label={formatDayLabel(date, weekdayOf(date))}
+                    aria-pressed={date === selectedDay}
+                    onClick={() => setSelectedDay(date)}
+                  >
+                    <span className="fb-daychip__weekday">{WEEKDAYS_SHORT[weekdayOf(date)]}</span>
+                    <span className="fb-daychip__day">{Number(date.slice(8))}</span>
+                  </button>
+                ))}
               </div>
-            ))}
-            {sortedHours.map((hour) => (
-              <div key={hour} style={{ display: "contents" }}>
-                <div className="fb-client-cell">
-                  <span className="fb-client-cell__hour">{formatHour(hour)}</span>
+
+              {agendaQuery.data && dayItems.length === 0 && (
+                <div className="fb-client-empty">Nenhuma aula agendada para este dia.</div>
+              )}
+
+              {dayItems.length > 0 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  <span style={{ fontSize: 13, fontWeight: 500, color: "rgba(255,255,255,0.5)" }}>
+                    {formatDayHeading(selectedDay, weekdayOf(selectedDay), today)}
+                  </span>
+                  {dayItems.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      className="fb-class-card"
+                      onClick={() => setOpenItem(item)}
+                    >
+                      <span className="fb-class-card__body">
+                        <span className="fb-class-card__title">{item.modality.name}</span>
+                        <span className="fb-class-card__time">
+                          {formatInstantHour(item.startsAt)} – {formatInstantHour(item.endsAt)}
+                          {item.instructor ? ` · Prof. ${item.instructor.fullName}` : ""}
+                        </span>
+                        <span
+                          className={`fb-class-card__availability fb-availability--${availabilityLevel(item.available, item.capacity)}`}
+                        >
+                          {availabilityText(item, "card")}
+                        </span>
+                        {item.myReservationId && (
+                          <span className="fb-sheet-badge fb-class-card__reserved">RESERVADA</span>
+                        )}
+                      </span>
+                      <ChevronIcon />
+                    </button>
+                  ))}
                 </div>
+              )}
+            </div>
+          </section>
+
+          <section className="fb-client-desktop-only" aria-label="Grade da semana">
+            {agendaQuery.data && agendaQuery.data.length === 0 ? (
+              <div className="fb-client-empty">Nenhuma aula agendada para esta semana.</div>
+            ) : (
+              <div className="fb-client-grid">
+                <div className="fb-client-cell fb-client-cell--head" />
                 {days.map((date) => (
                   <div
                     key={date}
-                    className={`fb-client-cell${date === today ? " fb-client-cell--today" : ""}`}
+                    className={`fb-client-cell fb-client-cell--head${date === today ? " fb-client-cell--today" : ""}`}
                   >
-                    {(byDay.get(date) ?? [])
-                      .filter((item) => utcToGymDateTime(item.startsAt).time === hour)
-                      .map((item) => (
-                        <button
-                          key={item.id}
-                          type="button"
-                          className="fb-client-chip"
-                          onClick={() => setOpenItem(item)}
-                        >
-                          <div className="fb-client-chip__title">{item.modality.name}</div>
-                          <div
-                            className={`fb-client-chip__sub fb-availability--${availabilityLevel(item.available, item.capacity)}`}
-                          >
-                            {availabilityText(item, "chip")}
-                          </div>
-                        </button>
-                      ))}
+                    <span className="fb-client-cell__weekday">
+                      {WEEKDAYS_SHORT[weekdayOf(date)]}
+                    </span>
+                    <span className="fb-client-cell__day">{Number(date.slice(8))}</span>
+                  </div>
+                ))}
+                {sortedHours.map((hour) => (
+                  <div key={hour} style={{ display: "contents" }}>
+                    <div className="fb-client-cell">
+                      <span className="fb-client-cell__hour">{formatHour(hour)}</span>
+                    </div>
+                    {days.map((date) => (
+                      <div
+                        key={date}
+                        className={`fb-client-cell${date === today ? " fb-client-cell--today" : ""}`}
+                      >
+                        {(byDay.get(date) ?? [])
+                          .filter((item) => utcToGymDateTime(item.startsAt).time === hour)
+                          .map((item) => (
+                            <button
+                              key={item.id}
+                              type="button"
+                              className="fb-client-chip"
+                              onClick={() => setOpenItem(item)}
+                            >
+                              <div className="fb-client-chip__title">{item.modality.name}</div>
+                              <div
+                                className={`fb-client-chip__sub fb-availability--${availabilityLevel(item.available, item.capacity)}`}
+                              >
+                                {availabilityText(item, "chip")}
+                              </div>
+                              {item.myReservationId && (
+                                <div className="fb-client-chip__reserved">Reservada</div>
+                              )}
+                            </button>
+                          ))}
+                      </div>
+                    ))}
                   </div>
                 ))}
               </div>
-            ))}
-          </div>
-        )}
-      </section>
+            )}
+          </section>
+        </>
+      )}
 
       {openItem && (
         <ClassDetailSheet
@@ -276,6 +312,7 @@ export function ClientAgendaPage() {
           onStartRescheduling={(next) => {
             setRescheduling(next);
             setOpenItem(null);
+            setTab("upcoming");
           }}
           onRescheduled={() => setRescheduling(null)}
           onClose={() => setOpenItem(null)}

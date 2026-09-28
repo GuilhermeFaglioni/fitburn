@@ -82,8 +82,12 @@ export function ClassDetailSheet({
   });
   const occurrence = detailQuery.data ?? item;
 
-  // Sucesso ou recusa: a tela nunca continua mostrando um estado desatualizado.
-  const refreshAgenda = () => queryClient.invalidateQueries({ queryKey: ["client-agenda"] });
+  // Sucesso ou recusa: agenda, detalhe e histórico nunca ficam desatualizados.
+  const refreshReservationViews = () =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["client-agenda"] }),
+      queryClient.invalidateQueries({ queryKey: ["my-reservations"] }),
+    ]);
 
   const reserveMutation = useMutation({
     mutationFn: () => createReservation(item.id, idempotencyKey),
@@ -95,7 +99,7 @@ export function ClassDetailSheet({
         error: asApiError(error, "Não foi possível concluir a reserva. Tente novamente."),
         retry: () => reserveMutation.mutate(),
       }),
-    onSettled: refreshAgenda,
+    onSettled: refreshReservationViews,
   });
 
   const cancelMutation = useMutation({
@@ -115,7 +119,7 @@ export function ClassDetailSheet({
       }),
     onSettled: () => {
       setConfirmingCancel(false);
-      return refreshAgenda();
+      return refreshReservationViews();
     },
   });
 
@@ -140,7 +144,7 @@ export function ClassDetailSheet({
             },
       );
     },
-    onSettled: refreshAgenda,
+    onSettled: refreshReservationViews,
   });
 
   const pending =

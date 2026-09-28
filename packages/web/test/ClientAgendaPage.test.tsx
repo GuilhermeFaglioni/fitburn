@@ -125,6 +125,26 @@ describe("ClientAgendaPage", () => {
     ).toBeInTheDocument();
   });
 
+  it("marca na agenda as aulas que já reservei", async () => {
+    server.use(
+      http.get("/api/agenda", () =>
+        HttpResponse.json([
+          item(TODAY, "07:00", { myReservationId: "res-1" }),
+          item(TODAY, "18:00"),
+        ]),
+      ),
+    );
+
+    renderPage();
+
+    const day = await screen.findByRole("region", { name: "Aulas do dia" });
+    const [reserved, open] = await within(day).findAllByRole("button", { name: /Prof\./ });
+    expect(reserved).toHaveTextContent("RESERVADA");
+    expect(open).not.toHaveTextContent("RESERVADA");
+    const grid = screen.getByRole("region", { name: "Grade da semana" });
+    expect(within(grid).getAllByText("Reservada")).toHaveLength(1);
+  });
+
   it("mostra estado vazio quando não há aulas no dia", async () => {
     server.use(http.get("/api/agenda", () => HttpResponse.json([])));
 

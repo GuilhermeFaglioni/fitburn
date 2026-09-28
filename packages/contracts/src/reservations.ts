@@ -36,6 +36,13 @@ export const rescheduleReservationRequestSchema = z.object({
 });
 export type RescheduleReservationRequest = z.infer<typeof rescheduleReservationRequestSchema>;
 
+/** Filtros de "minhas reservas": futuras (aula ainda não terminou) ou passadas, e o estado. */
+export const myReservationsQuerySchema = z.object({
+  when: z.enum(["upcoming", "past"]).default("upcoming"),
+  status: reservationStatusSchema.optional(),
+});
+export type MyReservationsQuery = z.infer<typeof myReservationsQuerySchema>;
+
 /** A aula de uma reserva — inclusive passada ou cancelada, ao contrário da agenda. */
 export const reservationOccurrenceSchema = z.object({
   id: z.string(),

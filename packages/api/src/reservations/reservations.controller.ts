@@ -1,17 +1,21 @@
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   HttpStatus,
   Param,
   Post,
+  Query,
   Req,
   UseGuards,
 } from "@nestjs/common";
 import {
   createReservationRequestSchema,
+  myReservationsQuerySchema,
   rescheduleReservationRequestSchema,
   type CreateReservationRequest,
+  type MyReservationsQuery,
   type ReservationDetail,
   type RescheduleReservationRequest,
 } from "@fitburn/contracts";
@@ -30,6 +34,14 @@ import { ReservationsService } from "./reservations.service.js";
 @UseGuards(JwtAuthGuard)
 export class ReservationsController {
   constructor(private readonly reservationsService: ReservationsService) {}
+
+  @Get()
+  listMine(
+    @Query(new ZodValidationPipe(myReservationsQuerySchema)) query: MyReservationsQuery,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<ReservationDetail[]> {
+    return this.reservationsService.listMine(req.authUser.sub, query);
+  }
 
   @Post()
   create(
