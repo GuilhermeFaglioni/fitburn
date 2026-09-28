@@ -305,7 +305,8 @@
   display: none;
 }
 
-/* Detalhe da aula (bottom sheet no mobile, cartão centralizado no desktop) */
+/* Detalhe da aula (ReservaDesktop/ReservaMobile.dc.html): cartão de 460px
+   centralizado no desktop, bottom sheet no mobile. */
 .fb-sheet-backdrop {
   position: fixed;
   inset: 0;
@@ -317,17 +318,53 @@
 }
 
 .fb-sheet {
-  width: 420px;
+  width: 460px;
   max-width: 100%;
   box-sizing: border-box;
   background: #1a1a1a;
   color: #ffffff;
-  border-radius: 16px;
-  padding: 20px 20px 28px;
+  border-radius: 5px;
+  padding: 28px;
   display: flex;
   flex-direction: column;
   gap: 18px;
-  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+}
+
+.fb-sheet__handle {
+  display: none;
+  width: 36px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.2);
+  align-self: center;
+}
+
+.fb-sheet__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.fb-sheet__heading {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fb-sheet__x {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .fb-sheet__title {
@@ -365,6 +402,85 @@
 .fb-sheet__divider {
   height: 1px;
   background: rgba(255, 255, 255, 0.08);
+}
+
+.fb-sheet__stack {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.fb-sheet__badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fb-sheet-btn {
+  width: 100%;
+  box-sizing: border-box;
+  border-radius: 5px;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.fb-sheet-btn--primary {
+  padding: 13px;
+  background: var(--color-primary-orange);
+  border: none;
+  font-size: 15px;
+}
+
+.fb-sheet-btn--ghost {
+  padding: 12px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  font-size: 14px;
+}
+
+.fb-sheet-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.fb-sheet-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--color-primary-orange);
+  background: rgba(237, 110, 52, 0.14);
+  padding: 5px 10px;
+  border-radius: 5px;
+}
+
+.fb-sheet-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 5px;
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.fb-sheet-alert svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.fb-sheet-alert--success {
+  background: rgba(237, 110, 52, 0.1);
+  border: 1px solid rgba(237, 110, 52, 0.35);
+  color: #ffffff;
+}
+
+.fb-sheet-alert--error {
+  background: rgba(194, 58, 31, 0.12);
+  border: 1px solid rgba(194, 58, 31, 0.5);
+  color: #ff9c88;
 }
 
 .fb-sheet__close {
@@ -438,6 +554,19 @@
   .fb-sheet {
     width: 100%;
     border-radius: 16px 16px 0 0;
-    padding-top: 12px;
+    padding: 12px 20px 28px;
+    box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.4);
+  }
+
+  .fb-sheet__handle {
+    display: block;
+  }
+
+  .fb-sheet-btn--primary {
+    padding: 14px;
+  }
+
+  .fb-sheet-btn--ghost {
+    padding: 13px;
   }
 }

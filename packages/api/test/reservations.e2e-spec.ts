@@ -1,0 +1,223 @@
+import type { INestApplication } from "@nestjs/common";
+import request from "supertest";
+import { cleanDatabase, testPrisma } from "./db-test-helper.js";
+import { createAccessProfile, createUser } from "./factories.js";
+import { loginAndGetAccessToken } from "./login-helper.js";
+import { createTestApp } from "./test-app.js";
+
+const PASSWORD = "SenhaForte123!";
+const HOUR = 60 * 60_000;
+
+describe("Reservas (HTTP)", () => {
+  let app: INestApplication;
+  let clientProfileId: string;
+
+  beforeAll(async () => {
+    app = await createTestApp();
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+
+  beforeEach(async () => {
+    await cleanDatabase();
+    const profile = await createAccessProfile({ name: "Cliente", isSystem: true });
+    clientProfileId = profile.id;
+  });
+
+  async function createClient(name: string, overrides: { status?: "ACTIVE" | "INACTIVE" } = {}) {
+    const user = await createUser({
+      email: `${name}@fitburn.local`,
+      password: PASSWORD,
+      profileId: clientProfileId,
+      fullName: name,
+    });
+    const token = await loginAndGetAccessToken(app, user.email, PASSWORD);
+    if (overrides.status) {
+      await testPrisma.user.update({ where: { id: user.id }, data: { status: overrides.status } });
+    }
+    return { user, token };
+  }
+
+  async function createOccurrence(
+    startsAt: Date,
+    overrides: { status?: "SCHEDULED" | "CANCELLED"; capacity?: number; name?: string } = {},
+  ) {
+    const name = overrides.name ?? "Spinning";
+    const modality = await testPrisma.modality.upsert({
+      where: { name },
+      update: {},
+      create: { name },
+    });
+    const template = await testPrisma.classTemplate.create({
+      data: { name, durationMinutes: 60, capacity: 12, modalityId: modality.id },
+    });
+    return testPrisma.classOccurrence.create({
+      data: {
+        templateId: template.id,
+        modalityId: modality.id,
+        name,
+        durationMinutes: 60,
+        capacity: overrides.capacity ?? 12,
+        status: overrides.status ?? "SCHEDULED",
+        startsAt,
+        endsAt: new Date(startsAt.getTime() + HOUR),
+      },
+    });
+  }
+
+  function reserve(token: string, occurrenceId: string) {
+    return request(app.getHttpServer())
+      .post("/api/reservations")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ occurrenceId });
+  }
+
+  function agendaItem(token: string, occurrenceId: string) {
+    return request(app.getHttpServer())
+      .get(`/api/agenda/${occurrenceId}`)
+      .set("Authorization", `Bearer ${token}`);
+  }
+
+  describe("reservar aula", () => {
+    it("confirma a reserva na hora e desconta a vaga da agenda", async () => {
+      const ana = await createClient("ana");
+      const bruno = await createClient("bruno");
+      const occurrence = await createOccurrence(new Date(Date.now() + 3 * HOUR), { capacity: 5 });
+
+      const response = await reserve(ana.token, occurrence.id);
+
+      expect(response.status).toBe(201);
+      expect(response.body).toMatchObject({
+        status: "CONFIRMED",
+        cancelledAt: null,
+        occurrence: { id: occurrence.id, name: "Spinning", modality: { name: "Spinning" } },
+      });
+
+      const mine = await agendaItem(ana.token, occurrence.id);
+      expect(mine.body).toMatchObject({ available: 4, myReservationId: response.body.id });
+      const theirs = await agendaItem(bruno.token, occurrence.id);
+      expect(theirs.body).toMatchObject({ available: 4, myReservationId: null });
+    });
+
+    it("a lista da agenda também desconta as reservas confirmadas", async () => {
+      const ana = await createClient("ana");
+      const startsAt = new Date(Date.now() + 3 * HOUR);
+      const occurrence = await createOccurrence(startsAt, { capacity: 5 });
+      await reserve(ana.token, occurrence.id);
+
+      const day = startsAt.toISOString().slice(0, 10);
+      const from = new Date(startsAt.getTime() - 48 * HOUR).toISOString().slice(0, 10);
+      const response = await request(app.getHttpServer())
+        .get(`/api/agenda?from=${from}&to=${day}`)
+        .set("Authorization", `Bearer ${ana.token}`);
+
+      expect(response.body).toEqual([
+        expect.objectContaining({
+          id: occurrence.id,
+          available: 4,
+          myReservationId: expect.any(String),
+        }),
+      ]);
+    });
+
+    it("recusa aula cheia com CLASS_FULL e as vagas atuais", async () => {
+      const ana = await createClient("ana");
+      const bruno = await createClient("bruno");
+      const occurrence = await createOccurrence(new Date(Date.now() + 3 * HOUR), { capacity: 1 });
+      await reserve(ana.token, occurrence.id);
+
+      const response = await reserve(bruno.token, occurrence.id);
+
+      expect(response.status).toBe(409);
+      expect(response.body).toMatchObject({
+        code: "CLASS_FULL",
+        details: { currentAvailableSpots: 0 },
+      });
+    });
+
+    it("recusa uma segunda reserva do mesmo cliente na mesma aula com DUPLICATE_RESERVATION", async () => {
+      const ana = await createClient("ana");
+      const occurrence = await createOccurrence(new Date(Date.now() + 3 * HOUR), { capacity: 1 });
+      await reserve(ana.token, occurrence.id);
+
+      const response = await reserve(ana.token, occurrence.id);
+
+      expect(response.status).toBe(409);
+      expect(response.body.code).toBe("DUPLICATE_RESERVATION");
+      expect(await testPrisma.reservation.count()).toBe(1);
+    });
+
+    it("recusa aula cancelada ou já iniciada com OCCURRENCE_NOT_BOOKABLE", async () => {
+      const ana = await createClient("ana");
+      const cancelled = await createOccurrence(new Date(Date.now() + 3 * HOUR), {
+        status: "CANCELLED",
+      });
+      const started = await createOccurrence(new Date(Date.now() - 10 * 60_000), {
+        name: "Yoga",
+      });
+
+      const cancelledResponse = await reserve(ana.token, cancelled.id);
+      const startedResponse = await reserve(ana.token, started.id);
+
+      expect(cancelledResponse.status).toBe(409);
+      expect(cancelledResponse.body.code).toBe("OCCURRENCE_NOT_BOOKABLE");
+      expect(startedResponse.status).toBe(409);
+      expect(startedResponse.body.code).toBe("OCCURRENCE_NOT_BOOKABLE");
+      expect(await testPrisma.reservation.count()).toBe(0);
+    });
+
+    it("recusa cliente desativado", async () => {
+      const ana = await createClient("ana", { status: "INACTIVE" });
+      const occurrence = await createOccurrence(new Date(Date.now() + 3 * HOUR));
+
+      const response = await reserve(ana.token, occurrence.id);
+
+      expect(response.status).toBe(403);
+      expect(response.body.code).toBe("USER_INACTIVE");
+      expect(await testPrisma.reservation.count()).toBe(0);
+    });
+
+    it("devolve 404 para aula inexistente e 400 sem occurrenceId", async () => {
+      const ana = await createClient("ana");
+
+      const missing = await reserve(ana.token, "00000000-0000-0000-0000-000000000000");
+      const invalid = await request(app.getHttpServer())
+        .post("/api/reservations")
+        .set("Authorization", `Bearer ${ana.token}`)
+        .send({});
+
+      expect(missing.status).toBe(404);
+      expect(invalid.status).toBe(400);
+    });
+
+    it("exige login", async () => {
+      const response = await request(app.getHttpServer())
+        .post("/api/reservations")
+        .send({ occurrenceId: "x" });
+
+      expect(response.status).toBe(401);
+    });
+
+    it("N clientes disputando a última vaga ao mesmo tempo: exatamente um consegue", async () => {
+      const clients = await Promise.all(
+        ["ana", "bruno", "carla", "davi", "elisa", "fabio"].map((name) => createClient(name)),
+      );
+      const occurrence = await createOccurrence(new Date(Date.now() + 3 * HOUR), { capacity: 1 });
+
+      const responses = await Promise.all(
+        clients.map((client) => reserve(client.token, occurrence.id)),
+      );
+
+      const statuses = responses.map((response) => response.status).sort();
+      expect(statuses).toEqual([201, 409, 409, 409, 409, 409]);
+      expect(
+        responses.filter((response) => response.status === 409).map((r) => r.body.code),
+      ).toEqual(Array(5).fill("CLASS_FULL"));
+      expect(await testPrisma.reservation.count({ where: { occurrenceId: occurrence.id } })).toBe(
+        1,
+      );
+    });
+  });
+});

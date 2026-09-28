@@ -9,6 +9,7 @@ import {
   ErrorStatus,
   gymDateTimeToUtc,
   OccurrenceStatus,
+  ReservationStatus,
   PermissionScope,
   RECURRENCE_MAX_MONTHS,
   type CreateOccurrenceRequest,
@@ -29,6 +30,7 @@ import { InstructorsService } from "../catalog/instructors.service.js";
 const OCCURRENCE_INCLUDE = {
   modality: { select: { id: true, name: true } },
   instructor: { select: { id: true, fullName: true } },
+  _count: { select: { reservations: { where: { status: ReservationStatus.CONFIRMED } } } },
 } satisfies Prisma.ClassOccurrenceInclude;
 
 type OccurrenceWithRelations = Prisma.ClassOccurrenceGetPayload<{
@@ -373,7 +375,7 @@ export class OccurrencesService {
       endsAt: occurrence.endsAt.toISOString(),
       durationMinutes: occurrence.durationMinutes,
       capacity: occurrence.capacity,
-      bookedCount: 0,
+      bookedCount: occurrence._count.reservations,
       status: occurrence.status,
     };
   }

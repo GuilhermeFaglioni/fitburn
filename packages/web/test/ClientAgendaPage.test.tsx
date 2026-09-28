@@ -39,6 +39,7 @@ function item(
     durationMinutes: 60,
     capacity: 12,
     available: 9,
+    myReservationId: null,
     ...overrides,
   };
 }
@@ -154,7 +155,14 @@ describe("ClientAgendaPage", () => {
     expect(requested[0]).toBe(WEEK_START);
   });
 
-  it("abre o detalhe da aula com a descrição, sem ação de reserva", async () => {
+  async function openDetail(time: string) {
+    const user = userEvent.setup();
+    const day = await screen.findByRole("region", { name: "Aulas do dia" });
+    await user.click(await within(day).findByRole("button", { name: new RegExp(time) }));
+    return { user, sheet: screen.getByRole("dialog", { name: "Treino Funcional" }) };
+  }
+
+  it("abre o detalhe da aula com a descrição e a disponibilidade", async () => {
     const occurrence = item(TODAY, "18:00", { available: 3 });
     server.use(
       http.get("/api/agenda", () => HttpResponse.json([occurrence])),
@@ -162,15 +170,145 @@ describe("ClientAgendaPage", () => {
     );
 
     renderPage();
-    const user = userEvent.setup();
+    const { sheet } = await openDetail("18h00");
 
-    const day = await screen.findByRole("region", { name: "Aulas do dia" });
-    await user.click(await within(day).findByRole("button", { name: /18h00/ }));
-
-    const sheet = screen.getByRole("dialog", { name: "Treino Funcional" });
     expect(sheet).toHaveTextContent("Circuito com estímulos de força e resistência.");
     expect(sheet).toHaveTextContent("Duração de 60 minutos");
     expect(sheet).toHaveTextContent("3 de 12 vagas restantes");
+    expect(within(sheet).getByRole("button", { name: "Reservar" })).toBeEnabled();
+  });
+
+  it("reserva a aula e confirma na hora, atualizando a agenda", async () => {
+    const occurrence = item(TODAY, "18:00", { available: 3 });
+    let agendaRequests = 0;
+    let reserved = false;
+    const current = () =>
+      reserved ? { ...occurrence, available: 2, myReservationId: "res-1" } : occurrence;
+    server.use(
+      http.get("/api/agenda", () => {
+        agendaRequests += 1;
+        return HttpResponse.json([current()]);
+      }),
+      http.get("/api/agenda/:id", () => HttpResponse.json(current())),
+      http.post("/api/reservations", async ({ request }) => {
+        expect(await request.json()).toEqual({ occurrenceId: occurrence.id });
+        reserved = true;
+        return HttpResponse.json(reservationOf(occurrence), { status: 201 });
+      }),
+    );
+
+    renderPage();
+    const { user, sheet } = await openDetail("18h00");
+    await user.click(within(sheet).getByRole("button", { name: "Reservar" }));
+
+    expect(
+      await within(sheet).findByText("Reserva confirmada com sucesso. Bom treino!"),
+    ).toBeInTheDocument();
+    await waitFor(() => expect(agendaRequests).toBeGreaterThan(1));
+    expect(await within(sheet).findByText("2 de 12 vagas restantes")).toBeInTheDocument();
+
+    await user.click(within(sheet).getByRole("button", { name: "Ver na agenda" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("aula lotada na confirmação: mostra o motivo e a disponibilidade atualizada", async () => {
+    const occurrence = item(TODAY, "18:00", { available: 1 });
+    let full = false;
+    const current = () => (full ? { ...occurrence, available: 0 } : occurrence);
+    server.use(
+      http.get("/api/agenda", () => HttpResponse.json([current()])),
+      http.get("/api/agenda/:id", () => HttpResponse.json(current())),
+      http.post("/api/reservations", () => {
+        full = true;
+        return HttpResponse.json(
+          {
+            code: "CLASS_FULL",
+            message: "Essa aula ficou lotada enquanto você confirmava. Escolha outro horário.",
+            details: { currentAvailableSpots: 0 },
+          },
+          { status: 409 },
+        );
+      }),
+    );
+
+    renderPage();
+    const { user, sheet } = await openDetail("18h00");
+    await user.click(within(sheet).getByRole("button", { name: "Reservar" }));
+
+    expect(await within(sheet).findByRole("alert")).toHaveTextContent(
+      "Essa aula ficou lotada enquanto você confirmava. Escolha outro horário.",
+    );
+    expect(await within(sheet).findByText("0 de 12 vagas restantes")).toBeInTheDocument();
+    const day = screen.getByRole("region", { name: "Aulas do dia" });
+    expect(await within(day).findByText("0/12 vagas · lotada")).toBeInTheDocument();
+    expect(within(sheet).queryByRole("button", { name: "Reservar" })).not.toBeInTheDocument();
+  });
+
+  it("mostra a mensagem específica de cada recusa", async () => {
+    const occurrence = item(TODAY, "18:00");
+    let refusal = {
+      code: "DUPLICATE_RESERVATION",
+      message: "Você já reservou esta aula. Não é possível reservar duas vezes.",
+    };
+    server.use(
+      http.get("/api/agenda", () => HttpResponse.json([occurrence])),
+      http.get("/api/agenda/:id", () => HttpResponse.json(occurrence)),
+      http.post("/api/reservations", () => HttpResponse.json(refusal, { status: 409 })),
+    );
+
+    renderPage();
+    const { user, sheet } = await openDetail("18h00");
+    await user.click(within(sheet).getByRole("button", { name: "Reservar" }));
+    expect(await within(sheet).findByRole("alert")).toHaveTextContent(
+      "Você já reservou esta aula. Não é possível reservar duas vezes.",
+    );
+    expect(within(sheet).getByRole("button", { name: "Ver minha reserva" })).toBeInTheDocument();
+
+    await user.click(within(sheet).getAllByRole("button", { name: "Fechar" })[0]);
+    refusal = {
+      code: "OCCURRENCE_NOT_BOOKABLE",
+      message: "Esta aula não pode mais ser reservada: foi cancelada ou já começou.",
+    };
+    const reopened = await openDetail("18h00");
+    await user.click(within(reopened.sheet).getByRole("button", { name: "Reservar" }));
+    expect(await within(reopened.sheet).findByRole("alert")).toHaveTextContent(
+      "Esta aula não pode mais ser reservada: foi cancelada ou já começou.",
+    );
+    expect(
+      within(reopened.sheet).getByRole("button", { name: "Ver outros horários" }),
+    ).toBeInTheDocument();
+  });
+
+  it("aula já reservada mostra RESERVA CONFIRMADA em vez de Reservar", async () => {
+    const occurrence = item(TODAY, "18:00", { myReservationId: "res-1" });
+    server.use(
+      http.get("/api/agenda", () => HttpResponse.json([occurrence])),
+      http.get("/api/agenda/:id", () => HttpResponse.json(occurrence)),
+    );
+
+    renderPage();
+    const { sheet } = await openDetail("18h00");
+
+    expect(within(sheet).getByText("RESERVA CONFIRMADA")).toBeInTheDocument();
     expect(within(sheet).queryByRole("button", { name: "Reservar" })).not.toBeInTheDocument();
   });
 });
+
+function reservationOf(occurrence: ClientAgendaItem) {
+  return {
+    id: "res-1",
+    status: "CONFIRMED",
+    occurrence: {
+      id: occurrence.id,
+      name: occurrence.name,
+      modality: occurrence.modality,
+      instructor: occurrence.instructor,
+      startsAt: occurrence.startsAt,
+      endsAt: occurrence.endsAt,
+      durationMinutes: occurrence.durationMinutes,
+      status: "SCHEDULED",
+    },
+    createdAt: new Date().toISOString(),
+    cancelledAt: null,
+  };
+}

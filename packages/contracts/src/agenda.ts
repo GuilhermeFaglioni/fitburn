@@ -11,7 +11,7 @@ export const OccurrenceStatus = {
   CANCELLED: "CANCELLED",
 } as const;
 export type OccurrenceStatusName = (typeof OccurrenceStatus)[keyof typeof OccurrenceStatus];
-const occurrenceStatusEnum = z.enum(
+export const occurrenceStatusSchema = z.enum(
   Object.values(OccurrenceStatus) as [OccurrenceStatusName, ...OccurrenceStatusName[]],
 );
 
@@ -75,9 +75,9 @@ export const occurrenceDetailSchema = z.object({
   endsAt: z.string(),
   durationMinutes: z.number().int(),
   capacity: z.number().int(),
-  /** Reservas confirmadas. Até a Fase 3 (reservas) é sempre 0. */
+  /** Reservas confirmadas. */
   bookedCount: z.number().int(),
-  status: occurrenceStatusEnum,
+  status: occurrenceStatusSchema,
 });
 export type OccurrenceDetail = z.infer<typeof occurrenceDetailSchema>;
 
@@ -120,6 +120,8 @@ export const clientAgendaItemSchema = z.object({
   capacity: z.number().int(),
   /** Capacidade − reservas confirmadas. Informativo: pode mudar até a reserva. */
   available: z.number().int(),
+  /** Minha reserva confirmada nesta aula, se houver. */
+  myReservationId: z.string().nullable(),
 });
 export type ClientAgendaItem = z.infer<typeof clientAgendaItemSchema>;
 
