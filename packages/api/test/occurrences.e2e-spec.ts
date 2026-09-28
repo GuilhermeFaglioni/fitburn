@@ -323,6 +323,191 @@ describe("Ocorrências avulsas e agenda administrativa (HTTP)", () => {
     });
   });
 
+  describe("Manutenção de ocorrências", () => {
+    async function setup() {
+      const token = await loginAsAdmin();
+      const titular = await createStaffUser("rafael@fitburn.local", "Rafael Andrade");
+      const substituta = await createStaffUser("camila@fitburn.local", "Camila Rocha");
+      const template = await createTemplate(token, {
+        durationMinutes: 60,
+        defaultInstructorId: titular.id,
+      });
+      const create = (date: string, startTime: string) =>
+        api(token).post("/api/occurrences").send({ templateId: template.id, date, startTime });
+      return { token, titular, substituta, template, create };
+    }
+
+    it("edita horário, duração e capacidade", async () => {
+      const { token, create } = await setup();
+      const occurrence = await create("2026-10-05", "18:00");
+
+      const response = await api(token)
+        .patch(`/api/occurrences/${occurrence.body.id}`)
+        .send({ startTime: "19:00", durationMinutes: 45, capacity: 8 });
+
+      expect(response.status).toBe(200);
+      expect(response.body).toMatchObject({
+        startsAt: "2026-10-05T22:00:00.000Z",
+        endsAt: "2026-10-05T22:45:00.000Z",
+        durationMinutes: 45,
+        capacity: 8,
+      });
+    });
+
+    it("recusa edição que sobrepõe outra aula e aceita mover dentro do próprio horário", async () => {
+      const { token, create } = await setup();
+      const first = await create("2026-10-05", "18:00");
+      const second = await create("2026-10-05", "19:00");
+
+      const overlapping = await api(token)
+        .patch(`/api/occurrences/${second.body.id}`)
+        .send({ startTime: "18:30" });
+      const selfShift = await api(token)
+        .patch(`/api/occurrences/${first.body.id}`)
+        .send({ durationMinutes: 30 });
+
+      expect(overlapping.status).toBe(409);
+      expect(overlapping.body.code).toBe("OCCURRENCE_OVERLAP");
+      expect(overlapping.body.details.conflicts.map((c: { id: string }) => c.id)).toEqual([
+        first.body.id,
+      ]);
+      expect(selfShift.status).toBe(200);
+    });
+
+    it("substitui o professor de uma única ocorrência da série", async () => {
+      const { token, substituta, template } = await setup();
+      const series = await api(token)
+        .post("/api/occurrences/recurring")
+        .send({
+          templateId: template.id,
+          weekdays: [1],
+          startTime: "07:00",
+          startDate: "2026-10-05",
+          endDate: "2026-10-19",
+        });
+      const [first, second, third] = series.body.occurrences as Array<{ id: string }>;
+
+      const response = await api(token)
+        .patch(`/api/occurrences/${second.id}`)
+        .send({ instructorId: substituta.id });
+
+      expect(response.status).toBe(200);
+      const list = await api(token).get("/api/occurrences?from=2026-10-05&to=2026-10-19");
+      const instructors = Object.fromEntries(
+        list.body.map((o: { id: string; instructor: { fullName: string } }) => [
+          o.id,
+          o.instructor.fullName,
+        ]),
+      );
+      expect(instructors).toEqual({
+        [first.id]: "Rafael Andrade",
+        [second.id]: "Camila Rocha",
+        [third.id]: "Rafael Andrade",
+      });
+    });
+
+    it("cancelar mantém no histórico e libera o horário", async () => {
+      const { token, create } = await setup();
+      const occurrence = await create("2026-10-05", "18:00");
+
+      const cancelled = await api(token).post(`/api/occurrences/${occurrence.body.id}/cancel`);
+      const replacement = await create("2026-10-05", "18:00");
+
+      expect(cancelled.status).toBe(201);
+      expect(cancelled.body.status).toBe("CANCELLED");
+      expect(replacement.status).toBe(201);
+      const list = await api(token).get("/api/occurrences?from=2026-10-05&to=2026-10-05");
+      expect(list.body.map((o: { status: string }) => o.status)).toEqual([
+        "CANCELLED",
+        "SCHEDULED",
+      ]);
+    });
+
+    it("não edita nem cancela de novo uma ocorrência cancelada", async () => {
+      const { token, create } = await setup();
+      const occurrence = await create("2026-10-05", "18:00");
+      await api(token).post(`/api/occurrences/${occurrence.body.id}/cancel`);
+
+      const edit = await api(token)
+        .patch(`/api/occurrences/${occurrence.body.id}`)
+        .send({ capacity: 5 });
+      const cancelAgain = await api(token).post(`/api/occurrences/${occurrence.body.id}/cancel`);
+
+      expect(edit.status).toBe(422);
+      expect(edit.body.code).toBe("OCCURRENCE_CANCELLED");
+      expect(cancelAgain.status).toBe(422);
+    });
+
+    it("exclui uma ocorrência", async () => {
+      const { token, create } = await setup();
+      const occurrence = await create("2026-10-05", "18:00");
+
+      const response = await api(token).delete(`/api/occurrences/${occurrence.body.id}`);
+
+      expect(response.status).toBe(204);
+      expect(await testPrisma.classOccurrence.count()).toBe(0);
+    });
+
+    it("devolve 404 para ocorrência inexistente", async () => {
+      const token = await loginAsAdmin();
+
+      const response = await api(token).patch("/api/occurrences/nao-existe").send({ capacity: 5 });
+
+      expect(response.status).toBe(404);
+    });
+
+    it("editar, cancelar e excluir exigem EDIT e DELETE em ocorrências", async () => {
+      const { create } = await setup();
+      const occurrence = await create("2026-10-05", "18:00");
+      const profile = await createAccessProfile({ name: "Recepção" });
+      await grantModuleAccess({
+        profileId: profile.id,
+        module: "OCORRENCIAS",
+        actions: ["VIEW"],
+        scope: "ALL",
+      });
+      const user = await createUser({
+        email: "recepcao@fitburn.local",
+        password: PASSWORD,
+        profileId: profile.id,
+      });
+      const token = await loginAndGetAccessToken(app, user.email, PASSWORD);
+
+      const edit = await api(token)
+        .patch(`/api/occurrences/${occurrence.body.id}`)
+        .send({ capacity: 5 });
+      const cancel = await api(token).post(`/api/occurrences/${occurrence.body.id}/cancel`);
+      const remove = await api(token).delete(`/api/occurrences/${occurrence.body.id}`);
+
+      expect([edit.status, cancel.status, remove.status]).toEqual([403, 403, 403]);
+    });
+
+    it("escopo 'aulas atribuídas' não altera aula de outro professor", async () => {
+      const { create } = await setup();
+      const occurrence = await create("2026-10-05", "18:00"); // professor: Rafael (titular)
+      const profile = await createAccessProfile({ name: "Monitor" });
+      await grantModuleAccess({
+        profileId: profile.id,
+        module: "OCORRENCIAS",
+        actions: ["VIEW", "EDIT"],
+        scope: "ASSIGNED_CLASSES",
+      });
+      const monitor = await createUser({
+        email: "monitor@fitburn.local",
+        password: PASSWORD,
+        profileId: profile.id,
+      });
+      const token = await loginAndGetAccessToken(app, monitor.email, PASSWORD);
+
+      const response = await api(token)
+        .patch(`/api/occurrences/${occurrence.body.id}`)
+        .send({ capacity: 5 });
+
+      expect(response.status).toBe(403);
+      expect(response.body.code).toBe("OUT_OF_SCOPE");
+    });
+  });
+
   describe("Listagem e opções", () => {
     it("lista por intervalo de dias locais, incluindo canceladas", async () => {
       const token = await loginAsAdmin();

@@ -1,5 +1,10 @@
 import { z } from "zod";
-import { capacitySchema, classTemplateDetailSchema, instructorSummarySchema } from "./catalog.js";
+import {
+  capacitySchema,
+  classTemplateDetailSchema,
+  durationMinutesSchema,
+  instructorSummarySchema,
+} from "./catalog.js";
 
 export const OccurrenceStatus = {
   SCHEDULED: "SCHEDULED",
@@ -30,6 +35,16 @@ export const createOccurrenceRequestSchema = z.object({
   capacity: capacitySchema.optional(),
 });
 export type CreateOccurrenceRequest = z.infer<typeof createOccurrenceRequestSchema>;
+
+export const updateOccurrenceRequestSchema = z.object({
+  date: localDateSchema.optional(),
+  startTime: localTimeSchema.optional(),
+  durationMinutes: durationMinutesSchema.optional(),
+  capacity: capacitySchema.optional(),
+  /** Substituição do professor só nesta ocorrência; null = sem professor. */
+  instructorId: z.string().min(1).nullable().optional(),
+});
+export type UpdateOccurrenceRequest = z.infer<typeof updateOccurrenceRequestSchema>;
 
 /** Horizonte máximo de uma criação recorrente. */
 export const RECURRENCE_MAX_MONTHS = 6;

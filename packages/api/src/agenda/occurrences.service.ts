@@ -18,6 +18,8 @@ import {
   type OccurrenceFormOptions,
   type PermissionScopeName,
   type RecurringOccurrencesResult,
+  type UpdateOccurrenceRequest,
+  utcToGymDateTime,
 } from "@fitburn/contracts";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { DomainError } from "../common/errors/domain-error.js";
@@ -100,6 +102,95 @@ export class OccurrencesService {
       }),
     );
     return this.toDetail(occurrence);
+  }
+
+  async update(
+    id: string,
+    input: UpdateOccurrenceRequest,
+    requester: OccurrenceRequester,
+  ): Promise<OccurrenceDetail> {
+    const current = await this.findScheduledInScope(id, requester);
+
+    const instructorId =
+      input.instructorId === undefined ? current.instructorId : input.instructorId;
+    if (instructorId && instructorId !== current.instructorId) {
+      await this.instructors.assertIsInstructor(instructorId);
+    }
+    this.assertInScope(instructorId, requester);
+
+    const local = utcToGymDateTime(current.startsAt);
+    const durationMinutes = input.durationMinutes ?? current.durationMinutes;
+    const interval = intervalAt(
+      input.date ?? local.date,
+      input.startTime ?? local.time,
+      durationMinutes,
+    );
+    await this.assertNoOverlap([interval], id);
+
+    // Escrita condicional: se a aula for cancelada entre a leitura e a
+    // escrita, nada é alterado (não se edita o histórico).
+    const { count } = await this.withOverlapTranslation([interval], () =>
+      this.prisma.classOccurrence.updateMany({
+        where: { id, status: OccurrenceStatus.SCHEDULED },
+        data: {
+          ...interval,
+          durationMinutes,
+          instructorId,
+          ...(input.capacity !== undefined ? { capacity: input.capacity } : {}),
+        },
+      }),
+    );
+    if (count === 0) await this.findScheduledInScope(id, requester);
+    return this.detailById(id);
+  }
+
+  /** Sai da agenda do cliente, continua no histórico e libera o horário. */
+  async cancel(id: string, requester: OccurrenceRequester): Promise<OccurrenceDetail> {
+    await this.findScheduledInScope(id, requester);
+    const { count } = await this.prisma.classOccurrence.updateMany({
+      where: { id, status: OccurrenceStatus.SCHEDULED },
+      data: { status: OccurrenceStatus.CANCELLED },
+    });
+    if (count === 0) await this.findScheduledInScope(id, requester);
+    return this.detailById(id);
+  }
+
+  async delete(id: string, requester: OccurrenceRequester): Promise<void> {
+    await this.findInScope(id, requester);
+    const { count } = await this.prisma.classOccurrence.deleteMany({ where: { id } });
+    if (count === 0) throw this.notFound();
+  }
+
+  private async detailById(id: string): Promise<OccurrenceDetail> {
+    const occurrence = await this.prisma.classOccurrence.findUnique({
+      where: { id },
+      include: OCCURRENCE_INCLUDE,
+    });
+    if (!occurrence) throw this.notFound();
+    return this.toDetail(occurrence);
+  }
+
+  private notFound(): DomainError {
+    return new DomainError(ErrorCode.NOT_FOUND, "Aula não encontrada.", ErrorStatus.NOT_FOUND);
+  }
+
+  private async findInScope(id: string, requester: OccurrenceRequester) {
+    const occurrence = await this.prisma.classOccurrence.findUnique({ where: { id } });
+    if (!occurrence) throw this.notFound();
+    this.assertInScope(occurrence.instructorId, requester);
+    return occurrence;
+  }
+
+  private async findScheduledInScope(id: string, requester: OccurrenceRequester) {
+    const occurrence = await this.findInScope(id, requester);
+    if (occurrence.status === OccurrenceStatus.CANCELLED) {
+      throw new DomainError(
+        ErrorCode.OCCURRENCE_CANCELLED,
+        "Esta aula foi cancelada e não pode ser alterada.",
+        ErrorStatus.UNPROCESSABLE,
+      );
+    }
+    return occurrence;
   }
 
   /**

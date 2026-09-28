@@ -8,6 +8,7 @@ import {
   type OccurrenceDetail,
   type OccurrenceFormOptions,
   type RecurringOccurrencesResult,
+  type UpdateOccurrenceRequest,
 } from "@fitburn/contracts";
 import { authFetch } from "../auth/authFetch";
 import { parseOrThrow } from "../auth/api";
@@ -41,4 +42,26 @@ export async function createRecurringOccurrences(
     body: JSON.stringify(input),
   });
   return recurringOccurrencesResultSchema.parse(await parseOrThrow(response));
+}
+
+export async function updateOccurrence(
+  id: string,
+  input: UpdateOccurrenceRequest,
+): Promise<OccurrenceDetail> {
+  const response = await authFetch(`/api/occurrences/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  return occurrenceDetailSchema.parse(await parseOrThrow(response));
+}
+
+export async function cancelOccurrence(id: string): Promise<OccurrenceDetail> {
+  const response = await authFetch(`/api/occurrences/${id}/cancel`, { method: "POST" });
+  return occurrenceDetailSchema.parse(await parseOrThrow(response));
+}
+
+export async function deleteOccurrence(id: string): Promise<void> {
+  const response = await authFetch(`/api/occurrences/${id}`, { method: "DELETE" });
+  await parseOrThrow(response);
 }

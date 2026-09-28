@@ -15,9 +15,13 @@ import { BlockedAction } from "../components/BlockedAction";
 import { useAuth } from "../lib/auth/AuthContext";
 import { listOccurrences } from "../lib/agenda/api";
 import { formatDayLabel, formatInstantHour, formatWeekRange } from "../lib/agenda/format";
+import { OccurrenceEditModal } from "./agenda/OccurrenceEditModal";
 import { OccurrenceFormModal } from "./agenda/OccurrenceFormModal";
 
-type ModalState = { mode: "closed" } | { mode: "create"; date?: string };
+type ModalState =
+  | { mode: "closed" }
+  | { mode: "create"; date?: string }
+  | { mode: "edit"; occurrence: OccurrenceDetail };
 
 function chipClass(occurrence: OccurrenceDetail): string {
   if (occurrence.status === OccurrenceStatus.CANCELLED) return "fb-chip-cls fb-chip-cls--cancelled";
@@ -101,7 +105,12 @@ export function AgendaAdminPage() {
             <div key={date} className="fb-day-col">
               <div className={`fb-day-head${isToday ? " fb-day-head--today" : ""}`}>{label}</div>
               {(occurrencesByDay.get(date) ?? []).map((occurrence) => (
-                <button key={occurrence.id} type="button" className={chipClass(occurrence)}>
+                <button
+                  key={occurrence.id}
+                  type="button"
+                  className={chipClass(occurrence)}
+                  onClick={() => setModal({ mode: "edit", occurrence })}
+                >
                   <span className="fb-chip-cls__hour">
                     {formatInstantHour(occurrence.startsAt)}
                   </span>
@@ -125,6 +134,17 @@ export function AgendaAdminPage() {
           );
         })}
       </div>
+
+      {modal.mode === "edit" && (
+        <OccurrenceEditModal
+          occurrence={modal.occurrence}
+          onClose={() => setModal({ mode: "closed" })}
+          onChanged={() => {
+            setModal({ mode: "closed" });
+            void refresh();
+          }}
+        />
+      )}
 
       {modal.mode === "create" && (
         <OccurrenceFormModal

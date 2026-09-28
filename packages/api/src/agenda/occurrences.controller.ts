@@ -1,4 +1,17 @@
-import { Body, Controller, Get, Post, Query, Req, UseGuards } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from "@nestjs/common";
 import {
   createOccurrenceRequestSchema,
   createRecurringOccurrencesRequestSchema,
@@ -11,6 +24,8 @@ import {
   type OccurrenceDetail,
   type OccurrenceFormOptions,
   type RecurringOccurrencesResult,
+  type UpdateOccurrenceRequest,
+  updateOccurrenceRequestSchema,
 } from "@fitburn/contracts";
 import { JwtAuthGuard, type AuthenticatedRequest } from "../auth/jwt-auth.guard.js";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe.js";
@@ -55,6 +70,29 @@ export class OccurrencesController {
     @Req() req: AuthenticatedRequest,
   ): Promise<RecurringOccurrencesResult> {
     return this.occurrencesService.createRecurring(body, requesterOf(req));
+  }
+
+  @RequirePermission(Module.OCORRENCIAS, PermissionAction.EDIT)
+  @Patch(":id")
+  update(
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(updateOccurrenceRequestSchema)) body: UpdateOccurrenceRequest,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<OccurrenceDetail> {
+    return this.occurrencesService.update(id, body, requesterOf(req));
+  }
+
+  @RequirePermission(Module.OCORRENCIAS, PermissionAction.EDIT)
+  @Post(":id/cancel")
+  cancel(@Param("id") id: string, @Req() req: AuthenticatedRequest): Promise<OccurrenceDetail> {
+    return this.occurrencesService.cancel(id, requesterOf(req));
+  }
+
+  @RequirePermission(Module.OCORRENCIAS, PermissionAction.DELETE)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Delete(":id")
+  async remove(@Param("id") id: string, @Req() req: AuthenticatedRequest): Promise<void> {
+    await this.occurrencesService.delete(id, requesterOf(req));
   }
 }
 

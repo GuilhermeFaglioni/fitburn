@@ -268,4 +268,66 @@ describe("AgendaAdminPage", () => {
       ]);
     });
   });
+
+  describe("manutenção", () => {
+    it("cancela uma aula depois de confirmar", async () => {
+      const occurrence = occurrenceAt(WEDNESDAY, "18:00");
+      let cancelledId: string | null = null;
+      server.use(
+        http.get("/api/occurrences", () =>
+          HttpResponse.json([cancelledId ? { ...occurrence, status: "CANCELLED" } : occurrence]),
+        ),
+        http.post("/api/occurrences/:id/cancel", ({ params }) => {
+          cancelledId = params.id as string;
+          return HttpResponse.json({ ...occurrence, status: "CANCELLED" }, { status: 201 });
+        }),
+      );
+
+      renderPage();
+      const user = userEvent.setup();
+
+      await user.click(await screen.findByRole("button", { name: /18h00.*Treino Funcional/ }));
+      const dialog = screen.getByRole("dialog", { name: "Editar aula" });
+      await user.click(within(dialog).getByRole("button", { name: "Cancelar aula" }));
+
+      const confirm = screen.getByRole("dialog", { name: "Cancelar esta aula?" });
+      expect(confirm).toHaveTextContent("sai da agenda dos clientes e continua no histórico");
+      await user.click(within(confirm).getByRole("button", { name: "Confirmar cancelamento" }));
+
+      await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+      expect(cancelledId).toBe(occurrence.id);
+      expect(await screen.findByText("Cancelada")).toBeInTheDocument();
+    });
+
+    it("substitui o professor só desta aula", async () => {
+      const occurrence = occurrenceAt(WEDNESDAY, "18:00");
+      let sentBody: Record<string, unknown> | null = null;
+      server.use(
+        http.get("/api/occurrences", () => HttpResponse.json([occurrence])),
+        http.patch("/api/occurrences/:id", async ({ request }) => {
+          sentBody = (await request.json()) as Record<string, unknown>;
+          return HttpResponse.json({
+            ...occurrence,
+            instructor: { id: "user-camila", fullName: "Camila Rocha" },
+          });
+        }),
+      );
+
+      renderPage();
+      const user = userEvent.setup();
+
+      await user.click(await screen.findByRole("button", { name: /18h00.*Treino Funcional/ }));
+      const dialog = screen.getByRole("dialog", { name: "Editar aula" });
+      expect(within(dialog).getByLabelText("Professor")).toHaveValue("user-rafael");
+      await user.selectOptions(within(dialog).getByLabelText("Professor"), "user-camila");
+      await user.click(within(dialog).getByRole("button", { name: "Salvar" }));
+
+      await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+      expect(sentBody).toMatchObject({
+        instructorId: "user-camila",
+        date: WEDNESDAY,
+        startTime: "18:00",
+      });
+    });
+  });
 });
