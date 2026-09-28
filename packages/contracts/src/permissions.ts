@@ -34,9 +34,17 @@ export const PermissionScope = {
 } as const;
 export type PermissionScopeName = (typeof PermissionScope)[keyof typeof PermissionScope];
 
+/** Nomes dos perfis de sistema criados pelo seed (isSystem = true). */
+export const SystemProfileName = {
+  ADMIN: "Administrador",
+  CLIENT: "Cliente",
+} as const;
+
 export const effectivePermissionSchema = z.object({
   module: z.enum(ALL_MODULES as [ModuleName, ...ModuleName[]]),
-  actions: z.array(z.enum(ALL_PERMISSION_ACTIONS as [PermissionActionName, ...PermissionActionName[]])),
+  actions: z.array(
+    z.enum(ALL_PERMISSION_ACTIONS as [PermissionActionName, ...PermissionActionName[]]),
+  ),
   scope: z.enum([
     PermissionScope.ALL,
     PermissionScope.ASSIGNED_CLIENTS,

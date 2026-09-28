@@ -1,7 +1,3 @@
 export function ClientHomePage() {
-  return (
-    <div style={{ padding: 24 }}>
-      <h1>Início</h1>
-    </div>
-  );
+  return <h1 className="fb-client-title">Início</h1>;
 }

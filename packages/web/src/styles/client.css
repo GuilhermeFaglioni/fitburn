@@ -1,0 +1,443 @@
+/**
+ * Casca e agenda do cliente — AgendaMobile.dc.html / AgendaDesktop.dc.html
+ * e o detalhe de ReservaMobile.dc.html no canvas de design.
+ */
+.fb-client {
+  flex-grow: 1;
+  display: flex;
+  min-height: 0;
+  color: var(--color-ink-on-dark);
+}
+
+.fb-client__sidebar {
+  width: 232px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 28px 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.fb-client__brand {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.fb-client__nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 24px;
+}
+
+.fb-client__nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.65);
+  text-decoration: none;
+}
+
+.fb-client__nav-item.active {
+  background: rgba(237, 110, 52, 0.14);
+  color: var(--color-primary-orange);
+  font-weight: 500;
+}
+
+.fb-client__logout {
+  align-self: flex-start;
+  background: none;
+  border: none;
+  padding: 6px 12px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.55);
+  cursor: pointer;
+}
+
+.fb-client__content {
+  flex-grow: 1;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 32px 40px;
+  overflow: auto;
+}
+
+.fb-client__tabbar {
+  display: none;
+}
+
+.fb-client-title {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-weight: 700;
+  font-size: 30px;
+}
+
+.fb-client-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 12px;
+  line-height: 17px;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.fb-client-week {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.fb-client-icon-btn {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #1a1a1a;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: #ffffff;
+  cursor: pointer;
+}
+
+/* Desktop: grade horários × dias */
+.fb-client-grid {
+  display: grid;
+  grid-template-columns: 68px repeat(7, minmax(0, 1fr));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.fb-client-cell {
+  box-sizing: border-box;
+  padding: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  min-height: 56px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+}
+
+.fb-client-cell--head {
+  border-top: none;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.fb-client-cell--today {
+  background: rgba(237, 110, 52, 0.04);
+}
+
+.fb-client-cell--head.fb-client-cell--today {
+  background: rgba(237, 110, 52, 0.08);
+  color: var(--color-primary-orange);
+}
+
+.fb-client-cell__weekday {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.fb-client-cell--today .fb-client-cell__weekday {
+  color: var(--color-primary-orange);
+}
+
+.fb-client-cell__day {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.fb-client-cell__hour {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.fb-client-chip {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 7px 9px;
+  background: #1a1a1a;
+  border: none;
+  border-radius: var(--radius-sm);
+  text-align: left;
+  font-family: var(--font-sans);
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.fb-client-chip__title {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.fb-client-chip__sub {
+  margin-top: 2px;
+  font-size: 11px;
+}
+
+/* Mobile: dias da semana + cartões */
+.fb-client-days {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.fb-daychip {
+  flex-shrink: 0;
+  box-sizing: border-box;
+  width: 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 0;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  font-family: var(--font-sans);
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.fb-daychip[aria-pressed="true"] {
+  background: var(--color-primary-orange);
+}
+
+.fb-daychip__weekday {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.fb-daychip[aria-pressed="true"] .fb-daychip__weekday {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.fb-daychip__day {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.fb-class-card {
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 16px;
+  background: #1a1a1a;
+  border: none;
+  border-radius: var(--radius-sm);
+  text-align: left;
+  font-family: var(--font-sans);
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.fb-class-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.fb-class-card__title {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.fb-class-card__time {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.fb-class-card__availability {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.fb-availability--AVAILABLE {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.fb-availability--ALMOST_FULL {
+  color: var(--color-primary-orange);
+}
+
+.fb-availability--FULL {
+  color: #ff8a70;
+}
+
+.fb-client-empty {
+  box-sizing: border-box;
+  padding: 24px 16px;
+  background: #1a1a1a;
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-sm);
+  text-align: center;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.fb-client-desktop-only {
+  display: block;
+}
+
+.fb-client-mobile-only {
+  display: none;
+}
+
+/* Detalhe da aula (bottom sheet no mobile, cartão centralizado no desktop) */
+.fb-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fb-sheet {
+  width: 420px;
+  max-width: 100%;
+  box-sizing: border-box;
+  background: #1a1a1a;
+  color: #ffffff;
+  border-radius: 16px;
+  padding: 20px 20px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.fb-sheet__title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.fb-sheet__subtitle {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.fb-sheet__facts {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.fb-sheet__fact {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fb-sheet__description {
+  margin: 0;
+  font-size: 13px;
+  line-height: 20px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.fb-sheet__divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.fb-sheet__close {
+  align-self: center;
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+}
+
+@media (max-width: 767px) {
+  .fb-client__sidebar {
+    display: none;
+  }
+
+  .fb-client__content {
+    padding: 28px 20px 108px;
+  }
+
+  .fb-client__tabbar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 10;
+    box-sizing: border-box;
+    height: 76px;
+    background: #1a1a1a;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+  }
+
+  .fb-client__tab {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 10px 4px 8px;
+    font-size: 11px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.55);
+    text-decoration: none;
+  }
+
+  .fb-client__tab.active {
+    color: var(--color-primary-orange);
+  }
+
+  .fb-client-title {
+    font-size: 32px;
+  }
+
+  .fb-client-desktop-only {
+    display: none;
+  }
+
+  .fb-client-mobile-only {
+    display: block;
+  }
+
+  .fb-sheet-backdrop {
+    align-items: flex-end;
+  }
+
+  .fb-sheet {
+    width: 100%;
+    border-radius: 16px 16px 0 0;
+    padding-top: 12px;
+  }
+}

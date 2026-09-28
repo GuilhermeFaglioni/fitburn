@@ -94,7 +94,84 @@ model User {
 
   refreshTokens RefreshToken[]
 
+  defaultForTemplates ClassTemplate[]
+  taughtOccurrences   ClassOccurrence[]
+
   @@map("users")
+}
+
+enum OccurrenceStatus {
+  SCHEDULED
+  CANCELLED
+}
+
+model Modality {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  templates   ClassTemplate[]
+  occurrences ClassOccurrence[]
+
+  @@map("modalities")
+}
+
+model ClassTemplate {
+  id              String   @id @default(uuid())
+  name            String
+  description     String?
+  durationMinutes Int
+  capacity        Int
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  modalityId String
+  modality   Modality @relation(fields: [modalityId], references: [id], onDelete: Restrict)
+
+  defaultInstructorId String?
+  defaultInstructor   User?   @relation(fields: [defaultInstructorId], references: [id], onDelete: SetNull)
+
+  occurrences ClassOccurrence[]
+
+  @@index([modalityId])
+  @@map("class_templates")
+}
+
+/// Aula concreta na agenda. Guarda uma cópia dos dados do template no
+/// momento da criação — editar o template não altera ocorrências existentes.
+/// Duas ocorrências não canceladas nunca se sobrepõem (espaço exclusivo):
+/// garantido pela exclusion constraint "class_occurrences_no_overlap",
+/// criada à mão na migration (o Prisma não modela EXCLUDE).
+model ClassOccurrence {
+  id              String           @id @default(uuid())
+  name            String
+  description     String?
+  startsAt        DateTime         @db.Timestamptz(3)
+  endsAt          DateTime         @db.Timestamptz(3)
+  durationMinutes Int
+  capacity        Int
+  status          OccurrenceStatus @default(SCHEDULED)
+  /// Liga as ocorrências geradas por uma mesma criação recorrente (só rastreabilidade).
+  seriesId        String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  templateId String
+  template   ClassTemplate @relation(fields: [templateId], references: [id], onDelete: Restrict)
+
+  modalityId String
+  modality   Modality @relation(fields: [modalityId], references: [id], onDelete: Restrict)
+
+  instructorId String?
+  instructor   User?   @relation(fields: [instructorId], references: [id], onDelete: SetNull)
+
+  @@index([startsAt])
+  @@index([instructorId])
+  @@map("class_occurrences")
 }
 
 model RefreshToken {
