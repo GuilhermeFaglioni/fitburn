@@ -184,4 +184,88 @@ describe("AgendaAdminPage", () => {
     const dialog = screen.getByRole("dialog", { name: "Nova aula" });
     expect(within(dialog).getByLabelText("Data")).toHaveValue(WEDNESDAY);
   });
+
+  describe("recorrência", () => {
+    async function openWeeklyForm() {
+      renderPage();
+      const user = userEvent.setup();
+      await user.click(await screen.findByRole("button", { name: "+ Nova aula" }));
+      const dialog = screen.getByRole("dialog", { name: "Nova aula" });
+      await user.selectOptions(within(dialog).getByLabelText("Modalidade / template"), TEMPLATE.id);
+      fireEvent.change(within(dialog).getByLabelText("Data"), { target: { value: "2026-10-05" } });
+      fireEvent.change(within(dialog).getByLabelText("Horário"), { target: { value: "18:00" } });
+      await user.selectOptions(within(dialog).getByLabelText("Recorrência"), "WEEKLY");
+      fireEvent.change(within(dialog).getByLabelText("Repetir até"), {
+        target: { value: "2026-10-18" },
+      });
+      await user.click(within(dialog).getByRole("button", { name: "QUA" }));
+      return { user, dialog };
+    }
+
+    it("mostra o resumo do que será gerado antes de confirmar e envia a recorrência", async () => {
+      let sentBody: Record<string, unknown> | null = null;
+      server.use(
+        http.get("/api/occurrences", () => HttpResponse.json([])),
+        http.post("/api/occurrences/recurring", async ({ request }) => {
+          sentBody = (await request.json()) as Record<string, unknown>;
+          return HttpResponse.json({ seriesId: "series-1", occurrences: [] }, { status: 201 });
+        }),
+      );
+
+      const { user, dialog } = await openWeeklyForm();
+      // A data inicial muda depois de ligar a repetição: o dia pré-selecionado acompanha.
+      fireEvent.change(within(dialog).getByLabelText("Data"), { target: { value: "2026-10-05" } });
+
+      const summary = within(dialog).getByText(/Serão criadas 4 aulas/);
+      expect(summary).toHaveTextContent("seg 05/10, qua 07/10, seg 12/10, qua 14/10");
+      await user.click(within(dialog).getByRole("button", { name: "Salvar" }));
+
+      await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+      expect(sentBody).toMatchObject({
+        templateId: TEMPLATE.id,
+        weekdays: [1, 3],
+        startTime: "18:00",
+        startDate: "2026-10-05",
+        endDate: "2026-10-18",
+      });
+    });
+
+    it("exibe todas as datas em conflito quando a recorrência é recusada", async () => {
+      const conflictA = occurrenceAt("2026-10-07", "18:30");
+      const conflictB = occurrenceAt("2026-10-14", "18:30");
+      server.use(
+        http.get("/api/occurrences", () => HttpResponse.json([])),
+        http.post("/api/occurrences/recurring", () =>
+          HttpResponse.json(
+            {
+              code: "OCCURRENCE_OVERLAP",
+              message: "O horário se sobrepõe a outra aula — o espaço é exclusivo.",
+              details: {
+                conflicts: [conflictA, conflictB].map(({ id, name, startsAt, endsAt }) => ({
+                  id,
+                  name,
+                  startsAt,
+                  endsAt,
+                })),
+              },
+            },
+            { status: 409 },
+          ),
+        ),
+      );
+
+      const { user, dialog } = await openWeeklyForm();
+      await user.click(within(dialog).getByRole("button", { name: "Salvar" }));
+
+      const alert = await within(dialog).findByRole("alert");
+      expect(
+        within(alert)
+          .getAllByRole("listitem")
+          .map((item) => item.textContent),
+      ).toEqual([
+        "Treino Funcional · 18h30–19h30 (qua 07/10)",
+        "Treino Funcional · 18h30–19h30 (qua 14/10)",
+      ]);
+    });
+  });
 });

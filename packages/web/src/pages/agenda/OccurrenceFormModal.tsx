@@ -1,9 +1,36 @@
 import { useId, useState, type FormEvent } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { gymToday } from "@fitburn/contracts";
+import { expandRecurrenceDates, gymToday, weekdayOf } from "@fitburn/contracts";
 import { Modal } from "../../components/Modal";
-import { createOccurrence, getOccurrenceFormOptions } from "../../lib/agenda/api";
+import {
+  createOccurrence,
+  createRecurringOccurrences,
+  getOccurrenceFormOptions,
+} from "../../lib/agenda/api";
+import { formatShortDate } from "../../lib/agenda/format";
 import { OccurrenceErrorBox } from "./OccurrenceErrorBox";
+
+/** Ordem de exibição (segunda primeiro), com o índice do Date (0 = domingo). */
+const WEEKDAY_TOGGLES = [
+  { weekday: 1, label: "SEG" },
+  { weekday: 2, label: "TER" },
+  { weekday: 3, label: "QUA" },
+  { weekday: 4, label: "QUI" },
+  { weekday: 5, label: "SEX" },
+  { weekday: 6, label: "SÁB" },
+  { weekday: 0, label: "DOM" },
+];
+
+const SUMMARY_MAX_DATES = 12;
+
+function recurrenceSummary(dates: string[]): string {
+  if (dates.length === 0) return "Nenhuma aula será criada com esses dias e período.";
+  const shown = dates
+    .slice(0, SUMMARY_MAX_DATES)
+    .map((date) => formatShortDate(date, weekdayOf(date)));
+  const rest = dates.length - shown.length;
+  return `Serão criadas ${dates.length} aulas: ${shown.join(", ")}${rest > 0 ? ` e mais ${rest}` : ""}.`;
+}
 
 /** "Nova aula" — formulário do modal de AgendaAdmin.dc.html. */
 export function OccurrenceFormModal({
@@ -28,6 +55,9 @@ export function OccurrenceFormModal({
   const [startTime, setStartTime] = useState("");
   const [instructorId, setInstructorId] = useState("");
   const [capacity, setCapacity] = useState("");
+  const [repeatsWeekly, setRepeatsWeekly] = useState(false);
+  const [weekdays, setWeekdays] = useState<number[]>([]);
+  const [endDate, setEndDate] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<unknown>(null);
 
@@ -39,18 +69,52 @@ export function OccurrenceFormModal({
     setCapacity(String(template.capacity));
   }
 
+  function changeDate(value: string) {
+    // A seleção automática de dia da semana acompanha a data enquanto o
+    // usuário não escolheu outros dias à mão.
+    if (
+      repeatsWeekly &&
+      value &&
+      (weekdays.length === 0 || (weekdays.length === 1 && date && weekdays[0] === weekdayOf(date)))
+    ) {
+      setWeekdays([weekdayOf(value)]);
+    }
+    setDate(value);
+  }
+
+  function changeRecurrence(value: string) {
+    const weekly = value === "WEEKLY";
+    setRepeatsWeekly(weekly);
+    if (weekly && weekdays.length === 0 && date) setWeekdays([weekdayOf(date)]);
+  }
+
+  function toggleWeekday(weekday: number) {
+    setWeekdays((current) =>
+      current.includes(weekday)
+        ? current.filter((candidate) => candidate !== weekday)
+        : [...current, weekday].sort((a, b) => a - b),
+    );
+  }
+
+  const recurrenceDates =
+    repeatsWeekly && date && endDate ? expandRecurrenceDates(date, endDate, weekdays) : [];
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
     setIsSubmitting(true);
+    const settings = {
+      templateId,
+      startTime,
+      instructorId: instructorId || null,
+      capacity: Number(capacity),
+    };
     try {
-      await createOccurrence({
-        templateId,
-        date,
-        startTime,
-        instructorId: instructorId || null,
-        capacity: Number(capacity),
-      });
+      if (repeatsWeekly) {
+        await createRecurringOccurrences({ ...settings, weekdays, startDate: date, endDate });
+      } else {
+        await createOccurrence({ ...settings, date });
+      }
       onSaved();
     } catch (caught) {
       setError(caught);
@@ -91,7 +155,7 @@ export function OccurrenceFormModal({
                 type="date"
                 className="fb-field"
                 value={date}
-                onChange={(event) => setDate(event.target.value)}
+                onChange={(event) => changeDate(event.target.value)}
                 required
               />
             </div>
@@ -138,7 +202,57 @@ export function OccurrenceFormModal({
                 required
               />
             </div>
+            <div className="fb-modal__field">
+              <label htmlFor={`${formId}-recurrence`}>Recorrência</label>
+              <select
+                id={`${formId}-recurrence`}
+                className="fb-field"
+                value={repeatsWeekly ? "WEEKLY" : "NONE"}
+                onChange={(event) => changeRecurrence(event.target.value)}
+              >
+                <option value="NONE">Não se repete</option>
+                <option value="WEEKLY">Repetir semanalmente</option>
+              </select>
+            </div>
           </div>
+
+          {repeatsWeekly && (
+            <>
+              <div className="fb-modal__field">
+                <span style={{ fontSize: 12, fontWeight: 500, color: "#333333" }}>
+                  Dias da semana
+                </span>
+                <div className="fb-weekday-toggles" role="group" aria-label="Dias da semana">
+                  {WEEKDAY_TOGGLES.map(({ weekday, label }) => (
+                    <button
+                      key={weekday}
+                      type="button"
+                      className="fb-weekday-toggle"
+                      aria-pressed={weekdays.includes(weekday)}
+                      onClick={() => toggleWeekday(weekday)}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="fb-modal__field">
+                <label htmlFor={`${formId}-end-date`}>Repetir até</label>
+                <input
+                  id={`${formId}-end-date`}
+                  type="date"
+                  className="fb-field"
+                  value={endDate}
+                  min={date}
+                  onChange={(event) => setEndDate(event.target.value)}
+                  required
+                />
+              </div>
+              {endDate && (
+                <p className="fb-recurrence-summary">{recurrenceSummary(recurrenceDates)}</p>
+              )}
+            </>
+          )}
         </div>
 
         {error !== null && <OccurrenceErrorBox error={error} />}

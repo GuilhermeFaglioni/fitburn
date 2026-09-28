@@ -31,6 +31,23 @@ export const createOccurrenceRequestSchema = z.object({
 });
 export type CreateOccurrenceRequest = z.infer<typeof createOccurrenceRequestSchema>;
 
+/** Horizonte máximo de uma criação recorrente. */
+export const RECURRENCE_MAX_MONTHS = 6;
+
+export const createRecurringOccurrencesRequestSchema = z.object({
+  templateId: z.string().min(1, "Selecione um template."),
+  /** 0 = domingo … 6 = sábado. */
+  weekdays: z.array(z.number().int().min(0).max(6)),
+  startTime: localTimeSchema,
+  startDate: localDateSchema,
+  endDate: localDateSchema,
+  instructorId: z.string().min(1).nullable().optional(),
+  capacity: capacitySchema.optional(),
+});
+export type CreateRecurringOccurrencesRequest = z.infer<
+  typeof createRecurringOccurrencesRequestSchema
+>;
+
 export const occurrenceDetailSchema = z.object({
   id: z.string(),
   templateId: z.string(),
@@ -68,3 +85,9 @@ export const occurrenceFormOptionsSchema = z.object({
   instructors: z.array(instructorSummarySchema),
 });
 export type OccurrenceFormOptions = z.infer<typeof occurrenceFormOptionsSchema>;
+
+export const recurringOccurrencesResultSchema = z.object({
+  seriesId: z.string(),
+  occurrences: z.array(occurrenceDetailSchema),
+});
+export type RecurringOccurrencesResult = z.infer<typeof recurringOccurrencesResultSchema>;

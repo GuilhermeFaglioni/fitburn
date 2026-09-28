@@ -1,17 +1,23 @@
+import { randomUUID } from "node:crypto";
 import { Injectable } from "@nestjs/common";
 import type { Prisma } from "@prisma/client";
 import {
   addDays,
+  addMonths,
   ErrorCode,
+  expandRecurrenceDates,
   ErrorStatus,
   gymDateTimeToUtc,
   OccurrenceStatus,
   PermissionScope,
+  RECURRENCE_MAX_MONTHS,
   type CreateOccurrenceRequest,
+  type CreateRecurringOccurrencesRequest,
   type OccurrenceConflict,
   type OccurrenceDetail,
   type OccurrenceFormOptions,
   type PermissionScopeName,
+  type RecurringOccurrencesResult,
 } from "@fitburn/contracts";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { DomainError } from "../common/errors/domain-error.js";
@@ -30,6 +36,11 @@ type OccurrenceWithRelations = Prisma.ClassOccurrenceGetPayload<{
 export interface Interval {
   startsAt: Date;
   endsAt: Date;
+}
+
+function intervalAt(date: string, startTime: string, durationMinutes: number): Interval {
+  const startsAt = gymDateTimeToUtc(date, startTime);
+  return { startsAt, endsAt: new Date(startsAt.getTime() + durationMinutes * 60_000) };
 }
 
 /** Quem está pedindo, com o escopo efetivo no módulo "ocorrências/agendamento". */
@@ -78,6 +89,77 @@ export class OccurrencesService {
     input: CreateOccurrenceRequest,
     requester: OccurrenceRequester,
   ): Promise<OccurrenceDetail> {
+    const settings = await this.resolveSettings(input, requester);
+    const interval = intervalAt(input.date, input.startTime, settings.durationMinutes);
+    await this.assertNoOverlap([interval]);
+
+    const occurrence = await this.withOverlapTranslation([interval], () =>
+      this.prisma.classOccurrence.create({
+        data: { ...settings, ...interval },
+        include: OCCURRENCE_INCLUDE,
+      }),
+    );
+    return this.toDetail(occurrence);
+  }
+
+  /**
+   * Recorrência materializada: uma ocorrência concreta por data, ligadas por
+   * um seriesId só para rastreabilidade. Tudo ou nada — qualquer conflito
+   * recusa a operação inteira, listando todas as datas em conflito.
+   */
+  async createRecurring(
+    input: CreateRecurringOccurrencesRequest,
+    requester: OccurrenceRequester,
+  ): Promise<RecurringOccurrencesResult> {
+    const dates = this.recurrenceDates(input);
+    const settings = await this.resolveSettings(input, requester);
+    const intervals = dates.map((date) =>
+      intervalAt(date, input.startTime, settings.durationMinutes),
+    );
+    await this.assertNoOverlap(intervals);
+
+    const seriesId = randomUUID();
+    const occurrences = await this.withOverlapTranslation(intervals, () =>
+      this.prisma.$transaction(
+        intervals.map((interval) =>
+          this.prisma.classOccurrence.create({
+            data: { ...settings, ...interval, seriesId },
+            include: OCCURRENCE_INCLUDE,
+          }),
+        ),
+      ),
+    );
+    return { seriesId, occurrences: occurrences.map((occurrence) => this.toDetail(occurrence)) };
+  }
+
+  private recurrenceDates(input: CreateRecurringOccurrencesRequest): string[] {
+    const invalid = (message: string) =>
+      new DomainError(ErrorCode.INVALID_RECURRENCE, message, ErrorStatus.VALIDATION);
+
+    if (input.weekdays.length === 0) throw invalid("Escolha ao menos um dia da semana.");
+    if (new Set(input.weekdays).size !== input.weekdays.length) {
+      throw invalid("Os dias da semana não podem se repetir.");
+    }
+    if (input.endDate < input.startDate)
+      throw invalid("A data final precisa ser depois da inicial.");
+    if (input.endDate > addMonths(input.startDate, RECURRENCE_MAX_MONTHS)) {
+      throw new DomainError(
+        ErrorCode.RECURRENCE_HORIZON_EXCEEDED,
+        `O período de uma recorrência pode ter no máximo ${RECURRENCE_MAX_MONTHS} meses.`,
+        ErrorStatus.UNPROCESSABLE,
+      );
+    }
+
+    const dates = expandRecurrenceDates(input.startDate, input.endDate, input.weekdays);
+    if (dates.length === 0) throw invalid("Nenhuma data do período cai nos dias escolhidos.");
+    return dates;
+  }
+
+  /** Dados copiados do template, com os ajustes de professor e capacidade permitidos. */
+  private async resolveSettings(
+    input: { templateId: string; instructorId?: string | null; capacity?: number },
+    requester: OccurrenceRequester,
+  ) {
     const template = await this.prisma.classTemplate.findUnique({
       where: { id: input.templateId },
     });
@@ -94,29 +176,15 @@ export class OccurrencesService {
     if (instructorId) await this.instructors.assertIsInstructor(instructorId);
     this.assertInScope(instructorId, requester);
 
-    const startsAt = gymDateTimeToUtc(input.date, input.startTime);
-    const interval = {
-      startsAt,
-      endsAt: new Date(startsAt.getTime() + template.durationMinutes * 60_000),
+    return {
+      templateId: template.id,
+      name: template.name,
+      description: template.description,
+      modalityId: template.modalityId,
+      instructorId,
+      durationMinutes: template.durationMinutes,
+      capacity: input.capacity ?? template.capacity,
     };
-    await this.assertNoOverlap([interval]);
-
-    const occurrence = await this.withOverlapTranslation([interval], () =>
-      this.prisma.classOccurrence.create({
-        data: {
-          templateId: template.id,
-          name: template.name,
-          description: template.description,
-          modalityId: template.modalityId,
-          instructorId,
-          durationMinutes: template.durationMinutes,
-          capacity: input.capacity ?? template.capacity,
-          ...interval,
-        },
-        include: OCCURRENCE_INCLUDE,
-      }),
-    );
-    return this.toDetail(occurrence);
   }
 
   /**

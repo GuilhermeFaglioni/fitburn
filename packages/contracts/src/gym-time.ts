@@ -102,3 +102,25 @@ export function startOfWeek(date: string): string {
 export function gymToday(now: Date = new Date()): string {
   return utcToGymDateTime(now).date;
 }
+
+/** Soma meses a uma data local; o dia é limitado ao último dia do mês de destino. */
+export function addMonths(date: string, months: number): string {
+  const [year, month, day] = parseLocalDate(date);
+  const lastDayOfTarget = new Date(Date.UTC(year, month - 1 + months + 1, 0)).getUTCDate();
+  const target = new Date(Date.UTC(year, month - 1 + months, Math.min(day, lastDayOfTarget)));
+  return `${target.getUTCFullYear()}-${pad(target.getUTCMonth() + 1)}-${pad(target.getUTCDate())}`;
+}
+
+/** Datas locais entre início e fim (inclusive) que caem nos dias da semana pedidos. */
+export function expandRecurrenceDates(
+  startDate: string,
+  endDate: string,
+  weekdays: number[],
+): string[] {
+  const wanted = new Set(weekdays);
+  const dates: string[] = [];
+  for (let date = startDate; date <= endDate; date = addDays(date, 1)) {
+    if (wanted.has(weekdayOf(date))) dates.push(date);
+  }
+  return dates;
+}

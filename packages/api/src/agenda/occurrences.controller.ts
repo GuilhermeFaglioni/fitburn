@@ -1,13 +1,16 @@
 import { Body, Controller, Get, Post, Query, Req, UseGuards } from "@nestjs/common";
 import {
   createOccurrenceRequestSchema,
+  createRecurringOccurrencesRequestSchema,
   dateRangeQuerySchema,
   Module,
   PermissionAction,
   type CreateOccurrenceRequest,
+  type CreateRecurringOccurrencesRequest,
   type DateRangeQuery,
   type OccurrenceDetail,
   type OccurrenceFormOptions,
+  type RecurringOccurrencesResult,
 } from "@fitburn/contracts";
 import { JwtAuthGuard, type AuthenticatedRequest } from "../auth/jwt-auth.guard.js";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe.js";
@@ -42,6 +45,16 @@ export class OccurrencesController {
     @Req() req: AuthenticatedRequest,
   ): Promise<OccurrenceDetail> {
     return this.occurrencesService.create(body, requesterOf(req));
+  }
+
+  @RequirePermission(Module.OCORRENCIAS, PermissionAction.CREATE)
+  @Post("recurring")
+  createRecurring(
+    @Body(new ZodValidationPipe(createRecurringOccurrencesRequestSchema))
+    body: CreateRecurringOccurrencesRequest,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<RecurringOccurrencesResult> {
+    return this.occurrencesService.createRecurring(body, requesterOf(req));
   }
 }
 

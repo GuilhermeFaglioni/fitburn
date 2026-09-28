@@ -222,6 +222,107 @@ describe("Ocorrências avulsas e agenda administrativa (HTTP)", () => {
     });
   });
 
+  describe("Criação recorrente", () => {
+    const recurring = (templateId: string, overrides: Record<string, unknown> = {}) => ({
+      templateId,
+      weekdays: [1, 3], // segunda e quarta
+      startTime: "18:00",
+      startDate: "2026-10-05",
+      endDate: "2026-10-18",
+      ...overrides,
+    });
+
+    it("materializa uma ocorrência por data, no fuso de São Paulo, ligadas pela mesma série", async () => {
+      const token = await loginAsAdmin();
+      const template = await createTemplate(token, { durationMinutes: 60 });
+
+      const response = await api(token)
+        .post("/api/occurrences/recurring")
+        .send(recurring(template.id));
+
+      expect(response.status).toBe(201);
+      expect(response.body.occurrences.map((o: { startsAt: string }) => o.startsAt)).toEqual([
+        "2026-10-05T21:00:00.000Z",
+        "2026-10-07T21:00:00.000Z",
+        "2026-10-12T21:00:00.000Z",
+        "2026-10-14T21:00:00.000Z",
+      ]);
+      const seriesIds = new Set(
+        response.body.occurrences.map((o: { seriesId: string }) => o.seriesId),
+      );
+      expect([...seriesIds]).toEqual([response.body.seriesId]);
+      expect(await testPrisma.classOccurrence.count()).toBe(4);
+    });
+
+    it("é atômica: com qualquer conflito nada é criado e todas as datas em conflito voltam", async () => {
+      const token = await loginAsAdmin();
+      const template = await createTemplate(token, { durationMinutes: 60 });
+      const single = (date: string) =>
+        api(token)
+          .post("/api/occurrences")
+          .send({ templateId: template.id, date, startTime: "18:30" });
+      const a = await single("2026-10-07");
+      const b = await single("2026-10-14");
+
+      const response = await api(token)
+        .post("/api/occurrences/recurring")
+        .send(recurring(template.id));
+
+      expect(response.status).toBe(409);
+      expect(response.body.code).toBe("OCCURRENCE_OVERLAP");
+      expect(response.body.details.conflicts.map((c: { id: string }) => c.id)).toEqual([
+        a.body.id,
+        b.body.id,
+      ]);
+      expect(await testPrisma.classOccurrence.count()).toBe(2);
+    });
+
+    it("recusa período acima de 6 meses", async () => {
+      const token = await loginAsAdmin();
+      const template = await createTemplate(token);
+
+      const response = await api(token)
+        .post("/api/occurrences/recurring")
+        .send(recurring(template.id, { startDate: "2026-10-05", endDate: "2027-04-06" }));
+
+      expect(response.status).toBe(422);
+      expect(response.body.code).toBe("RECURRENCE_HORIZON_EXCEEDED");
+    });
+
+    it("aceita exatamente 6 meses", async () => {
+      const token = await loginAsAdmin();
+      const template = await createTemplate(token);
+
+      const response = await api(token)
+        .post("/api/occurrences/recurring")
+        .send(
+          recurring(template.id, { weekdays: [1], startDate: "2026-10-05", endDate: "2027-04-05" }),
+        );
+
+      expect(response.status).toBe(201);
+    });
+
+    it.each([
+      ["fim antes do início", { startDate: "2026-10-18", endDate: "2026-10-05" }],
+      ["sem dias da semana", { weekdays: [] }],
+      ["dias da semana repetidos", { weekdays: [1, 1] }],
+      [
+        "nenhuma data no período",
+        { weekdays: [0], startDate: "2026-10-05", endDate: "2026-10-09" },
+      ],
+    ])("recusa parâmetros inválidos: %s", async (_label, overrides) => {
+      const token = await loginAsAdmin();
+      const template = await createTemplate(token);
+
+      const response = await api(token)
+        .post("/api/occurrences/recurring")
+        .send(recurring(template.id, overrides));
+
+      expect(response.status).toBe(400);
+      expect(response.body.code).toBe("INVALID_RECURRENCE");
+    });
+  });
+
   describe("Listagem e opções", () => {
     it("lista por intervalo de dias locais, incluindo canceladas", async () => {
       const token = await loginAsAdmin();
@@ -361,22 +462,18 @@ describe("Ocorrências avulsas e agenda administrativa (HTTP)", () => {
       const token = await loginAndGetAccessToken(app, rafael.email, PASSWORD);
       const other = await createStaffUser("camila@fitburn.local", "Camila Rocha");
 
-      const forOther = await api(token)
-        .post("/api/occurrences")
-        .send({
-          templateId: template.id,
-          date: "2026-10-05",
-          startTime: "07:00",
-          instructorId: other.id,
-        });
-      const forSelf = await api(token)
-        .post("/api/occurrences")
-        .send({
-          templateId: template.id,
-          date: "2026-10-05",
-          startTime: "09:00",
-          instructorId: rafael.id,
-        });
+      const forOther = await api(token).post("/api/occurrences").send({
+        templateId: template.id,
+        date: "2026-10-05",
+        startTime: "07:00",
+        instructorId: other.id,
+      });
+      const forSelf = await api(token).post("/api/occurrences").send({
+        templateId: template.id,
+        date: "2026-10-05",
+        startTime: "09:00",
+        instructorId: rafael.id,
+      });
 
       expect(forOther.status).toBe(403);
       expect(forOther.body.code).toBe("OUT_OF_SCOPE");
