@@ -12,7 +12,8 @@ import { loginAndGetAccessToken } from "./login-helper.js";
 import { createTestApp } from "./test-app.js";
 
 const PASSWORD = "SenhaForte123!";
-const HOUR = 60 * 60_000;
+const MINUTE = 60_000;
+const HOUR = 60 * MINUTE;
 
 describe("Reservas (HTTP)", () => {
   let app: INestApplication;
@@ -79,6 +80,12 @@ describe("Reservas (HTTP)", () => {
       .set("Authorization", `Bearer ${token}`)
       .set("Idempotency-Key", key)
       .send({ occurrenceId });
+  }
+
+  function cancel(token: string, reservationId: string) {
+    return request(app.getHttpServer())
+      .post(`/api/reservations/${reservationId}/cancel`)
+      .set("Authorization", `Bearer ${token}`);
   }
 
   function agendaItem(token: string, occurrenceId: string) {
@@ -421,6 +428,86 @@ describe("Reservas (HTTP)", () => {
         responses.filter((response) => response.status === 409).map((r) => r.body.code),
       ).toEqual(Array(3).fill("SCHEDULE_CONFLICT"));
       expect(await testPrisma.reservation.count()).toBe(1);
+    });
+  });
+
+  describe("cancelar reserva", () => {
+    it("cancela até o início da aula e libera a vaga na hora", async () => {
+      const ana = await createClient("ana");
+      const bruno = await createClient("bruno");
+      const occurrence = await createOccurrence(new Date(Date.now() + 3 * HOUR), { capacity: 1 });
+      const reservation = await reserve(ana.token, occurrence.id);
+
+      const response = await cancel(ana.token, reservation.body.id);
+
+      expect(response.status).toBe(200);
+      expect(response.body).toMatchObject({
+        id: reservation.body.id,
+        status: "CANCELLED",
+        cancelledAt: expect.any(String),
+      });
+      const detail = await agendaItem(ana.token, occurrence.id);
+      expect(detail.body).toMatchObject({ available: 1, myReservationId: null });
+      expect((await reserve(bruno.token, occurrence.id)).status).toBe(201);
+    });
+
+    it("depois do início da aula recusa com CANCELLATION_WINDOW_CLOSED", async () => {
+      const ana = await createClient("ana");
+      const occurrence = await createOccurrence(new Date(Date.now() + 3 * HOUR));
+      const reservation = await reserve(ana.token, occurrence.id);
+      await testPrisma.classOccurrence.update({
+        where: { id: occurrence.id },
+        data: {
+          startsAt: new Date(Date.now() - 5 * MINUTE),
+          endsAt: new Date(Date.now() + 55 * MINUTE),
+        },
+      });
+
+      const response = await cancel(ana.token, reservation.body.id);
+
+      expect(response.status).toBe(409);
+      expect(response.body.code).toBe("CANCELLATION_WINDOW_CLOSED");
+      const stored = await testPrisma.reservation.findUniqueOrThrow({
+        where: { id: reservation.body.id },
+      });
+      expect(stored.status).toBe("CONFIRMED");
+    });
+
+    it("reserva que não está confirmada recusa com RESERVATION_NOT_ACTIVE", async () => {
+      const ana = await createClient("ana");
+      const occurrence = await createOccurrence(new Date(Date.now() + 3 * HOUR));
+      const reservation = await reserve(ana.token, occurrence.id);
+      await cancel(ana.token, reservation.body.id);
+
+      const response = await cancel(ana.token, reservation.body.id);
+
+      expect(response.status).toBe(409);
+      expect(response.body.code).toBe("RESERVATION_NOT_ACTIVE");
+    });
+
+    it("o cliente só cancela as próprias reservas", async () => {
+      const ana = await createClient("ana");
+      const bruno = await createClient("bruno");
+      const occurrence = await createOccurrence(new Date(Date.now() + 3 * HOUR));
+      const reservation = await reserve(ana.token, occurrence.id);
+
+      const response = await cancel(bruno.token, reservation.body.id);
+
+      expect(response.status).toBe(403);
+      expect(response.body.code).toBe("OUT_OF_SCOPE");
+      const stored = await testPrisma.reservation.findUniqueOrThrow({
+        where: { id: reservation.body.id },
+      });
+      expect(stored.status).toBe("CONFIRMED");
+    });
+
+    it("devolve 404 para reserva inexistente", async () => {
+      const ana = await createClient("ana");
+
+      const response = await cancel(ana.token, "00000000-0000-0000-0000-000000000000");
+
+      expect(response.status).toBe(404);
+      expect(response.body.code).toBe("NOT_FOUND");
     });
   });
 });

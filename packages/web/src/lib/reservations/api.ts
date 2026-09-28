@@ -18,3 +18,10 @@ export async function createReservation(
   });
   return reservationDetailSchema.parse(await parseOrThrow(response));
 }
+
+export async function cancelReservation(reservationId: string): Promise<ReservationDetail> {
+  const response = await authFetch(`/api/reservations/${reservationId}/cancel`, {
+    method: "POST",
+  });
+  return reservationDetailSchema.parse(await parseOrThrow(response));
+}

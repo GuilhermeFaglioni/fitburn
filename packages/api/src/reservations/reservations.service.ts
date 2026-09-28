@@ -46,10 +46,9 @@ const TRANSACTION_OPTIONS = {
  * 1. trava a linha da ocorrência (FOR UPDATE) — serializa a disputa por vagas;
  * 2. adquire um lock transacional por cliente — serializa as reservas de um
  *    mesmo cliente;
- * 3. consulta o registro de idempotência (solicitação repetida devolve o
- *    resultado original, inclusive recusas);
- * 4. revalida tudo com o estado já travado e grava a reserva e o registro de
- *    idempotência com um único commit.
+ * 3. na criação, consulta o registro de idempotência (solicitação repetida
+ *    devolve o resultado original, inclusive recusas);
+ * 4. revalida tudo com o estado já travado e grava com um único commit.
  * Ordem de locks fixa em toda operação (ocorrências por id, depois cliente)
  * para não haver deadlock.
  *
@@ -82,6 +81,73 @@ export class ReservationsService {
       );
     }, TRANSACTION_OPTIONS);
     return replay(outcome);
+  }
+
+  /**
+   * Cancela a própria reserva até o início da aula; a vaga volta a contar
+   * como disponível no mesmo commit. Mesma ordem de locks da reserva.
+   */
+  async cancel(clientId: string, reservationId: string): Promise<ReservationDetail> {
+    return this.prisma.$transaction(async (tx) => {
+      const { occurrenceId } = await this.findOwnReservation(tx, clientId, reservationId);
+      await this.lockOccurrences(tx, [occurrenceId]);
+      await this.lockClient(tx, clientId);
+      await this.cancelLocked(tx, reservationId);
+      return this.detailById(tx, reservationId);
+    }, TRANSACTION_OPTIONS);
+  }
+
+  /**
+   * Localiza uma reserva do cliente, antes dos locks: só lê o dono e a
+   * ocorrência, que nunca mudam. O estado é revalidado depois dos locks.
+   */
+  private async findOwnReservation(
+    tx: Tx,
+    clientId: string,
+    reservationId: string,
+  ): Promise<{ occurrenceId: string }> {
+    const reservation = await tx.reservation.findUnique({
+      where: { id: reservationId },
+      select: { clientId: true, occurrenceId: true },
+    });
+    if (!reservation) {
+      throw new DomainError(ErrorCode.NOT_FOUND, "Reserva não encontrada.", ErrorStatus.NOT_FOUND);
+    }
+    if (reservation.clientId !== clientId) {
+      throw new DomainError(
+        ErrorCode.OUT_OF_SCOPE,
+        "Você só pode alterar as suas próprias reservas.",
+        ErrorStatus.FORBIDDEN,
+      );
+    }
+    return { occurrenceId: reservation.occurrenceId };
+  }
+
+  /** Revalida a reserva com os locks já adquiridos e a cancela. */
+  private async cancelLocked(tx: Tx, reservationId: string): Promise<void> {
+    const reservation = await tx.reservation.findUniqueOrThrow({
+      where: { id: reservationId },
+      include: { occurrence: { select: { startsAt: true } } },
+    });
+    if (reservation.status !== ReservationStatus.CONFIRMED) {
+      throw new DomainError(
+        ErrorCode.RESERVATION_NOT_ACTIVE,
+        "Esta reserva não está mais ativa.",
+        ErrorStatus.CONFLICT,
+      );
+    }
+    const now = new Date();
+    if (reservation.occurrence.startsAt <= now) {
+      throw new DomainError(
+        ErrorCode.CANCELLATION_WINDOW_CLOSED,
+        "Não é mais possível cancelar: a aula já começou.",
+        ErrorStatus.CONFLICT,
+      );
+    }
+    await tx.reservation.update({
+      where: { id: reservationId },
+      data: { status: ReservationStatus.CANCELLED, cancelledAt: now },
+    });
   }
 
   private async detailById(tx: Tx, id: string): Promise<ReservationDetail> {

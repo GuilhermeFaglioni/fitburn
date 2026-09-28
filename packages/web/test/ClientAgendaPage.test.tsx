@@ -352,7 +352,75 @@ describe("ClientAgendaPage", () => {
     const { sheet } = await openDetail("18h00");
 
     expect(within(sheet).getByText("RESERVA CONFIRMADA")).toBeInTheDocument();
+    expect(within(sheet).getByRole("button", { name: "Cancelar reserva" })).toBeEnabled();
     expect(within(sheet).queryByRole("button", { name: "Reservar" })).not.toBeInTheDocument();
+  });
+
+  it("cancela a reserva depois de confirmar, liberando a vaga", async () => {
+    const occurrence = item(TODAY, "18:00", { available: 2, myReservationId: "res-1" });
+    let cancelled = false;
+    const current = () =>
+      cancelled ? { ...occurrence, available: 3, myReservationId: null } : occurrence;
+    server.use(
+      http.get("/api/agenda", () => HttpResponse.json([current()])),
+      http.get("/api/agenda/:id", () => HttpResponse.json(current())),
+      http.post("/api/reservations/:id/cancel", ({ params }) => {
+        expect(params.id).toBe("res-1");
+        cancelled = true;
+        return HttpResponse.json({
+          ...reservationOf(occurrence),
+          status: "CANCELLED",
+          cancelledAt: new Date().toISOString(),
+        });
+      }),
+    );
+
+    renderPage();
+    const { user, sheet } = await openDetail("18h00");
+
+    await user.click(within(sheet).getByRole("button", { name: "Cancelar reserva" }));
+    expect(
+      within(sheet).getByText(/A vaga será liberada para outros clientes/),
+    ).toBeInTheDocument();
+    await user.click(within(sheet).getByRole("button", { name: "Voltar" }));
+    expect(within(sheet).getByText("RESERVA CONFIRMADA")).toBeInTheDocument();
+    expect(cancelled).toBe(false);
+
+    await user.click(within(sheet).getByRole("button", { name: "Cancelar reserva" }));
+    await user.click(within(sheet).getByRole("button", { name: "Confirmar cancelamento" }));
+
+    expect(await within(sheet).findByRole("status")).toHaveTextContent(
+      "Reserva cancelada. A vaga foi liberada para outros clientes.",
+    );
+    expect(await within(sheet).findByText("3 de 12 vagas restantes")).toBeInTheDocument();
+  });
+
+  it("cancelamento depois do início da aula mostra o motivo", async () => {
+    const occurrence = item(TODAY, "18:00", { myReservationId: "res-1" });
+    server.use(
+      http.get("/api/agenda", () => HttpResponse.json([occurrence])),
+      http.get("/api/agenda/:id", () => HttpResponse.json(occurrence)),
+      http.post("/api/reservations/:id/cancel", () =>
+        HttpResponse.json(
+          {
+            code: "CANCELLATION_WINDOW_CLOSED",
+            message: "Não é mais possível cancelar: a aula já começou.",
+          },
+          { status: 409 },
+        ),
+      ),
+    );
+
+    renderPage();
+    const { user, sheet } = await openDetail("18h00");
+    await user.click(within(sheet).getByRole("button", { name: "Cancelar reserva" }));
+    await user.click(within(sheet).getByRole("button", { name: "Confirmar cancelamento" }));
+
+    expect(await within(sheet).findByRole("alert")).toHaveTextContent(
+      "Não é mais possível cancelar: a aula já começou.",
+    );
+    await user.click(within(sheet).getByRole("button", { name: "Voltar" }));
+    expect(within(sheet).getByText("RESERVA CONFIRMADA")).toBeInTheDocument();
   });
 });
 

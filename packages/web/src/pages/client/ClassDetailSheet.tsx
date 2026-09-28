@@ -11,20 +11,28 @@ import { useCloseOnEscape } from "../../components/Modal";
 import { ApiError } from "../../lib/auth/api";
 import { getClientAgendaItem } from "../../lib/agenda/client-api";
 import { formatInstantHour, formatShortDate } from "../../lib/agenda/format";
-import { createReservation } from "../../lib/reservations/api";
+import { cancelReservation, createReservation } from "../../lib/reservations/api";
 
-type Outcome = { kind: "success" } | { kind: "refused"; error: ApiError };
+type Outcome =
+  | { kind: "succeeded"; message: string }
+  /** `retry` só existe para operações seguras de repetir (a reserva, idempotente). */
+  | { kind: "refused"; error: ApiError; retry?: () => void };
 
-interface RefusalAction {
+interface NextStep {
   label: string;
   variant: "primary" | "ghost";
   onClick: () => void;
 }
 
+/** Falha de rede ou erro sem envelope: o resultado da operação é incerto. */
+function asApiError(error: Error, message: string): ApiError {
+  return error instanceof ApiError ? error : new ApiError(ErrorCode.INTERNAL_ERROR, message);
+}
+
 /**
- * Detalhe da aula com a ação de reserva (ReservaMobile/ReservaDesktop.dc.html):
- * bottom sheet no mobile, cartão centralizado no desktop. O backend decide a
- * reserva; qualquer resposta atualiza a agenda e o detalhe.
+ * Detalhe da aula com as ações de reserva (ReservaMobile/ReservaDesktop.dc.html):
+ * bottom sheet no mobile, cartão centralizado no desktop. O backend decide
+ * cada operação; qualquer resposta atualiza a agenda e o detalhe.
  */
 export function ClassDetailSheet({
   item,
@@ -36,6 +44,7 @@ export function ClassDetailSheet({
   const titleId = useId();
   const queryClient = useQueryClient();
   const [outcome, setOutcome] = useState<Outcome | null>(null);
+  const [confirmingCancel, setConfirmingCancel] = useState(false);
   // Uma chave por intenção de reserva: gerada ao abrir o detalhe e reenviada
   // em toda nova tentativa, para uma repetição nunca criar outra reserva.
   const [idempotencyKey] = useState(() => crypto.randomUUID());
@@ -48,23 +57,44 @@ export function ClassDetailSheet({
   });
   const occurrence = detailQuery.data ?? item;
 
+  // Sucesso ou recusa: a tela nunca continua mostrando um estado desatualizado.
+  const refreshAgenda = () => queryClient.invalidateQueries({ queryKey: ["client-agenda"] });
+
   const reserveMutation = useMutation({
     mutationFn: () => createReservation(item.id, idempotencyKey),
-    onSuccess: () => setOutcome({ kind: "success" }),
+    onSuccess: () =>
+      setOutcome({ kind: "succeeded", message: "Reserva confirmada com sucesso. Bom treino!" }),
     onError: (error) =>
       setOutcome({
         kind: "refused",
-        error:
-          error instanceof ApiError
-            ? error
-            : new ApiError(
-                ErrorCode.INTERNAL_ERROR,
-                "Não foi possível concluir a reserva. Tente novamente.",
-              ),
+        error: asApiError(error, "Não foi possível concluir a reserva. Tente novamente."),
+        retry: () => reserveMutation.mutate(),
       }),
-    // Sucesso ou recusa: a tela nunca continua mostrando um estado desatualizado.
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ["client-agenda"] }),
+    onSettled: refreshAgenda,
   });
+
+  const cancelMutation = useMutation({
+    mutationFn: cancelReservation,
+    onSuccess: () =>
+      setOutcome({
+        kind: "succeeded",
+        message: "Reserva cancelada. A vaga foi liberada para outros clientes.",
+      }),
+    // Sem "Tentar novamente": o cancelamento não é idempotente, e um primeiro
+    // envio que chegou a valer faria a repetição parecer uma falha. "Voltar"
+    // mostra o estado atualizado da reserva.
+    onError: (error) =>
+      setOutcome({
+        kind: "refused",
+        error: asApiError(error, "Não foi possível cancelar a reserva. Tente novamente."),
+      }),
+    onSettled: () => {
+      setConfirmingCancel(false);
+      return refreshAgenda();
+    },
+  });
+
+  const pending = reserveMutation.isPending || cancelMutation.isPending;
 
   useCloseOnEscape(onClose);
 
@@ -72,8 +102,10 @@ export function ClassDetailSheet({
   const day = date === gymToday() ? "Hoje" : formatShortDate(date, weekdayOf(date));
 
   /** A mensagem vem do backend (fonte única); aqui só se escolhe o próximo passo. */
-  function nextStepAfter(error: ApiError): RefusalAction | null {
-    switch (error.code) {
+  function nextStepAfter(refusal: Extract<Outcome, { kind: "refused" }>): NextStep {
+    // Volta ao detalhe, já atualizado depois da recusa.
+    const back: NextStep = { label: "Voltar", variant: "ghost", onClick: () => setOutcome(null) };
+    switch (refusal.error.code) {
       case ErrorCode.CLASS_FULL:
       case ErrorCode.OCCURRENCE_NOT_BOOKABLE:
         return { label: "Ver outros horários", variant: "primary", onClick: onClose };
@@ -82,25 +114,24 @@ export function ClassDetailSheet({
       case ErrorCode.SCHEDULE_CONFLICT:
         return { label: "Ver minha agenda", variant: "ghost", onClick: onClose };
       case ErrorCode.INTERNAL_ERROR:
-        // Falha de rede ou do servidor: o resultado é incerto, então a nova
-        // tentativa reenvia a mesma chave.
-        return {
-          label: "Tentar novamente",
-          variant: "primary",
-          onClick: () => reserveMutation.mutate(),
-        };
+        // Resultado incerto: a reserva pode ser repetida com a mesma chave de
+        // idempotência sem risco de duplicar.
+        if (refusal.retry) {
+          return { label: "Tentar novamente", variant: "primary", onClick: refusal.retry };
+        }
+        return back;
       default:
-        return null;
+        return back;
     }
   }
 
   function renderAction(): ReactNode {
-    if (outcome?.kind === "success") {
+    if (outcome?.kind === "succeeded") {
       return (
         <div className="fb-sheet__stack">
           <div className="fb-sheet-alert fb-sheet-alert--success" role="status">
             <CheckIcon />
-            <span>Reserva confirmada com sucesso. Bom treino!</span>
+            <span>{outcome.message}</span>
           </div>
           <button type="button" className="fb-sheet-btn fb-sheet-btn--ghost" onClick={onClose}>
             Ver na agenda
@@ -110,31 +141,73 @@ export function ClassDetailSheet({
     }
 
     if (outcome?.kind === "refused") {
-      const action = nextStepAfter(outcome.error);
+      const next = nextStepAfter(outcome);
       return (
         <div className="fb-sheet__stack">
           <div className="fb-sheet-alert fb-sheet-alert--error" role="alert">
             <AlertIcon />
             <span>{outcome.error.message}</span>
           </div>
-          {action && (
-            <button
-              type="button"
-              className={`fb-sheet-btn fb-sheet-btn--${action.variant}`}
-              disabled={reserveMutation.isPending}
-              onClick={action.onClick}
-            >
-              {action.label}
-            </button>
-          )}
+          <button
+            type="button"
+            className={`fb-sheet-btn fb-sheet-btn--${next.variant}`}
+            disabled={pending}
+            onClick={next.onClick}
+          >
+            {next.label}
+          </button>
         </div>
       );
     }
 
-    if (occurrence.myReservationId) {
+    const reservationId = occurrence.myReservationId;
+    if (reservationId && confirmingCancel) {
       return (
-        <div className="fb-sheet__badges">
-          <span className="fb-sheet-badge">RESERVA CONFIRMADA</span>
+        <div className="fb-sheet__stack">
+          <p className="fb-sheet__description">
+            Cancelar sua reserva em {occurrence.name}, {day.toLowerCase()} às{" "}
+            {formatInstantHour(occurrence.startsAt)}? A vaga será liberada para outros clientes.
+          </p>
+          <div className="fb-sheet__actions">
+            <button
+              type="button"
+              className="fb-sheet-btn fb-sheet-btn--ghost"
+              disabled={pending}
+              onClick={() => setConfirmingCancel(false)}
+            >
+              Voltar
+            </button>
+            <button
+              type="button"
+              className="fb-sheet-btn fb-sheet-btn--danger"
+              disabled={pending}
+              onClick={() => cancelMutation.mutate(reservationId)}
+            >
+              Confirmar cancelamento
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    if (reservationId) {
+      return (
+        <div className="fb-sheet__stack">
+          <div className="fb-sheet__badges">
+            <span className="fb-sheet-badge">RESERVA CONFIRMADA</span>
+          </div>
+          <div className="fb-sheet__actions">
+            <button
+              type="button"
+              className="fb-sheet-btn fb-sheet-btn--ghost"
+              // A aula já começou (saiu da agenda): a mensagem acima explica,
+              // e o backend recusaria de qualquer forma.
+              disabled={detailQuery.isError}
+              onClick={() => setConfirmingCancel(true)}
+            >
+              Cancelar reserva
+            </button>
+          </div>
         </div>
       );
     }
@@ -151,7 +224,7 @@ export function ClassDetailSheet({
       <button
         type="button"
         className="fb-sheet-btn fb-sheet-btn--primary"
-        disabled={reserveMutation.isPending || detailQuery.isError}
+        disabled={pending || detailQuery.isError}
         onClick={() => reserveMutation.mutate()}
       >
         Reservar

@@ -410,6 +410,17 @@
   gap: 14px;
 }
 
+/* Linha de botões lado a lado (ex.: Cancelar reserva | Remarcar). */
+.fb-sheet__actions {
+  display: flex;
+  gap: 10px;
+}
+
+.fb-sheet__actions .fb-sheet-btn {
+  flex: 1;
+  width: auto;
+}
+
 .fb-sheet__badges {
   display: flex;
   align-items: center;
@@ -429,6 +440,14 @@
 .fb-sheet-btn--primary {
   padding: 13px;
   background: var(--color-primary-orange);
+  border: none;
+  font-size: 15px;
+}
+
+/* Ação destrutiva confirmada (mesmo vermelho-chama do .fb-btn-danger do painel). */
+.fb-sheet-btn--danger {
+  padding: 13px;
+  background: var(--color-flame-red);
   border: none;
   font-size: 15px;
 }
@@ -562,7 +581,8 @@
     display: block;
   }
 
-  .fb-sheet-btn--primary {
+  .fb-sheet-btn--primary,
+  .fb-sheet-btn--danger {
     padding: 14px;
   }
 

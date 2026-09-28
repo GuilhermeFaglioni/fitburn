@@ -1,4 +1,13 @@
-import { Body, Controller, Post, Req, UseGuards } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  Req,
+  UseGuards,
+} from "@nestjs/common";
 import {
   createReservationRequestSchema,
   type CreateReservationRequest,
@@ -27,5 +36,11 @@ export class ReservationsController {
     @Req() req: AuthenticatedRequest,
   ): Promise<ReservationDetail> {
     return this.reservationsService.create(req.authUser.sub, body, idempotencyKey);
+  }
+
+  @Post(":id/cancel")
+  @HttpCode(HttpStatus.OK)
+  cancel(@Param("id") id: string, @Req() req: AuthenticatedRequest): Promise<ReservationDetail> {
+    return this.reservationsService.cancel(req.authUser.sub, id);
   }
 }
