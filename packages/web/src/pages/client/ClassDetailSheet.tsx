@@ -36,6 +36,9 @@ export function ClassDetailSheet({
   const titleId = useId();
   const queryClient = useQueryClient();
   const [outcome, setOutcome] = useState<Outcome | null>(null);
+  // Uma chave por intenção de reserva: gerada ao abrir o detalhe e reenviada
+  // em toda nova tentativa, para uma repetição nunca criar outra reserva.
+  const [idempotencyKey] = useState(() => crypto.randomUUID());
 
   // Recarrega para mostrar a disponibilidade mais recente (ainda informativa).
   const detailQuery = useQuery({
@@ -46,7 +49,7 @@ export function ClassDetailSheet({
   const occurrence = detailQuery.data ?? item;
 
   const reserveMutation = useMutation({
-    mutationFn: () => createReservation(item.id),
+    mutationFn: () => createReservation(item.id, idempotencyKey),
     onSuccess: () => setOutcome({ kind: "success" }),
     onError: (error) =>
       setOutcome({
@@ -76,6 +79,14 @@ export function ClassDetailSheet({
         return { label: "Ver outros horários", variant: "primary", onClick: onClose };
       case ErrorCode.DUPLICATE_RESERVATION:
         return { label: "Ver minha reserva", variant: "ghost", onClick: () => setOutcome(null) };
+      case ErrorCode.INTERNAL_ERROR:
+        // Falha de rede ou do servidor: o resultado é incerto, então a nova
+        // tentativa reenvia a mesma chave.
+        return {
+          label: "Tentar novamente",
+          variant: "primary",
+          onClick: () => reserveMutation.mutate(),
+        };
       default:
         return null;
     }
@@ -108,6 +119,7 @@ export function ClassDetailSheet({
             <button
               type="button"
               className={`fb-sheet-btn fb-sheet-btn--${action.variant}`}
+              disabled={reserveMutation.isPending}
               onClick={action.onClick}
             >
               {action.label}

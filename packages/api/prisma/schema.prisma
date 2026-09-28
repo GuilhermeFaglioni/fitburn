@@ -97,6 +97,7 @@ model User {
   defaultForTemplates ClassTemplate[]
   taughtOccurrences   ClassOccurrence[]
   reservations        Reservation[]
+  idempotencyRecords  IdempotencyRecord[]
 
   @@map("users")
 }
@@ -206,6 +207,26 @@ model Reservation {
   @@index([clientId, status])
   @@index([occurrenceId, status])
   @@map("reservations")
+}
+
+/// Resultado memorizado de uma solicitação com `Idempotency-Key`: a mesma
+/// intenção repetida devolve o resultado original (inclusive recusas) em vez
+/// de agir de novo. Gravado na mesma transação da operação.
+model IdempotencyRecord {
+  id           String   @id @default(uuid())
+  key          String
+  /// sha256 da operação + corpo da requisição: a chave reutilizada para
+  /// outra intenção é recusada (IDEMPOTENCY_KEY_REUSED).
+  fingerprint  String
+  statusCode   Int
+  responseBody Json
+  createdAt    DateTime @default(now())
+
+  clientId String
+  client   User   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@unique([clientId, key])
+  @@map("idempotency_records")
 }
 
 model RefreshToken {

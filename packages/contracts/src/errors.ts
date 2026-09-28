@@ -22,6 +22,7 @@ export const ErrorCode = {
   CLASS_FULL: "CLASS_FULL",
   DUPLICATE_RESERVATION: "DUPLICATE_RESERVATION",
   OCCURRENCE_NOT_BOOKABLE: "OCCURRENCE_NOT_BOOKABLE",
+  IDEMPOTENCY_KEY_REUSED: "IDEMPOTENCY_KEY_REUSED",
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];

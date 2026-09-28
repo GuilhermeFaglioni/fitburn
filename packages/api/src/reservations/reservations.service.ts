@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { HttpStatus, Injectable } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import {
   ErrorCode,
@@ -12,6 +12,7 @@ import {
 } from "@fitburn/contracts";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { DomainError } from "../common/errors/domain-error.js";
+import { replay, runIdempotent } from "./idempotency.js";
 
 const DETAIL_INCLUDE = {
   occurrence: {
@@ -42,7 +43,10 @@ const TRANSACTION_OPTIONS = {
  * 1. trava a linha da ocorrência (FOR UPDATE) — serializa a disputa por vagas;
  * 2. adquire um lock transacional por cliente — serializa as reservas de um
  *    mesmo cliente;
- * 3. revalida tudo com o estado já travado e grava com um único commit.
+ * 3. consulta o registro de idempotência (solicitação repetida devolve o
+ *    resultado original, inclusive recusas);
+ * 4. revalida tudo com o estado já travado e grava a reserva e o registro de
+ *    idempotência com um único commit.
  * Ordem de locks fixa em toda operação (ocorrências por id, depois cliente)
  * para não haver deadlock.
  *
@@ -53,18 +57,32 @@ const TRANSACTION_OPTIONS = {
 export class ReservationsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(clientId: string, input: CreateReservationRequest): Promise<ReservationDetail> {
-    const reservationId = await this.prisma.$transaction(async (tx) => {
+  async create(
+    clientId: string,
+    input: CreateReservationRequest,
+    idempotencyKey: string,
+  ): Promise<ReservationDetail> {
+    const outcome = await this.prisma.$transaction(async (tx) => {
       await this.lockOccurrences(tx, [input.occurrenceId]);
       await this.lockClient(tx, clientId);
-      await this.assertClientActive(tx, clientId);
-      return this.book(tx, clientId, input.occurrenceId);
+      return runIdempotent(
+        tx,
+        clientId,
+        idempotencyKey,
+        { operation: "create", occurrenceId: input.occurrenceId },
+        HttpStatus.CREATED,
+        async () => {
+          await this.assertClientActive(tx, clientId);
+          const reservationId = await this.book(tx, clientId, input.occurrenceId);
+          return this.detailById(tx, reservationId);
+        },
+      );
     }, TRANSACTION_OPTIONS);
-    return this.detailById(reservationId);
+    return replay(outcome);
   }
 
-  private async detailById(id: string): Promise<ReservationDetail> {
-    const reservation = await this.prisma.reservation.findUniqueOrThrow({
+  private async detailById(tx: Tx, id: string): Promise<ReservationDetail> {
+    const reservation = await tx.reservation.findUniqueOrThrow({
       where: { id },
       include: DETAIL_INCLUDE,
     });

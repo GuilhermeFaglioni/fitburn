@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import type { INestApplication } from "@nestjs/common";
 import request from "supertest";
 import { cleanDatabase, testPrisma } from "./db-test-helper.js";
@@ -67,10 +68,11 @@ describe("Reservas (HTTP)", () => {
     });
   }
 
-  function reserve(token: string, occurrenceId: string) {
+  function reserve(token: string, occurrenceId: string, key: string = randomUUID()) {
     return request(app.getHttpServer())
       .post("/api/reservations")
       .set("Authorization", `Bearer ${token}`)
+      .set("Idempotency-Key", key)
       .send({ occurrenceId });
   }
 
@@ -139,7 +141,7 @@ describe("Reservas (HTTP)", () => {
 
     it("recusa uma segunda reserva do mesmo cliente na mesma aula com DUPLICATE_RESERVATION", async () => {
       const ana = await createClient("ana");
-      const occurrence = await createOccurrence(new Date(Date.now() + 3 * HOUR), { capacity: 1 });
+      const occurrence = await createOccurrence(new Date(Date.now() + 3 * HOUR), { capacity: 2 });
       await reserve(ana.token, occurrence.id);
 
       const response = await reserve(ana.token, occurrence.id);
@@ -186,6 +188,7 @@ describe("Reservas (HTTP)", () => {
       const invalid = await request(app.getHttpServer())
         .post("/api/reservations")
         .set("Authorization", `Bearer ${ana.token}`)
+        .set("Idempotency-Key", randomUUID())
         .send({});
 
       expect(missing.status).toBe(404);
@@ -218,6 +221,101 @@ describe("Reservas (HTTP)", () => {
       expect(await testPrisma.reservation.count({ where: { occurrenceId: occurrence.id } })).toBe(
         1,
       );
+    });
+  });
+
+  describe("solicitação repetida (idempotência)", () => {
+    it("exige o header Idempotency-Key em formato UUID", async () => {
+      const ana = await createClient("ana");
+      const occurrence = await createOccurrence(new Date(Date.now() + 3 * HOUR));
+
+      const missing = await request(app.getHttpServer())
+        .post("/api/reservations")
+        .set("Authorization", `Bearer ${ana.token}`)
+        .send({ occurrenceId: occurrence.id });
+      const malformed = await reserve(ana.token, occurrence.id, "nao-e-uuid");
+
+      expect(missing.status).toBe(400);
+      expect(missing.body.code).toBe("VALIDATION_ERROR");
+      expect(malformed.status).toBe(400);
+      expect(await testPrisma.reservation.count()).toBe(0);
+    });
+
+    it("mesma chave e mesmo corpo em sequência devolvem o resultado original", async () => {
+      const ana = await createClient("ana");
+      const occurrence = await createOccurrence(new Date(Date.now() + 3 * HOUR));
+      const key = randomUUID();
+
+      const first = await reserve(ana.token, occurrence.id, key);
+      const second = await reserve(ana.token, occurrence.id, key);
+
+      expect(first.status).toBe(201);
+      expect(second.status).toBe(201);
+      expect(second.body).toEqual(first.body);
+      expect(await testPrisma.reservation.count()).toBe(1);
+    });
+
+    it("mesma chave em paralelo: uma única reserva e respostas idênticas", async () => {
+      const ana = await createClient("ana");
+      const occurrence = await createOccurrence(new Date(Date.now() + 3 * HOUR));
+      const key = randomUUID();
+
+      const responses = await Promise.all(
+        Array.from({ length: 5 }, () => reserve(ana.token, occurrence.id, key)),
+      );
+
+      expect(responses.map((response) => response.status)).toEqual(Array(5).fill(201));
+      for (const response of responses) expect(response.body).toEqual(responses[0].body);
+      expect(await testPrisma.reservation.count()).toBe(1);
+    });
+
+    it("memoriza a recusa: repetir a chave devolve o mesmo erro mesmo que a vaga apareça", async () => {
+      const ana = await createClient("ana");
+      const bruno = await createClient("bruno");
+      const occurrence = await createOccurrence(new Date(Date.now() + 3 * HOUR), { capacity: 1 });
+      await reserve(ana.token, occurrence.id);
+      const key = randomUUID();
+
+      const refused = await reserve(bruno.token, occurrence.id, key);
+      await testPrisma.classOccurrence.update({
+        where: { id: occurrence.id },
+        data: { capacity: 2 },
+      });
+      const repeated = await reserve(bruno.token, occurrence.id, key);
+      const newIntent = await reserve(bruno.token, occurrence.id);
+
+      expect(refused.status).toBe(409);
+      expect(repeated.status).toBe(409);
+      expect(repeated.body).toEqual(refused.body);
+      expect(newIntent.status).toBe(201);
+    });
+
+    it("chave reutilizada com outro corpo é recusada com 422 IDEMPOTENCY_KEY_REUSED", async () => {
+      const ana = await createClient("ana");
+      const spinning = await createOccurrence(new Date(Date.now() + 3 * HOUR));
+      const yoga = await createOccurrence(new Date(Date.now() + 6 * HOUR), { name: "Yoga" });
+      const key = randomUUID();
+      await reserve(ana.token, spinning.id, key);
+
+      const response = await reserve(ana.token, yoga.id, key);
+
+      expect(response.status).toBe(422);
+      expect(response.body.code).toBe("IDEMPOTENCY_KEY_REUSED");
+      expect(await testPrisma.reservation.count()).toBe(1);
+    });
+
+    it("a chave é por cliente: a mesma chave de outro cliente é outra intenção", async () => {
+      const ana = await createClient("ana");
+      const bruno = await createClient("bruno");
+      const occurrence = await createOccurrence(new Date(Date.now() + 3 * HOUR));
+      const key = randomUUID();
+
+      const fromAna = await reserve(ana.token, occurrence.id, key);
+      const fromBruno = await reserve(bruno.token, occurrence.id, key);
+
+      expect(fromAna.status).toBe(201);
+      expect(fromBruno.status).toBe(201);
+      expect(fromBruno.body.id).not.toBe(fromAna.body.id);
     });
   });
 });

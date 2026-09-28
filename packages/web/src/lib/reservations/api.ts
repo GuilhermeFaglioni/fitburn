@@ -1,11 +1,19 @@
-import { reservationDetailSchema, type ReservationDetail } from "@fitburn/contracts";
+import {
+  IDEMPOTENCY_KEY_HEADER,
+  reservationDetailSchema,
+  type ReservationDetail,
+} from "@fitburn/contracts";
 import { authFetch } from "../auth/authFetch";
 import { parseOrThrow } from "../auth/api";
 
-export async function createReservation(occurrenceId: string): Promise<ReservationDetail> {
+/** `idempotencyKey`: uma por intenção de reserva, reutilizada nas novas tentativas. */
+export async function createReservation(
+  occurrenceId: string,
+  idempotencyKey: string,
+): Promise<ReservationDetail> {
   const response = await authFetch("/api/reservations", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", [IDEMPOTENCY_KEY_HEADER]: idempotencyKey },
     body: JSON.stringify({ occurrenceId }),
   });
   return reservationDetailSchema.parse(await parseOrThrow(response));

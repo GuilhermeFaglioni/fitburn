@@ -13,6 +13,18 @@ export const reservationStatusSchema = z.enum(
   Object.values(ReservationStatus) as [ReservationStatusName, ...ReservationStatusName[]],
 );
 
+/**
+ * Header obrigatório na criação e remarcação: um UUID gerado pelo cliente por
+ * intenção de reserva e reutilizado nas novas tentativas dessa intenção.
+ */
+export const IDEMPOTENCY_KEY_HEADER = "Idempotency-Key";
+export const idempotencyKeySchema = z.uuid({
+  error: (issue) =>
+    issue.input === undefined
+      ? "O header Idempotency-Key é obrigatório."
+      : "O header Idempotency-Key deve ser um UUID.",
+});
+
 export const createReservationRequestSchema = z.object({
   occurrenceId: z.string().min(1, "Selecione uma aula."),
 });

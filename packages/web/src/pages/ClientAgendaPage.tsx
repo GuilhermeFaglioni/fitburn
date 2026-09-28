@@ -250,7 +250,9 @@ export function ClientAgendaPage() {
         )}
       </section>
 
-      {openItem && <ClassDetailSheet item={openItem} onClose={() => setOpenItem(null)} />}
+      {openItem && (
+        <ClassDetailSheet key={openItem.id} item={openItem} onClose={() => setOpenItem(null)} />
+      )}
     </div>
   );
 }

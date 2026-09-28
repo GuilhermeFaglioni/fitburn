@@ -6,6 +6,7 @@ import {
 } from "@fitburn/contracts";
 import { JwtAuthGuard, type AuthenticatedRequest } from "../auth/jwt-auth.guard.js";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe.js";
+import { IdempotencyKey } from "./idempotency-key.decorator.js";
 import { ReservationsService } from "./reservations.service.js";
 
 /**
@@ -22,8 +23,9 @@ export class ReservationsController {
   @Post()
   create(
     @Body(new ZodValidationPipe(createReservationRequestSchema)) body: CreateReservationRequest,
+    @IdempotencyKey() idempotencyKey: string,
     @Req() req: AuthenticatedRequest,
   ): Promise<ReservationDetail> {
-    return this.reservationsService.create(req.authUser.sub, body);
+    return this.reservationsService.create(req.authUser.sub, body, idempotencyKey);
   }
 }

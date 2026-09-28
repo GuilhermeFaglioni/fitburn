@@ -279,6 +279,35 @@ describe("ClientAgendaPage", () => {
     ).toBeInTheDocument();
   });
 
+  it("nova tentativa após falha de rede reenvia a mesma Idempotency-Key", async () => {
+    const occurrence = item(TODAY, "18:00");
+    const keys: (string | null)[] = [];
+    server.use(
+      http.get("/api/agenda", () => HttpResponse.json([occurrence])),
+      http.get("/api/agenda/:id", () => HttpResponse.json(occurrence)),
+      http.post("/api/reservations", ({ request }) => {
+        keys.push(request.headers.get("Idempotency-Key"));
+        if (keys.length === 1) return HttpResponse.error();
+        return HttpResponse.json(reservationOf(occurrence), { status: 201 });
+      }),
+    );
+
+    renderPage();
+    const { user, sheet } = await openDetail("18h00");
+    await user.click(within(sheet).getByRole("button", { name: "Reservar" }));
+    expect(await within(sheet).findByRole("alert")).toHaveTextContent(
+      "Não foi possível concluir a reserva. Tente novamente.",
+    );
+    await user.click(within(sheet).getByRole("button", { name: "Tentar novamente" }));
+
+    expect(
+      await within(sheet).findByText("Reserva confirmada com sucesso. Bom treino!"),
+    ).toBeInTheDocument();
+    expect(keys).toHaveLength(2);
+    expect(keys[0]).toMatch(/^[0-9a-f-]{36}$/);
+    expect(keys[1]).toBe(keys[0]);
+  });
+
   it("aula já reservada mostra RESERVA CONFIRMADA em vez de Reservar", async () => {
     const occurrence = item(TODAY, "18:00", { myReservationId: "res-1" });
     server.use(
