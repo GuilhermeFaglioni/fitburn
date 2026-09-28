@@ -13,6 +13,7 @@ export const ErrorCode = {
   PROFILE_NOT_FOUND: "PROFILE_NOT_FOUND",
   PROFILE_IN_USE: "PROFILE_IN_USE",
   SYSTEM_PROFILE_IMMUTABLE: "SYSTEM_PROFILE_IMMUTABLE",
+  MODALITY_IN_USE: "MODALITY_IN_USE",
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];

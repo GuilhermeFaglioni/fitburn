@@ -20,6 +20,11 @@ const MENU_ITEMS: MenuItem[] = [
     label: "Usuários e perfis",
     to: "/usuarios",
   },
+  {
+    modules: [Module.TEMPLATES_DE_AULA],
+    label: "Templates & modalidades",
+    to: "/templates-e-modalidades",
+  },
 ];
 
 export function AppMenu() {

@@ -94,7 +94,42 @@ model User {
 
   refreshTokens RefreshToken[]
 
+  defaultForTemplates ClassTemplate[]
+
   @@map("users")
+}
+
+model Modality {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  templates ClassTemplate[]
+
+  @@map("modalities")
+}
+
+model ClassTemplate {
+  id              String   @id @default(uuid())
+  name            String
+  description     String?
+  durationMinutes Int
+  capacity        Int
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  modalityId String
+  modality   Modality @relation(fields: [modalityId], references: [id], onDelete: Restrict)
+
+  defaultInstructorId String?
+  defaultInstructor   User?   @relation(fields: [defaultInstructorId], references: [id], onDelete: SetNull)
+
+  @@index([modalityId])
+  @@map("class_templates")
 }
 
 model RefreshToken {

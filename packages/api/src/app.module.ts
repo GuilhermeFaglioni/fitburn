@@ -7,6 +7,7 @@ import { JwtAuthModule } from "./auth/jwt-auth.module.js";
 import { UsersModule } from "./users/users.module.js";
 import { PermissionsModule } from "./permissions/permissions.module.js";
 import { ProfilesModule } from "./profiles/profiles.module.js";
+import { CatalogModule } from "./catalog/catalog.module.js";
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { ProfilesModule } from "./profiles/profiles.module.js";
     PermissionsModule,
     UsersModule,
     ProfilesModule,
+    CatalogModule,
     AuthModule,
   ],
 })
