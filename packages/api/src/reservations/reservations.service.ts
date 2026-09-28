@@ -17,6 +17,7 @@ import {
 } from "@fitburn/contracts";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { DomainError } from "../common/errors/domain-error.js";
+import { lockOccurrenceRows } from "../agenda/occurrence-lock.js";
 import { replay, runIdempotent } from "./idempotency.js";
 
 const DETAIL_INCLUDE = {
@@ -93,7 +94,7 @@ export class ReservationsService {
     idempotencyKey: string,
   ): Promise<ReservationDetail> {
     const outcome = await this.prisma.$transaction(async (tx) => {
-      await this.lockOccurrences(tx, [input.occurrenceId]);
+      await lockOccurrenceRows(tx, [input.occurrenceId]);
       await this.lockClient(tx, clientId);
       return runIdempotent(
         tx,
@@ -118,7 +119,7 @@ export class ReservationsService {
   async cancel(clientId: string, reservationId: string): Promise<ReservationDetail> {
     return this.prisma.$transaction(async (tx) => {
       const { occurrenceId } = await this.findOwnReservation(tx, clientId, reservationId);
-      await this.lockOccurrences(tx, [occurrenceId]);
+      await lockOccurrenceRows(tx, [occurrenceId]);
       await this.lockClient(tx, clientId);
       await this.cancelLocked(tx, reservationId, "cancelar");
       return this.detailById(tx, reservationId);
@@ -141,7 +142,7 @@ export class ReservationsService {
   ): Promise<ReservationDetail> {
     const outcome = await this.prisma.$transaction(async (tx) => {
       const original = await this.findOwnReservation(tx, clientId, reservationId);
-      await this.lockOccurrences(tx, [original.occurrenceId, input.occurrenceId]);
+      await lockOccurrenceRows(tx, [original.occurrenceId, input.occurrenceId]);
       await this.lockClient(tx, clientId);
       return runIdempotent(
         tx,
@@ -229,13 +230,6 @@ export class ReservationsService {
       include: DETAIL_INCLUDE,
     });
     return this.toDetail(reservation);
-  }
-
-  /** Trava as ocorrências em ordem determinística (por id). */
-  private async lockOccurrences(tx: Tx, occurrenceIds: string[]): Promise<void> {
-    for (const id of [...occurrenceIds].sort()) {
-      await tx.$queryRaw`SELECT id FROM class_occurrences WHERE id = ${id} FOR UPDATE`;
-    }
   }
 
   /** Lock por cliente, liberado no commit/rollback. */

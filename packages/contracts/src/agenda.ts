@@ -89,6 +89,12 @@ export const occurrenceConflictSchema = z.object({
 });
 export type OccurrenceConflict = z.infer<typeof occurrenceConflictSchema>;
 
+/** `details` de OCCURRENCE_HAS_RESERVATIONS e CHANGE_INVALIDATES_RESERVATIONS. */
+export const occurrenceReservationsDetailsSchema = z.object({
+  confirmedReservations: z.number().int(),
+});
+export type OccurrenceReservationsDetails = z.infer<typeof occurrenceReservationsDetailsSchema>;
+
 /** `details` do erro OCCURRENCE_OVERLAP. */
 export const occurrenceOverlapDetailsSchema = z.object({
   conflicts: z.array(occurrenceConflictSchema),

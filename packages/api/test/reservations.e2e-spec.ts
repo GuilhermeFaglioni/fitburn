@@ -855,4 +855,192 @@ describe("Reservas (HTTP)", () => {
       expect(past.body).toEqual([]);
     });
   });
+
+  describe("proteção da agenda administrativa", () => {
+    async function loginAsAdmin() {
+      const profile = await createAccessProfile({ name: "Administrador", isSystem: true });
+      const admin = await createUser({
+        email: "admin@fitburn.local",
+        password: PASSWORD,
+        profileId: profile.id,
+        fullName: "Administração",
+      });
+      return loginAndGetAccessToken(app, admin.email, PASSWORD);
+    }
+
+    function admin(token: string) {
+      const server = app.getHttpServer();
+      return {
+        cancel: (id: string) =>
+          request(server)
+            .post(`/api/occurrences/${id}/cancel`)
+            .set("Authorization", `Bearer ${token}`),
+        remove: (id: string) =>
+          request(server).delete(`/api/occurrences/${id}`).set("Authorization", `Bearer ${token}`),
+        update: (id: string, body: object) =>
+          request(server)
+            .patch(`/api/occurrences/${id}`)
+            .set("Authorization", `Bearer ${token}`)
+            .send(body),
+        list: (from: string, to: string) =>
+          request(server)
+            .get(`/api/occurrences?from=${from}&to=${to}`)
+            .set("Authorization", `Bearer ${token}`),
+      };
+    }
+
+    async function occurrenceWithReservations(confirmed: number, cancelled = 0) {
+      const occurrence = await createOccurrence(new Date(Date.now() + 24 * HOUR), {
+        capacity: 10,
+      });
+      for (let index = 0; index < confirmed + cancelled; index += 1) {
+        const client = await createClient(`cliente${index}`);
+        const reservation = await reserve(client.token, occurrence.id);
+        if (index >= confirmed) await cancel(client.token, reservation.body.id);
+      }
+      return occurrence;
+    }
+
+    it("a grade administrativa informa as reservas confirmadas de cada aula", async () => {
+      const token = await loginAsAdmin();
+      const occurrence = await occurrenceWithReservations(3, 1);
+      // Um dia de folga para cada lado: a listagem usa datas locais da academia.
+      const isoDay = (offset: number) =>
+        new Date(occurrence.startsAt.getTime() + offset * 24 * HOUR).toISOString().slice(0, 10);
+
+      const response = await admin(token).list(isoDay(-1), isoDay(1));
+
+      expect(response.body).toEqual([
+        expect.objectContaining({ id: occurrence.id, bookedCount: 3, capacity: 10 }),
+      ]);
+    });
+
+    it("cancelar aula com reservas confirmadas → OCCURRENCE_HAS_RESERVATIONS", async () => {
+      const token = await loginAsAdmin();
+      const occurrence = await occurrenceWithReservations(2);
+
+      const response = await admin(token).cancel(occurrence.id);
+
+      expect(response.status).toBe(409);
+      expect(response.body).toMatchObject({
+        code: "OCCURRENCE_HAS_RESERVATIONS",
+        details: { confirmedReservations: 2 },
+      });
+      const stored = await testPrisma.classOccurrence.findUniqueOrThrow({
+        where: { id: occurrence.id },
+      });
+      expect(stored.status).toBe("SCHEDULED");
+    });
+
+    it("aula só com reservas canceladas pode ser excluída, e elas saem junto", async () => {
+      const token = await loginAsAdmin();
+      const occurrence = await occurrenceWithReservations(0, 1);
+
+      const removed = await admin(token).remove(occurrence.id);
+
+      expect(removed.status).toBe(204);
+      expect(await testPrisma.classOccurrence.count({ where: { id: occurrence.id } })).toBe(0);
+      expect(await testPrisma.reservation.count({ where: { occurrenceId: occurrence.id } })).toBe(
+        0,
+      );
+    });
+
+    it("aula com presença registrada não pode ser excluída", async () => {
+      const token = await loginAsAdmin();
+      const occurrence = await occurrenceWithReservations(1);
+      await testPrisma.reservation.updateMany({
+        where: { occurrenceId: occurrence.id },
+        data: { status: "COMPLETED" },
+      });
+
+      const removed = await admin(token).remove(occurrence.id);
+
+      expect(removed.status).toBe(409);
+      expect(removed.body).toMatchObject({
+        code: "OCCURRENCE_HAS_RESERVATIONS",
+        details: { confirmedReservations: 0 },
+      });
+    });
+
+    it("excluir aula com reservas confirmadas → OCCURRENCE_HAS_RESERVATIONS", async () => {
+      const token = await loginAsAdmin();
+      const occurrence = await occurrenceWithReservations(1);
+
+      const response = await admin(token).remove(occurrence.id);
+
+      expect(response.status).toBe(409);
+      expect(response.body).toMatchObject({
+        code: "OCCURRENCE_HAS_RESERVATIONS",
+        details: { confirmedReservations: 1 },
+      });
+      expect(await testPrisma.classOccurrence.count({ where: { id: occurrence.id } })).toBe(1);
+    });
+
+    it("capacidade abaixo das reservas confirmadas → CHANGE_INVALIDATES_RESERVATIONS", async () => {
+      const token = await loginAsAdmin();
+      const occurrence = await occurrenceWithReservations(3);
+
+      const below = await admin(token).update(occurrence.id, { capacity: 2 });
+      const equal = await admin(token).update(occurrence.id, { capacity: 3 });
+
+      expect(below.status).toBe(409);
+      expect(below.body).toMatchObject({
+        code: "CHANGE_INVALIDATES_RESERVATIONS",
+        details: { confirmedReservations: 3 },
+      });
+      expect(equal.status).toBe(200);
+      expect(equal.body.capacity).toBe(3);
+    });
+
+    it("mudar horário ou duração de aula com reservas → CHANGE_INVALIDATES_RESERVATIONS", async () => {
+      const token = await loginAsAdmin();
+      const occurrence = await occurrenceWithReservations(1);
+      const staff = await createUser({
+        email: "rafael@fitburn.local",
+        password: PASSWORD,
+        profileId: (await createAccessProfile({ name: "Professor" })).id,
+        fullName: "Rafael Andrade",
+      });
+
+      const moved = await admin(token).update(occurrence.id, { startTime: "23:30" });
+      const longer = await admin(token).update(occurrence.id, { durationMinutes: 90 });
+      const substitute = await admin(token).update(occurrence.id, { instructorId: staff.id });
+
+      expect(moved.status).toBe(409);
+      expect(moved.body.code).toBe("CHANGE_INVALIDATES_RESERVATIONS");
+      expect(longer.status).toBe(409);
+      expect(longer.body.code).toBe("CHANGE_INVALIDATES_RESERVATIONS");
+      expect(substitute.status).toBe(200);
+      expect(substitute.body.instructor).toMatchObject({ id: staff.id });
+      // Trocar só o professor não mexe no horário (nem na precisão gravada).
+      expect(substitute.body.startsAt).toBe(occurrence.startsAt.toISOString());
+    });
+
+    it("cancelamento da aula e reserva simultâneos: nunca fica reserva confirmada em aula cancelada", async () => {
+      const token = await loginAsAdmin();
+      const client = await createClient("ana");
+      const occurrence = await createOccurrence(new Date(Date.now() + 24 * HOUR));
+
+      const [booking, cancelling] = await Promise.all([
+        reserve(client.token, occurrence.id),
+        admin(token).cancel(occurrence.id),
+      ]);
+
+      const stored = await testPrisma.classOccurrence.findUniqueOrThrow({
+        where: { id: occurrence.id },
+      });
+      const confirmed = await testPrisma.reservation.count({
+        where: { occurrenceId: occurrence.id, status: "CONFIRMED" },
+      });
+      if (stored.status === "CANCELLED") {
+        expect(cancelling.status).toBe(201);
+        expect(booking.body.code).toBe("OCCURRENCE_NOT_BOOKABLE");
+        expect(confirmed).toBe(0);
+      } else {
+        expect(booking.status).toBe(201);
+        expect(cancelling.body.code).toBe("OCCURRENCE_HAS_RESERVATIONS");
+        expect(confirmed).toBe(1);
+      }
+    });
+  });
 });
