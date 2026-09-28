@@ -10,8 +10,10 @@ import {
 } from "@nestjs/common";
 import {
   createReservationRequestSchema,
+  rescheduleReservationRequestSchema,
   type CreateReservationRequest,
   type ReservationDetail,
+  type RescheduleReservationRequest,
 } from "@fitburn/contracts";
 import { JwtAuthGuard, type AuthenticatedRequest } from "../auth/jwt-auth.guard.js";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe.js";
@@ -42,5 +44,16 @@ export class ReservationsController {
   @HttpCode(HttpStatus.OK)
   cancel(@Param("id") id: string, @Req() req: AuthenticatedRequest): Promise<ReservationDetail> {
     return this.reservationsService.cancel(req.authUser.sub, id);
+  }
+
+  @Post(":id/reschedule")
+  reschedule(
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(rescheduleReservationRequestSchema))
+    body: RescheduleReservationRequest,
+    @IdempotencyKey() idempotencyKey: string,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<ReservationDetail> {
+    return this.reservationsService.reschedule(req.authUser.sub, id, body, idempotencyKey);
   }
 }

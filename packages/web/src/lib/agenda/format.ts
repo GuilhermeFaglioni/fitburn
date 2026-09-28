@@ -1,4 +1,4 @@
-import { addDays, formatHour, utcToGymDateTime } from "@fitburn/contracts";
+import { addDays, formatHour, gymToday, utcToGymDateTime, weekdayOf } from "@fitburn/contracts";
 
 export { formatHour };
 
@@ -64,4 +64,15 @@ const WEEKDAYS_FULL = [
 export function formatDayHeading(date: string, weekday: number, today: string): string {
   const label = `${WEEKDAYS_FULL[weekday]} ${parts(date).day}`;
   return date === today ? `Hoje, ${label}` : label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+/** "Hoje" ou "seg 05/10" — o dia de uma aula (instante ISO) no fuso da academia. */
+export function formatClassDay(startsAt: string): string {
+  const { date } = utcToGymDateTime(startsAt);
+  return date === gymToday() ? "Hoje" : formatShortDate(date, weekdayOf(date));
+}
+
+/** "hoje às 07h00" ou "seg 05/10 às 07h00" — quando uma aula acontece, no meio de uma frase. */
+export function formatClassMoment(startsAt: string): string {
+  return `${formatClassDay(startsAt).toLowerCase()} às ${formatInstantHour(startsAt)}`;
 }

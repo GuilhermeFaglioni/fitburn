@@ -422,6 +422,136 @@ describe("ClientAgendaPage", () => {
     await user.click(within(sheet).getByRole("button", { name: "Voltar" }));
     expect(within(sheet).getByText("RESERVA CONFIRMADA")).toBeInTheDocument();
   });
+
+  describe("remarcar", () => {
+    const original = item(TODAY, "07:00", { id: "occ-original", myReservationId: "res-1" });
+    const target = item(TODAY, "18:00", {
+      id: "occ-target",
+      name: "Yoga",
+      modality: { id: "m3", name: "Yoga" },
+      available: 4,
+    });
+
+    function useAgenda() {
+      server.use(
+        http.get("/api/agenda", () => HttpResponse.json([original, target])),
+        http.get("/api/agenda/:id", ({ params }) =>
+          HttpResponse.json(params.id === original.id ? original : target),
+        ),
+      );
+    }
+
+    async function startRescheduling() {
+      const user = userEvent.setup();
+      const day = await screen.findByRole("region", { name: "Aulas do dia" });
+      await user.click(await within(day).findByRole("button", { name: /07h00/ }));
+      const sheet = screen.getByRole("dialog", { name: "Treino Funcional" });
+      await user.click(within(sheet).getByRole("button", { name: "Remarcar" }));
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+      await user.click(within(day).getByRole("button", { name: /18h00/ }));
+      return { user, sheet: screen.getByRole("dialog", { name: "Yoga" }) };
+    }
+
+    it("escolhe a nova aula na agenda e remarca numa única ação", async () => {
+      useAgenda();
+      let requestBody: unknown;
+      let key: string | null = null;
+      server.use(
+        http.post("/api/reservations/:id/reschedule", async ({ params, request }) => {
+          expect(params.id).toBe("res-1");
+          requestBody = await request.json();
+          key = request.headers.get("Idempotency-Key");
+          return HttpResponse.json({ ...reservationOf(target), id: "res-2" }, { status: 201 });
+        }),
+      );
+
+      renderPage();
+      const { user, sheet } = await startRescheduling();
+      expect(screen.getByText(/Remarcando Treino Funcional/)).toBeInTheDocument();
+      await user.click(within(sheet).getByRole("button", { name: "Remarcar para esta aula" }));
+
+      expect(await within(sheet).findByRole("status")).toHaveTextContent(
+        "Reserva remarcada. Bom treino!",
+      );
+      expect(requestBody).toEqual({ occurrenceId: target.id });
+      expect(key).toMatch(/^[0-9a-f-]{36}$/);
+      expect(screen.queryByText(/Remarcando Treino Funcional/)).not.toBeInTheDocument();
+    });
+
+    it("remarcação recusada mostra o motivo e que a reserva original continua ativa", async () => {
+      useAgenda();
+      server.use(
+        http.post("/api/reservations/:id/reschedule", () =>
+          HttpResponse.json(
+            {
+              code: "CLASS_FULL",
+              message: "Essa aula ficou lotada enquanto você confirmava. Escolha outro horário.",
+              details: { currentAvailableSpots: 0 },
+            },
+            { status: 409 },
+          ),
+        ),
+      );
+
+      renderPage();
+      const { user, sheet } = await startRescheduling();
+      await user.click(within(sheet).getByRole("button", { name: "Remarcar para esta aula" }));
+
+      const alert = await within(sheet).findByRole("alert");
+      expect(alert).toHaveTextContent("Não foi possível remarcar");
+      expect(alert).toHaveTextContent("Essa aula ficou lotada enquanto você confirmava.");
+      expect(alert).toHaveTextContent(
+        "Sua reserva original em Treino Funcional, hoje às 07h00 continua confirmada.",
+      );
+      expect(within(sheet).getByText("RESERVA ORIGINAL ATIVA")).toBeInTheDocument();
+
+      await user.click(within(sheet).getByRole("button", { name: "Tentar remarcar novamente" }));
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+      expect(screen.getByText(/Remarcando Treino Funcional/)).toBeInTheDocument();
+    });
+
+    it("falha do servidor na remarcação não afirma que a original continua e repete com a mesma chave", async () => {
+      useAgenda();
+      const keys: (string | null)[] = [];
+      server.use(
+        http.post("/api/reservations/:id/reschedule", ({ request }) => {
+          keys.push(request.headers.get("Idempotency-Key"));
+          if (keys.length === 1) {
+            return HttpResponse.json(
+              { code: "INTERNAL_ERROR", message: "Erro interno inesperado." },
+              { status: 500 },
+            );
+          }
+          return HttpResponse.json({ ...reservationOf(target), id: "res-2" }, { status: 201 });
+        }),
+      );
+
+      renderPage();
+      const { user, sheet } = await startRescheduling();
+      await user.click(within(sheet).getByRole("button", { name: "Remarcar para esta aula" }));
+
+      expect(await within(sheet).findByRole("alert")).toHaveTextContent("Erro interno inesperado.");
+      expect(within(sheet).queryByText("RESERVA ORIGINAL ATIVA")).not.toBeInTheDocument();
+      await user.click(within(sheet).getByRole("button", { name: "Tentar novamente" }));
+
+      expect(await within(sheet).findByRole("status")).toHaveTextContent(
+        "Reserva remarcada. Bom treino!",
+      );
+      expect(keys).toHaveLength(2);
+      expect(keys[1]).toBe(keys[0]);
+    });
+
+    it("desistir sai do modo de remarcação", async () => {
+      useAgenda();
+
+      renderPage();
+      const { user } = await startRescheduling();
+      await user.click(screen.getAllByRole("button", { name: "Fechar" })[0]);
+      await user.click(screen.getByRole("button", { name: "Desistir" }));
+
+      expect(screen.queryByText(/Remarcando Treino Funcional/)).not.toBeInTheDocument();
+    });
+  });
 });
 
 function reservationOf(occurrence: ClientAgendaItem) {

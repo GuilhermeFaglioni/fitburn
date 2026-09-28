@@ -30,6 +30,12 @@ export const createReservationRequestSchema = z.object({
 });
 export type CreateReservationRequest = z.infer<typeof createReservationRequestSchema>;
 
+/** Remarcação: troca a reserva por outra aula numa única operação. */
+export const rescheduleReservationRequestSchema = z.object({
+  occurrenceId: z.string().min(1, "Selecione a nova aula."),
+});
+export type RescheduleReservationRequest = z.infer<typeof rescheduleReservationRequestSchema>;
+
 /** A aula de uma reserva — inclusive passada ou cancelada, ao contrário da agenda. */
 export const reservationOccurrenceSchema = z.object({
   id: z.string(),

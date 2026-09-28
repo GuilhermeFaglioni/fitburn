@@ -15,11 +15,12 @@ import {
   formatDayHeading,
   formatDayLabel,
   formatHour,
+  formatClassMoment,
   formatInstantHour,
   formatWeekRange,
   WEEKDAYS_SHORT,
 } from "../lib/agenda/format";
-import { ClassDetailSheet } from "./client/ClassDetailSheet";
+import { ClassDetailSheet, type Rescheduling } from "./client/ClassDetailSheet";
 
 function availabilityText(item: ClientAgendaItem, style: "card" | "chip"): string {
   const ratio = `${item.available}/${item.capacity}`;
@@ -81,6 +82,7 @@ export function ClientAgendaPage() {
   const [weekStart, setWeekStart] = useState(() => startOfWeek(today));
   const [selectedDay, setSelectedDay] = useState(today);
   const [openItem, setOpenItem] = useState<ClientAgendaItem | null>(null);
+  const [rescheduling, setRescheduling] = useState<Rescheduling | null>(null);
 
   const weekEnd = addDays(weekStart, 6);
   const agendaQuery = useQuery({
@@ -138,6 +140,22 @@ export function ClientAgendaPage() {
           </button>
         </div>
       </div>
+
+      {rescheduling && (
+        <div className="fb-sheet-alert fb-sheet-alert--success fb-reschedule-banner" role="status">
+          <span>
+            Remarcando {rescheduling.from.name} ({formatClassMoment(rescheduling.from.startsAt)}).
+            Escolha a nova aula na agenda.
+          </span>
+          <button
+            type="button"
+            className="fb-reschedule-banner__dismiss"
+            onClick={() => setRescheduling(null)}
+          >
+            Desistir
+          </button>
+        </div>
+      )}
 
       <div className="fb-client-note">
         <InfoIcon />
@@ -251,7 +269,17 @@ export function ClientAgendaPage() {
       </section>
 
       {openItem && (
-        <ClassDetailSheet key={openItem.id} item={openItem} onClose={() => setOpenItem(null)} />
+        <ClassDetailSheet
+          key={openItem.id}
+          item={openItem}
+          rescheduling={rescheduling}
+          onStartRescheduling={(next) => {
+            setRescheduling(next);
+            setOpenItem(null);
+          }}
+          onRescheduled={() => setRescheduling(null)}
+          onClose={() => setOpenItem(null)}
+        />
       )}
     </div>
   );

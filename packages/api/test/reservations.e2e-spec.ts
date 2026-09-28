@@ -88,6 +88,26 @@ describe("Reservas (HTTP)", () => {
       .set("Authorization", `Bearer ${token}`);
   }
 
+  function reschedule(
+    token: string,
+    reservationId: string,
+    occurrenceId: string,
+    key: string = randomUUID(),
+  ) {
+    return request(app.getHttpServer())
+      .post(`/api/reservations/${reservationId}/reschedule`)
+      .set("Authorization", `Bearer ${token}`)
+      .set("Idempotency-Key", key)
+      .send({ occurrenceId });
+  }
+
+  async function statusOf(reservationId: string) {
+    const reservation = await testPrisma.reservation.findUniqueOrThrow({
+      where: { id: reservationId },
+    });
+    return reservation.status;
+  }
+
   function agendaItem(token: string, occurrenceId: string) {
     return request(app.getHttpServer())
       .get(`/api/agenda/${occurrenceId}`)
@@ -409,6 +429,36 @@ describe("Reservas (HTTP)", () => {
       expect(response.status).toBe(201);
     });
 
+    it("remarcação ignora a reserva original no conflito, mas não as outras", async () => {
+      const ana = await createClient("ana");
+      const startsAt = new Date(Date.now() + 3 * HOUR);
+      const spinning = await createOccurrence(startsAt);
+      const yoga = await createOccurrence(new Date(startsAt.getTime() + 30 * MINUTE), {
+        name: "Yoga",
+      });
+      const pilates = await createOccurrence(new Date(startsAt.getTime() + 3 * HOUR), {
+        name: "Pilates",
+      });
+      const funcional = await createOccurrence(
+        new Date(startsAt.getTime() + 3 * HOUR + 30 * MINUTE),
+        { name: "Funcional" },
+      );
+      const original = await reserve(ana.token, spinning.id);
+      await reserve(ana.token, pilates.id);
+
+      const overlappingOriginal = await reschedule(ana.token, original.body.id, yoga.id);
+      const overlappingOther = await reschedule(
+        ana.token,
+        overlappingOriginal.body.id,
+        funcional.id,
+      );
+
+      expect(overlappingOriginal.status).toBe(201);
+      expect(overlappingOther.status).toBe(409);
+      expect(overlappingOther.body.code).toBe("SCHEDULE_CONFLICT");
+      expect(await statusOf(overlappingOriginal.body.id)).toBe("CONFIRMED");
+    });
+
     it("requisições simultâneas do mesmo cliente para aulas sobrepostas: no máximo uma reserva", async () => {
       const ana = await createClient("ana");
       const startsAt = new Date(Date.now() + 3 * HOUR);
@@ -508,6 +558,196 @@ describe("Reservas (HTTP)", () => {
 
       expect(response.status).toBe(404);
       expect(response.body.code).toBe("NOT_FOUND");
+    });
+  });
+
+  describe("remarcar reserva", () => {
+    it("troca a reserva por outra aula numa única ação", async () => {
+      const ana = await createClient("ana");
+      const spinning = await createOccurrence(new Date(Date.now() + 3 * HOUR), { capacity: 5 });
+      const yoga = await createOccurrence(new Date(Date.now() + 6 * HOUR), {
+        name: "Yoga",
+        capacity: 5,
+      });
+      const original = await reserve(ana.token, spinning.id);
+
+      const response = await reschedule(ana.token, original.body.id, yoga.id);
+
+      expect(response.status).toBe(201);
+      expect(response.body).toMatchObject({ status: "CONFIRMED", occurrence: { id: yoga.id } });
+      expect(await statusOf(original.body.id)).toBe("CANCELLED");
+      expect((await agendaItem(ana.token, spinning.id)).body).toMatchObject({
+        available: 5,
+        myReservationId: null,
+      });
+      expect((await agendaItem(ana.token, yoga.id)).body).toMatchObject({
+        available: 4,
+        myReservationId: response.body.id,
+      });
+    });
+
+    it("aula nova cheia: devolve o mesmo CLASS_FULL da reserva comum e mantém a original", async () => {
+      const ana = await createClient("ana");
+      const bruno = await createClient("bruno");
+      const spinning = await createOccurrence(new Date(Date.now() + 3 * HOUR));
+      const yoga = await createOccurrence(new Date(Date.now() + 6 * HOUR), {
+        name: "Yoga",
+        capacity: 1,
+      });
+      const original = await reserve(ana.token, spinning.id);
+      await reserve(bruno.token, yoga.id);
+
+      const response = await reschedule(ana.token, original.body.id, yoga.id);
+
+      expect(response.status).toBe(409);
+      expect(response.body).toMatchObject({
+        code: "CLASS_FULL",
+        details: { currentAvailableSpots: 0 },
+      });
+      expect(await statusOf(original.body.id)).toBe("CONFIRMED");
+      expect(await testPrisma.reservation.count({ where: { clientId: ana.user.id } })).toBe(1);
+    });
+
+    it("aula nova cancelada ou já iniciada: OCCURRENCE_NOT_BOOKABLE e a original continua", async () => {
+      const ana = await createClient("ana");
+      const spinning = await createOccurrence(new Date(Date.now() + 3 * HOUR));
+      const cancelled = await createOccurrence(new Date(Date.now() + 6 * HOUR), {
+        name: "Yoga",
+        status: "CANCELLED",
+      });
+      const original = await reserve(ana.token, spinning.id);
+
+      const response = await reschedule(ana.token, original.body.id, cancelled.id);
+
+      expect(response.status).toBe(409);
+      expect(response.body.code).toBe("OCCURRENCE_NOT_BOOKABLE");
+      expect(await statusOf(original.body.id)).toBe("CONFIRMED");
+    });
+
+    it("remarcar para a mesma aula é DUPLICATE_RESERVATION", async () => {
+      const ana = await createClient("ana");
+      const spinning = await createOccurrence(new Date(Date.now() + 3 * HOUR));
+      const original = await reserve(ana.token, spinning.id);
+
+      const response = await reschedule(ana.token, original.body.id, spinning.id);
+
+      expect(response.status).toBe(409);
+      expect(response.body.code).toBe("DUPLICATE_RESERVATION");
+      expect(await statusOf(original.body.id)).toBe("CONFIRMED");
+      expect(await testPrisma.reservation.count()).toBe(1);
+    });
+
+    it("a original precisa estar ativa, antes do início e ser do próprio cliente", async () => {
+      const ana = await createClient("ana");
+      const bruno = await createClient("bruno");
+      const spinning = await createOccurrence(new Date(Date.now() + 3 * HOUR));
+      const yoga = await createOccurrence(new Date(Date.now() + 6 * HOUR), { name: "Yoga" });
+      const original = await reserve(ana.token, spinning.id);
+
+      const fromOther = await reschedule(bruno.token, original.body.id, yoga.id);
+      await testPrisma.classOccurrence.update({
+        where: { id: spinning.id },
+        data: {
+          startsAt: new Date(Date.now() - 5 * MINUTE),
+          endsAt: new Date(Date.now() + 55 * MINUTE),
+        },
+      });
+      const afterStart = await reschedule(ana.token, original.body.id, yoga.id);
+      await testPrisma.reservation.update({
+        where: { id: original.body.id },
+        data: { status: "CANCELLED" },
+      });
+      const notActive = await reschedule(ana.token, original.body.id, yoga.id);
+
+      expect(fromOther.status).toBe(403);
+      expect(fromOther.body.code).toBe("OUT_OF_SCOPE");
+      expect(afterStart.body).toMatchObject({
+        code: "CANCELLATION_WINDOW_CLOSED",
+        message: "Não é mais possível remarcar: a aula já começou.",
+      });
+      expect(notActive.body.code).toBe("RESERVATION_NOT_ACTIVE");
+      expect(await testPrisma.reservation.count({ where: { occurrenceId: yoga.id } })).toBe(0);
+    });
+
+    it("cliente desativado ou aula nova inexistente: recusa e a original continua", async () => {
+      const ana = await createClient("ana");
+      const spinning = await createOccurrence(new Date(Date.now() + 3 * HOUR));
+      const yoga = await createOccurrence(new Date(Date.now() + 6 * HOUR), { name: "Yoga" });
+      const original = await reserve(ana.token, spinning.id);
+
+      const missing = await reschedule(
+        ana.token,
+        original.body.id,
+        "00000000-0000-0000-0000-000000000000",
+      );
+      await testPrisma.user.update({ where: { id: ana.user.id }, data: { status: "INACTIVE" } });
+      const inactive = await reschedule(ana.token, original.body.id, yoga.id);
+
+      expect(missing.status).toBe(404);
+      expect(inactive.status).toBe(403);
+      expect(inactive.body.code).toBe("USER_INACTIVE");
+      expect(await statusOf(original.body.id)).toBe("CONFIRMED");
+    });
+
+    it("recusa memorizada: repetir a chave devolve a mesma recusa, e outra aula com a mesma chave é 422", async () => {
+      const ana = await createClient("ana");
+      const bruno = await createClient("bruno");
+      const spinning = await createOccurrence(new Date(Date.now() + 3 * HOUR));
+      const yoga = await createOccurrence(new Date(Date.now() + 6 * HOUR), {
+        name: "Yoga",
+        capacity: 1,
+      });
+      const pilates = await createOccurrence(new Date(Date.now() + 9 * HOUR), { name: "Pilates" });
+      const original = await reserve(ana.token, spinning.id);
+      await reserve(bruno.token, yoga.id);
+      const key = randomUUID();
+
+      const refused = await reschedule(ana.token, original.body.id, yoga.id, key);
+      await testPrisma.classOccurrence.update({ where: { id: yoga.id }, data: { capacity: 2 } });
+      const repeated = await reschedule(ana.token, original.body.id, yoga.id, key);
+      const otherIntent = await reschedule(ana.token, original.body.id, pilates.id, key);
+
+      expect(refused.body.code).toBe("CLASS_FULL");
+      expect(repeated.status).toBe(409);
+      expect(repeated.body).toEqual(refused.body);
+      expect(otherIntent.status).toBe(422);
+      expect(otherIntent.body.code).toBe("IDEMPOTENCY_KEY_REUSED");
+      expect(await statusOf(original.body.id)).toBe("CONFIRMED");
+    });
+
+    it("é idempotente: a mesma chave devolve o resultado original sem remarcar de novo", async () => {
+      const ana = await createClient("ana");
+      const spinning = await createOccurrence(new Date(Date.now() + 3 * HOUR));
+      const yoga = await createOccurrence(new Date(Date.now() + 6 * HOUR), { name: "Yoga" });
+      const original = await reserve(ana.token, spinning.id);
+      const key = randomUUID();
+
+      const responses = await Promise.all(
+        Array.from({ length: 3 }, () => reschedule(ana.token, original.body.id, yoga.id, key)),
+      );
+      const missingKey = await request(app.getHttpServer())
+        .post(`/api/reservations/${original.body.id}/reschedule`)
+        .set("Authorization", `Bearer ${ana.token}`)
+        .send({ occurrenceId: yoga.id });
+
+      expect(responses.map((response) => response.status)).toEqual([201, 201, 201]);
+      for (const response of responses) expect(response.body).toEqual(responses[0].body);
+      expect(await testPrisma.reservation.count({ where: { occurrenceId: yoga.id } })).toBe(1);
+      expect(missingKey.status).toBe(400);
+    });
+
+    it("a chave de uma reserva não serve para uma remarcação (outra intenção)", async () => {
+      const ana = await createClient("ana");
+      const spinning = await createOccurrence(new Date(Date.now() + 3 * HOUR));
+      const yoga = await createOccurrence(new Date(Date.now() + 6 * HOUR), { name: "Yoga" });
+      const key = randomUUID();
+      const original = await reserve(ana.token, spinning.id, key);
+
+      const response = await reschedule(ana.token, original.body.id, yoga.id, key);
+
+      expect(response.status).toBe(422);
+      expect(response.body.code).toBe("IDEMPOTENCY_KEY_REUSED");
+      expect(await statusOf(original.body.id)).toBe("CONFIRMED");
     });
   });
 });

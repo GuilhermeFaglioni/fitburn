@@ -9,6 +9,7 @@ import {
   type ClassFullDetails,
   type CreateReservationRequest,
   type ReservationDetail,
+  type RescheduleReservationRequest,
   type ScheduleConflictDetails,
   formatHour,
   utcToGymDateTime,
@@ -46,8 +47,8 @@ const TRANSACTION_OPTIONS = {
  * 1. trava a linha da ocorrência (FOR UPDATE) — serializa a disputa por vagas;
  * 2. adquire um lock transacional por cliente — serializa as reservas de um
  *    mesmo cliente;
- * 3. na criação, consulta o registro de idempotência (solicitação repetida
- *    devolve o resultado original, inclusive recusas);
+ * 3. na criação e na remarcação, consulta o registro de idempotência
+ *    (solicitação repetida devolve o resultado original, inclusive recusas);
  * 4. revalida tudo com o estado já travado e grava com um único commit.
  * Ordem de locks fixa em toda operação (ocorrências por id, depois cliente)
  * para não haver deadlock.
@@ -92,9 +93,47 @@ export class ReservationsService {
       const { occurrenceId } = await this.findOwnReservation(tx, clientId, reservationId);
       await this.lockOccurrences(tx, [occurrenceId]);
       await this.lockClient(tx, clientId);
-      await this.cancelLocked(tx, reservationId);
+      await this.cancelLocked(tx, reservationId, "cancelar");
       return this.detailById(tx, reservationId);
     }, TRANSACTION_OPTIONS);
+  }
+
+  /**
+   * Troca a reserva por outra aula numa única transação: trava as duas
+   * ocorrências (ordem determinística) e o cliente, cancela a original e
+   * reserva a nova com a mesma validação da reserva comum — como a original
+   * já está cancelada dentro da transação, ela não conta como conflito de
+   * horário. Qualquer recusa desfaz o SAVEPOINT da operação idempotente: a
+   * original permanece confirmada e o erro é o mesmo da reserva comum.
+   */
+  async reschedule(
+    clientId: string,
+    reservationId: string,
+    input: RescheduleReservationRequest,
+    idempotencyKey: string,
+  ): Promise<ReservationDetail> {
+    const outcome = await this.prisma.$transaction(async (tx) => {
+      const original = await this.findOwnReservation(tx, clientId, reservationId);
+      await this.lockOccurrences(tx, [original.occurrenceId, input.occurrenceId]);
+      await this.lockClient(tx, clientId);
+      return runIdempotent(
+        tx,
+        clientId,
+        idempotencyKey,
+        { operation: "reschedule", reservationId, occurrenceId: input.occurrenceId },
+        HttpStatus.CREATED,
+        async () => {
+          await this.assertClientActive(tx, clientId);
+          await this.cancelLocked(tx, reservationId, "remarcar");
+          // Depois de validar a original: remarcar para a própria aula seria
+          // cancelar e reservar de novo o mesmo lugar.
+          if (original.occurrenceId === input.occurrenceId) throw this.duplicateError();
+          const newReservationId = await this.book(tx, clientId, input.occurrenceId);
+          return this.detailById(tx, newReservationId);
+        },
+      );
+    }, TRANSACTION_OPTIONS);
+    return replay(outcome);
   }
 
   /**
@@ -123,8 +162,15 @@ export class ReservationsService {
     return { occurrenceId: reservation.occurrenceId };
   }
 
-  /** Revalida a reserva com os locks já adquiridos e a cancela. */
-  private async cancelLocked(tx: Tx, reservationId: string): Promise<void> {
+  /**
+   * Revalida a reserva com os locks já adquiridos e a cancela. `action` só
+   * ajusta o texto da recusa de janela (cancelamento ou remarcação).
+   */
+  private async cancelLocked(
+    tx: Tx,
+    reservationId: string,
+    action: "cancelar" | "remarcar",
+  ): Promise<void> {
     const reservation = await tx.reservation.findUniqueOrThrow({
       where: { id: reservationId },
       include: { occurrence: { select: { startsAt: true } } },
@@ -140,7 +186,7 @@ export class ReservationsService {
     if (reservation.occurrence.startsAt <= now) {
       throw new DomainError(
         ErrorCode.CANCELLATION_WINDOW_CLOSED,
-        "Não é mais possível cancelar: a aula já começou.",
+        `Não é mais possível ${action}: a aula já começou.`,
         ErrorStatus.CONFLICT,
       );
     }

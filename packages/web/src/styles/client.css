@@ -305,6 +305,26 @@
   display: none;
 }
 
+/* Aviso de remarcação em andamento: o alerta de sucesso do detalhe
+   (.fb-sheet-alert--success) com a ação "Desistir" à direita. */
+.fb-reschedule-banner {
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.fb-reschedule-banner__dismiss {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-primary-orange);
+  cursor: pointer;
+}
+
 /* Detalhe da aula (ReservaDesktop/ReservaMobile.dc.html): cartão de 460px
    centralizado no desktop, bottom sheet no mobile. */
 .fb-sheet-backdrop {

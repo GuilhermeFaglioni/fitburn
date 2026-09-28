@@ -4,7 +4,9 @@ import { ErrorCode, ErrorStatus, type ApiErrorBody } from "@fitburn/contracts";
 import { DomainError } from "../common/errors/domain-error.js";
 
 /** A intenção identificada pela chave: a operação e o corpo que a definem. */
-export type IdempotentIntent = { operation: "create"; occurrenceId: string };
+export type IdempotentIntent =
+  | { operation: "create"; occurrenceId: string }
+  | { operation: "reschedule"; reservationId: string; occurrenceId: string };
 
 /** Resultado memorizado: o corpo de sucesso ou a recusa de negócio. */
 export type MemorizedOutcome<T> =

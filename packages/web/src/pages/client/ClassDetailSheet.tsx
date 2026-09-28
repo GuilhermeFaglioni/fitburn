@@ -1,28 +1,46 @@
 import { useId, useState, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  ErrorCode,
-  gymToday,
-  utcToGymDateTime,
-  weekdayOf,
-  type ClientAgendaItem,
-} from "@fitburn/contracts";
+import { ErrorCode, type ClientAgendaItem } from "@fitburn/contracts";
 import { useCloseOnEscape } from "../../components/Modal";
 import { ApiError } from "../../lib/auth/api";
 import { getClientAgendaItem } from "../../lib/agenda/client-api";
-import { formatInstantHour, formatShortDate } from "../../lib/agenda/format";
-import { cancelReservation, createReservation } from "../../lib/reservations/api";
+import { formatClassDay, formatClassMoment, formatInstantHour } from "../../lib/agenda/format";
+import {
+  cancelReservation,
+  createReservation,
+  rescheduleReservation,
+} from "../../lib/reservations/api";
+
+/** Remarcação em andamento: a reserva original, enquanto o cliente escolhe a nova aula. */
+export interface Rescheduling {
+  reservationId: string;
+  from: ClientAgendaItem;
+}
 
 type Outcome =
   | { kind: "succeeded"; message: string }
-  /** `retry` só existe para operações seguras de repetir (a reserva, idempotente). */
-  | { kind: "refused"; error: ApiError; retry?: () => void };
+  /** `retry` só existe para operações seguras de repetir (reserva e remarcação, idempotentes). */
+  | { kind: "refused"; error: ApiError; retry?: () => void }
+  /** Recusa de negócio na remarcação: a reserva original continua confirmada. */
+  | { kind: "rescheduleRefused"; error: ApiError };
 
 interface NextStep {
   label: string;
   variant: "primary" | "ghost";
   onClick: () => void;
 }
+
+/**
+ * Recusas da nova aula na remarcação: a transação foi desfeita e a reserva
+ * original continua confirmada. Qualquer outro erro (original inativa, aula
+ * já iniciada, falha do servidor) não permite afirmar isso.
+ */
+const RESCHEDULE_TARGET_REFUSALS: ReadonlySet<string> = new Set([
+  ErrorCode.CLASS_FULL,
+  ErrorCode.SCHEDULE_CONFLICT,
+  ErrorCode.OCCURRENCE_NOT_BOOKABLE,
+  ErrorCode.DUPLICATE_RESERVATION,
+]);
 
 /** Falha de rede ou erro sem envelope: o resultado da operação é incerto. */
 function asApiError(error: Error, message: string): ApiError {
@@ -36,17 +54,24 @@ function asApiError(error: Error, message: string): ApiError {
  */
 export function ClassDetailSheet({
   item,
+  rescheduling,
+  onStartRescheduling,
+  onRescheduled,
   onClose,
 }: {
   item: ClientAgendaItem;
+  rescheduling: Rescheduling | null;
+  onStartRescheduling: (rescheduling: Rescheduling) => void;
+  onRescheduled: () => void;
   onClose: () => void;
 }) {
   const titleId = useId();
   const queryClient = useQueryClient();
   const [outcome, setOutcome] = useState<Outcome | null>(null);
   const [confirmingCancel, setConfirmingCancel] = useState(false);
-  // Uma chave por intenção de reserva: gerada ao abrir o detalhe e reenviada
-  // em toda nova tentativa, para uma repetição nunca criar outra reserva.
+  // Uma chave por intenção (reservar ou remarcar para esta aula): gerada ao
+  // abrir o detalhe e reenviada em toda nova tentativa, para uma repetição
+  // nunca agir duas vezes.
   const [idempotencyKey] = useState(() => crypto.randomUUID());
 
   // Recarrega para mostrar a disponibilidade mais recente (ainda informativa).
@@ -94,12 +119,36 @@ export function ClassDetailSheet({
     },
   });
 
-  const pending = reserveMutation.isPending || cancelMutation.isPending;
+  const rescheduleMutation = useMutation({
+    mutationFn: (reservationId: string) =>
+      rescheduleReservation(reservationId, item.id, idempotencyKey),
+    onSuccess: () => {
+      onRescheduled();
+      setOutcome({ kind: "succeeded", message: "Reserva remarcada. Bom treino!" });
+    },
+    onError: (error, reservationId) => {
+      const apiError = asApiError(error, "Não foi possível remarcar a reserva. Tente novamente.");
+      setOutcome(
+        RESCHEDULE_TARGET_REFUSALS.has(apiError.code)
+          ? { kind: "rescheduleRefused", error: apiError }
+          : {
+              // Resultado incerto (rede/servidor) ou a original mudou: não se
+              // afirma que ela continua; a repetição usa a mesma chave.
+              kind: "refused",
+              error: apiError,
+              retry: () => rescheduleMutation.mutate(reservationId),
+            },
+      );
+    },
+    onSettled: refreshAgenda,
+  });
+
+  const pending =
+    reserveMutation.isPending || cancelMutation.isPending || rescheduleMutation.isPending;
 
   useCloseOnEscape(onClose);
 
-  const { date } = utcToGymDateTime(occurrence.startsAt);
-  const day = date === gymToday() ? "Hoje" : formatShortDate(date, weekdayOf(date));
+  const day = formatClassDay(occurrence.startsAt);
 
   /** A mensagem vem do backend (fonte única); aqui só se escolhe o próximo passo. */
   function nextStepAfter(refusal: Extract<Outcome, { kind: "refused" }>): NextStep {
@@ -140,6 +189,27 @@ export function ClassDetailSheet({
       );
     }
 
+    if (outcome?.kind === "rescheduleRefused" && rescheduling) {
+      const { from } = rescheduling;
+      return (
+        <div className="fb-sheet__stack">
+          <div className="fb-sheet-alert fb-sheet-alert--error" role="alert">
+            <AlertIcon />
+            <span>
+              Não foi possível remarcar. {outcome.error.message} Sua reserva original em {from.name}
+              , {formatClassMoment(from.startsAt)} continua confirmada.
+            </span>
+          </div>
+          <div className="fb-sheet__badges">
+            <span className="fb-sheet-badge">RESERVA ORIGINAL ATIVA</span>
+          </div>
+          <button type="button" className="fb-sheet-btn fb-sheet-btn--ghost" onClick={onClose}>
+            Tentar remarcar novamente
+          </button>
+        </div>
+      );
+    }
+
     if (outcome?.kind === "refused") {
       const next = nextStepAfter(outcome);
       return (
@@ -165,8 +235,8 @@ export function ClassDetailSheet({
       return (
         <div className="fb-sheet__stack">
           <p className="fb-sheet__description">
-            Cancelar sua reserva em {occurrence.name}, {day.toLowerCase()} às{" "}
-            {formatInstantHour(occurrence.startsAt)}? A vaga será liberada para outros clientes.
+            Cancelar sua reserva em {occurrence.name}, {formatClassMoment(occurrence.startsAt)}? A
+            vaga será liberada para outros clientes.
           </p>
           <div className="fb-sheet__actions">
             <button
@@ -207,6 +277,14 @@ export function ClassDetailSheet({
             >
               Cancelar reserva
             </button>
+            <button
+              type="button"
+              className="fb-sheet-btn fb-sheet-btn--primary"
+              disabled={detailQuery.isError}
+              onClick={() => onStartRescheduling({ reservationId, from: occurrence })}
+            >
+              Remarcar
+            </button>
           </div>
         </div>
       );
@@ -216,6 +294,20 @@ export function ClassDetailSheet({
       return (
         <button type="button" className="fb-sheet-btn fb-sheet-btn--primary" disabled>
           Aula lotada
+        </button>
+      );
+    }
+
+    if (rescheduling) {
+      const originalId = rescheduling.reservationId;
+      return (
+        <button
+          type="button"
+          className="fb-sheet-btn fb-sheet-btn--primary"
+          disabled={pending || detailQuery.isError}
+          onClick={() => rescheduleMutation.mutate(originalId)}
+        >
+          Remarcar para esta aula
         </button>
       );
     }
