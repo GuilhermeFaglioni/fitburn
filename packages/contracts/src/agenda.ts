@@ -106,3 +106,33 @@ export const recurringOccurrencesResultSchema = z.object({
   occurrences: z.array(occurrenceDetailSchema),
 });
 export type RecurringOccurrencesResult = z.infer<typeof recurringOccurrencesResultSchema>;
+
+/** Aula na agenda do cliente: só futuras e não canceladas, com vagas informativas. */
+export const clientAgendaItemSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string().nullable(),
+  modality: z.object({ id: z.string(), name: z.string() }),
+  instructor: instructorSummarySchema.nullable(),
+  startsAt: z.string(),
+  endsAt: z.string(),
+  durationMinutes: z.number().int(),
+  capacity: z.number().int(),
+  /** Capacidade − reservas confirmadas. Informativo: pode mudar até a reserva. */
+  available: z.number().int(),
+});
+export type ClientAgendaItem = z.infer<typeof clientAgendaItemSchema>;
+
+export const AvailabilityLevel = {
+  AVAILABLE: "AVAILABLE",
+  ALMOST_FULL: "ALMOST_FULL",
+  FULL: "FULL",
+} as const;
+export type AvailabilityLevelName = (typeof AvailabilityLevel)[keyof typeof AvailabilityLevel];
+
+/** "Quase lotada" quando restam no máximo 25% das vagas. */
+export function availabilityLevel(available: number, capacity: number): AvailabilityLevelName {
+  if (available <= 0) return AvailabilityLevel.FULL;
+  if (available / capacity <= 0.25) return AvailabilityLevel.ALMOST_FULL;
+  return AvailabilityLevel.AVAILABLE;
+}

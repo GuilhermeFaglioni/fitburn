@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AppShell } from "./components/AppShell";
 import { AdminLayout } from "./components/AdminLayout";
+import { ClientLayout } from "./components/ClientLayout";
 import { AuthProvider } from "./lib/auth/AuthContext";
 import { ProtectedRoute } from "./routes/ProtectedRoute";
 import { LoginPage } from "./pages/LoginPage";
@@ -9,6 +10,7 @@ import { DashboardPage } from "./pages/DashboardPage";
 import { UsuariosPerfisPage } from "./pages/UsuariosPerfisPage";
 import { TemplatesModalidadesPage } from "./pages/TemplatesModalidadesPage";
 import { AgendaAdminPage } from "./pages/AgendaAdminPage";
+import { ClientAgendaPage } from "./pages/ClientAgendaPage";
 
 export default function App() {
   return (
@@ -18,13 +20,15 @@ export default function App() {
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route
-              path="/"
               element={
                 <ProtectedRoute>
-                  <ClientHomePage />
+                  <ClientLayout />
                 </ProtectedRoute>
               }
-            />
+            >
+              <Route path="/" element={<ClientHomePage />} />
+              <Route path="/agenda" element={<ClientAgendaPage />} />
+            </Route>
             <Route
               element={
                 <ProtectedRoute>

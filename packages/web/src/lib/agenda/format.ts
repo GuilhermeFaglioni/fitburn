@@ -15,7 +15,7 @@ const MONTHS = [
   "dezembro",
 ];
 
-const WEEKDAYS_SHORT = ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SÁB"];
+export const WEEKDAYS_SHORT = ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SÁB"];
 
 function parts(date: string) {
   const [year, month, day] = date.split("-").map(Number);
@@ -51,4 +51,20 @@ export function formatDayLabel(date: string, weekday: number): string {
 export function formatShortDate(date: string, weekday: number): string {
   const { day, month } = parts(date);
   return `${WEEKDAYS_SHORT[weekday].toLowerCase()} ${String(day).padStart(2, "0")}/${String(month).padStart(2, "0")}`;
+}
+
+const WEEKDAYS_FULL = [
+  "domingo",
+  "segunda-feira",
+  "terça-feira",
+  "quarta-feira",
+  "quinta-feira",
+  "sexta-feira",
+  "sábado",
+];
+
+/** "Hoje, terça-feira 22" ou "Quarta-feira 23". */
+export function formatDayHeading(date: string, weekday: number, today: string): string {
+  const label = `${WEEKDAYS_FULL[weekday]} ${parts(date).day}`;
+  return date === today ? `Hoje, ${label}` : label.charAt(0).toUpperCase() + label.slice(1);
 }

@@ -11,14 +11,7 @@ export function Modal({
   children: ReactNode;
 }) {
   const titleId = useId();
-
-  useEffect(() => {
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") onClose();
-    }
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [onClose]);
+  useCloseOnEscape(onClose);
 
   return (
     <div
@@ -35,4 +28,15 @@ export function Modal({
       </div>
     </div>
   );
+}
+
+/** Fecha um diálogo com Esc. */
+export function useCloseOnEscape(onClose: () => void) {
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") onClose();
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
 }
