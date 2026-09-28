@@ -279,6 +279,39 @@ describe("ClientAgendaPage", () => {
     ).toBeInTheDocument();
   });
 
+  it("conflito de horário: indica qual é a outra aula reservada", async () => {
+    const occurrence = item(TODAY, "18:00");
+    const other = item(TODAY, "18:00", {
+      id: "occ-spinning",
+      name: "Spinning",
+      modality: { id: "m2", name: "Spinning" },
+    });
+    server.use(
+      http.get("/api/agenda", () => HttpResponse.json([occurrence])),
+      http.get("/api/agenda/:id", () => HttpResponse.json(occurrence)),
+      http.post("/api/reservations", () =>
+        HttpResponse.json(
+          {
+            code: "SCHEDULE_CONFLICT",
+            message: "Você já tem uma reserva em Spinning às 18h00, no mesmo horário desta aula.",
+            details: { reservation: { ...reservationOf(other), id: "res-spinning" } },
+          },
+          { status: 409 },
+        ),
+      ),
+    );
+
+    renderPage();
+    const { user, sheet } = await openDetail("18h00");
+    await user.click(within(sheet).getByRole("button", { name: "Reservar" }));
+
+    expect(await within(sheet).findByRole("alert")).toHaveTextContent(
+      "Você já tem uma reserva em Spinning às 18h00, no mesmo horário desta aula.",
+    );
+    await user.click(within(sheet).getByRole("button", { name: "Ver minha agenda" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
   it("nova tentativa após falha de rede reenvia a mesma Idempotency-Key", async () => {
     const occurrence = item(TODAY, "18:00");
     const keys: (string | null)[] = [];

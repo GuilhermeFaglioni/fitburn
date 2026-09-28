@@ -79,6 +79,8 @@ export function ClassDetailSheet({
         return { label: "Ver outros horários", variant: "primary", onClick: onClose };
       case ErrorCode.DUPLICATE_RESERVATION:
         return { label: "Ver minha reserva", variant: "ghost", onClick: () => setOutcome(null) };
+      case ErrorCode.SCHEDULE_CONFLICT:
+        return { label: "Ver minha agenda", variant: "ghost", onClick: onClose };
       case ErrorCode.INTERNAL_ERROR:
         // Falha de rede ou do servidor: o resultado é incerto, então a nova
         // tentativa reenvia a mesma chave.

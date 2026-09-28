@@ -57,3 +57,9 @@ export const classFullDetailsSchema = z.object({
   currentAvailableSpots: z.number().int(),
 });
 export type ClassFullDetails = z.infer<typeof classFullDetailsSchema>;
+
+/** `details` do erro SCHEDULE_CONFLICT: a minha outra reserva no mesmo horário. */
+export const scheduleConflictDetailsSchema = z.object({
+  reservation: reservationDetailSchema,
+});
+export type ScheduleConflictDetails = z.infer<typeof scheduleConflictDetailsSchema>;

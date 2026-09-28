@@ -12,3 +12,10 @@ if (!process.env.DATABASE_URL_TEST) {
 process.env.DATABASE_URL = process.env.DATABASE_URL_TEST;
 process.env.NODE_ENV = "test";
 process.env.JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET ?? "test-secret";
+
+// Import dinâmico: o helper cria o PrismaClient com DATABASE_URL já apontando
+// para o banco de teste (definido acima).
+beforeAll(async () => {
+  const { ensureOccurrenceNoOverlapConstraint } = await import("./db-test-helper.js");
+  await ensureOccurrenceNoOverlapConstraint();
+});

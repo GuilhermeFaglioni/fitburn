@@ -1,7 +1,12 @@
 import { randomUUID } from "node:crypto";
 import type { INestApplication } from "@nestjs/common";
 import request from "supertest";
-import { cleanDatabase, testPrisma } from "./db-test-helper.js";
+import {
+  cleanDatabase,
+  dropOccurrenceNoOverlapConstraint,
+  ensureOccurrenceNoOverlapConstraint,
+  testPrisma,
+} from "./db-test-helper.js";
 import { createAccessProfile, createUser } from "./factories.js";
 import { loginAndGetAccessToken } from "./login-helper.js";
 import { createTestApp } from "./test-app.js";
@@ -316,6 +321,106 @@ describe("Reservas (HTTP)", () => {
       expect(fromAna.status).toBe(201);
       expect(fromBruno.status).toBe(201);
       expect(fromBruno.body.id).not.toBe(fromAna.body.id);
+    });
+  });
+
+  describe("conflito de horário do cliente", () => {
+    // A agenda da academia é um espaço exclusivo: a constraint
+    // class_occurrences_no_overlap impede duas aulas agendadas sobrepostas.
+    // O motor de reserva não depende dessa regra da agenda; para exercitá-lo
+    // com aulas simultâneas, a constraint sai do ar só neste bloco.
+    beforeAll(async () => {
+      await dropOccurrenceNoOverlapConstraint();
+    });
+
+    afterAll(async () => {
+      await ensureOccurrenceNoOverlapConstraint();
+    });
+
+    it("recusa aula sobreposta a outra reserva minha com SCHEDULE_CONFLICT e a reserva conflitante", async () => {
+      const ana = await createClient("ana");
+      const startsAt = new Date(Date.now() + 3 * HOUR);
+      const spinning = await createOccurrence(startsAt);
+      const yoga = await createOccurrence(new Date(startsAt.getTime() + 30 * 60_000), {
+        name: "Yoga",
+      });
+      const first = await reserve(ana.token, spinning.id);
+
+      const response = await reserve(ana.token, yoga.id);
+
+      expect(response.status).toBe(409);
+      expect(response.body).toMatchObject({
+        code: "SCHEDULE_CONFLICT",
+        details: {
+          reservation: { id: first.body.id, occurrence: { id: spinning.id, name: "Spinning" } },
+        },
+      });
+      expect(response.body.message).toMatch(/Spinning às \d{2}h\d{2}/);
+      expect(await testPrisma.reservation.count()).toBe(1);
+    });
+
+    it("aula colada (termina quando a outra começa) não é conflito", async () => {
+      const ana = await createClient("ana");
+      const startsAt = new Date(Date.now() + 3 * HOUR);
+      const spinning = await createOccurrence(startsAt);
+      const yoga = await createOccurrence(new Date(startsAt.getTime() + HOUR), { name: "Yoga" });
+      await reserve(ana.token, spinning.id);
+
+      const response = await reserve(ana.token, yoga.id);
+
+      expect(response.status).toBe(201);
+    });
+
+    it("a sobreposição com a reserva de outro cliente não é conflito", async () => {
+      const ana = await createClient("ana");
+      const bruno = await createClient("bruno");
+      const startsAt = new Date(Date.now() + 3 * HOUR);
+      const spinning = await createOccurrence(startsAt);
+      const yoga = await createOccurrence(new Date(startsAt.getTime() + 30 * 60_000), {
+        name: "Yoga",
+      });
+      await reserve(bruno.token, spinning.id);
+
+      const response = await reserve(ana.token, yoga.id);
+
+      expect(response.status).toBe(201);
+    });
+
+    it("reserva numa aula cancelada não conta como conflito", async () => {
+      const ana = await createClient("ana");
+      const startsAt = new Date(Date.now() + 3 * HOUR);
+      const cancelled = await createOccurrence(startsAt);
+      await reserve(ana.token, cancelled.id);
+      await testPrisma.classOccurrence.update({
+        where: { id: cancelled.id },
+        data: { status: "CANCELLED" },
+      });
+      const replacement = await createOccurrence(startsAt, { name: "Yoga" });
+
+      const response = await reserve(ana.token, replacement.id);
+
+      expect(response.status).toBe(201);
+    });
+
+    it("requisições simultâneas do mesmo cliente para aulas sobrepostas: no máximo uma reserva", async () => {
+      const ana = await createClient("ana");
+      const startsAt = new Date(Date.now() + 3 * HOUR);
+      const occurrences = await Promise.all(
+        ["Spinning", "Yoga", "Pilates", "Funcional"].map((name, index) =>
+          createOccurrence(new Date(startsAt.getTime() + index * 10 * 60_000), { name }),
+        ),
+      );
+
+      const responses = await Promise.all(
+        occurrences.map((occurrence) => reserve(ana.token, occurrence.id)),
+      );
+
+      const statuses = responses.map((response) => response.status).sort();
+      expect(statuses).toEqual([201, 409, 409, 409]);
+      expect(
+        responses.filter((response) => response.status === 409).map((r) => r.body.code),
+      ).toEqual(Array(3).fill("SCHEDULE_CONFLICT"));
+      expect(await testPrisma.reservation.count()).toBe(1);
     });
   });
 });

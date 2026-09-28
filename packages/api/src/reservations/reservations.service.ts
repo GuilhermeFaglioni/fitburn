@@ -9,6 +9,9 @@ import {
   type ClassFullDetails,
   type CreateReservationRequest,
   type ReservationDetail,
+  type ScheduleConflictDetails,
+  formatHour,
+  utcToGymDateTime,
 } from "@fitburn/contracts";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { DomainError } from "../common/errors/domain-error.js";
@@ -134,6 +137,34 @@ export class ReservationsService {
       select: { id: true },
     });
     if (duplicate) throw this.duplicateError();
+
+    // Sobreposição com outra reserva confirmada do cliente numa aula ainda
+    // agendada (intervalos semiabertos: uma aula que termina quando a outra
+    // começa não conflita).
+    // O lock do cliente garante que reservas concorrentes dele já estão
+    // commitadas quando esta leitura acontece.
+    const conflicting = await tx.reservation.findFirst({
+      where: {
+        clientId,
+        status: ReservationStatus.CONFIRMED,
+        occurrenceId: { not: occurrenceId },
+        occurrence: {
+          status: OccurrenceStatus.SCHEDULED,
+          startsAt: { lt: occurrence.endsAt },
+          endsAt: { gt: occurrence.startsAt },
+        },
+      },
+      include: DETAIL_INCLUDE,
+    });
+    if (conflicting) {
+      const time = formatHour(utcToGymDateTime(conflicting.occurrence.startsAt).time);
+      throw new DomainError(
+        ErrorCode.SCHEDULE_CONFLICT,
+        `Você já tem uma reserva em ${conflicting.occurrence.name} às ${time}, no mesmo horário desta aula.`,
+        ErrorStatus.CONFLICT,
+        { reservation: this.toDetail(conflicting) } satisfies ScheduleConflictDetails,
+      );
+    }
 
     const booked = await tx.reservation.count({
       where: { occurrenceId, status: ReservationStatus.CONFIRMED },

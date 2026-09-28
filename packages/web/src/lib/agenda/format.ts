@@ -1,4 +1,6 @@
-import { addDays, utcToGymDateTime } from "@fitburn/contracts";
+import { addDays, formatHour, utcToGymDateTime } from "@fitburn/contracts";
+
+export { formatHour };
 
 const MONTHS = [
   "janeiro",
@@ -20,11 +22,6 @@ export const WEEKDAYS_SHORT = ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SÁB"]
 function parts(date: string) {
   const [year, month, day] = date.split("-").map(Number);
   return { year, month, day };
-}
-
-/** "07h00" — convenção de horário do canvas de design. */
-export function formatHour(time: string): string {
-  return time.replace(":", "h");
 }
 
 /** Horário local da academia de um instante ISO, no formato "07h00". */
