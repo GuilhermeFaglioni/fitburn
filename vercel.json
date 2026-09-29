@@ -1,0 +1,17 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "pnpm install --frozen-lockfile",
+  "buildCommand": "pnpm --filter @fitburn/contracts build && pnpm --filter @fitburn/web build",
+  "outputDirectory": "packages/web/dist",
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://api.fitburn.example/api/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}

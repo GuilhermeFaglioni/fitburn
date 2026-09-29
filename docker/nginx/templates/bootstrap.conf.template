@@ -1,0 +1,18 @@
+# Variante BOOTSTRAP: ainda não existe certificado para ${DOMAIN}. Só a porta 80,
+# servindo o desafio HTTP-01 do Let's Encrypt. Depois de emitir o certificado, o
+# runbook reinicia o nginx e select-config.sh passa a usar tls.conf.template.
+include /etc/nginx/snippets/fitburn-common.inc;
+
+server {
+    listen 80 default_server;
+    server_name ${DOMAIN};
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    location / {
+        default_type text/plain;
+        return 503 "Aguardando emissao do certificado HTTPS.\n";
+    }
+}

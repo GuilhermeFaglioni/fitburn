@@ -45,6 +45,7 @@ O monorepo (`packages/contracts`, `packages/api`, `packages/web`) é gerenciado 
 - [Reserva de aula](docs/critical-reservation.md)
 - [Pendências e decisões futuras](docs/open-decisions.md)
 - [Vocabulário do domínio](CONTEXT.md)
+- [Runbook de deploy manual (demo remota)](docs/deploy-runbook.md)
 
 ## Stack definida até agora
 
