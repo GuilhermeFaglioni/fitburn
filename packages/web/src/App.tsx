@@ -3,6 +3,7 @@ import { AppShell } from "./components/AppShell";
 import { AdminLayout } from "./components/AdminLayout";
 import { ClientLayout } from "./components/ClientLayout";
 import { AuthProvider } from "./lib/auth/AuthContext";
+import { SessionCacheReset } from "./lib/auth/SessionCacheReset";
 import { AreaRoute } from "./routes/AreaRoute";
 import { ProtectedRoute } from "./routes/ProtectedRoute";
 import { LoginPage } from "./pages/LoginPage";
@@ -21,6 +22,7 @@ import { GoalsPage } from "./pages/GoalsPage";
 export default function App() {
   return (
     <AuthProvider>
+      <SessionCacheReset />
       <BrowserRouter>
         <AppShell>
           <AppRoutes />

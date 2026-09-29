@@ -119,6 +119,29 @@ describe("Área de cada perfil", () => {
     await expectLocation("/agenda-administrativa");
   });
 
+  it("a equipe não abre pela URL uma tela do menu que o perfil não pode usar", async () => {
+    mockSession("Professor", [
+      {
+        module: Module.PRESENCA,
+        actions: [PermissionAction.VIEW],
+        scope: PermissionScope.ASSIGNED_CLASSES,
+      },
+    ]);
+
+    // Por exemplo, a rota preservada no login de outra pessoa.
+    renderAt("/atribuicoes");
+
+    await expectLocation("/minhas-aulas");
+  });
+
+  it("quem pode usar a tela continua nela", async () => {
+    mockSession("Administrador", ADMIN_PERMISSIONS);
+
+    renderAt("/atribuicoes");
+
+    await expectLocation("/atribuicoes");
+  });
+
   it("o professor que só registra presença vai para Minhas aulas", async () => {
     mockSession("Professor", [
       {
