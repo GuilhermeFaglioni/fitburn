@@ -3,6 +3,7 @@ import { AppShell } from "./components/AppShell";
 import { AdminLayout } from "./components/AdminLayout";
 import { ClientLayout } from "./components/ClientLayout";
 import { AuthProvider } from "./lib/auth/AuthContext";
+import { AreaRoute } from "./routes/AreaRoute";
 import { ProtectedRoute } from "./routes/ProtectedRoute";
 import { LoginPage } from "./pages/LoginPage";
 import { ClientHomePage } from "./pages/ClientHomePage";
@@ -17,34 +18,45 @@ export default function App() {
     <AuthProvider>
       <BrowserRouter>
         <AppShell>
-          <Routes>
-            <Route path="/login" element={<LoginPage />} />
-            <Route
-              element={
-                <ProtectedRoute>
-                  <ClientLayout />
-                </ProtectedRoute>
-              }
-            >
-              <Route path="/" element={<ClientHomePage />} />
-              <Route path="/agenda" element={<ClientAgendaPage />} />
-            </Route>
-            <Route
-              element={
-                <ProtectedRoute>
-                  <AdminLayout />
-                </ProtectedRoute>
-              }
-            >
-              <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="/usuarios" element={<UsuariosPerfisPage />} />
-              <Route path="/agenda-administrativa" element={<AgendaAdminPage />} />
-              <Route path="/templates-e-modalidades" element={<TemplatesModalidadesPage />} />
-            </Route>
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
+          <AppRoutes />
         </AppShell>
       </BrowserRouter>
     </AuthProvider>
+  );
+}
+
+/** As rotas da aplicação, separadas do BrowserRouter para os testes usarem MemoryRouter. */
+export function AppRoutes() {
+  return (
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route
+        element={
+          <ProtectedRoute>
+            <AreaRoute area="client">
+              <ClientLayout />
+            </AreaRoute>
+          </ProtectedRoute>
+        }
+      >
+        <Route path="/" element={<ClientHomePage />} />
+        <Route path="/agenda" element={<ClientAgendaPage />} />
+      </Route>
+      <Route
+        element={
+          <ProtectedRoute>
+            <AreaRoute area="admin">
+              <AdminLayout />
+            </AreaRoute>
+          </ProtectedRoute>
+        }
+      >
+        <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/usuarios" element={<UsuariosPerfisPage />} />
+        <Route path="/agenda-administrativa" element={<AgendaAdminPage />} />
+        <Route path="/templates-e-modalidades" element={<TemplatesModalidadesPage />} />
+      </Route>
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
 }
