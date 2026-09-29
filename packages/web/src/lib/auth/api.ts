@@ -47,26 +47,51 @@ export async function logout(): Promise<void> {
   tokenStore.set(null);
 }
 
+/** Resultado de uma tentativa de renovar a sessão via /auth/refresh. */
+export type RefreshOutcome =
+  | { status: "ok"; user: CurrentUser }
+  /** O servidor recusou (401/403): cookie ausente, expirado ou revogado. A sessão acabou. */
+  | { status: "ended" }
+  /**
+   * Não deu para saber se a sessão vale: sem rede ("network"), ou o servidor/proxy
+   * falhou ou limitou ("server": 429, 5xx, resposta ilegível). O token em memória é mantido.
+   */
+  | { status: "transient"; reason: "network" | "server" };
+
 /**
- * Chama /auth/refresh (o cookie httpOnly viaja sozinho). Nunca lança: uma
- * falha (cookie ausente, expirado ou revogado) só significa "sem sessão",
- * usada tanto para restaurar a sessão ao carregar a página quanto pelo
- * authFetch depois de um 401.
+ * Chama /auth/refresh (o cookie httpOnly viaja sozinho). Nunca lança. Só uma
+ * recusa explícita (401/403) encerra a sessão e descarta o token; qualquer
+ * outra falha é transitória e não pode mandar a pessoa ao login.
  */
-export async function refreshSession(): Promise<CurrentUser | null> {
+export async function refreshSessionOutcome(): Promise<RefreshOutcome> {
   let response: Response;
   try {
     response = await trackedFetch("/api/auth/refresh", { method: "POST", credentials: "include" });
   } catch {
     // Sem rede não dá para saber se a sessão vale: o banner de "sem conexão"
     // já foi acionado pelo trackedFetch e o token em memória é preservado.
-    return null;
+    return { status: "transient", reason: "network" };
   }
-  if (!response.ok) {
+  if (response.status === 401 || response.status === 403) {
     tokenStore.set(null);
-    return null;
+    return { status: "ended" };
   }
-  const data = loginResponseSchema.parse(await response.json());
-  tokenStore.set(data.accessToken);
-  return data.user;
+  if (!response.ok) return { status: "transient", reason: "server" };
+  try {
+    const data = loginResponseSchema.parse(await response.json());
+    tokenStore.set(data.accessToken);
+    return { status: "ok", user: data.user };
+  } catch {
+    return { status: "transient", reason: "server" };
+  }
+}
+
+/**
+ * Versão simples de refreshSessionOutcome: o usuário renovado ou null ("sem
+ * sessão utilizável agora"), usada pelo authFetch depois de um 401. Só o
+ * resultado "ended" apaga o token.
+ */
+export async function refreshSession(): Promise<CurrentUser | null> {
+  const outcome = await refreshSessionOutcome();
+  return outcome.status === "ok" ? outcome.user : null;
 }
