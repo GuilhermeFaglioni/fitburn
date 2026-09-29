@@ -200,7 +200,7 @@ export class PlansService {
   }
 
   /** Atribuições ativas que ainda valem hoje (o término não passou). */
-  private currentWhere(): Prisma.PlanAssignmentWhereInput {
+  currentWhere(): Prisma.PlanAssignmentWhereInput {
     return { status: PlanAssignmentStatus.ACTIVE, endDate: { gte: new Date(gymToday()) } };
   }
 

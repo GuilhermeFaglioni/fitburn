@@ -16,6 +16,7 @@ import { AssignmentsModule } from "./assignments/assignments.module.js";
 import { GoalsModule } from "./goals/goals.module.js";
 import { PlansModule } from "./plans/plans.module.js";
 import { WorkoutSheetsModule } from "./workout-sheets/workout-sheets.module.js";
+import { ClientsModule } from "./clients/clients.module.js";
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { WorkoutSheetsModule } from "./workout-sheets/workout-sheets.module.js";
     GoalsModule,
     PlansModule,
     WorkoutSheetsModule,
+    ClientsModule,
     AuthModule,
   ],
 })

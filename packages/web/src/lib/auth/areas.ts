@@ -30,6 +30,7 @@ export const ADMIN_MENU_ITEMS: AdminMenuItem[] = [
     label: "Usuários e perfis",
     to: "/usuarios",
   },
+  { modules: [Module.CLIENTES], label: "Clientes", to: "/clientes" },
   { modules: [Module.OCORRENCIAS], label: "Agenda", to: "/agenda-administrativa" },
   { modules: [Module.PRESENCA], label: "Minhas aulas", to: "/minhas-aulas" },
   { modules: [Module.PLANOS], label: "Planos", to: "/planos" },

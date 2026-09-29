@@ -7,5 +7,6 @@ import { WorkoutSheetsService } from "./workout-sheets.service.js";
   imports: [PermissionsModule],
   controllers: [WorkoutSheetsController],
   providers: [WorkoutSheetsService],
+  exports: [WorkoutSheetsService],
 })
 export class WorkoutSheetsModule {}

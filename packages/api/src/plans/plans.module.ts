@@ -8,5 +8,6 @@ import { PlansService } from "./plans.service.js";
   imports: [PermissionsModule],
   controllers: [PlansController, PlanAssignmentsController],
   providers: [PlansService],
+  exports: [PlansService],
 })
 export class PlansModule {}
