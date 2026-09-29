@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Post, Req, Res, UseGuards } from "@nestjs/common";
+import { Body, Controller, Inject, Get, HttpCode, HttpStatus, Post, Req, Res, UseGuards } from "@nestjs/common";
 import type { Request, Response } from "express";
 import {
   ErrorCode,
@@ -8,6 +8,7 @@ import {
   type LoginRequest,
   type LoginResponse,
 } from "@fitburn/contracts";
+import { APP_CONFIG, type AppConfig } from "../config/app-config.js";
 import { DomainError } from "../common/errors/domain-error.js";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe.js";
 import { UsersService } from "../users/users.service.js";
@@ -20,6 +21,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly usersService: UsersService,
+    @Inject(APP_CONFIG) private readonly config: AppConfig,
   ) {}
 
   @Post("login")
@@ -31,7 +33,7 @@ export class AuthController {
       body.email,
       body.password,
     );
-    setRefreshCookie(res, refreshToken);
+    setRefreshCookie(res, refreshToken, this.config);
     return { accessToken, user };
   }
 
@@ -44,7 +46,7 @@ export class AuthController {
     const { accessToken, refreshToken, user } = await this.authService.refresh(
       readRefreshCookie(req),
     );
-    setRefreshCookie(res, refreshToken);
+    setRefreshCookie(res, refreshToken, this.config);
     return { accessToken, user };
   }
 
