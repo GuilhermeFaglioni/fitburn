@@ -32,6 +32,15 @@ Nada disto é automatizável por agente. Faça antes do primeiro deploy (tickets
 4. **Projeto na Vercel** ligado ao repositório, com os segredos/variáveis que o projeto exigir cadastrados na própria Vercel (o frontend não recebe segredos: só a URL do backend, que vai no `vercel.json`).
 5. Um e-mail para o Let's Encrypt e o e-mail/senha do administrador inicial da demo.
 
+### Checklist pré-deploy (antes de cada publicação na Vercel)
+
+> **ATENÇÃO: troque o placeholder `api.fitburn.example` do `vercel.json`.** O rewrite de `/api` no repositório aponta para esse domínio de exemplo. Se ninguém o trocar pelo `DOMAIN` real da API, a Vercel publica o frontend normalmente, **sem nenhum aviso**, e todas as chamadas `/api` ficam quebradas. Confira com `pnpm deploy:check --strict`: ele **falha** enquanto o placeholder existir (sem `--strict` só avisa).
+
+- [ ] `vercel.json` aponta `/api` para o `DOMAIN` real (`pnpm deploy:check --strict` termina sem erro).
+- [ ] `.env.production` preenchido na VPS e `docker compose config --quiet` sem erro (seção 2).
+- [ ] DNS de `DOMAIN` apontando para a VPS e firewall liberando só 22, 80 e 443.
+- [ ] Você leu os riscos aceitos na demo (seção 12) e concorda com eles.
+
 ## 2. Preparar a VPS (uma vez)
 
 ```bash
@@ -115,7 +124,15 @@ docker compose run --rm --entrypoint certbot certbot certonly \
 docker compose restart nginx            # agora com certificado: passa para HTTPS
 ```
 
-Falhou? Confira se o DNS de `DOMAIN` já aponta para a VPS e se a porta 80 está liberada no firewall. Para testar sem gastar o limite de emissões, acrescente `--staging` ao `certbot certonly` (depois apague com `docker volume rm fitburn-prod_letsencrypt` e emita o certificado real).
+Falhou? Confira se o DNS de `DOMAIN` já aponta para a VPS e se a porta 80 está liberada no firewall. Para testar sem gastar o limite de emissões, acrescente `--staging` ao `certbot certonly`. Depois do teste, apague o certificado de teste e emita o real. O volume `fitburn-prod_letsencrypt` está em uso por `nginx` e `certbot` (o Docker recusa apagar um volume em uso), então pare os dois antes:
+
+```bash
+docker compose stop nginx certbot
+docker compose rm -f nginx certbot            # contêineres parados ainda seguram o volume
+docker volume rm fitburn-prod_letsencrypt
+docker compose up -d nginx certbot            # nginx volta em modo bootstrap (sem certificado)
+# repita o certbot certonly sem --staging e, ao final, docker compose restart nginx
+```
 
 **Renovação automática:** o serviço `certbot` roda em segundo plano e tenta `certbot renew` a cada 12 horas (renova só o que vence em menos de 30 dias, pelo mesmo método webroot); o Nginx recarrega a configuração a cada 6 horas para pegar o certificado novo. Nada a fazer; para conferir: `docker compose run --rm --entrypoint certbot certbot renew --dry-run`.
 
@@ -139,13 +156,13 @@ curl -fsS https://DOMAIN/api/health
 
 ## 8. Frontend na Vercel
 
-1. Em `vercel.json`, troque o placeholder `api.fitburn.example` pelo `DOMAIN` real (o arquivo não lê variáveis de ambiente):
+1. Em `vercel.json`, troque o placeholder `api.fitburn.example` pelo `DOMAIN` real (o arquivo não lê variáveis de ambiente; **esquecer isso publica o app com `/api` quebrado, sem aviso**):
 
    ```json
    { "source": "/api/:path*", "destination": "https://api.seudominio.com.br/api/:path*" }
    ```
 
-2. Faça commit e push. Na Vercel, o projeto usa a raiz do repositório como *Root Directory* e Node 20 ou mais novo; instalação, build e saída já estão no `vercel.json` (`pnpm --filter @fitburn/contracts build && pnpm --filter @fitburn/web build`, saída em `packages/web/dist`). O segundo rewrite (`/(.*)` → `/index.html`) faz as rotas do app funcionarem ao recarregar a página.
+2. Rode `pnpm deploy:check --strict` (falha se o placeholder continuar), faça commit e push. Na Vercel, o projeto usa a raiz do repositório como *Root Directory* e Node 20 ou mais novo; instalação, build e saída já estão no `vercel.json` (`pnpm --filter @fitburn/contracts build && pnpm --filter @fitburn/web build`, saída em `packages/web/dist`). O segundo rewrite (`/(.*)` → `/index.html`) faz as rotas do app funcionarem ao recarregar a página.
 3. Aguarde o deploy e abra a URL da Vercel.
 
 ## 9. Reset da demonstração
@@ -160,6 +177,7 @@ docker compose exec -e DEMO_RESET_ENABLED=true api \
 ```
 
 - Sem `DEMO_RESET_ENABLED=true` o comando recusa rodar; sem `--confirm-database` igual ao nome do banco da `DATABASE_URL` ele também recusa (em terminal interativo, `docker compose exec -it`, ele pergunta o nome do banco).
+- O reset só suporta o schema `public` (o padrão da `DATABASE_URL` do Compose); com `?schema=` diferente na URL ele recusa, sem apagar nada. Se não houver nenhuma tabela para limpar, ele falha em vez de dizer "concluído".
 - O comando apaga **todos** os dados, aplica as migrations, refaz os seeds e recria o administrador inicial a partir de `INITIAL_ADMIN_*`.
 - Depois do reset só existem o administrador inicial, os perfis de sistema e as configurações (regras de gamificação); o administrador cadastra o resto manualmente. Rodar o reset duas vezes seguidas produz o mesmo estado.
 - Não existe botão nem endpoint de reset na aplicação.
@@ -203,6 +221,10 @@ A janela sem API é de alguns segundos (recriação do contêiner). O frontend �
 - **Backup manual** (não há backup agendado): `docker compose exec -T postgres pg_dump -U fitburn fitburn | gzip > fitburn-$(date +%F).sql.gz`.
 - **Voltar uma versão (manual):** `git checkout <commit anterior>`, `IMAGE_TAG=<tag anterior> docker compose up -d`. Migrations já aplicadas **não** são desfeitas; se a migration nova for incompatível com a versão antiga, restaure o backup.
 - **Parar tudo sem perder dados:** `docker compose down` (sem `-v`).
+
+### Riscos aceitos na demo
+
+- **`TRUST_PROXY_HOPS=2` e IP forjável (X-Forwarded-For).** A API confia em dois saltos de proxy (Vercel e Nginx) para descobrir o IP do cliente, usado no limite de tentativas de login. Quem acessar o backend **direto** (`https://DOMAIN/api/...`, sem passar pela Vercel) consegue mandar um `X-Forwarded-For` falso e driblar o limite por IP. Risco **aceito** para a demonstração (dados fictícios, sem informação real). **Mitigação futura** (antes de qualquer uso com dados reais): fazer o Nginx aceitar `/api` só de requisições vindas da Vercel (segredo compartilhado em cabeçalho, ou lista de IPs da Vercel), ou colocar a API atrás de um único proxy e usar `TRUST_PROXY_HOPS=1`.
 
 ## 13. Verificação local do Compose de produção (sem TLS)
 
