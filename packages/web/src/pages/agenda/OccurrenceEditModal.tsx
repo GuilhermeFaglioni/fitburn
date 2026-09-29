@@ -63,6 +63,12 @@ export function OccurrenceEditModal({
   const canEdit = can(Module.OCORRENCIAS, PermissionAction.EDIT);
   const canDelete = can(Module.OCORRENCIAS, PermissionAction.DELETE);
 
+  // Reservas confirmadas travam o que invalidaria o compromisso dos clientes
+  // (o backend recusa do mesmo jeito; aqui a ação já aparece bloqueada).
+  const booked = occurrence.bookedCount;
+  const hasReservations = !isCancelled && booked > 0;
+  const reservationsLabel = `${booked} ${booked === 1 ? "reserva confirmada" : "reservas confirmadas"}`;
+
   async function run(action: () => Promise<unknown>) {
     setError(null);
     setIsSubmitting(true);
@@ -158,6 +164,7 @@ export function OccurrenceEditModal({
                   id={`${formId}-date`}
                   type="date"
                   className="fb-field"
+                  disabled={hasReservations}
                   value={date}
                   onChange={(event) => setDate(event.target.value)}
                   required
@@ -169,6 +176,7 @@ export function OccurrenceEditModal({
                   id={`${formId}-time`}
                   type="time"
                   className="fb-field"
+                  disabled={hasReservations}
                   value={startTime}
                   onChange={(event) => setStartTime(event.target.value)}
                   required
@@ -199,7 +207,7 @@ export function OccurrenceEditModal({
                 <input
                   id={`${formId}-capacity`}
                   type="number"
-                  min={1}
+                  min={hasReservations ? booked : 1}
                   className="fb-field"
                   value={capacity}
                   onChange={(event) => setCapacity(event.target.value)}
@@ -213,6 +221,7 @@ export function OccurrenceEditModal({
                   type="number"
                   min={1}
                   className="fb-field"
+                  disabled={hasReservations}
                   value={durationMinutes}
                   onChange={(event) => setDurationMinutes(event.target.value)}
                   required
@@ -225,12 +234,25 @@ export function OccurrenceEditModal({
         {isCancelled && (
           <p className="fb-modal__text">Esta aula foi cancelada e continua no histórico.</p>
         )}
+        {hasReservations && (
+          <p role="note" className="fb-lock-banner">
+            Esta aula tem {reservationsLabel}: não pode ser cancelada nem excluída, e horário e
+            duração não podem mudar. A capacidade mínima é {booked}.
+          </p>
+        )}
         {error !== null && <OccurrenceErrorBox error={error} />}
 
         <div className="fb-modal__footer">
           <div style={{ display: "flex" }}>
             {!isCancelled && (
-              <BlockedAction allowed={canEdit} reason="Você não tem permissão para cancelar aulas.">
+              <BlockedAction
+                allowed={canEdit && !hasReservations}
+                reason={
+                  canEdit
+                    ? `Esta aula tem ${reservationsLabel} e não pode ser cancelada.`
+                    : "Você não tem permissão para cancelar aulas."
+                }
+              >
                 <button
                   type="button"
                   className="fb-btn-danger-text"
@@ -243,8 +265,12 @@ export function OccurrenceEditModal({
             {/* Cancelada fica no histórico: não se oferece exclusão. */}
             {!isCancelled && (
               <BlockedAction
-                allowed={canDelete}
-                reason="Você não tem permissão para excluir aulas."
+                allowed={canDelete && !hasReservations}
+                reason={
+                  canDelete
+                    ? `Esta aula tem ${reservationsLabel} e não pode ser excluída.`
+                    : "Você não tem permissão para excluir aulas."
+                }
               >
                 <button
                   type="button"

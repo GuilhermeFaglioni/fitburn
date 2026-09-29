@@ -96,6 +96,8 @@ model User {
 
   defaultForTemplates ClassTemplate[]
   taughtOccurrences   ClassOccurrence[]
+  reservations        Reservation[]
+  idempotencyRecords  IdempotencyRecord[]
 
   @@map("users")
 }
@@ -169,9 +171,62 @@ model ClassOccurrence {
   instructorId String?
   instructor   User?   @relation(fields: [instructorId], references: [id], onDelete: SetNull)
 
+  reservations Reservation[]
+
   @@index([startsAt])
   @@index([instructorId])
   @@map("class_occurrences")
+}
+
+enum ReservationStatus {
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+  NO_SHOW
+}
+
+/// Compromisso de um cliente com uma ocorrência. Criada só pelo motor de
+/// reserva (ReservationsService), que revalida a disponibilidade numa
+/// transação com lock. Última linha de defesa contra reserva duplicada: o
+/// índice único parcial "reservations_client_occurrence_confirmed_key"
+/// (cliente, ocorrência) WHERE status = 'CONFIRMED', criado à mão na
+/// migration (o Prisma não modela índice parcial).
+model Reservation {
+  id          String            @id @default(uuid())
+  status      ReservationStatus @default(CONFIRMED)
+  cancelledAt DateTime?         @db.Timestamptz(3)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  clientId String
+  client   User   @relation(fields: [clientId], references: [id], onDelete: Restrict)
+
+  occurrenceId String
+  occurrence   ClassOccurrence @relation(fields: [occurrenceId], references: [id], onDelete: Restrict)
+
+  @@index([clientId, status])
+  @@index([occurrenceId, status])
+  @@map("reservations")
+}
+
+/// Resultado memorizado de uma solicitação com `Idempotency-Key`: a mesma
+/// intenção repetida devolve o resultado original (inclusive recusas) em vez
+/// de agir de novo. Gravado na mesma transação da operação.
+model IdempotencyRecord {
+  id           String   @id @default(uuid())
+  key          String
+  /// sha256 da operação + corpo da requisição: a chave reutilizada para
+  /// outra intenção é recusada (IDEMPOTENCY_KEY_REUSED).
+  fingerprint  String
+  statusCode   Int
+  responseBody Json
+  createdAt    DateTime @default(now())
+
+  clientId String
+  client   User   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@unique([clientId, key])
+  @@map("idempotency_records")
 }
 
 model RefreshToken {

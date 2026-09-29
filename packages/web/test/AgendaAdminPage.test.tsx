@@ -299,6 +299,33 @@ describe("AgendaAdminPage", () => {
       expect(await screen.findByText("Cancelada")).toBeInTheDocument();
     });
 
+    it("aula com reservas: mostra quantas e bloqueia cancelar, excluir, horário e duração", async () => {
+      const occurrence = { ...occurrenceAt(WEDNESDAY, "18:00"), bookedCount: 3, capacity: 12 };
+      server.use(http.get("/api/occurrences", () => HttpResponse.json([occurrence])));
+
+      renderPage();
+      const user = userEvent.setup();
+
+      const chip = await screen.findByRole("button", { name: /18h00.*Treino Funcional/ });
+      expect(chip).toHaveTextContent("3/12");
+      await user.click(chip);
+      const dialog = screen.getByRole("dialog", { name: "Editar aula" });
+
+      expect(within(dialog).getByRole("note")).toHaveTextContent(
+        "Esta aula tem 3 reservas confirmadas: não pode ser cancelada nem excluída, e horário e duração não podem mudar. A capacidade mínima é 3.",
+      );
+      for (const name of ["Cancelar aula", "Excluir aula"]) {
+        const button = within(dialog).getByRole("button", { name });
+        expect(button).toBeDisabled();
+        expect(button).toHaveAttribute("title", expect.stringContaining("3 reservas confirmadas"));
+      }
+      expect(within(dialog).getByLabelText("Data")).toBeDisabled();
+      expect(within(dialog).getByLabelText("Horário")).toBeDisabled();
+      expect(within(dialog).getByLabelText("Duração (min)")).toBeDisabled();
+      expect(within(dialog).getByLabelText("Capacidade")).toHaveAttribute("min", "3");
+      expect(within(dialog).getByLabelText("Professor")).toBeEnabled();
+    });
+
     it("substitui o professor só desta aula", async () => {
       const occurrence = occurrenceAt(WEDNESDAY, "18:00");
       let sentBody: Record<string, unknown> | null = null;

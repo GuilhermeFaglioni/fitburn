@@ -9,6 +9,7 @@ import { PermissionsModule } from "./permissions/permissions.module.js";
 import { ProfilesModule } from "./profiles/profiles.module.js";
 import { CatalogModule } from "./catalog/catalog.module.js";
 import { AgendaModule } from "./agenda/agenda.module.js";
+import { ReservationsModule } from "./reservations/reservations.module.js";
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { AgendaModule } from "./agenda/agenda.module.js";
     ProfilesModule,
     CatalogModule,
     AgendaModule,
+    ReservationsModule,
     AuthModule,
   ],
 })

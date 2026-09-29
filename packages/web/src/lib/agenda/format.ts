@@ -1,4 +1,6 @@
-import { addDays, utcToGymDateTime } from "@fitburn/contracts";
+import { addDays, formatHour, gymToday, utcToGymDateTime, weekdayOf } from "@fitburn/contracts";
+
+export { formatHour };
 
 const MONTHS = [
   "janeiro",
@@ -20,11 +22,6 @@ export const WEEKDAYS_SHORT = ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SÁB"]
 function parts(date: string) {
   const [year, month, day] = date.split("-").map(Number);
   return { year, month, day };
-}
-
-/** "07h00" — convenção de horário do canvas de design. */
-export function formatHour(time: string): string {
-  return time.replace(":", "h");
 }
 
 /** Horário local da academia de um instante ISO, no formato "07h00". */
@@ -67,4 +64,15 @@ const WEEKDAYS_FULL = [
 export function formatDayHeading(date: string, weekday: number, today: string): string {
   const label = `${WEEKDAYS_FULL[weekday]} ${parts(date).day}`;
   return date === today ? `Hoje, ${label}` : label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+/** "Hoje" ou "seg 05/10" — o dia de uma aula (instante ISO) no fuso da academia. */
+export function formatClassDay(startsAt: string): string {
+  const { date } = utcToGymDateTime(startsAt);
+  return date === gymToday() ? "Hoje" : formatShortDate(date, weekdayOf(date));
+}
+
+/** "hoje às 07h00" ou "seg 05/10 às 07h00" — quando uma aula acontece, no meio de uma frase. */
+export function formatClassMoment(startsAt: string): string {
+  return `${formatClassDay(startsAt).toLowerCase()} às ${formatInstantHour(startsAt)}`;
 }

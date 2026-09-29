@@ -1,10 +1,10 @@
-import { Controller, Get, Param, Query, UseGuards } from "@nestjs/common";
+import { Controller, Get, Param, Query, Req, UseGuards } from "@nestjs/common";
 import {
   dateRangeQuerySchema,
   type ClientAgendaItem,
   type DateRangeQuery,
 } from "@fitburn/contracts";
-import { JwtAuthGuard } from "../auth/jwt-auth.guard.js";
+import { JwtAuthGuard, type AuthenticatedRequest } from "../auth/jwt-auth.guard.js";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe.js";
 import { ClientAgendaService } from "./client-agenda.service.js";
 
@@ -21,12 +21,13 @@ export class ClientAgendaController {
   @Get()
   list(
     @Query(new ZodValidationPipe(dateRangeQuerySchema)) query: DateRangeQuery,
+    @Req() req: AuthenticatedRequest,
   ): Promise<ClientAgendaItem[]> {
-    return this.agendaService.list(query.from, query.to);
+    return this.agendaService.list(query.from, query.to, req.authUser.sub);
   }
 
   @Get(":id")
-  findOne(@Param("id") id: string): Promise<ClientAgendaItem> {
-    return this.agendaService.findOne(id);
+  findOne(@Param("id") id: string, @Req() req: AuthenticatedRequest): Promise<ClientAgendaItem> {
+    return this.agendaService.findOne(id, req.authUser.sub);
   }
 }

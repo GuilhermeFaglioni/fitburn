@@ -7,5 +7,10 @@ export async function loginAndGetAccessToken(
   password: string,
 ): Promise<string> {
   const response = await request(app.getHttpServer()).post("/api/auth/login").send({ email, password });
-  return response.body.accessToken as string;
+  if (typeof response.body.accessToken !== "string") {
+    throw new Error(
+      `Login de teste falhou para ${email}: ${response.status} ${JSON.stringify(response.body)}`,
+    );
+  }
+  return response.body.accessToken;
 }

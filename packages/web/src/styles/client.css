@@ -305,7 +305,177 @@
   display: none;
 }
 
-/* Detalhe da aula (bottom sheet no mobile, cartão centralizado no desktop) */
+.fb-class-card__reserved {
+  align-self: flex-start;
+  margin-top: 4px;
+}
+
+.fb-client-chip__reserved {
+  margin-top: 2px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-primary-orange);
+}
+
+/* Cabeçalho da agenda: título à esquerda; semana e o controle
+   "Próximas | Histórico" à direita (AgendaDesktop.dc.html). */
+.fb-client-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.fb-client-header__controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+/* Controle "Próximas | Histórico" (AgendaMobile/AgendaDesktop.dc.html). */
+.fb-client-tabs {
+  display: flex;
+  gap: 4px;
+  background: #1a1a1a;
+  border-radius: 5px;
+  padding: 4px;
+}
+
+.fb-client-tab-btn {
+  box-sizing: border-box;
+  padding: 8px 18px;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+}
+
+.fb-client-tab-btn[aria-pressed="true"] {
+  background: var(--color-primary-orange);
+  color: #ffffff;
+}
+
+/* Filtro de estado: pílulas no formato dos chips de dia da agenda. */
+.fb-filter-chips {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.fb-filter-chip {
+  flex-shrink: 0;
+  padding: 6px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+  background: transparent;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+}
+
+.fb-filter-chip[aria-pressed="true"] {
+  border-color: var(--color-primary-orange);
+  background: var(--color-primary-orange);
+  color: #ffffff;
+}
+
+/* Seções do histórico: título no tamanho de "Próximas aulas" (HomeMobile.dc.html). */
+.fb-reservation-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.fb-reservation-section__title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.fb-reservation-section__notice {
+  margin: 0;
+  font-size: 13px;
+  color: #ff9c88;
+}
+
+/* Cartão de reserva (HomeMobile.dc.html: "Próximas aulas"). */
+.fb-reservation-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.fb-reservation-card {
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  background: #1a1a1a;
+  border: none;
+  border-radius: 5px;
+  font-family: var(--font-sans);
+  color: #ffffff;
+  text-align: left;
+}
+
+.fb-reservation-card--link {
+  cursor: pointer;
+}
+
+.fb-reservation-card__info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.fb-reservation-card__title {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.fb-reservation-card__when {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+/* Aviso de remarcação em andamento: o alerta de sucesso do detalhe
+   (.fb-sheet-alert--success) com a ação "Desistir" à direita. */
+.fb-reschedule-banner {
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.fb-reschedule-banner__dismiss {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-primary-orange);
+  cursor: pointer;
+}
+
+/* Detalhe da aula (ReservaDesktop/ReservaMobile.dc.html): cartão de 460px
+   centralizado no desktop, bottom sheet no mobile. */
 .fb-sheet-backdrop {
   position: fixed;
   inset: 0;
@@ -317,17 +487,53 @@
 }
 
 .fb-sheet {
-  width: 420px;
+  width: 460px;
   max-width: 100%;
   box-sizing: border-box;
   background: #1a1a1a;
   color: #ffffff;
-  border-radius: 16px;
-  padding: 20px 20px 28px;
+  border-radius: 5px;
+  padding: 28px;
   display: flex;
   flex-direction: column;
   gap: 18px;
-  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+}
+
+.fb-sheet__handle {
+  display: none;
+  width: 36px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.2);
+  align-self: center;
+}
+
+.fb-sheet__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.fb-sheet__heading {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fb-sheet__x {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .fb-sheet__title {
@@ -365,6 +571,115 @@
 .fb-sheet__divider {
   height: 1px;
   background: rgba(255, 255, 255, 0.08);
+}
+
+.fb-sheet__stack {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Linha de botões lado a lado (ex.: Cancelar reserva | Remarcar). */
+.fb-sheet__actions {
+  display: flex;
+  gap: 10px;
+}
+
+.fb-sheet__actions .fb-sheet-btn {
+  flex: 1;
+  width: auto;
+}
+
+.fb-sheet__badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fb-sheet-btn {
+  width: 100%;
+  box-sizing: border-box;
+  border-radius: 5px;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.fb-sheet-btn--primary {
+  padding: 13px;
+  background: var(--color-primary-orange);
+  border: none;
+  font-size: 15px;
+}
+
+/* Ação destrutiva confirmada (mesmo vermelho-chama do .fb-btn-danger do painel). */
+.fb-sheet-btn--danger {
+  padding: 13px;
+  background: var(--color-flame-red);
+  border: none;
+  font-size: 15px;
+}
+
+.fb-sheet-btn--ghost {
+  padding: 12px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  font-size: 14px;
+}
+
+.fb-sheet-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.fb-sheet-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--color-primary-orange);
+  background: rgba(237, 110, 52, 0.14);
+  padding: 5px 10px;
+  border-radius: 5px;
+}
+
+.fb-sheet-badge--muted {
+  color: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.fb-sheet-badge--flame {
+  color: #ff9c88;
+  background: rgba(194, 58, 31, 0.14);
+}
+
+
+.fb-sheet-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 5px;
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.fb-sheet-alert svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.fb-sheet-alert--success {
+  background: rgba(237, 110, 52, 0.1);
+  border: 1px solid rgba(237, 110, 52, 0.35);
+  color: #ffffff;
+}
+
+.fb-sheet-alert--error {
+  background: rgba(194, 58, 31, 0.12);
+  border: 1px solid rgba(194, 58, 31, 0.5);
+  color: #ff9c88;
 }
 
 .fb-sheet__close {
@@ -423,6 +738,16 @@
     font-size: 32px;
   }
 
+  .fb-client-header__controls,
+  .fb-client-tabs {
+    width: 100%;
+  }
+
+  .fb-client-tab-btn {
+    flex: 1;
+    padding: 9px 0;
+  }
+
   .fb-client-desktop-only {
     display: none;
   }
@@ -438,6 +763,20 @@
   .fb-sheet {
     width: 100%;
     border-radius: 16px 16px 0 0;
-    padding-top: 12px;
+    padding: 12px 20px 28px;
+    box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.4);
+  }
+
+  .fb-sheet__handle {
+    display: block;
+  }
+
+  .fb-sheet-btn--primary,
+  .fb-sheet-btn--danger {
+    padding: 14px;
+  }
+
+  .fb-sheet-btn--ghost {
+    padding: 13px;
   }
 }
