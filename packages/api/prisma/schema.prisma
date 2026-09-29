@@ -99,7 +99,11 @@ model User {
 
   defaultForTemplates ClassTemplate[]
   taughtOccurrences   ClassOccurrence[]
-  reservations        Reservation[]
+  reservations        Reservation[]             @relation("ReservationClient")
+  /// Reservas que este usuário criou (o próprio ou em nome de um cliente).
+  createdReservations   Reservation[]           @relation("ReservationCreatedBy")
+  /// Reservas que este usuário cancelou.
+  cancelledReservations Reservation[]           @relation("ReservationCancelledBy")
   idempotencyRecords  IdempotencyRecord[]
   pointsEntries       PointsEntry[]
   streakBadges        StreakBadge[]
@@ -218,7 +222,16 @@ model Reservation {
   updatedAt   DateTime          @updatedAt
 
   clientId String
-  client   User   @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  client   User   @relation("ReservationClient", fields: [clientId], references: [id], onDelete: Restrict)
+
+  /// Quem criou a reserva: o próprio cliente ou um membro da equipe (reserva
+  /// administrativa). Nulo só em dados anteriores ao registro do ator.
+  createdById String?
+  createdBy   User?   @relation("ReservationCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+
+  /// Quem cancelou a reserva (o cliente ou a equipe); nulo enquanto não cancelada.
+  cancelledById String?
+  cancelledBy   User?   @relation("ReservationCancelledBy", fields: [cancelledById], references: [id], onDelete: Restrict)
 
   occurrenceId String
   occurrence   ClassOccurrence @relation(fields: [occurrenceId], references: [id], onDelete: Restrict)

@@ -8,8 +8,10 @@ import {
   UserStatus,
   type ClassFullDetails,
   type CreateReservationRequest,
+  type ApiErrorBody,
   type MyReservationsQuery,
   type ReservationDetail,
+  type ReservationPreview,
   type RescheduleReservationRequest,
   type ScheduleConflictDetails,
   formatHour,
@@ -21,18 +23,11 @@ import { isUniqueViolation } from "../prisma/unique-violation.js";
 import { DomainError } from "../common/errors/domain-error.js";
 import { lockOccurrenceRows, OCCURRENCE_TRANSACTION_OPTIONS } from "../agenda/occurrence-lock.js";
 import { replay, runIdempotent } from "./idempotency.js";
+import { DETAIL_INCLUDE, toReservationDetail } from "./reservation-detail.js";
 
-const DETAIL_INCLUDE = {
-  occurrence: {
-    include: {
-      modality: { select: { id: true, name: true } },
-      instructor: { select: { id: true, fullName: true } },
-    },
-  },
-} satisfies Prisma.ReservationInclude;
-
-type ReservationWithOccurrence = Prisma.ReservationGetPayload<{ include: typeof DETAIL_INCLUDE }>;
 type Tx = Prisma.TransactionClient;
+/** Só leitura: as regras de reserva valem igual dentro de uma transação e na prévia. */
+type ReadDb = Pick<Tx, "user" | "reservation" | "classOccurrence">;
 
 /**
  * Motor de reserva: dono da regra de confirmação. A disponibilidade exibida
@@ -77,13 +72,14 @@ export class ReservationsService {
         { id: "asc" },
       ],
     });
-    return reservations.map((reservation) => this.toDetail(reservation));
+    return reservations.map(toReservationDetail);
   }
 
   async create(
     clientId: string,
     input: CreateReservationRequest,
     idempotencyKey: string,
+    actorId: string = clientId,
   ): Promise<ReservationDetail> {
     const outcome = await this.prisma.$transaction(async (tx) => {
       await lockOccurrenceRows(tx, [input.occurrenceId]);
@@ -96,7 +92,7 @@ export class ReservationsService {
         HttpStatus.CREATED,
         async () => {
           await this.assertClientActive(tx, clientId);
-          const reservationId = await this.book(tx, clientId, input.occurrenceId);
+          const reservationId = await this.book(tx, clientId, input.occurrenceId, actorId);
           return this.detailById(tx, reservationId);
         },
       );
@@ -105,15 +101,20 @@ export class ReservationsService {
   }
 
   /**
-   * Cancela a própria reserva até o início da aula; a vaga volta a contar
+   * Cancela a reserva do cliente até o início da aula; a vaga volta a contar
    * como disponível no mesmo commit. Mesma ordem de locks da reserva.
+   * `actorId` é quem cancela (o cliente, ou a equipe numa reserva administrativa).
    */
-  async cancel(clientId: string, reservationId: string): Promise<ReservationDetail> {
+  async cancel(
+    clientId: string,
+    reservationId: string,
+    actorId: string = clientId,
+  ): Promise<ReservationDetail> {
     return this.prisma.$transaction(async (tx) => {
       const { occurrenceId } = await this.findOwnReservation(tx, clientId, reservationId);
       await lockOccurrenceRows(tx, [occurrenceId]);
       await this.lockClient(tx, clientId);
-      await this.cancelLocked(tx, reservationId, "cancelar");
+      await this.cancelLocked(tx, reservationId, "cancelar", actorId);
       return this.detailById(tx, reservationId);
     }, OCCURRENCE_TRANSACTION_OPTIONS);
   }
@@ -131,6 +132,7 @@ export class ReservationsService {
     reservationId: string,
     input: RescheduleReservationRequest,
     idempotencyKey: string,
+    actorId: string = clientId,
   ): Promise<ReservationDetail> {
     const outcome = await this.prisma.$transaction(async (tx) => {
       const original = await this.findOwnReservation(tx, clientId, reservationId);
@@ -144,11 +146,11 @@ export class ReservationsService {
         HttpStatus.CREATED,
         async () => {
           await this.assertClientActive(tx, clientId);
-          await this.cancelLocked(tx, reservationId, "remarcar");
+          await this.cancelLocked(tx, reservationId, "remarcar", actorId);
           // Depois de validar a original: remarcar para a própria aula seria
           // cancelar e reservar de novo o mesmo lugar.
           if (original.occurrenceId === input.occurrenceId) throw this.duplicateError();
-          const newReservationId = await this.book(tx, clientId, input.occurrenceId);
+          const newReservationId = await this.book(tx, clientId, input.occurrenceId, actorId);
           return this.detailById(tx, newReservationId);
         },
       );
@@ -157,15 +159,65 @@ export class ReservationsService {
   }
 
   /**
+   * Prévia de "pode reservar?": aplica as mesmas regras da reserva (as mesmas
+   * funções de validação), mas só lê — não trava, não grava e não registra
+   * idempotência. É informativa: a decisão continua sendo da reserva de
+   * verdade, e a disponibilidade pode mudar até lá. `replacingReservationId`
+   * simula a remarcação dessa reserva do cliente para a aula.
+   */
+  async preview(
+    clientId: string,
+    occurrenceId: string,
+    replacingReservationId?: string,
+  ): Promise<ReservationPreview> {
+    const occurrence = await this.prisma.classOccurrence.findUnique({
+      where: { id: occurrenceId },
+    });
+    if (!occurrence) {
+      throw new DomainError(ErrorCode.NOT_FOUND, "Aula não encontrada.", ErrorStatus.NOT_FOUND);
+    }
+    const replacing = replacingReservationId
+      ? await this.findOwnReservation(this.prisma, clientId, replacingReservationId)
+      : null;
+
+    let reason: ApiErrorBody | null = null;
+    try {
+      await this.assertClientActive(this.prisma, clientId);
+      if (replacing) {
+        await this.assertCancellable(this.prisma, replacingReservationId!, "remarcar");
+        if (replacing.occurrenceId === occurrenceId) throw this.duplicateError();
+      }
+      await this.assertBookable(this.prisma, clientId, occurrenceId, replacingReservationId);
+    } catch (error) {
+      if (!(error instanceof DomainError)) throw error;
+      reason = error.getResponse() as ApiErrorBody;
+    }
+
+    const booked = await this.prisma.reservation.count({
+      where: {
+        occurrenceId,
+        status: ReservationStatus.CONFIRMED,
+        ...(replacingReservationId ? { id: { not: replacingReservationId } } : {}),
+      },
+    });
+    return {
+      canBook: reason === null,
+      capacity: occurrence.capacity,
+      availableSpots: Math.max(0, occurrence.capacity - booked),
+      reason,
+    };
+  }
+
+  /**
    * Localiza uma reserva do cliente, antes dos locks: só lê o dono e a
    * ocorrência, que nunca mudam. O estado é revalidado depois dos locks.
    */
   private async findOwnReservation(
-    tx: Tx,
+    db: Pick<Tx, "reservation">,
     clientId: string,
     reservationId: string,
   ): Promise<{ occurrenceId: string }> {
-    const reservation = await tx.reservation.findUnique({
+    const reservation = await db.reservation.findUnique({
       where: { id: reservationId },
       select: { clientId: true, occurrenceId: true },
     });
@@ -183,15 +235,15 @@ export class ReservationsService {
   }
 
   /**
-   * Revalida a reserva com os locks já adquiridos e a cancela. `action` só
-   * ajusta o texto da recusa de janela (cancelamento ou remarcação).
+   * A reserva pode ser cancelada agora? Confirmada e com a aula ainda por
+   * começar. `action` só ajusta o texto da recusa de janela.
    */
-  private async cancelLocked(
-    tx: Tx,
+  private async assertCancellable(
+    db: Pick<Tx, "reservation">,
     reservationId: string,
     action: "cancelar" | "remarcar",
-  ): Promise<void> {
-    const reservation = await tx.reservation.findUniqueOrThrow({
+  ): Promise<Date> {
+    const reservation = await db.reservation.findUniqueOrThrow({
       where: { id: reservationId },
       include: { occurrence: { select: { startsAt: true } } },
     });
@@ -210,9 +262,20 @@ export class ReservationsService {
         ErrorStatus.CONFLICT,
       );
     }
+    return now;
+  }
+
+  /** Revalida a reserva com os locks já adquiridos e a cancela, registrando quem cancelou. */
+  private async cancelLocked(
+    tx: Tx,
+    reservationId: string,
+    action: "cancelar" | "remarcar",
+    actorId: string,
+  ): Promise<void> {
+    const now = await this.assertCancellable(tx, reservationId, action);
     await tx.reservation.update({
       where: { id: reservationId },
-      data: { status: ReservationStatus.CANCELLED, cancelledAt: now },
+      data: { status: ReservationStatus.CANCELLED, cancelledAt: now, cancelledById: actorId },
     });
   }
 
@@ -221,7 +284,7 @@ export class ReservationsService {
       where: { id },
       include: DETAIL_INCLUDE,
     });
-    return this.toDetail(reservation);
+    return toReservationDetail(reservation);
   }
 
   /** Lock por cliente, liberado no commit/rollback. */
@@ -229,8 +292,8 @@ export class ReservationsService {
     return lockAdvisory(tx, `reservation-client:${clientId}`);
   }
 
-  private async assertClientActive(tx: Tx, clientId: string): Promise<void> {
-    const client = await tx.user.findUnique({ where: { id: clientId }, select: { status: true } });
+  private async assertClientActive(db: Pick<Tx, "user">, clientId: string): Promise<void> {
+    const client = await db.user.findUnique({ where: { id: clientId }, select: { status: true } });
     if (client?.status !== UserStatus.ACTIVE) {
       throw new DomainError(
         ErrorCode.USER_INACTIVE,
@@ -240,9 +303,41 @@ export class ReservationsService {
     }
   }
 
-  /** Valida a ocorrência já travada e insere a reserva confirmada. */
-  private async book(tx: Tx, clientId: string, occurrenceId: string): Promise<string> {
-    const occurrence = await tx.classOccurrence.findUnique({ where: { id: occurrenceId } });
+  /** Valida a ocorrência já travada e insere a reserva confirmada, registrando quem a criou. */
+  private async book(
+    tx: Tx,
+    clientId: string,
+    occurrenceId: string,
+    actorId: string,
+  ): Promise<string> {
+    await this.assertBookable(tx, clientId, occurrenceId);
+    try {
+      const reservation = await tx.reservation.create({
+        data: { clientId, occurrenceId, createdById: actorId },
+        select: { id: true },
+      });
+      return reservation.id;
+    } catch (error) {
+      // Última linha de defesa: o índice único parcial (cliente, ocorrência).
+      if (isUniqueViolation(error)) throw this.duplicateError();
+      throw error;
+    }
+  }
+
+  /**
+   * As regras de reserva da aula: existe, pode ser reservada, o cliente não
+   * está inscrito, sem conflito de horário e com vaga. Só lê — é o que a
+   * reserva e a prévia compartilham. `ignoredReservationId` é a reserva que
+   * está sendo remarcada (na prévia; na remarcação de verdade ela já está
+   * cancelada dentro da transação).
+   */
+  private async assertBookable(
+    db: ReadDb,
+    clientId: string,
+    occurrenceId: string,
+    ignoredReservationId?: string,
+  ): Promise<void> {
+    const occurrence = await db.classOccurrence.findUnique({ where: { id: occurrenceId } });
     if (!occurrence) {
       throw new DomainError(ErrorCode.NOT_FOUND, "Aula não encontrada.", ErrorStatus.NOT_FOUND);
     }
@@ -255,9 +350,10 @@ export class ReservationsService {
         ErrorStatus.CONFLICT,
       );
     }
+    const notIgnored = ignoredReservationId ? { id: { not: ignoredReservationId } } : {};
 
-    const duplicate = await tx.reservation.findFirst({
-      where: { clientId, occurrenceId, status: ReservationStatus.CONFIRMED },
+    const duplicate = await db.reservation.findFirst({
+      where: { clientId, occurrenceId, status: ReservationStatus.CONFIRMED, ...notIgnored },
       select: { id: true },
     });
     if (duplicate) throw this.duplicateError();
@@ -267,7 +363,7 @@ export class ReservationsService {
     // começa não conflita).
     // O lock do cliente garante que reservas concorrentes dele já estão
     // commitadas quando esta leitura acontece.
-    const conflicting = await tx.reservation.findFirst({
+    const conflicting = await db.reservation.findFirst({
       where: {
         clientId,
         status: ReservationStatus.CONFIRMED,
@@ -277,6 +373,7 @@ export class ReservationsService {
           startsAt: { lt: occurrence.endsAt },
           endsAt: { gt: occurrence.startsAt },
         },
+        ...notIgnored,
       },
       include: DETAIL_INCLUDE,
     });
@@ -286,12 +383,12 @@ export class ReservationsService {
         ErrorCode.SCHEDULE_CONFLICT,
         `Você já tem uma reserva em ${conflicting.occurrence.name} às ${time}, no mesmo horário desta aula.`,
         ErrorStatus.CONFLICT,
-        { reservation: this.toDetail(conflicting) } satisfies ScheduleConflictDetails,
+        { reservation: toReservationDetail(conflicting) } satisfies ScheduleConflictDetails,
       );
     }
 
-    const booked = await tx.reservation.count({
-      where: { occurrenceId, status: ReservationStatus.CONFIRMED },
+    const booked = await db.reservation.count({
+      where: { occurrenceId, status: ReservationStatus.CONFIRMED, ...notIgnored },
     });
     if (booked >= occurrence.capacity) {
       throw new DomainError(
@@ -303,18 +400,6 @@ export class ReservationsService {
         } satisfies ClassFullDetails,
       );
     }
-
-    try {
-      const reservation = await tx.reservation.create({
-        data: { clientId, occurrenceId },
-        select: { id: true },
-      });
-      return reservation.id;
-    } catch (error) {
-      // Última linha de defesa: o índice único parcial (cliente, ocorrência).
-      if (isUniqueViolation(error)) throw this.duplicateError();
-      throw error;
-    }
   }
 
   private duplicateError(): DomainError {
@@ -323,25 +408,5 @@ export class ReservationsService {
       "Você já reservou esta aula. Não é possível reservar duas vezes.",
       ErrorStatus.CONFLICT,
     );
-  }
-
-  private toDetail(reservation: ReservationWithOccurrence): ReservationDetail {
-    const { occurrence } = reservation;
-    return {
-      id: reservation.id,
-      status: reservation.status,
-      occurrence: {
-        id: occurrence.id,
-        name: occurrence.name,
-        modality: occurrence.modality,
-        instructor: occurrence.instructor,
-        startsAt: occurrence.startsAt.toISOString(),
-        endsAt: occurrence.endsAt.toISOString(),
-        durationMinutes: occurrence.durationMinutes,
-        status: occurrence.status,
-      },
-      createdAt: reservation.createdAt.toISOString(),
-      cancelledAt: reservation.cancelledAt?.toISOString() ?? null,
-    };
   }
 }
