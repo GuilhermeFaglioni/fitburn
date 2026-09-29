@@ -20,6 +20,8 @@ import { AssignmentsPage } from "./pages/AssignmentsPage";
 import { GoalsPage } from "./pages/GoalsPage";
 import { PlanPage } from "./pages/PlanPage";
 import { PlansPage } from "./pages/PlansPage";
+import { ProfilePage } from "./pages/ProfilePage";
+import { OwnAreaLayout } from "./components/OwnAreaLayout";
 
 export default function App() {
   return (
@@ -82,6 +84,16 @@ export function AppRoutes() {
           </ProtectedRoute>
         }
       />
+      {/* Perfil / Minha conta: a mesma tela para todos, na casca de cada área. */}
+      <Route
+        element={
+          <ProtectedRoute>
+            <OwnAreaLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route path="/perfil" element={<ProfilePage />} />
+      </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
