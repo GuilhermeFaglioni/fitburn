@@ -12,6 +12,8 @@
   --color-surface-white: #ffffff;
   --color-ink-on-dark: #ffffff;
   --color-ink-on-light: #0a0a0a;
+  /* Texto sobre fundo laranja da marca: o branco dá ~3.05:1; o preto dá ~6.5:1 (WCAG AA 4.5:1). */
+  --color-on-orange: #0a0a0a;
   --color-primary-orange: #ed6e34;
   --color-flame-red: #c23a1f;
 

@@ -188,6 +188,7 @@
 .fb-seg-btn--present[aria-pressed="true"] {
   background: var(--color-primary-orange);
   border-color: var(--color-primary-orange);
+  color: var(--color-on-orange);
 }
 
 .fb-seg-btn--absent[aria-pressed="true"] {

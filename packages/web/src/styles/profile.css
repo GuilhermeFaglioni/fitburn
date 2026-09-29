@@ -201,7 +201,7 @@
 .fb-profile__btn--primary {
   background: var(--color-primary-orange);
   border: none;
-  color: #ffffff;
+  color: var(--color-on-orange);
 }
 
 .fb-profile__btn:disabled {

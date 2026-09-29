@@ -1,3 +1,5 @@
+import { readdirSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import tokensCss from "../src/styles/tokens.css?raw";
 import adminCss from "../src/styles/admin.css?raw";
 import goalsCss from "../src/styles/goals.css?raw";
@@ -149,4 +151,78 @@ describe("cores de texto das folhas de estilo", () => {
       expect(failures).toEqual([]);
     },
   );
+});
+
+/** Toda folha de estilo do app, lida do disco (as de páginas/componentes ficam fora de src/styles). */
+function allSheets(): [string, string][] {
+  const root = resolve(process.cwd(), "src");
+  const sheets = readdirSync(resolve(root, "styles"))
+    .filter((name) => name.endsWith(".css"))
+    .map((name) => `styles/${name}`)
+    .concat(["pages/LoginPage.css", "components/AppMenu.css"]);
+  return sheets.map((path) => [path, readFileSync(resolve(root, path), "utf8")]);
+}
+
+function resolveColor(value: string): Rgb {
+  const variable = value.match(/^var\(--([\w-]+)\)$/);
+  return hex(variable ? token(variable[1]) : value);
+}
+
+/** Regras cujo fundo é o laranja da marca, com o `color` declarado na própria regra. */
+function orangeBackgrounds(css: string): { selector: string; color: string | undefined }[] {
+  const found: { selector: string; color: string | undefined }[] = [];
+  for (const [, selector, body] of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+    if (!/background(-color)?:[^;]*(primary-orange|#ed6e34)/i.test(body)) continue;
+    found.push({
+      selector: selector.trim().replace(/\s+/g, " "),
+      color: body.match(/(?<![-\w])color:\s*([^;]+);/)?.[1].trim(),
+    });
+  }
+  return found;
+}
+
+describe("botões primários (texto sobre o laranja da marca)", () => {
+  const ORANGE = hex(token("color-primary-orange"));
+
+  it("o texto sobre o laranja (token color-on-orange) passa de 4.5:1", () => {
+    expect(contrast(resolveColor("var(--color-on-orange)"), ORANGE)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("o branco sobre o laranja não passa de 4.5:1 (motivo do token)", () => {
+    expect(contrast(WHITE, ORANGE)).toBeLessThan(4.5);
+  });
+
+  it.each(allSheets())("%s: todo fundo laranja usa texto com 4.5:1 ou mais", (_name, css) => {
+    const failures = orangeBackgrounds(css)
+      // O visto do checkbox marcado é um gráfico (mínimo de 3:1), não texto.
+      .filter(({ selector }) => !selector.startsWith(".fb-checkbox:checked"))
+      .filter(({ color }) => color === undefined || contrast(resolveColor(color), ORANGE) < 4.5)
+      .map(({ selector, color }) => `${selector} → ${color ?? "sem color explícito"}`);
+
+    expect(failures).toEqual([]);
+  });
+
+  it("o botão primário do painel e o dia da recorrência marcado usam o par testado", () => {
+    const rules = orangeBackgrounds(adminCss);
+    for (const selector of [".fb-btn-primary", '.fb-weekday-toggle[aria-pressed="true"]']) {
+      const rule = rules.find((r) => r.selector === selector);
+      expect(rule, selector).toBeDefined();
+      expect(contrast(resolveColor(rule?.color ?? "#ffffff"), ORANGE)).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  it("o texto secundário do chip de dia marcado (sobre o laranja) também passa de 4.5:1", () => {
+    const rule = textColors(clientCss).find(
+      ({ selector }) => selector === '.fb-daychip[aria-pressed="true"] .fb-daychip__weekday',
+    );
+    expect(rule).toBeDefined();
+    expect(contrast(resolveColor(rule?.value ?? "#ffffff"), ORANGE)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("o rótulo do botão de entrar do login usa o texto sobre o laranja", () => {
+    const login = allSheets().find(([name]) => name === "pages/LoginPage.css")?.[1] ?? "";
+    const label = textColors(login).find(({ selector }) => selector === ".login-form__submit-label");
+    expect(label).toBeDefined();
+    expect(contrast(resolveColor(label?.value ?? "#ffffff"), ORANGE)).toBeGreaterThanOrEqual(4.5);
+  });
 });
