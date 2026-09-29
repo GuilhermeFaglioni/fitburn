@@ -56,12 +56,12 @@ function LoggedInPage() {
   return <ClientAgendaPage />;
 }
 
-function renderPage() {
+function renderPage(state?: unknown) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <MemoryRouter initialEntries={["/agenda"]}>
+        <MemoryRouter initialEntries={[{ pathname: "/agenda", state }]}>
           <LoggedInPage />
         </MemoryRouter>
       </AuthProvider>
@@ -72,6 +72,19 @@ function renderPage() {
 describe("ClientAgendaPage", () => {
   beforeEach(() => {
     mockSuccessfulLogin("Cliente");
+  });
+
+  it("chega da Home já em remarcação quando a navegação leva a reserva", async () => {
+    server.use(http.get("/api/agenda", () => HttpResponse.json([])));
+
+    renderPage({
+      rescheduling: {
+        reservationId: "res-1",
+        from: item(TODAY, "18:00", { myReservationId: "res-1" }),
+      },
+    });
+
+    expect(await screen.findByText(/Remarcando Treino Funcional/)).toBeInTheDocument();
   });
 
   it("agrupa por dia: mostra as aulas do dia selecionado (hoje por padrão) em ordem", async () => {

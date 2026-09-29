@@ -1,0 +1,343 @@
+/**
+ * Home do cliente — HomeMobile.dc.html e HomeDesktop.dc.html no canvas de
+ * design (Claude Design). Mobile: blocos empilhados com 28px de intervalo;
+ * desktop (≥768px): coluna de 400px (saudação, plano, evolução) ao lado das
+ * próximas aulas e dos atalhos.
+ */
+.fb-home {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  font-family: var(--font-sans);
+  color: var(--color-ink-on-dark);
+}
+
+.fb-home__main,
+.fb-home__side {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  min-width: 0;
+}
+
+.fb-home__block {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.fb-home__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.fb-home__greeting {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.fb-home__title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.fb-home__link {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-primary-orange);
+  text-decoration: none;
+}
+
+.fb-home__link:hover {
+  text-decoration: underline;
+}
+
+.fb-home__alert {
+  margin: 0;
+  box-sizing: border-box;
+  padding: 10px 14px;
+  background: var(--color-danger-bg);
+  border: 1px solid var(--color-danger-border);
+  border-radius: 5px;
+  font-size: 13px;
+  color: var(--color-danger);
+}
+
+.fb-home__note {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+/* Plano ativo. */
+.fb-home__plan {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  background: #1a1a1a;
+  border-radius: 5px;
+}
+
+.fb-home__plan--empty {
+  display: block;
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  font-size: 13px;
+  line-height: 19px;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.fb-home__plan-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.fb-home__plan-name {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.fb-home__plan-until {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.fb-home__badge {
+  flex-shrink: 0;
+  padding: 5px 10px;
+  border-radius: 5px;
+  background: rgba(237, 110, 52, 0.14);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--color-primary-orange);
+}
+
+/* Próximas aulas. */
+.fb-home__reservations {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.fb-home__reservation {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  background: #1a1a1a;
+  border-radius: 5px;
+}
+
+.fb-home__reservation-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.fb-home__reservation-title {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.fb-home__reservation-when {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.fb-home__reservation-actions {
+  display: flex;
+  gap: 16px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.fb-home__ghost-btn {
+  background: none;
+  border: none;
+  padding: 4px 0;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+}
+
+.fb-home__ghost-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.fb-home__ghost-btn--danger {
+  color: var(--color-danger);
+}
+
+.fb-home__empty-text {
+  margin: 0 0 8px;
+}
+
+/* Resumo da gamificação. */
+.fb-home__evolution {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 20px 16px;
+  background: #1a1a1a;
+  border-radius: 5px;
+}
+
+.fb-home__points-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 20px;
+}
+
+.fb-home__points {
+  display: flex;
+  flex-direction: column;
+}
+
+.fb-home__points-total {
+  font-size: 48px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--color-primary-orange);
+}
+
+.fb-home__points-label {
+  margin-top: 4px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.fb-home__streak {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 6px;
+}
+
+.fb-home__streak-count {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  background: rgba(237, 110, 52, 0.14);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-primary-orange);
+}
+
+.fb-home__streak-label {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.fb-home__recent-badge {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fb-home__recent-badge .fb-home__points-label {
+  margin-top: 0;
+  font-weight: 500;
+}
+
+.fb-home__badge-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.fb-home__badge-disc {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  background: #0f0f0f;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Atalhos. */
+.fb-home__shortcuts {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.fb-home__shortcut {
+  box-sizing: border-box;
+  display: block;
+  padding: 14px 16px;
+  background: #1a1a1a;
+  border-radius: 5px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-ink-on-dark);
+  text-decoration: none;
+}
+
+.fb-home__shortcut:hover {
+  background: #232323;
+}
+
+@media (min-width: 768px) {
+  .fb-home {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 40px;
+  }
+
+  .fb-home__main {
+    width: 400px;
+    flex-shrink: 0;
+  }
+
+  .fb-home__side {
+    flex: 1;
+  }
+
+  .fb-home__greeting {
+    font-size: 26px;
+  }
+
+  .fb-home__title {
+    font-size: 18px;
+  }
+
+  .fb-home__plan {
+    padding: 16px 18px;
+  }
+
+  .fb-home__plan-name {
+    font-size: 16px;
+  }
+
+  .fb-home__evolution {
+    gap: 20px;
+    padding: 22px 20px;
+  }
+}

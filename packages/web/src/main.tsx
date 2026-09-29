@@ -10,6 +10,7 @@ import "./styles/gamification.css";
 import "./styles/goals.css";
 import "./styles/plan.css";
 import "./styles/profile.css";
+import "./styles/home.css";
 
 const queryClient = new QueryClient();
 
