@@ -127,6 +127,7 @@ describe("Gamificação: pontos (HTTP)", () => {
           points: 10,
           occurredAt: occurrence.startsAt.toISOString(),
           subject: "Treino Funcional",
+          milestone: null,
         },
       ]);
     });
@@ -142,7 +143,8 @@ describe("Gamificação: pontos (HTTP)", () => {
       await mark(rafael.token, reservation.id, "ABSENT");
       const summary = await mine(marina.token);
 
-      expect(summary.body).toEqual({ totalPoints: 0, history: [] });
+      expect(summary.body.totalPoints).toBe(0);
+      expect(summary.body.history).toEqual([]);
     });
 
     it("cancelar a reserva não gera pontos", async () => {
@@ -159,7 +161,8 @@ describe("Gamificação: pontos (HTTP)", () => {
       const summary = await mine(marina.token);
 
       expect(cancelled.status).toBe(200);
-      expect(summary.body).toEqual({ totalPoints: 0, history: [] });
+      expect(summary.body.totalPoints).toBe(0);
+      expect(summary.body.history).toEqual([]);
       expect(await testPrisma.pointsEntry.count()).toBe(0);
     });
 
@@ -261,7 +264,8 @@ describe("Gamificação: pontos (HTTP)", () => {
       const summary = await mine(marina.token);
       const anonymous = await request(app.getHttpServer()).get("/api/gamification/me");
 
-      expect(summary.body).toEqual({ totalPoints: 0, history: [] });
+      expect(summary.body.totalPoints).toBe(0);
+      expect(summary.body.history).toEqual([]);
       expect(anonymous.status).toBe(401);
     });
   });

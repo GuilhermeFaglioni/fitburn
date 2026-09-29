@@ -16,6 +16,7 @@ import {
   utcToGymDateTime,
 } from "@fitburn/contracts";
 import { PrismaService } from "../prisma/prisma.service.js";
+import { lockAdvisory } from "../prisma/advisory-lock.js";
 import { DomainError } from "../common/errors/domain-error.js";
 import { lockOccurrenceRows, OCCURRENCE_TRANSACTION_OPTIONS } from "../agenda/occurrence-lock.js";
 import { replay, runIdempotent } from "./idempotency.js";
@@ -223,9 +224,8 @@ export class ReservationsService {
   }
 
   /** Lock por cliente, liberado no commit/rollback. */
-  private async lockClient(tx: Tx, clientId: string): Promise<void> {
-    const key = `reservation-client:${clientId}`;
-    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${key}, 0))`;
+  private lockClient(tx: Tx, clientId: string): Promise<void> {
+    return lockAdvisory(tx, `reservation-client:${clientId}`);
   }
 
   private async assertClientActive(tx: Tx, clientId: string): Promise<void> {

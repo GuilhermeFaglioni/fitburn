@@ -99,6 +99,7 @@ model User {
   reservations        Reservation[]
   idempotencyRecords  IdempotencyRecord[]
   pointsEntries       PointsEntry[]
+  streakBadges        StreakBadge[]
 
   @@map("users")
 }
@@ -271,6 +272,12 @@ model PointsEntry {
   points     Int
   occurredAt DateTime        @db.Timestamptz(3)
   createdAt  DateTime        @default(now())
+  /// Ordem de lançamento: desempata lançamentos do mesmo instante — a
+  /// presença e o bônus de streak que ela desperta nascem na mesma
+  /// transação, com createdAt igual.
+  sequence   Int             @default(autoincrement())
+  /// Marco de streak que um lançamento STREAK_BONUS celebra (3, 5, 10 …).
+  milestone  Int?
 
   clientId String
   client   User   @relation(fields: [clientId], references: [id], onDelete: Restrict)
@@ -283,6 +290,23 @@ model PointsEntry {
   @@index([clientId, occurredAt])
   @@index([reservationId])
   @@map("points_entries")
+}
+
+/// Badge de um marco de streak: um por cliente e marco, concedido na primeira
+/// vez que uma sequência de presenças o atinge (o bônus de pontos, ao
+/// contrário, se repete a cada nova sequência).
+model StreakBadge {
+  id        String   @id @default(uuid())
+  milestone Int
+  /// Quando o marco foi atingido (o início da aula que completou a sequência).
+  awardedAt DateTime @db.Timestamptz(3)
+  createdAt DateTime @default(now())
+
+  clientId String
+  client   User   @relation(fields: [clientId], references: [id], onDelete: Restrict)
+
+  @@unique([clientId, milestone])
+  @@map("streak_badges")
 }
 
 model RefreshToken {

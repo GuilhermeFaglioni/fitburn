@@ -29,9 +29,19 @@ function entry(
     points: 10,
     occurredAt: gymDateTimeToUtc(date, time).toISOString(),
     subject: "Treino Funcional",
+    milestone: null,
     ...overrides,
   };
 }
+
+const NO_STREAK = {
+  streak: { current: 0, next: { threshold: 3, bonusPoints: 5 } },
+  badges: [
+    { milestone: 3, earned: false, awardedAt: null },
+    { milestone: 5, earned: false, awardedAt: null },
+    { milestone: 10, earned: false, awardedAt: null },
+  ],
+} satisfies Pick<GamificationSummary, "streak" | "badges">;
 
 function LoggedInPage() {
   const { login } = useAuth();
@@ -63,6 +73,11 @@ function renderPage() {
   );
 }
 
+/** A linha do total de pontos (o número grande e o rótulo "pontos totais"). */
+function totalRow() {
+  return screen.getByText("pontos totais").parentElement!;
+}
+
 describe("Gamificação do cliente", () => {
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
@@ -80,6 +95,7 @@ describe("Gamificação do cliente", () => {
 
   it("mostra o total de pontos e o histórico dos ganhos", async () => {
     mockSummary({
+      ...NO_STREAK,
       totalPoints: 1240,
       history: [
         entry("e1", "2026-05-06", "17:30"),
@@ -88,7 +104,12 @@ describe("Gamificação do cliente", () => {
           points: 25,
           subject: "3 treinos na semana",
         }),
-        entry("e3", "2026-05-03", "07:00", { type: "STREAK_BONUS", points: 5, subject: null }),
+        entry("e3", "2026-05-03", "07:00", {
+          type: "STREAK_BONUS",
+          points: 5,
+          subject: null,
+          milestone: 5,
+        }),
       ],
     });
 
@@ -109,12 +130,13 @@ describe("Gamificação do cliente", () => {
     expect(within(items[1]).getByText("Meta concluída · 3 treinos na semana")).toBeInTheDocument();
     expect(within(items[1]).getByText("Ontem")).toBeInTheDocument();
     expect(within(items[1]).getByText("+25")).toBeInTheDocument();
-    expect(within(items[2]).getByText("Bônus de streak")).toBeInTheDocument();
+    expect(within(items[2]).getByText("Streak de 5 dias consecutivos")).toBeInTheDocument();
     expect(within(items[2]).getByText("Há 3 dias")).toBeInTheDocument();
   });
 
   it("mostra a correção de presença com os pontos negativos", async () => {
     mockSummary({
+      ...NO_STREAK,
       totalPoints: 0,
       history: [
         entry("e1", "2026-05-06", "17:30", { type: "REVERSAL", points: -10 }),
@@ -130,16 +152,102 @@ describe("Gamificação do cliente", () => {
       within(items[0]).getByText("Correção de presença · Treino Funcional"),
     ).toBeInTheDocument();
     expect(within(items[0]).getByText("-10")).toBeInTheDocument();
-    expect(screen.getByText("0")).toBeInTheDocument();
+    expect(within(totalRow()).getByText("0")).toBeInTheDocument();
+  });
+
+  it("mostra o streak atual, os marcos alcançados e o próximo marco", async () => {
+    mockSummary({
+      totalPoints: 65,
+      history: [],
+      streak: { current: 4, next: { threshold: 5, bonusPoints: 10 } },
+      badges: [
+        { milestone: 3, earned: true, awardedAt: "2026-05-04T21:00:00.000Z" },
+        { milestone: 5, earned: false, awardedAt: null },
+        { milestone: 10, earned: false, awardedAt: null },
+      ],
+    });
+
+    renderPage();
+
+    const points = await screen.findByRole("region", { name: "Pontos" });
+    expect(within(points).getByText("4")).toBeInTheDocument();
+    expect(within(points).getByText("dias seguidos de treino")).toBeInTheDocument();
+    expect(within(points).getByText("Próximo marco: 5 dias (+10 pontos)")).toBeInTheDocument();
+    expect(within(points).getByRole("listitem", { name: "3 dias, alcançado" })).toBeInTheDocument();
+    expect(
+      within(points).getByRole("listitem", { name: "5 dias, ainda não alcançado" }),
+    ).toBeInTheDocument();
+    expect(
+      within(points).getByRole("listitem", { name: "10 dias, ainda não alcançado" }),
+    ).toBeInTheDocument();
+  });
+
+  it("com todos os marcos alcançados, diz que não há próximo", async () => {
+    mockSummary({
+      totalPoints: 135,
+      history: [],
+      streak: { current: 12, next: null },
+      badges: [3, 5, 10].map((milestone) => ({
+        milestone,
+        earned: true,
+        awardedAt: "2026-05-04T21:00:00.000Z",
+      })),
+    });
+
+    renderPage();
+
+    expect(await screen.findByText("Você atingiu todos os marcos.")).toBeInTheDocument();
+    expect(screen.getByRole("listitem", { name: "10 dias, alcançado" })).toBeInTheDocument();
+  });
+
+  it("mostra os badges conquistados e os bloqueados, com o progresso destes", async () => {
+    mockSummary({
+      totalPoints: 35,
+      history: [],
+      streak: { current: 4, next: { threshold: 5, bonusPoints: 10 } },
+      badges: [
+        { milestone: 3, earned: true, awardedAt: "2026-05-04T21:00:00.000Z" },
+        { milestone: 5, earned: false, awardedAt: null },
+        { milestone: 10, earned: false, awardedAt: null },
+      ],
+    });
+
+    renderPage();
+
+    const badges = await screen.findByRole("region", { name: "Conquistas" });
+    expect(
+      within(badges).getByRole("listitem", { name: "Streak de 3, conquistado" }),
+    ).toHaveTextContent("Streak de 3");
+    expect(
+      within(badges).getByRole("listitem", { name: "Streak de 5 (4/5), bloqueado" }),
+    ).toHaveTextContent("Streak de 5 (4/5)");
+    expect(
+      within(badges).getByRole("listitem", { name: "Streak de 10 (4/10), bloqueado" }),
+    ).toBeInTheDocument();
+  });
+
+  it("sem marcos configurados não mostra streak nem conquistas", async () => {
+    mockSummary({
+      totalPoints: 0,
+      history: [],
+      streak: { current: 0, next: null },
+      badges: [],
+    });
+
+    renderPage();
+
+    await screen.findByText("Nenhum ganho de pontos ainda.");
+    expect(screen.queryByRole("region", { name: "Conquistas" })).not.toBeInTheDocument();
+    expect(screen.queryByText("dias seguidos de treino")).not.toBeInTheDocument();
   });
 
   it("quem ainda não tem pontos vê zero e o estado vazio do histórico", async () => {
-    mockSummary({ totalPoints: 0, history: [] });
+    mockSummary({ ...NO_STREAK, totalPoints: 0, history: [] });
 
     renderPage();
 
     expect(await screen.findByText("Nenhum ganho de pontos ainda.")).toBeInTheDocument();
-    expect(screen.getByText("0")).toBeInTheDocument();
+    expect(within(totalRow()).getByText("0")).toBeInTheDocument();
   });
 
   it("avisa quando a evolução não carrega", async () => {
@@ -157,7 +265,7 @@ describe("Gamificação do cliente", () => {
   });
 
   it("o botão Voltar leva para o início", async () => {
-    mockSummary({ totalPoints: 0, history: [] });
+    mockSummary({ ...NO_STREAK, totalPoints: 0, history: [] });
     const user = userEvent.setup();
     renderPage();
     await screen.findByText("Nenhum ganho de pontos ainda.");

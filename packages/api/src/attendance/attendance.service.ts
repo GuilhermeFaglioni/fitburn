@@ -206,7 +206,7 @@ export class AttendanceService {
       });
       // Os pontos entram na mesma transação: presença sem o lançamento não vale.
       if (mark === AttendanceStatus.PRESENT) {
-        await this.gamification.awardAttendance(tx, {
+        await this.gamification.recordAttendance(tx, {
           clientId: reservation.clientId,
           reservationId,
           occurredAt: reservation.occurrence.startsAt,
