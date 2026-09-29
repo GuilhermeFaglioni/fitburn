@@ -20,6 +20,9 @@ import { AssignmentsPage } from "./pages/AssignmentsPage";
 import { GoalsPage } from "./pages/GoalsPage";
 import { PlanPage } from "./pages/PlanPage";
 import { PlansPage } from "./pages/PlansPage";
+import { WorkoutSheetsPage } from "./pages/WorkoutSheetsPage";
+import { ClientWorkoutSheetsPage } from "./pages/ClientWorkoutSheetsPage";
+import { ClientWorkoutSheetPage } from "./pages/ClientWorkoutSheetPage";
 
 export default function App() {
   return (
@@ -51,6 +54,8 @@ export function AppRoutes() {
         <Route path="/" element={<ClientHomePage />} />
         <Route path="/agenda" element={<ClientAgendaPage />} />
         <Route path="/plano" element={<PlanPage />} />
+        <Route path="/ficha-treino" element={<ClientWorkoutSheetsPage />} />
+        <Route path="/ficha-treino/:id" element={<ClientWorkoutSheetPage />} />
         <Route path="/gamificacao" element={<GamificationPage />} />
       </Route>
       <Route
@@ -69,6 +74,7 @@ export function AppRoutes() {
         <Route path="/minhas-aulas" element={<MyClassesPage />} />
         <Route path="/atribuicoes" element={<AssignmentsPage />} />
         <Route path="/planos" element={<PlansPage />} />
+        <Route path="/fichas" element={<WorkoutSheetsPage />} />
         <Route path="/metas" element={<GoalsPage />} />
       </Route>
       {/* Presença é uma tela cheia (PresencaMobile.dc.html), sem a sidebar administrativa. */}

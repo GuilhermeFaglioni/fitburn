@@ -7,16 +7,6 @@ import { createTestApp } from "./test-app.js";
 
 const PASSWORD = "SenhaForte123!";
 
-interface ExerciseBody {
-  name: string;
-  sets?: string;
-  reps?: string;
-  load?: string;
-  duration?: string;
-  distance?: string;
-  notes?: string;
-}
-
 describe("Fichas de treino (HTTP)", () => {
   let app: INestApplication;
   let adminProfileId: string;
@@ -373,7 +363,10 @@ describe("Fichas de treino (HTTP)", () => {
         title: "Fase 2",
         exercises: [{ name: "Agachamento" }, { name: "Supino" }],
       });
-      await api((await createAdmin()).token).create({ clientId: camila.user.id, title: "Da Camila" });
+      await api((await createAdmin()).token).create({
+        clientId: camila.user.id,
+        title: "Da Camila",
+      });
 
       const mine = await api(marina.token).mine();
       const one = await api(marina.token).mineOne(active.body.id);

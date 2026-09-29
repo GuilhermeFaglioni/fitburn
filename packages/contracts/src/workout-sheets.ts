@@ -42,7 +42,11 @@ export const workoutExerciseInputSchema = z.object({
   load: shortText("A carga"),
   duration: shortText("O tempo"),
   distance: shortText("A distância"),
-  notes: z.string().trim().max(500, "As observações podem ter no máximo 500 caracteres.").optional(),
+  notes: z
+    .string()
+    .trim()
+    .max(500, "As observações podem ter no máximo 500 caracteres.")
+    .optional(),
 });
 export type WorkoutExerciseInput = z.infer<typeof workoutExerciseInputSchema>;
 
