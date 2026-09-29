@@ -12,7 +12,7 @@ const USER = {
   permissions: [],
 };
 
-function refreshRespondsWith(status: number, body: unknown = { code: "X", message: "x" }) {
+function refreshRespondsWith(status: number, body: Record<string, unknown> = { code: "X", message: "x" }) {
   server.use(http.post("/api/auth/refresh", () => HttpResponse.json(body, { status })));
 }
 
