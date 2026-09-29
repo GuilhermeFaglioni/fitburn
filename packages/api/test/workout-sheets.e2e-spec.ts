@@ -91,6 +91,35 @@ describe("Fichas de treino (HTTP)", () => {
 
   const names = (exercises: Array<{ name: string }>) => exercises.map((item) => item.name);
 
+  describe("edições simultâneas da mesma ficha", () => {
+    it("serializa as gravações: todas dão certo e a lista final é a de uma delas, com posições únicas", async () => {
+      const admin = await createAdmin();
+      const marina = await createClient("marina");
+      const created = await api(admin.token).create({
+        clientId: marina.user.id,
+        title: "Ficha A",
+        exercises: [{ name: "Inicial 1" }, { name: "Inicial 2" }],
+      });
+      expect(created.status).toBe(201);
+      const attempts = Array.from({ length: 8 }, (_, index) =>
+        Array.from({ length: 3 }, (_, item) => ({ name: `T${index} exercício ${item}` })),
+      );
+
+      const responses = await Promise.all(
+        attempts.map((exercises) => api(admin.token).update(created.body.id, { exercises })),
+      );
+
+      expect(responses.map((response) => response.status)).toEqual(attempts.map(() => 200));
+      const rows = await testPrisma.workoutExercise.findMany({
+        where: { sheetId: created.body.id },
+        orderBy: { position: "asc" },
+      });
+      expect(rows.map((row) => row.position)).toEqual([0, 1, 2]);
+      const names = rows.map((row) => row.name);
+      expect(attempts.map((exercises) => exercises.map((item) => item.name))).toContainEqual(names);
+    });
+  });
+
   describe("CRUD", () => {
     it("o professor cria uma ficha para um cliente do escopo, com os exercícios na ordem enviada", async () => {
       const { rafael, marina } = await setup();

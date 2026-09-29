@@ -4,6 +4,7 @@ import { addDays, gymToday } from "@fitburn/contracts";
 import { cleanDatabase, testPrisma } from "./db-test-helper.js";
 import { createAccessProfile, createUser, grantModuleAccess } from "./factories.js";
 import { loginAndGetAccessToken } from "./login-helper.js";
+import { PlansService } from "../src/plans/plans.service.js";
 import { createTestApp } from "./test-app.js";
 
 const PASSWORD = "SenhaForte123!";
@@ -133,6 +134,47 @@ describe("Planos: catálogo, atribuição e visão do cliente (HTTP)", () => {
       expect(empty.status).toBe(400);
       expect(missing.status).toBe(404);
       expect(same.status).toBe(200);
+    });
+
+    it("criações simultâneas com o mesmo nome: uma vence, as outras recebem a recusa de nome repetido (não 500)", async () => {
+      const admin = await createAdmin();
+
+      const responses = await Promise.all(
+        Array.from({ length: 20 }, () => api(admin.token).createPlan({ name: "Plano Corrida" })),
+      );
+
+      const statuses = responses.map((response) => response.status).sort();
+      expect(statuses).toEqual([201, ...Array(19).fill(400)]);
+      const refused = responses.find((response) => response.status === 400);
+      expect(refused?.body).toMatchObject({
+        code: "VALIDATION_ERROR",
+        message: "Já existe um plano com este nome.",
+      });
+      expect(await testPrisma.plan.count({ where: { name: "Plano Corrida" } })).toBe(1);
+    });
+
+    it("se a checagem de nome perde a corrida, a violação do índice único vira a mesma recusa (não 500)", async () => {
+      const admin = await createAdmin();
+      const service = app.get(PlansService) as unknown as { assertNameAvailable: () => unknown };
+      await newPlan(admin.token, "Plano Corrida");
+      const other = await newPlan(admin.token, "Plano B");
+      // Simula a janela da corrida: a checagem passa, e só o banco enxerga o nome repetido.
+      const check = vi.spyOn(service, "assertNameAvailable").mockResolvedValue(undefined);
+
+      try {
+        const created = await api(admin.token).createPlan({ name: "Plano Corrida" });
+        const renamed = await api(admin.token).updatePlan(other.id, { name: "Plano Corrida" });
+
+        for (const response of [created, renamed]) {
+          expect(response.status).toBe(400);
+          expect(response.body).toMatchObject({
+            code: "VALIDATION_ERROR",
+            message: "Já existe um plano com este nome.",
+          });
+        }
+      } finally {
+        check.mockRestore();
+      }
     });
 
     it("a lista traz quantos clientes têm o plano ativo agora, sem contar os encerrados nem os vencidos", async () => {
@@ -385,6 +427,16 @@ describe("Planos: catálogo, atribuição e visão do cliente (HTTP)", () => {
         "Plano Performance",
         "Plano Essencial",
       ]);
+    });
+
+    it("o histórico de um id que não existe ou não é cliente devolve 404", async () => {
+      const admin = await createAdmin();
+
+      const unknown = await api(admin.token).historyOf("nao-existe");
+      const staff = await api(admin.token).historyOf(admin.user.id);
+
+      expect(unknown.status).toBe(404);
+      expect(staff.status).toBe(404);
     });
 
     it("as opções trazem só planos ativos e clientes ativos, com o plano ativo de cada um", async () => {
