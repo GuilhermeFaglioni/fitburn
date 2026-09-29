@@ -1,0 +1,274 @@
+/**
+ * Passada transversal de responsividade (375 px a 1440 px) e alvos de toque.
+ * Vem por último em main.tsx para ajustar as telas sem reescrever os arquivos
+ * de cada uma. Mobile-first onde faz sentido; o ponto de quebra é o mesmo da
+ * casca do cliente e da administrativa (768 px).
+ *
+ * O canvas de design só tem o desktop das telas administrativas: no mobile
+ * elas seguem a mesma linguagem (fundo claro, laranja como acento) em coluna única.
+ */
+
+/* Nunca deixa um campo, tabela ou coluna de grade empurrar a página além da largura. */
+.fb-field,
+.fb-form input,
+.fb-form select {
+  max-width: 100%;
+}
+
+.fb-table-wrap {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.fb-dash__columns > *,
+.fb-dash__metrics > *,
+.fb-modal__grid > *,
+.fb-matrix-content {
+  min-width: 0;
+}
+
+.fb-td,
+.fb-page-title {
+  overflow-wrap: anywhere;
+}
+
+/* Links do conteúdo administrativo na cor da marca, em vez do azul padrão do navegador. */
+.fb-admin-content a:not([class]),
+.fb-back-link {
+  color: var(--color-ink-on-light);
+  font-weight: 500;
+  text-decoration: underline;
+  text-decoration-color: var(--color-primary-orange);
+  text-underline-offset: 3px;
+}
+
+.fb-back-link {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  font-size: 13px;
+  min-height: 32px;
+}
+
+/* Lista de dados (rótulo + valor) que quebra o valor longo em vez de vazar da tela. */
+.fb-dl {
+  display: grid;
+  grid-template-columns: minmax(0, 180px) minmax(0, 1fr);
+  gap: 8px;
+  margin: 0;
+}
+
+.fb-dl dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Alvos de toque de 44 px em telas pequenas e em dispositivos de ponteiro grosso (WCAG 2.5.5). */
+@media (max-width: 767px), (pointer: coarse) {
+  .fb-btn-primary,
+  .fb-btn-secondary,
+  .fb-btn-danger,
+  .fb-btn-danger-text,
+  .fb-btn-dashed,
+  .fb-row-btn,
+  .fb-tab-btn,
+  .fb-role-item,
+  .fb-goals__student,
+  .fb-state__retry,
+  .fb-weekday-toggle,
+  .fb-profile__link-btn,
+  .fb-profile__logout,
+  .fb-home__link,
+  .fb-home__ghost-btn,
+  .fb-client-tab-btn,
+  .fb-filter-chip,
+  .fb-back-link,
+  .fb-workout__back,
+  .fb-sheet__close,
+  .fb-field {
+    min-height: 44px;
+  }
+
+  .fb-home__link,
+  .fb-home__ghost-btn,
+  .fb-workout__back,
+  .fb-sheet__close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  .fb-tab-btn,
+  .fb-profile__link-btn {
+    min-width: 44px;
+  }
+
+  .fb-icon-btn,
+  .fb-client-icon-btn,
+  .fb-sheet__x,
+  .fb-back-btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .fb-checkbox {
+    /* A caixa continua de 18 px; a área de toque cresce com a margem invisível. */
+    position: relative;
+  }
+
+  .fb-checkbox::before {
+    content: "";
+    position: absolute;
+    inset: -13px;
+  }
+
+  .fb-td a {
+    display: inline-block;
+    padding: 14px 0;
+  }
+}
+
+@media (max-width: 767px) {
+  .fb-admin-content {
+    --fb-admin-pad-x: 16px;
+    --fb-admin-pad-y: 20px;
+  }
+
+  .fb-page-title {
+    font-size: 22px;
+  }
+
+  .fb-toolbar,
+  .fb-toolbar > div {
+    width: 100%;
+  }
+
+  .fb-toolbar .fb-btn-primary {
+    width: 100%;
+  }
+
+  .fb-filter {
+    flex-wrap: wrap;
+  }
+
+  /* Rótulo + seleção lado a lado só enquanto cabem; senão a seleção vai para a linha de baixo. */
+  .fb-admin-content label {
+    max-width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .fb-admin-content label > select.fb-field {
+    min-width: 0;
+    flex: 1 1 200px;
+  }
+
+  .fb-tabs {
+    gap: 8px;
+    overflow-x: auto;
+  }
+
+  .fb-tab-btn {
+    flex-shrink: 0;
+    padding: 9px 8px;
+  }
+
+  /* Tabelas: a rolagem horizontal fica dentro do quadro, com colunas que não espremem o texto. */
+  .fb-table-wrap table {
+    min-width: 520px;
+  }
+
+  /* Agenda administrativa: a grade semanal vira uma lista de dias, um abaixo do outro. */
+  .fb-week-grid {
+    flex-direction: column;
+    gap: 14px;
+    overflow: visible;
+  }
+
+  .fb-day-col {
+    flex: none;
+  }
+
+  .fb-day-head {
+    text-align: left;
+    padding: 8px 0;
+    font-size: 13px;
+  }
+
+  .fb-day-empty {
+    min-height: 44px;
+    flex-grow: 0;
+    border: 1px dashed #d6d6d6;
+    color: var(--color-text-muted-on-light);
+    font-family: var(--font-sans);
+    font-size: 12px;
+  }
+
+  .fb-day-empty::after {
+    content: "+ Nova aula";
+  }
+
+  .fb-chip-cls {
+    padding: 10px 12px;
+  }
+
+  .fb-chip-cls__hour {
+    font-size: 12px;
+  }
+
+  .fb-chip-cls__title {
+    font-size: 14px;
+  }
+
+  .fb-chip-cls__sub {
+    font-size: 12px;
+  }
+
+  /* Matriz de permissões: a lista de perfis fica acima da matriz. */
+  .fb-matrix-layout {
+    flex-direction: column;
+  }
+
+  .fb-role-list {
+    width: 100%;
+  }
+
+  /* Metas e Fichas: a coluna de alunos vira uma faixa acima da área principal. */
+  .fb-goals {
+    flex-direction: column;
+  }
+
+  .fb-goals__students {
+    width: 100%;
+    max-height: 260px;
+    border-right: none;
+    border-bottom: 1px solid #eeeeee;
+  }
+
+  .fb-goals__main {
+    padding: 20px 16px;
+  }
+
+  /* Diálogos: quase tela cheia, campos em coluna única, ações empilhadas. */
+  .fb-modal-backdrop {
+    padding: 8px;
+    align-items: flex-end;
+  }
+
+  .fb-modal {
+    padding: 20px 16px;
+  }
+
+  .fb-modal__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .fb-modal__footer {
+    flex-wrap: wrap;
+  }
+
+  .fb-form {
+    max-width: 100%;
+  }
+}

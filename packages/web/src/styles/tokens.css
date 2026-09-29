@@ -26,11 +26,12 @@
   --color-text-muted-on-light: #666666;
   --color-text-muted-on-dark: rgba(255, 255, 255, 0.6);
   --color-error-text-on-light: #7a2413;
+  /* O laranja da marca sobre superfície clara não chega a 4.5:1; este é o mesmo tom, escurecido, para TEXTO laranja em telas claras. */
+  --color-accent-on-light: #b44a14;
 
   /* Tipografia */
   --font-serif: "Cormorant", Georgia, "Times New Roman", serif;
-  --font-sans:
-    "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-sans: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 
   /* Raio */
   --radius-sm: 5px;

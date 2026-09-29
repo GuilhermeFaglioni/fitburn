@@ -55,7 +55,7 @@ export function ClientsPage() {
       </div>
 
       <div className="fb-toolbar">
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
           <input
             type="search"
             className="fb-field"

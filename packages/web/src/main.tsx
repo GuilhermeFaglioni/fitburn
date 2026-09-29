@@ -14,6 +14,7 @@ import "./styles/profile.css";
 import "./styles/home.css";
 import "./styles/dashboard.css";
 import "./styles/states.css";
+import "./styles/responsive.css";
 
 const queryClient = new QueryClient();
 

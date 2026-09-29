@@ -58,13 +58,19 @@ export function AgendaAdminPage() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16, height: "100%" }}>
       <div
-        style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: 12,
+        }}
       >
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           <span className="fb-page-eyebrow">Agenda</span>
           <h1 className="fb-page-title">Ocorrências / agenda administrativa</h1>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
           <button
             type="button"
             className="fb-icon-btn"

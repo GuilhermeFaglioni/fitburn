@@ -84,7 +84,7 @@ function TabContent({
       if (editing) return <ClientEditForm client={client} onDone={() => setEditing(false)} />;
       return (
         <div style={{ display: "grid", gap: 10 }}>
-          <dl style={{ display: "grid", gridTemplateColumns: "180px 1fr", gap: 8, margin: 0 }}>
+          <dl className="fb-dl">
             <dt>E-mail</dt>
             <dd>{client.email}</dd>
             <dt>Telefone</dt>
@@ -214,7 +214,9 @@ export function ClientDetailPage() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 18, height: "100%" }}>
-      <Link to="/clientes">← Clientes</Link>
+      <Link to="/clientes" className="fb-back-link">
+        ← Clientes
+      </Link>
 
       {overviewQuery.isLoading && <LoadingState />}
       {overviewQuery.isError && (
@@ -241,7 +243,7 @@ export function ClientDetailPage() {
               </span>
             </div>
             {overview.client.status !== "DELETED" && (
-              <div style={{ display: "flex", gap: 8 }}>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                 <BlockedAction
                   allowed={canEdit}
                   reason="Você não tem permissão para alterar clientes."

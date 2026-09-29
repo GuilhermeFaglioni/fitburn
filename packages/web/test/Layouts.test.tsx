@@ -103,6 +103,45 @@ describe("casca administrativa no mobile", () => {
   });
 });
 
+describe("foco ao trocar de tela", () => {
+  it("na casca administrativa, escolher uma tela no menu leva o foco ao conteúdo", async () => {
+    mockSession("Administrador", ADMIN_PERMISSIONS);
+    renderAt("/dashboard");
+    const user = userEvent.setup();
+    await screen.findByRole("heading", { name: "Dashboard", level: 1 });
+
+    await user.click(screen.getByRole("link", { name: "Clientes" }));
+
+    expect(await screen.findByRole("heading", { name: "Clientes", level: 1 })).toBeInTheDocument();
+    expect(screen.getByRole("main")).toHaveFocus();
+  });
+
+  it("na casca do cliente, escolher uma tela na barra leva o foco ao conteúdo", async () => {
+    mockSession("Cliente", []);
+    renderAt("/plano");
+    const user = userEvent.setup();
+    await screen.findByRole("heading", { name: "Plano", level: 1 });
+
+    await user.click(
+      within(screen.getByRole("navigation", { name: "Navegação inferior" })).getByRole("link", {
+        name: "Agenda",
+      }),
+    );
+
+    expect(await screen.findByRole("heading", { name: "Agenda", level: 1 })).toBeInTheDocument();
+    expect(screen.getByRole("main")).toHaveFocus();
+  });
+
+  it("ao abrir a tela pela primeira vez, o foco não é roubado do início da página", async () => {
+    mockSession("Administrador", ADMIN_PERMISSIONS);
+    renderAt("/dashboard");
+
+    await screen.findByRole("heading", { name: "Dashboard", level: 1 });
+
+    expect(screen.getByRole("main")).not.toHaveFocus();
+  });
+});
+
 describe("landmarks e salto de navegação", () => {
   it("a casca oferece 'Ir para o conteúdo' como primeiro item da tabulação, apontando para o main", async () => {
     mockSession("Administrador", ADMIN_PERMISSIONS);

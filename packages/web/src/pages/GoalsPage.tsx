@@ -109,7 +109,10 @@ export function GoalsPage() {
           />
         )}
         {clientsQuery.isSuccess && clients.length > 0 && !selected && (
-          <p className="fb-note">Selecione um aluno para ver e criar metas.</p>
+          <>
+            <h1 className="fb-goals__title">Metas individuais</h1>
+            <p className="fb-note">Selecione um aluno para ver e criar metas.</p>
+          </>
         )}
 
         {selected && (

@@ -177,7 +177,7 @@ export function AssignmentsPage() {
           )}
 
           {teacher && (
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
               <label
                 style={{
                   display: "flex",
@@ -190,7 +190,7 @@ export function AssignmentsPage() {
                 Cliente
                 <select
                   className="fb-field"
-                  style={{ minWidth: 260 }}
+                  style={{ minWidth: 0 }}
                   value={clientId}
                   onChange={(event) => setClientId(event.target.value)}
                 >

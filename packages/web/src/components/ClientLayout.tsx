@@ -1,5 +1,6 @@
 import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../lib/auth/AuthContext";
+import { useFocusOnNavigation } from "./useFocusOnNavigation";
 
 function HomeIcon({ color }: { color: string }) {
   return (
@@ -77,6 +78,7 @@ const ITEMS = [
 /** Casca do cliente: sidebar no desktop e barra inferior no mobile (AgendaDesktop/AgendaMobile). */
 export function ClientLayout() {
   const { logout } = useAuth();
+  const mainRef = useFocusOnNavigation();
 
   return (
     <div className="fb-client">
@@ -106,7 +108,7 @@ export function ClientLayout() {
         </button>
       </nav>
 
-      <main id="conteudo" tabIndex={-1} className="fb-client__content">
+      <main ref={mainRef} id="conteudo" tabIndex={-1} className="fb-client__content">
         <Outlet />
       </main>
 

@@ -122,7 +122,10 @@ export function WorkoutSheetsPage() {
           />
         )}
         {clientsQuery.isSuccess && clients.length > 0 && !selected && (
-          <p className="fb-note">Selecione um aluno para ver e montar fichas.</p>
+          <>
+            <h1 className="fb-sheets__title">Fichas de treino</h1>
+            <p className="fb-note">Selecione um aluno para ver e montar fichas.</p>
+          </>
         )}
 
         {selected && (

@@ -50,7 +50,7 @@ export function UsersPage() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14, flexGrow: 1, minHeight: 0 }}>
       <div className="fb-toolbar">
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
           <input
             type="text"
             className="fb-field"
