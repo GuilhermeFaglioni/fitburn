@@ -55,7 +55,15 @@ export function UsersPage() {
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
           />
-          <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "#4a4a4a" }}>
+          <label
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              fontSize: 13,
+              color: "#4a4a4a",
+            }}
+          >
             Status
             <select
               className="fb-field"
@@ -69,7 +77,11 @@ export function UsersPage() {
           </label>
         </div>
         <BlockedAction allowed={canCreate} reason="Você não tem permissão para cadastrar usuários.">
-          <button type="button" className="fb-btn-primary" onClick={() => setShowCreateForm((visible) => !visible)}>
+          <button
+            type="button"
+            className="fb-btn-primary"
+            onClick={() => setShowCreateForm((visible) => !visible)}
+          >
             {showCreateForm ? "Cancelar" : "+ Novo cliente"}
           </button>
         </BlockedAction>
@@ -122,7 +134,9 @@ export function UsersPage() {
                     </span>
                   </td>
                   <td className="fb-td">
-                    <span className={`fb-badge ${user.status === "ACTIVE" ? "fb-badge--active" : "fb-badge--inactive"}`}>
+                    <span
+                      className={`fb-badge ${user.status === "ACTIVE" ? "fb-badge--active" : "fb-badge--inactive"}`}
+                    >
                       {user.status === "ACTIVE" ? "ATIVO" : "INATIVO"}
                     </span>
                   </td>

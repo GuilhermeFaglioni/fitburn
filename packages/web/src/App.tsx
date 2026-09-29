@@ -20,6 +20,8 @@ import { AssignmentsPage } from "./pages/AssignmentsPage";
 import { GoalsPage } from "./pages/GoalsPage";
 import { PlanPage } from "./pages/PlanPage";
 import { PlansPage } from "./pages/PlansPage";
+import { ClientsPage } from "./pages/ClientsPage";
+import { ClientDetailPage } from "./pages/ClientDetailPage";
 import { WorkoutSheetsPage } from "./pages/WorkoutSheetsPage";
 import { ClientWorkoutSheetsPage } from "./pages/ClientWorkoutSheetsPage";
 import { ClientWorkoutSheetPage } from "./pages/ClientWorkoutSheetPage";
@@ -70,6 +72,8 @@ export function AppRoutes() {
         }
       >
         <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/clientes" element={<ClientsPage />} />
+        <Route path="/clientes/:id" element={<ClientDetailPage />} />
         <Route path="/usuarios" element={<UsuariosPerfisPage />} />
         <Route path="/agenda-administrativa" element={<AgendaAdminPage />} />
         <Route path="/templates-e-modalidades" element={<TemplatesModalidadesPage />} />

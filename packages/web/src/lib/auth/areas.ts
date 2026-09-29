@@ -25,6 +25,7 @@ export interface AdminMenuItem {
 // PERFIS_DE_ACESSO), e o escopo total quando o item o pede.
 export const ADMIN_MENU_ITEMS: AdminMenuItem[] = [
   { modules: [Module.DASHBOARD], label: "Dashboard", to: "/dashboard" },
+  { modules: [Module.CLIENTES], label: "Clientes", to: "/clientes" },
   {
     modules: [Module.USUARIOS, Module.PERFIS_DE_ACESSO],
     label: "Usuários e perfis",

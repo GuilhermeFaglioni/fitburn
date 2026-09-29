@@ -90,6 +90,36 @@ describe("AppMenu", () => {
     expect(screen.queryByRole("link", { name: "Atribuições" })).not.toBeInTheDocument();
   });
 
+  it("Clientes aparece para quem pode ver o módulo de clientes, inclusive com escopo restrito", async () => {
+    mockSuccessfulLogin("Professor", [
+      {
+        module: Module.CLIENTES,
+        actions: [PermissionAction.VIEW],
+        scope: PermissionScope.ASSIGNED_CLIENTS,
+      },
+    ]);
+    renderMenuAsAuthenticated();
+
+    expect(await screen.findByRole("link", { name: "Clientes" })).toHaveAttribute(
+      "href",
+      "/clientes",
+    );
+  });
+
+  it("Clientes não aparece para quem não tem acesso ao módulo", async () => {
+    mockSuccessfulLogin("Professor", [
+      {
+        module: Module.PRESENCA,
+        actions: [PermissionAction.VIEW],
+        scope: PermissionScope.ASSIGNED_CLASSES,
+      },
+    ]);
+    renderMenuAsAuthenticated();
+
+    expect(await screen.findByRole("link", { name: "Minhas aulas" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Clientes" })).not.toBeInTheDocument();
+  });
+
   it("Metas aparece para quem pode ver a gamificação dos clientes", async () => {
     mockSuccessfulLogin("Professor", [
       {

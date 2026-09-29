@@ -39,8 +39,14 @@ export function ProfilesPage() {
     },
   });
 
-  const deactivateMutation = useMutation({ mutationFn: deactivateProfile, onSuccess: invalidateProfiles });
-  const activateMutation = useMutation({ mutationFn: activateProfile, onSuccess: invalidateProfiles });
+  const deactivateMutation = useMutation({
+    mutationFn: deactivateProfile,
+    onSuccess: invalidateProfiles,
+  });
+  const activateMutation = useMutation({
+    mutationFn: activateProfile,
+    onSuccess: invalidateProfiles,
+  });
 
   const canCreate = can(Module.PERFIS_DE_ACESSO, PermissionAction.CREATE);
   const canEdit = can(Module.PERFIS_DE_ACESSO, PermissionAction.EDIT);
@@ -69,11 +75,19 @@ export function ProfilesPage() {
             {!profile.isSystem && (
               <BlockedAction allowed={canEdit} reason="Você não tem permissão para alterar perfis.">
                 {profile.isActive ? (
-                  <button type="button" className="fb-row-btn" onClick={() => deactivateMutation.mutate(profile.id)}>
+                  <button
+                    type="button"
+                    className="fb-row-btn"
+                    onClick={() => deactivateMutation.mutate(profile.id)}
+                  >
                     Desativar
                   </button>
                 ) : (
-                  <button type="button" className="fb-row-btn" onClick={() => activateMutation.mutate(profile.id)}>
+                  <button
+                    type="button"
+                    className="fb-row-btn"
+                    onClick={() => activateMutation.mutate(profile.id)}
+                  >
                     Reativar
                   </button>
                 )}
@@ -84,7 +98,11 @@ export function ProfilesPage() {
 
         <li>
           <BlockedAction allowed={canCreate} reason="Você não tem permissão para criar perfis.">
-            <button type="button" className="fb-btn-dashed" onClick={() => setShowCreateForm((visible) => !visible)}>
+            <button
+              type="button"
+              className="fb-btn-dashed"
+              onClick={() => setShowCreateForm((visible) => !visible)}
+            >
               {showCreateForm ? "Cancelar" : "+ Novo perfil"}
             </button>
           </BlockedAction>
@@ -93,7 +111,11 @@ export function ProfilesPage() {
 
       <div className="fb-matrix-content">
         {showCreateForm && (
-          <form onSubmit={handleCreateSubmit} aria-label="Novo perfil de acesso" className="fb-form">
+          <form
+            onSubmit={handleCreateSubmit}
+            aria-label="Novo perfil de acesso"
+            className="fb-form"
+          >
             <label htmlFor={`${formId}-name`}>Nome</label>
             <input
               id={`${formId}-name`}
@@ -116,7 +138,11 @@ export function ProfilesPage() {
         )}
 
         {selectedProfile && catalogQuery.data && (
-          <ProfileMatrix profile={selectedProfile} catalog={catalogQuery.data} onChanged={invalidateProfiles} />
+          <ProfileMatrix
+            profile={selectedProfile}
+            catalog={catalogQuery.data}
+            onChanged={invalidateProfiles}
+          />
         )}
       </div>
     </div>

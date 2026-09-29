@@ -1,13 +1,9 @@
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import {
-  PointsEntryType,
-  type GamificationSummary,
-  type PointsHistoryItem,
-} from "@fitburn/contracts";
+import { type GamificationSummary } from "@fitburn/contracts";
 import { BackIcon } from "../components/icons/BackIcon";
 import { getMyGamification } from "../lib/gamification/api";
-import { formatHistoryWhen } from "../lib/gamification/format";
+import { describeEntry, formatHistoryWhen, formatPoints } from "../lib/gamification/format";
 import { GoalsSection } from "./gamification/GoalsSection";
 import { RankingSection } from "./gamification/RankingSection";
 
@@ -59,31 +55,6 @@ function LockIcon() {
       />
     </svg>
   );
-}
-
-function withSubject(label: string, subject: string | null): string {
-  return subject ? `${label} · ${subject}` : label;
-}
-
-/** O texto de um ganho no histórico ("Presença confirmada · Treino Funcional"). */
-function describeEntry(item: PointsHistoryItem): string {
-  switch (item.type) {
-    case PointsEntryType.ATTENDANCE:
-      return withSubject("Presença confirmada", item.subject);
-    case PointsEntryType.GOAL:
-      return withSubject("Meta concluída", item.subject);
-    case PointsEntryType.STREAK_BONUS:
-      return item.milestone ? `Streak de ${item.milestone} dias consecutivos` : "Bônus de streak";
-    case PointsEntryType.REVERSAL:
-      // O estorno de um bônus de streak herda o marco; o de uma presença, a aula.
-      return item.milestone
-        ? `Bônus de streak estornado · ${item.milestone} dias`
-        : withSubject("Correção de presença", item.subject);
-  }
-}
-
-function formatPoints(points: number): string {
-  return points > 0 ? `+${points}` : String(points);
 }
 
 /** Streak atual, a linha de marcos alcançados na sequência de agora e o próximo marco a alcançar. */

@@ -1,0 +1,261 @@
+/**
+ * Tela de Clientes (lista, cadastro/edição e detalhe em abas). A lista e o
+ * cadastro seguem ClientesAdmin.dc.html e Cadastro.dc.html; o detalhe em abas
+ * não tem artboard e reaproveita a tabela, as abas, os selos e os cartões
+ * claros das demais telas administrativas (admin.css).
+ */
+
+.fb-clients__name {
+  color: inherit;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.fb-clients__name:hover {
+  color: var(--color-primary-orange);
+}
+
+.fb-clients__crumb {
+  color: inherit;
+  text-decoration: none;
+}
+
+.fb-clients__crumb:hover {
+  color: var(--color-primary-orange);
+}
+
+.fb-clients__muted {
+  color: #5a5a5a;
+}
+
+/* Cliente inativo: a linha esmaece, como no artboard. */
+.fb-clients__row--inactive .fb-td,
+.fb-clients__row--inactive .fb-clients__name {
+  color: #8a8a8a;
+}
+
+.fb-clients__row--inactive .fb-clients__muted {
+  color: #b0b0b0;
+}
+
+.fb-clients__header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Formulário de cadastro/edição: duas colunas, com o nome e o endereço na largura toda. */
+.fb-modal:has(.fb-client-form) {
+  width: 640px;
+}
+
+.fb-client-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 20px;
+  row-gap: 16px;
+}
+
+.fb-client-form__wide {
+  grid-column: span 2;
+}
+
+.fb-client-form__footer {
+  margin-top: 16px;
+  justify-content: flex-end;
+}
+
+@media (max-width: 560px) {
+  .fb-client-form {
+    grid-template-columns: 1fr;
+  }
+
+  .fb-client-form__wide {
+    grid-column: span 1;
+  }
+}
+
+/* Abas do detalhe. */
+.fb-client-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  max-width: 760px;
+}
+
+.fb-client-data {
+  margin: 0;
+  max-width: 760px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px 24px;
+}
+
+.fb-client-data__item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fb-client-data dt {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #8a8a8a;
+}
+
+.fb-client-data dd {
+  margin: 0;
+  font-size: 14px;
+  color: var(--color-ink-on-light);
+  overflow-wrap: anywhere;
+}
+
+.fb-client-card {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 18px;
+  border: 1px solid #e6e6e6;
+  border-radius: var(--radius-sm);
+}
+
+.fb-client-card__title {
+  margin: 0 0 4px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #8a8a8a;
+}
+
+.fb-client-card__value {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-ink-on-light);
+}
+
+.fb-client-card__big {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--color-primary-orange);
+}
+
+.fb-client-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fb-client-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.fb-client-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid #e6e6e6;
+  border-radius: var(--radius-sm);
+}
+
+.fb-client-list--cards {
+  border: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 760px;
+}
+
+.fb-client-list__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.fb-client-list__item:last-child {
+  border-bottom: none;
+}
+
+.fb-client-list--cards .fb-client-list__item {
+  border: 1px solid #e6e6e6;
+  border-radius: var(--radius-sm);
+}
+
+.fb-client-list__item--stacked {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.fb-client-list__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.fb-client-list__info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.fb-client-list__title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-ink-on-light);
+}
+
+.fb-client-list__points {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-primary-orange);
+}
+
+.fb-client-list__points--negative {
+  color: var(--color-flame-red);
+}
+
+.fb-client-badges {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.fb-client-exercises {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.fb-client-exercises li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.fb-client-exercises__name {
+  font-weight: 500;
+  color: var(--color-ink-on-light);
+}
+
+@media (max-width: 640px) {
+  .fb-client-data,
+  .fb-client-stats {
+    grid-template-columns: 1fr;
+  }
+}
