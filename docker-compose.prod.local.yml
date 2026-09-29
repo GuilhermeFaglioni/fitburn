@@ -1,0 +1,23 @@
+# Variante SEM TLS para verificar a stack de produção localmente (sem domínio,
+# sem certificado, sem VPS). NÃO usar em produção.
+#
+#   export COMPOSE_FILE=docker-compose.prod.yml:docker-compose.prod.local.yml COMPOSE_ENV_FILES=.env.production
+#   docker compose up -d --build
+#   curl -i http://localhost:8080/api/health
+#
+# Diferenças em relação ao docker-compose.prod.yml:
+#   - o nginx serve HTTP puro (NGINX_MODE=local) e publica só a 8080 (não ocupa 80/443);
+#   - o certbot não sobe (não há certificado para emitir).
+# O restante (API na porta interna, PostgreSQL sem ports, migrations em passo
+# dedicado) é exatamente o mesmo da produção.
+
+services:
+  nginx:
+    environment:
+      NGINX_MODE: local
+    ports: !override
+      - "8080:80"
+
+  certbot:
+    profiles: !override
+      - tls-only

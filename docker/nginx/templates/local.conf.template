@@ -1,0 +1,18 @@
+# Variante LOCAL: HTTP puro, sem TLS, para verificar a stack sem domínio/certificado.
+# Nunca usar em produção (NGINX_MODE=local só é definido em docker-compose.prod.local.yml).
+include /etc/nginx/snippets/fitburn-common.inc;
+
+server {
+    listen 80 default_server;
+    server_name _;
+    client_max_body_size 1m;
+
+    location /api/ {
+        include /etc/nginx/snippets/fitburn-api-proxy.inc;
+    }
+
+    location / {
+        default_type text/plain;
+        return 404 "Fitburn API. O app web e servido pela Vercel.\n";
+    }
+}

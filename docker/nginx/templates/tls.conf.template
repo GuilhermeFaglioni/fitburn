@@ -1,0 +1,43 @@
+# Variante PRODUÇÃO: HTTPS (Let's Encrypt) para ${DOMAIN}. Único ponto de entrada
+# da stack (D-015): só /api/ é encaminhado, para a API na porta interna 3333.
+include /etc/nginx/snippets/fitburn-common.inc;
+
+# Porta 80: só o desafio de renovação do Let's Encrypt e o redirecionamento para HTTPS.
+server {
+    listen 80 default_server;
+    server_name ${DOMAIN};
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl default_server;
+    http2 on;
+    server_name ${DOMAIN};
+    client_max_body_size 1m;
+
+    ssl_certificate     /etc/letsencrypt/live/${DOMAIN}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/${DOMAIN}/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_session_timeout 1d;
+    ssl_session_cache shared:fitburn_ssl:10m;
+    ssl_session_tickets off;
+
+    # HSTS já é enviado pela API (helmet, em produção); não duplicar aqui.
+
+    location /api/ {
+        include /etc/nginx/snippets/fitburn-api-proxy.inc;
+    }
+
+    # O frontend fica na Vercel; este host só serve a API.
+    location / {
+        default_type text/plain;
+        return 404 "Fitburn API. O app web e servido pela Vercel.\n";
+    }
+}
