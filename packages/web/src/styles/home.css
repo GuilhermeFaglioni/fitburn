@@ -304,7 +304,9 @@
   background: #232323;
 }
 
-@media (min-width: 768px) {
+/* Duas colunas só quando cabem ao lado da barra lateral (232px + 400px + 40px + a coluna das aulas);
+   entre 768px e 1099px os blocos continuam empilhados. */
+@media (min-width: 1100px) {
   .fb-home {
     flex-direction: row;
     align-items: flex-start;
@@ -319,7 +321,9 @@
   .fb-home__side {
     flex: 1;
   }
+}
 
+@media (min-width: 768px) {
   .fb-home__greeting {
     font-size: 26px;
   }
