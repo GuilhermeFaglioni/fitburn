@@ -31,7 +31,8 @@ import { JwtAuthGuard, type AuthenticatedRequest } from "../auth/jwt-auth.guard.
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe.js";
 import { PermissionsGuard } from "../permissions/permissions.guard.js";
 import { RequirePermission } from "../permissions/require-permission.decorator.js";
-import { OccurrencesService, type OccurrenceRequester } from "./occurrences.service.js";
+import { requesterOf } from "../permissions/scoped-requester.js";
+import { OccurrencesService } from "./occurrences.service.js";
 
 @Controller("occurrences")
 @UseGuards(JwtAuthGuard, PermissionsGuard)
@@ -94,8 +95,4 @@ export class OccurrencesController {
   async remove(@Param("id") id: string, @Req() req: AuthenticatedRequest): Promise<void> {
     await this.occurrencesService.delete(id, requesterOf(req));
   }
-}
-
-function requesterOf(req: AuthenticatedRequest): OccurrenceRequester {
-  return { userId: req.authUser.sub, scope: req.authScope! };
 }

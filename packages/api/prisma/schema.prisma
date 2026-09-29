@@ -98,6 +98,16 @@ model User {
   taughtOccurrences   ClassOccurrence[]
   reservations        Reservation[]
   idempotencyRecords  IdempotencyRecord[]
+  pointsEntries       PointsEntry[]
+  streakBadges        StreakBadge[]
+  /// Clientes atribuídos a este usuário como professor (atribuição manual).
+  teacherAssignments  TeacherClientAssignment[] @relation("TeacherAssignments")
+  /// Professores a quem este usuário, cliente, foi atribuído.
+  clientAssignments   TeacherClientAssignment[] @relation("ClientAssignments")
+  /// Metas individuais deste usuário, cliente.
+  goals               Goal[]                    @relation("ClientGoals")
+  /// Metas que este usuário, da equipe, criou.
+  createdGoals        Goal[]                    @relation("CreatedGoals")
 
   @@map("users")
 }
@@ -204,6 +214,8 @@ model Reservation {
   occurrenceId String
   occurrence   ClassOccurrence @relation(fields: [occurrenceId], references: [id], onDelete: Restrict)
 
+  pointsEntries PointsEntry[]
+
   @@index([clientId, status])
   @@index([occurrenceId, status])
   @@map("reservations")
@@ -227,6 +239,147 @@ model IdempotencyRecord {
 
   @@unique([clientId, key])
   @@map("idempotency_records")
+}
+
+enum GamificationRuleKind {
+  ATTENDANCE_POINTS
+  GOAL_POINTS
+  STREAK_MILESTONE
+}
+
+/// Regras de pontuação em configuração (criadas pelo seed, ajustáveis no banco):
+/// o cálculo lê estas linhas e não tem número fixo no código. `threshold` só
+/// vale em STREAK_MILESTONE (quantas presenças consecutivas ativam o bônus:
+/// 3, 5, 10); nos demais é 0 — 0 e não NULL para o índice único valer.
+model GamificationRule {
+  id        String                @id @default(uuid())
+  kind      GamificationRuleKind
+  threshold Int                   @default(0)
+  points    Int
+  createdAt DateTime              @default(now())
+  updatedAt DateTime              @updatedAt
+
+  @@unique([kind, threshold])
+  @@map("gamification_rules")
+}
+
+enum PointsEntryType {
+  ATTENDANCE
+  GOAL
+  STREAK_BONUS
+  REVERSAL
+}
+
+/// Ledger de pontos: cada ganho (ou estorno, com pontos negativos) é um
+/// lançamento; o total do cliente é a soma. Nunca se apaga nem se edita um
+/// lançamento — uma correção lança o estorno. `occurredAt` é a data do evento
+/// que gerou os pontos (a aula, a meta), a base dos rankings por período.
+model PointsEntry {
+  id         String          @id @default(uuid())
+  type       PointsEntryType
+  points     Int
+  occurredAt DateTime        @db.Timestamptz(3)
+  createdAt  DateTime        @default(now())
+  /// Ordem de lançamento: desempata lançamentos do mesmo instante — a
+  /// presença e o bônus de streak que ela desperta nascem na mesma
+  /// transação, com createdAt igual.
+  sequence   Int             @default(autoincrement())
+  /// Marco de streak a que o lançamento se refere (3, 5, 10 …): o de um
+  /// STREAK_BONUS e o do REVERSAL que o desfaz.
+  milestone  Int?
+
+  /// Só em REVERSAL: o lançamento que este estorno desfaz. Um lançamento é
+  /// estornado no máximo uma vez; "vivo" é o que nenhum estorno desfez.
+  reversesEntryId String?      @unique
+  reversesEntry   PointsEntry? @relation("EntryReversal", fields: [reversesEntryId], references: [id], onDelete: Restrict)
+  reversedBy      PointsEntry? @relation("EntryReversal")
+
+  clientId String
+  client   User   @relation(fields: [clientId], references: [id], onDelete: Restrict)
+
+  /// Origem do lançamento quando vem de uma presença (presença, bônus de
+  /// streak e estorno); os de meta apontam para a meta (goalId).
+  reservationId String?
+  reservation   Reservation? @relation(fields: [reservationId], references: [id], onDelete: Restrict)
+
+  /// Origem de um lançamento GOAL: a meta concluída.
+  goalId String?
+  goal   Goal?   @relation(fields: [goalId], references: [id], onDelete: Restrict)
+
+  @@index([clientId, occurredAt])
+  @@index([reservationId])
+  @@index([goalId])
+  @@map("points_entries")
+}
+
+/// Badge de um marco de streak: um por cliente e marco, concedido na primeira
+/// vez que uma sequência de presenças o atinge (o bônus de pontos, ao
+/// contrário, se repete a cada nova sequência). Uma correção de presença que
+/// desfaz todas as sequências que alcançavam o marco o revoga (`revokedAt`);
+/// a linha fica, e uma nova sequência o reativa.
+model StreakBadge {
+  id        String    @id @default(uuid())
+  milestone Int
+  /// Quando o marco foi atingido (o início da aula que completou a sequência).
+  awardedAt DateTime  @db.Timestamptz(3)
+  revokedAt DateTime? @db.Timestamptz(3)
+  createdAt DateTime  @default(now())
+
+  clientId String
+  client   User   @relation(fields: [clientId], references: [id], onDelete: Restrict)
+
+  @@unique([clientId, milestone])
+  @@map("streak_badges")
+}
+
+/// Atribuição manual de um cliente a um professor, feita pela administração:
+/// junto dos clientes com reserva nas aulas do professor, forma o escopo
+/// "clientes atribuídos". É estado atual, não histórico: remover apaga a linha.
+model TeacherClientAssignment {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+
+  teacherId String
+  teacher   User   @relation("TeacherAssignments", fields: [teacherId], references: [id], onDelete: Cascade)
+
+  clientId String
+  client   User   @relation("ClientAssignments", fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@unique([teacherId, clientId])
+  @@index([clientId])
+  @@map("teacher_client_assignments")
+}
+
+enum GoalStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+/// Meta individual de um cliente, criada por quem é da equipe (em geral o
+/// professor): concluí-la lança os pontos da regra GOAL_POINTS no ledger. Uma
+/// meta concluída ou cancelada não muda mais.
+model Goal {
+  id          String     @id @default(uuid())
+  title       String
+  description String?
+  /// Prazo opcional: um dia local da academia, sem horário.
+  dueDate     DateTime?  @db.Date
+  status      GoalStatus @default(ACTIVE)
+  concludedAt DateTime?  @db.Timestamptz(3)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  clientId String
+  client   User   @relation("ClientGoals", fields: [clientId], references: [id], onDelete: Restrict)
+
+  createdById String
+  createdBy   User   @relation("CreatedGoals", fields: [createdById], references: [id], onDelete: Restrict)
+
+  pointsEntries PointsEntry[]
+
+  @@index([clientId, status])
+  @@map("goals")
 }
 
 model RefreshToken {

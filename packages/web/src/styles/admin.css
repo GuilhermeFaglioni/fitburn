@@ -10,7 +10,11 @@
  */
 
 .fb-admin-content {
+  /* O respiro do conteúdo; as telas que precisam de uma coluna encostada na barra lateral o anulam. */
+  --fb-admin-pad-y: 32px;
+  --fb-admin-pad-x: 40px;
   box-sizing: border-box;
+  padding: var(--fb-admin-pad-y) var(--fb-admin-pad-x);
   background-color: var(--color-surface-white);
   color: var(--color-ink-on-light);
 }

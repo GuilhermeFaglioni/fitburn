@@ -10,7 +10,6 @@ import {
   gymDateTimeToUtc,
   OccurrenceStatus,
   ReservationStatus,
-  PermissionScope,
   RECURRENCE_MAX_MONTHS,
   type CreateOccurrenceRequest,
   type CreateRecurringOccurrencesRequest,
@@ -18,13 +17,14 @@ import {
   type OccurrenceDetail,
   type OccurrenceFormOptions,
   type OccurrenceReservationsDetails,
-  type PermissionScopeName,
   type RecurringOccurrencesResult,
   type UpdateOccurrenceRequest,
   utcToGymDateTime,
 } from "@fitburn/contracts";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { lockOccurrenceRows } from "./occurrence-lock.js";
+import { isOccurrenceInScope, occurrenceScopeFilter } from "./occurrence-scope.js";
+import type { ScopedRequester } from "../permissions/scoped-requester.js";
 import { DomainError } from "../common/errors/domain-error.js";
 import { ClassTemplatesService } from "../catalog/class-templates.service.js";
 import { InstructorsService } from "../catalog/instructors.service.js";
@@ -50,10 +50,7 @@ function intervalAt(date: string, startTime: string, durationMinutes: number): I
 }
 
 /** Quem está pedindo, com o escopo efetivo no módulo "ocorrências/agendamento". */
-export interface OccurrenceRequester {
-  userId: string;
-  scope: PermissionScopeName;
-}
+export type OccurrenceRequester = ScopedRequester;
 
 @Injectable()
 export class OccurrencesService {
@@ -83,7 +80,7 @@ export class OccurrencesService {
           gte: gymDateTimeToUtc(from, "00:00"),
           lt: gymDateTimeToUtc(addDays(to, 1), "00:00"),
         },
-        ...this.scopeFilter(requester),
+        ...occurrenceScopeFilter(requester),
       },
       include: OCCURRENCE_INCLUDE,
       // Uma aula cancelada e a que ocupou o horário dela começam juntas:
@@ -413,26 +410,8 @@ export class OccurrencesService {
     );
   }
 
-  private scopeFilter(requester: OccurrenceRequester): Prisma.ClassOccurrenceWhereInput {
-    switch (requester.scope) {
-      case PermissionScope.ALL:
-        return {};
-      // "Aulas atribuídas": a ocorrência é do professor definido nela.
-      case PermissionScope.ASSIGNED_CLASSES:
-      case PermissionScope.OWN:
-        return { instructorId: requester.userId };
-      default:
-        throw new DomainError(
-          ErrorCode.FORBIDDEN,
-          "Escopo sem acesso à agenda.",
-          ErrorStatus.FORBIDDEN,
-        );
-    }
-  }
-
   private assertInScope(instructorId: string | null, requester: OccurrenceRequester): void {
-    if (Object.keys(this.scopeFilter(requester)).length === 0) return;
-    if (instructorId !== requester.userId) {
+    if (!isOccurrenceInScope(instructorId, requester)) {
       throw new DomainError(
         ErrorCode.OUT_OF_SCOPE,
         "Você só pode gerenciar as aulas em que é o professor.",

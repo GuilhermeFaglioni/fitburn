@@ -11,6 +11,11 @@ export class ApiError extends Error {
   }
 }
 
+/** A mensagem do erro da API; para qualquer outro erro, a mensagem padrão da tela. */
+export function errorMessage(error: unknown, fallback: string): string {
+  return error instanceof ApiError ? error.message : fallback;
+}
+
 export async function parseOrThrow(response: Response): Promise<unknown> {
   const data: unknown = await response.json().catch(() => null);
   if (!response.ok) {

@@ -1,0 +1,195 @@
+/**
+ * Metas individuais (professor) — MetasAdmin.dc.html no canvas de design
+ * (Claude Design), https://claude.ai/artifact/VncuMf9CffiWGUEQYywLVX. Casca
+ * administrativa clara: coluna "MEUS ALUNOS" de 240px e a área principal. A
+ * página anula o padding do conteúdo administrativo para a coluna ficar
+ * encostada na barra lateral, como no artboard. "Valor alvo" e a barra de
+ * progresso do artboard ficam de fora (o spec não os pede).
+ */
+.fb-goals {
+  display: flex;
+  margin: calc(-1 * var(--fb-admin-pad-y)) calc(-1 * var(--fb-admin-pad-x));
+  min-height: calc(100% + 2 * var(--fb-admin-pad-y));
+  color: var(--color-ink-on-light);
+}
+
+.fb-goals__students {
+  box-sizing: border-box;
+  width: 240px;
+  flex-shrink: 0;
+  border-right: 1px solid #eeeeee;
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow: auto;
+}
+
+.fb-goals__students-title {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: #8a8a8a;
+  padding: 0 8px;
+}
+
+.fb-goals__students .fb-field {
+  width: 100%;
+}
+
+.fb-goals__students-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.fb-goals__student {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 10px 12px;
+  background: none;
+  border: none;
+  border-radius: 5px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  text-align: left;
+  color: #333333;
+  cursor: pointer;
+}
+
+.fb-goals__student--active {
+  background: rgba(237, 110, 52, 0.14);
+  color: var(--color-primary-orange);
+  font-weight: 700;
+}
+
+.fb-goals__students-note {
+  padding: 6px 8px;
+  font-size: 11px;
+  line-height: 16px;
+  color: #b0b0b0;
+}
+
+.fb-goals__main {
+  box-sizing: border-box;
+  flex-grow: 1;
+  min-width: 0;
+  padding: 32px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  overflow: auto;
+}
+
+.fb-goals__title {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 22px;
+  color: var(--color-ink-on-light);
+}
+
+/* O aviso amarelo é o .fb-lock-banner; aqui só o corpo de texto menor do artboard. */
+.fb-goals__banner {
+  display: block;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.fb-goals__section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.fb-goals__section-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-ink-on-light);
+}
+
+.fb-goals__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.fb-goals__card {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px 18px;
+  border: 1px solid #eeeeee;
+  border-radius: 5px;
+}
+
+.fb-goals__card--closed {
+  opacity: 0.6;
+}
+
+.fb-goals__card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.fb-goals__card-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1a1a1a;
+}
+
+.fb-goals__card .fb-badge {
+  letter-spacing: 0.03em;
+}
+
+.fb-goals__card-meta {
+  font-size: 12px;
+  color: #8a8a8a;
+}
+
+.fb-goals__card-text {
+  font-size: 12px;
+  color: #5a5a5a;
+}
+
+.fb-goals__card-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fb-goals__form {
+  box-sizing: border-box;
+  max-width: 560px;
+  padding: 20px;
+  background: #fafafa;
+  border: 1px solid #eeeeee;
+  border-radius: 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.fb-goals__form-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-ink-on-light);
+}
+
+.fb-goals__form-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 8px;
+  border-top: 1px solid #eeeeee;
+}

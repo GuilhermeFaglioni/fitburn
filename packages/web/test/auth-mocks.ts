@@ -15,7 +15,7 @@ const ADMIN_PERMISSIONS: EffectivePermission[] = ALL_MODULES.map((module) => ({
 }));
 
 export function mockSuccessfulLogin(
-  profileName: "Administrador" | "Cliente",
+  profileName: "Administrador" | "Cliente" | "Professor",
   permissions: EffectivePermission[] = profileName === "Administrador" ? ADMIN_PERMISSIONS : [],
 ): CurrentUser {
   const user: CurrentUser = {

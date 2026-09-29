@@ -3,6 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { MemoryRouter } from "react-router-dom";
+import { Module, PermissionAction, PermissionScope } from "@fitburn/contracts";
 import { AppMenu } from "../src/components/AppMenu";
 import { AuthProvider, useAuth } from "../src/lib/auth/AuthContext";
 import { mockSuccessfulLogin } from "./auth-mocks";
@@ -51,6 +52,67 @@ describe("AppMenu", () => {
     expect(screen.queryByRole("link", { name: "Dashboard" })).not.toBeInTheDocument();
   });
 
+  it("Atribuições aparece só para quem pode atribuir clientes, não para quem apenas visualiza", async () => {
+    mockSuccessfulLogin("Professor", [
+      {
+        module: Module.CLIENTES,
+        actions: [PermissionAction.VIEW],
+        scope: PermissionScope.ASSIGNED_CLIENTS,
+      },
+      {
+        module: Module.PRESENCA,
+        actions: [PermissionAction.VIEW],
+        scope: PermissionScope.ASSIGNED_CLASSES,
+      },
+    ]);
+    renderMenuAsAuthenticated();
+
+    expect(await screen.findByRole("link", { name: "Minhas aulas" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Atribuições" })).not.toBeInTheDocument();
+  });
+
+  it("Atribuições exige também acesso a todos os clientes, não só a ação de criar", async () => {
+    mockSuccessfulLogin("Professor", [
+      {
+        module: Module.CLIENTES,
+        actions: [PermissionAction.VIEW, PermissionAction.CREATE],
+        scope: PermissionScope.ASSIGNED_CLIENTS,
+      },
+      {
+        module: Module.PRESENCA,
+        actions: [PermissionAction.VIEW],
+        scope: PermissionScope.ASSIGNED_CLASSES,
+      },
+    ]);
+    renderMenuAsAuthenticated();
+
+    expect(await screen.findByRole("link", { name: "Minhas aulas" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Atribuições" })).not.toBeInTheDocument();
+  });
+
+  it("Metas aparece para quem pode ver a gamificação dos clientes", async () => {
+    mockSuccessfulLogin("Professor", [
+      {
+        module: Module.GAMIFICACAO,
+        actions: [PermissionAction.VIEW],
+        scope: PermissionScope.ASSIGNED_CLIENTS,
+      },
+    ]);
+    renderMenuAsAuthenticated();
+
+    expect(await screen.findByRole("link", { name: "Metas" })).toHaveAttribute("href", "/metas");
+  });
+
+  it("Atribuições aparece para quem tem a ação de criar clientes", async () => {
+    mockSuccessfulLogin("Administrador");
+    renderMenuAsAuthenticated();
+
+    expect(await screen.findByRole("link", { name: "Atribuições" })).toHaveAttribute(
+      "href",
+      "/atribuicoes",
+    );
+  });
+
   it("mostra o usuário logado e permite sair pelo botão Sair", async () => {
     mockSuccessfulLogin("Administrador");
     server.use(http.post("/api/auth/logout", () => HttpResponse.json({})));
@@ -62,6 +124,8 @@ describe("AppMenu", () => {
 
     await user.click(screen.getByRole("button", { name: "Sair" }));
 
-    await waitFor(() => expect(screen.queryByRole("button", { name: "Sair" })).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.queryByRole("button", { name: "Sair" })).not.toBeInTheDocument(),
+    );
   });
 });

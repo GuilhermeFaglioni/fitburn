@@ -8,3 +8,7 @@ export * from "./catalog.js";
 export * from "./gym-time.js";
 export * from "./agenda.js";
 export * from "./reservations.js";
+export * from "./attendance.js";
+export * from "./gamification.js";
+export * from "./assignments.js";
+export * from "./goals.js";

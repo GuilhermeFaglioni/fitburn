@@ -12,6 +12,11 @@ import { UsuariosPerfisPage } from "./pages/UsuariosPerfisPage";
 import { TemplatesModalidadesPage } from "./pages/TemplatesModalidadesPage";
 import { AgendaAdminPage } from "./pages/AgendaAdminPage";
 import { ClientAgendaPage } from "./pages/ClientAgendaPage";
+import { MyClassesPage } from "./pages/MyClassesPage";
+import { AttendancePage } from "./pages/AttendancePage";
+import { GamificationPage } from "./pages/GamificationPage";
+import { AssignmentsPage } from "./pages/AssignmentsPage";
+import { GoalsPage } from "./pages/GoalsPage";
 
 export default function App() {
   return (
@@ -41,6 +46,7 @@ export function AppRoutes() {
       >
         <Route path="/" element={<ClientHomePage />} />
         <Route path="/agenda" element={<ClientAgendaPage />} />
+        <Route path="/gamificacao" element={<GamificationPage />} />
       </Route>
       <Route
         element={
@@ -55,7 +61,21 @@ export function AppRoutes() {
         <Route path="/usuarios" element={<UsuariosPerfisPage />} />
         <Route path="/agenda-administrativa" element={<AgendaAdminPage />} />
         <Route path="/templates-e-modalidades" element={<TemplatesModalidadesPage />} />
+        <Route path="/minhas-aulas" element={<MyClassesPage />} />
+        <Route path="/atribuicoes" element={<AssignmentsPage />} />
+        <Route path="/metas" element={<GoalsPage />} />
       </Route>
+      {/* Presença é uma tela cheia (PresencaMobile.dc.html), sem a sidebar administrativa. */}
+      <Route
+        path="/presenca/:occurrenceId"
+        element={
+          <ProtectedRoute>
+            <AreaRoute area="admin">
+              <AttendancePage />
+            </AreaRoute>
+          </ProtectedRoute>
+        }
+      />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
