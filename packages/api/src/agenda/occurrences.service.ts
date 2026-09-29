@@ -23,11 +23,8 @@ import {
 } from "@fitburn/contracts";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { lockOccurrenceRows } from "./occurrence-lock.js";
-import {
-  isOccurrenceInScope,
-  occurrenceScopeFilter,
-  type ScopedRequester,
-} from "./occurrence-scope.js";
+import { isOccurrenceInScope, occurrenceScopeFilter } from "./occurrence-scope.js";
+import type { ScopedRequester } from "../permissions/scoped-requester.js";
 import { DomainError } from "../common/errors/domain-error.js";
 import { ClassTemplatesService } from "../catalog/class-templates.service.js";
 import { InstructorsService } from "../catalog/instructors.service.js";

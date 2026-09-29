@@ -1,6 +1,7 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
 import { hashPassword } from "../src/auth/password.util.js";
+import { seedGamificationRules } from "../src/gamification/default-rules.js";
 
 const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
@@ -30,6 +31,8 @@ async function main(): Promise<void> {
       scope: "OWN",
     },
   });
+
+  await seedGamificationRules(prisma);
 
   const email = process.env.INITIAL_ADMIN_EMAIL;
   const password = process.env.INITIAL_ADMIN_PASSWORD;

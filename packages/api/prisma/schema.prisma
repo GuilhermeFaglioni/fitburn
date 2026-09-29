@@ -98,6 +98,7 @@ model User {
   taughtOccurrences   ClassOccurrence[]
   reservations        Reservation[]
   idempotencyRecords  IdempotencyRecord[]
+  pointsEntries       PointsEntry[]
 
   @@map("users")
 }
@@ -204,6 +205,8 @@ model Reservation {
   occurrenceId String
   occurrence   ClassOccurrence @relation(fields: [occurrenceId], references: [id], onDelete: Restrict)
 
+  pointsEntries PointsEntry[]
+
   @@index([clientId, status])
   @@index([occurrenceId, status])
   @@map("reservations")
@@ -227,6 +230,59 @@ model IdempotencyRecord {
 
   @@unique([clientId, key])
   @@map("idempotency_records")
+}
+
+enum GamificationRuleKind {
+  ATTENDANCE_POINTS
+  GOAL_POINTS
+  STREAK_MILESTONE
+}
+
+/// Regras de pontuação em configuração (criadas pelo seed, ajustáveis no banco):
+/// o cálculo lê estas linhas e não tem número fixo no código. `threshold` só
+/// vale em STREAK_MILESTONE (quantas presenças consecutivas ativam o bônus:
+/// 3, 5, 10); nos demais é 0 — 0 e não NULL para o índice único valer.
+model GamificationRule {
+  id        String                @id @default(uuid())
+  kind      GamificationRuleKind
+  threshold Int                   @default(0)
+  points    Int
+  createdAt DateTime              @default(now())
+  updatedAt DateTime              @updatedAt
+
+  @@unique([kind, threshold])
+  @@map("gamification_rules")
+}
+
+enum PointsEntryType {
+  ATTENDANCE
+  GOAL
+  STREAK_BONUS
+  REVERSAL
+}
+
+/// Ledger de pontos: cada ganho (ou estorno, com pontos negativos) é um
+/// lançamento; o total do cliente é a soma. Nunca se apaga nem se edita um
+/// lançamento — uma correção lança o estorno. `occurredAt` é a data do evento
+/// que gerou os pontos (a aula, a meta), a base dos rankings por período.
+model PointsEntry {
+  id         String          @id @default(uuid())
+  type       PointsEntryType
+  points     Int
+  occurredAt DateTime        @db.Timestamptz(3)
+  createdAt  DateTime        @default(now())
+
+  clientId String
+  client   User   @relation(fields: [clientId], references: [id], onDelete: Restrict)
+
+  /// Origem do lançamento quando vem de uma presença (presença, bônus de
+  /// streak e estorno); metas apontam para a meta (issue de metas).
+  reservationId String?
+  reservation   Reservation? @relation(fields: [reservationId], references: [id], onDelete: Restrict)
+
+  @@index([clientId, occurredAt])
+  @@index([reservationId])
+  @@map("points_entries")
 }
 
 model RefreshToken {

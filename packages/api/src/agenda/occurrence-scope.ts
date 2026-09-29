@@ -1,23 +1,7 @@
 import type { Prisma } from "@prisma/client";
-import {
-  ErrorCode,
-  ErrorStatus,
-  PermissionScope,
-  type PermissionScopeName,
-} from "@fitburn/contracts";
-import type { AuthenticatedRequest } from "../auth/jwt-auth.guard.js";
+import { ErrorCode, ErrorStatus, PermissionScope } from "@fitburn/contracts";
 import { DomainError } from "../common/errors/domain-error.js";
-
-/** Quem está pedindo, com o escopo efetivo no módulo da rota. */
-export interface ScopedRequester {
-  userId: string;
-  scope: PermissionScopeName;
-}
-
-/** Quem faz a requisição, com o escopo que o PermissionsGuard resolveu para a rota. */
-export function requesterOf(req: AuthenticatedRequest): ScopedRequester {
-  return { userId: req.authUser.sub, scope: req.authScope! };
-}
+import type { ScopedRequester } from "../permissions/scoped-requester.js";
 
 /**
  * Filtro de ocorrências que o escopo do perfil enxerga. "Aulas atribuídas" e

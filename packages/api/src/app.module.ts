@@ -11,6 +11,7 @@ import { CatalogModule } from "./catalog/catalog.module.js";
 import { AgendaModule } from "./agenda/agenda.module.js";
 import { ReservationsModule } from "./reservations/reservations.module.js";
 import { AttendanceModule } from "./attendance/attendance.module.js";
+import { GamificationModule } from "./gamification/gamification.module.js";
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { AttendanceModule } from "./attendance/attendance.module.js";
     AgendaModule,
     ReservationsModule,
     AttendanceModule,
+    GamificationModule,
     AuthModule,
   ],
 })

@@ -16,13 +16,11 @@ import {
   type ReservationStatusName,
 } from "@fitburn/contracts";
 import { PrismaService } from "../prisma/prisma.service.js";
+import { GamificationService } from "../gamification/gamification.service.js";
 import { DomainError } from "../common/errors/domain-error.js";
 import { lockOccurrenceRows, OCCURRENCE_TRANSACTION_OPTIONS } from "../agenda/occurrence-lock.js";
-import {
-  isOccurrenceInScope,
-  occurrenceScopeFilter,
-  type ScopedRequester,
-} from "../agenda/occurrence-scope.js";
+import { isOccurrenceInScope, occurrenceScopeFilter } from "../agenda/occurrence-scope.js";
+import type { ScopedRequester } from "../permissions/scoped-requester.js";
 
 const CLASS_INCLUDE = {
   modality: { select: { id: true, name: true } },
@@ -83,7 +81,10 @@ function progressOf(statuses: ReservationStatusName[]): Progress {
  */
 @Injectable()
 export class AttendanceService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly gamification: GamificationService,
+  ) {}
 
   /** "Minhas aulas": aulas agendadas do período (dias locais, inclusive) no escopo do requisitante. */
   async listClasses(
@@ -203,6 +204,14 @@ export class AttendanceService {
         data: { status: RESERVATION_STATUS_BY_MARK[mark] },
         include: ENTRY_INCLUDE,
       });
+      // Os pontos entram na mesma transação: presença sem o lançamento não vale.
+      if (mark === AttendanceStatus.PRESENT) {
+        await this.gamification.awardAttendance(tx, {
+          clientId: reservation.clientId,
+          reservationId,
+          occurredAt: reservation.occurrence.startsAt,
+        });
+      }
       return this.toEntry(updated);
     }, OCCURRENCE_TRANSACTION_OPTIONS);
   }

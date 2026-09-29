@@ -8,23 +8,10 @@ import {
   type AttendanceMark,
   type AttendanceRoster,
 } from "@fitburn/contracts";
+import { BackIcon } from "../components/icons/BackIcon";
 import { ApiError } from "../lib/auth/api";
 import { getAttendanceRoster, markAttendance } from "../lib/attendance/api";
 import { formatClassDay, formatInstantHour } from "../lib/agenda/format";
-
-function BackIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-      <path
-        d="M11 3.5L5 9L11 14.5"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
 
 function InfoIcon() {
   return (
@@ -140,7 +127,7 @@ export function AttendancePage() {
       <div className="fb-att__header">
         <button
           type="button"
-          className="fb-att__back"
+          className="fb-back-btn"
           aria-label="Voltar"
           onClick={() => navigate("/minhas-aulas")}
         >

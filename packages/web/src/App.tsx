@@ -14,6 +14,7 @@ import { AgendaAdminPage } from "./pages/AgendaAdminPage";
 import { ClientAgendaPage } from "./pages/ClientAgendaPage";
 import { MyClassesPage } from "./pages/MyClassesPage";
 import { AttendancePage } from "./pages/AttendancePage";
+import { GamificationPage } from "./pages/GamificationPage";
 
 export default function App() {
   return (
@@ -43,6 +44,7 @@ export function AppRoutes() {
       >
         <Route path="/" element={<ClientHomePage />} />
         <Route path="/agenda" element={<ClientAgendaPage />} />
+        <Route path="/gamificacao" element={<GamificationPage />} />
       </Route>
       <Route
         element={

@@ -2,13 +2,19 @@ import type { INestApplication } from "@nestjs/common";
 import request from "supertest";
 import { gymDateTimeToUtc } from "@fitburn/contracts";
 import { cleanDatabase, testPrisma } from "./db-test-helper.js";
-import { createAccessProfile, createUser, grantModuleAccess } from "./factories.js";
+import {
+  createAccessProfile,
+  createOccurrence,
+  createReservation as reserve,
+  createUser,
+  grantModuleAccess,
+} from "./factories.js";
+import { seedGamificationRules } from "../src/gamification/default-rules.js";
 import { loginAndGetAccessToken } from "./login-helper.js";
 import { createTestApp } from "./test-app.js";
 
 const PASSWORD = "SenhaForte123!";
 const MINUTE = 60_000;
-const HOUR = 60 * MINUTE;
 
 describe("Presença (HTTP)", () => {
   let app: INestApplication;
@@ -26,6 +32,7 @@ describe("Presença (HTTP)", () => {
 
   beforeEach(async () => {
     await cleanDatabase();
+    await seedGamificationRules(testPrisma);
     adminProfileId = (await createAccessProfile({ name: "Administrador", isSystem: true })).id;
     clientProfileId = (await createAccessProfile({ name: "Cliente", isSystem: true })).id;
     professorProfileId = (await createAccessProfile({ name: "Professor" })).id;
@@ -51,38 +58,6 @@ describe("Presença (HTTP)", () => {
   const createProfessor = (name: string) => signIn(name, professorProfileId);
   const createAdmin = (name = "admin") => signIn(name, adminProfileId);
   const createClient = (name: string) => signIn(name, clientProfileId);
-
-  async function createOccurrence(
-    startsAt: Date,
-    overrides: {
-      instructorId?: string | null;
-      status?: "SCHEDULED" | "CANCELLED";
-      name?: string;
-    } = {},
-  ) {
-    const name = overrides.name ?? "Treino Funcional";
-    const modality = await testPrisma.modality.upsert({
-      where: { name },
-      update: {},
-      create: { name },
-    });
-    const template = await testPrisma.classTemplate.create({
-      data: { name, durationMinutes: 60, capacity: 12, modalityId: modality.id },
-    });
-    return testPrisma.classOccurrence.create({
-      data: {
-        templateId: template.id,
-        modalityId: modality.id,
-        name,
-        durationMinutes: 60,
-        capacity: 12,
-        status: overrides.status ?? "SCHEDULED",
-        instructorId: overrides.instructorId ?? null,
-        startsAt,
-        endsAt: new Date(startsAt.getTime() + HOUR),
-      },
-    });
-  }
 
   function listClasses(token: string, from: string, to: string) {
     return request(app.getHttpServer())
@@ -216,14 +191,6 @@ describe("Presença (HTTP)", () => {
 
   /** Uma aula que começou há 30 minutos (a presença já está aberta). */
   const startedRecently = () => new Date(Date.now() - 30 * MINUTE);
-
-  async function reserve(
-    clientId: string,
-    occurrenceId: string,
-    status: "CONFIRMED" | "CANCELLED" | "COMPLETED" | "NO_SHOW" = "CONFIRMED",
-  ) {
-    return testPrisma.reservation.create({ data: { clientId, occurrenceId, status } });
-  }
 
   async function statusOf(reservationId: string) {
     const reservation = await testPrisma.reservation.findUniqueOrThrow({

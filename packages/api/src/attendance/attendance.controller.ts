@@ -25,7 +25,7 @@ import { JwtAuthGuard, type AuthenticatedRequest } from "../auth/jwt-auth.guard.
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe.js";
 import { PermissionsGuard } from "../permissions/permissions.guard.js";
 import { RequirePermission } from "../permissions/require-permission.decorator.js";
-import { requesterOf } from "../agenda/occurrence-scope.js";
+import { requesterOf } from "../permissions/scoped-requester.js";
 import { AttendanceService } from "./attendance.service.js";
 
 @Controller("attendance")

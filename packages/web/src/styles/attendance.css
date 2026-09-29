@@ -26,20 +26,6 @@
   gap: 12px;
 }
 
-.fb-att__back {
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  background: transparent;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  color: rgba(255, 255, 255, 0.7);
-}
-
 .fb-att__heading {
   display: flex;
   flex-direction: column;

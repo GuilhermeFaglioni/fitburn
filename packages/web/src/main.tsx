@@ -6,6 +6,7 @@ import "./styles/global.css";
 import "./styles/admin.css";
 import "./styles/client.css";
 import "./styles/attendance.css";
+import "./styles/gamification.css";
 
 const queryClient = new QueryClient();
 

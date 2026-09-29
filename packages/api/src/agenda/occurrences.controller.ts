@@ -31,7 +31,7 @@ import { JwtAuthGuard, type AuthenticatedRequest } from "../auth/jwt-auth.guard.
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe.js";
 import { PermissionsGuard } from "../permissions/permissions.guard.js";
 import { RequirePermission } from "../permissions/require-permission.decorator.js";
-import { requesterOf } from "./occurrence-scope.js";
+import { requesterOf } from "../permissions/scoped-requester.js";
 import { OccurrencesService } from "./occurrences.service.js";
 
 @Controller("occurrences")

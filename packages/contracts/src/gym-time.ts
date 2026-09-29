@@ -91,6 +91,16 @@ export function addDays(date: string, days: number): string {
   return `${result.getUTCFullYear()}-${pad(result.getUTCMonth() + 1)}-${pad(result.getUTCDate())}`;
 }
 
+/** Dias de calendário de `from` até `to` (negativo se `to` for anterior). */
+export function daysBetween(from: string, to: string): number {
+  const [fromYear, fromMonth, fromDay] = parseLocalDate(from);
+  const [toYear, toMonth, toDay] = parseLocalDate(to);
+  const DAY_MS = 24 * 60 * 60_000;
+  return Math.round(
+    (Date.UTC(toYear, toMonth - 1, toDay) - Date.UTC(fromYear, fromMonth - 1, fromDay)) / DAY_MS,
+  );
+}
+
 /** Dia da semana de uma data local: 0 = domingo … 6 = sábado. */
 export function weekdayOf(date: string): number {
   const [year, month, day] = parseLocalDate(date);
