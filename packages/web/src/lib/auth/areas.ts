@@ -32,6 +32,7 @@ export const ADMIN_MENU_ITEMS: AdminMenuItem[] = [
   },
   { modules: [Module.CLIENTES], label: "Clientes", to: "/clientes" },
   { modules: [Module.OCORRENCIAS], label: "Agenda", to: "/agenda-administrativa" },
+  { modules: [Module.RESERVAS], label: "Reservas", to: "/reservas-administrativas" },
   { modules: [Module.PRESENCA], label: "Minhas aulas", to: "/minhas-aulas" },
   { modules: [Module.PLANOS], label: "Planos", to: "/planos" },
   { modules: [Module.FICHAS_DE_TREINO], label: "Fichas de treino", to: "/fichas" },

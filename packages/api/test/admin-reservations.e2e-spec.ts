@@ -61,7 +61,10 @@ describe("Reservas administrativas (HTTP)", () => {
 
   async function createStaff(
     name: string,
-    access: { actions: Array<"VIEW" | "CREATE" | "EDIT" | "DELETE">; scope: "ALL" | "ASSIGNED_CLIENTS" },
+    access: {
+      actions: Array<"VIEW" | "CREATE" | "EDIT" | "DELETE">;
+      scope: "ALL" | "ASSIGNED_CLIENTS";
+    },
   ) {
     const profile = await createAccessProfile({ name: `Perfil ${name}` });
     await grantModuleAccess({
@@ -409,8 +412,9 @@ describe("Reservas administrativas (HTTP)", () => {
       const closed = await cancelFor(adminToken, late.id);
       expect(closed.status).toBe(409);
       expect(closed.body.code).toBe("CANCELLATION_WINDOW_CLOSED");
-      expect((await testPrisma.reservation.findUniqueOrThrow({ where: { id: late.id } })).status)
-        .toBe("CONFIRMED");
+      expect(
+        (await testPrisma.reservation.findUniqueOrThrow({ where: { id: late.id } })).status,
+      ).toBe("CONFIRMED");
 
       const missing = await cancelFor(adminToken, "nao-existe");
       expect(missing.status).toBe(404);
@@ -512,7 +516,12 @@ describe("Reservas administrativas (HTTP)", () => {
       const anaYoga = await reserveFor(adminToken, ana.user.id, yoga.id);
       await cancelFor(adminToken, anaYoga.body.id);
       const biaPast = await testPrisma.reservation.create({
-        data: { clientId: bia.user.id, occurrenceId: past.id, status: "COMPLETED", createdById: bia.user.id },
+        data: {
+          clientId: bia.user.id,
+          occurrenceId: past.id,
+          status: "COMPLETED",
+          createdById: bia.user.id,
+        },
       });
       return { ana, bia, spinning, yoga, past, anaSpinning, biaSpinning, anaYoga, biaPast };
     }
@@ -636,7 +645,10 @@ describe("Reservas administrativas (HTTP)", () => {
       const conflict = await preview(adminToken, query(bia.user.id, overlapping.id));
       expect(conflict.body).toMatchObject({
         canBook: false,
-        reason: { code: "SCHEDULE_CONFLICT", details: { reservation: { occurrence: { id: full.id } } } },
+        reason: {
+          code: "SCHEDULE_CONFLICT",
+          details: { reservation: { occurrence: { id: full.id } } },
+        },
       });
 
       const notBookable = await preview(adminToken, query(ana.user.id, cancelled.id));
@@ -705,8 +717,10 @@ describe("Reservas administrativas (HTTP)", () => {
       );
       expect(sameClass.body.reason.code).toBe("DUPLICATE_RESERVATION");
 
-      expect((await testPrisma.reservation.findUniqueOrThrow({ where: { id: original.body.id } })).status)
-        .toBe("CONFIRMED");
+      expect(
+        (await testPrisma.reservation.findUniqueOrThrow({ where: { id: original.body.id } }))
+          .status,
+      ).toBe("CONFIRMED");
     });
 
     it("valida os parâmetros: cliente, aula e reserva de outro cliente", async () => {
@@ -742,7 +756,9 @@ describe("Reservas administrativas (HTTP)", () => {
       expect((await list(ana.token)).status).toBe(403);
       expect((await reserveFor(ana.token, ana.user.id, occurrence.id)).status).toBe(403);
       expect((await cancelFor(ana.token, reserved.body.id)).status).toBe(403);
-      expect((await preview(ana.token, `clientId=${ana.user.id}&occurrenceId=${occurrence.id}`)).status).toBe(403);
+      expect(
+        (await preview(ana.token, `clientId=${ana.user.id}&occurrenceId=${occurrence.id}`)).status,
+      ).toBe(403);
     });
 
     it("cada ação exige a sua: ver, criar e editar (cancelar e remarcar)", async () => {
@@ -785,7 +801,9 @@ describe("Reservas administrativas (HTTP)", () => {
       expect(denied.status).toBe(403);
       expect(denied.body.code).toBe("OUT_OF_SCOPE");
       expect((await cancelFor(teacher.token, biaReservation.body.id)).status).toBe(403);
-      expect((await rescheduleFor(teacher.token, biaReservation.body.id, other.id)).status).toBe(403);
+      expect((await rescheduleFor(teacher.token, biaReservation.body.id, other.id)).status).toBe(
+        403,
+      );
       expect(
         (await preview(teacher.token, `clientId=${bia.user.id}&occurrenceId=${other.id}`)).status,
       ).toBe(403);
