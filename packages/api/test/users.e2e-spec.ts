@@ -213,6 +213,82 @@ describe("Gestão de usuários (HTTP)", () => {
     });
   });
 
+  describe("Requisições simultâneas com o mesmo e-mail ou documento", () => {
+    const codes = (responses: Array<{ status: number; body: { code?: string } }>) =>
+      responses.map((r) => `${r.status}${r.body.code ? ` ${r.body.code}` : ""}`).sort();
+
+    it("dois cadastros de cliente com o mesmo e-mail: um cria, o outro recebe EMAIL_ALREADY_IN_USE (nunca 500)", async () => {
+      const { token } = await loginAsAdmin();
+      await createAccessProfile({ name: "Cliente", isSystem: true });
+      const send = (document: string) =>
+        request(app.getHttpServer())
+          .post("/api/users/clients")
+          .set("Authorization", `Bearer ${token}`)
+          .send({ ...validClientBody, document });
+
+      const responses = await Promise.all([send("11111111111"), send("22222222222")]);
+
+      expect(codes(responses)).toEqual(["201", "409 EMAIL_ALREADY_IN_USE"]);
+    });
+
+    it("dois cadastros de cliente com o mesmo documento: um cria, o outro recebe DOCUMENT_ALREADY_IN_USE", async () => {
+      const { token } = await loginAsAdmin();
+      await createAccessProfile({ name: "Cliente", isSystem: true });
+      const send = (email: string) =>
+        request(app.getHttpServer())
+          .post("/api/users/clients")
+          .set("Authorization", `Bearer ${token}`)
+          .send({ ...validClientBody, email });
+
+      const responses = await Promise.all([send("a@fitburn.local"), send("b@fitburn.local")]);
+
+      expect(codes(responses)).toEqual(["201", "409 DOCUMENT_ALREADY_IN_USE"]);
+    });
+
+    it("dois cadastros de equipe com o mesmo e-mail: um cria, o outro recebe EMAIL_ALREADY_IN_USE", async () => {
+      const { token } = await loginAsAdmin();
+      const staffProfile = await createAccessProfile({ name: "Recepção" });
+      const send = () =>
+        request(app.getHttpServer())
+          .post("/api/users/staff")
+          .set("Authorization", `Bearer ${token}`)
+          .send({
+            fullName: "Recepcionista",
+            email: "recepcao@fitburn.local",
+            password: PASSWORD,
+            profileId: staffProfile.id,
+          });
+
+      const responses = await Promise.all([send(), send()]);
+
+      expect(codes(responses)).toEqual(["201", "409 EMAIL_ALREADY_IN_USE"]);
+    });
+
+    it("duas edições que levam ao mesmo e-mail ou documento: uma vale, a outra recebe 409", async () => {
+      const { token } = await loginAsAdmin();
+      const clientProfile = await createAccessProfile({ name: "Cliente", isSystem: true });
+      const ana = await createUser({ email: "ana@fitburn.local", password: PASSWORD, profileId: clientProfile.id });
+      const bruno = await createUser({ email: "bruno@fitburn.local", password: PASSWORD, profileId: clientProfile.id });
+      const patch = (id: string, body: object) =>
+        request(app.getHttpServer())
+          .patch(`/api/users/${id}`)
+          .set("Authorization", `Bearer ${token}`)
+          .send(body);
+
+      const sameEmail = await Promise.all([
+        patch(ana.id, { email: "novo@fitburn.local" }),
+        patch(bruno.id, { email: "novo@fitburn.local" }),
+      ]);
+      const sameDocument = await Promise.all([
+        patch(ana.id, { document: "99999999999" }),
+        patch(bruno.id, { document: "99999999999" }),
+      ]);
+
+      expect(codes(sameEmail)).toEqual(["200", "409 EMAIL_ALREADY_IN_USE"]);
+      expect(codes(sameDocument)).toEqual(["200", "409 DOCUMENT_ALREADY_IN_USE"]);
+    });
+  });
+
   describe("Desativação e reativação", () => {
     it("desativar encerra todas as sessões ativas", async () => {
       const { token } = await loginAsAdmin();

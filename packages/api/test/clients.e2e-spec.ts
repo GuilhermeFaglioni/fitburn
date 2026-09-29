@@ -338,6 +338,34 @@ describe("Clientes (HTTP)", () => {
       expect(stored.profileId).toBe(clientProfileId);
     });
 
+    it.each(["phone", "birthDate", "document", "address"])(
+      "recusa anular %s: para o cliente é obrigatório",
+      async (field) => {
+        const admin = await createAdmin();
+        const ana = await createClient("ana");
+        await testPrisma.user.update({
+          where: { id: ana.user.id },
+          data: {
+            phone: "11999990000",
+            birthDate: new Date("1990-01-02"),
+            document: "12345678900",
+            address: "Rua A, 1",
+          },
+        });
+
+        const response = await patch(admin.token, `/${ana.user.id}`, {
+          fullName: "Outro Nome",
+          [field]: null,
+        });
+
+        expect(response.status).toBe(400);
+        expect(response.body.code).toBe("VALIDATION_ERROR");
+        const stored = await testPrisma.user.findUniqueOrThrow({ where: { id: ana.user.id } });
+        expect(stored.fullName).not.toBe("Outro Nome");
+        expect(stored[field as "phone" | "birthDate" | "document" | "address"]).not.toBeNull();
+      },
+    );
+
     it("o professor edita só clientes do seu escopo", async () => {
       const rafael = await createTeacher("rafael");
       const ana = await createClient("ana");

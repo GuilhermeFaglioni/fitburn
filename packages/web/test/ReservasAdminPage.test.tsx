@@ -13,7 +13,7 @@ import {
   startOfWeek,
   type AdminReservationDetail,
   type ClientAgendaItem,
-  type ClientListItem,
+  type ReservationClientOption,
   type ReservationPreview,
 } from "@fitburn/contracts";
 import { AuthProvider, useAuth } from "../src/lib/auth/AuthContext";
@@ -49,25 +49,9 @@ function renderPage() {
   );
 }
 
-const CLIENTS: ClientListItem[] = [
-  {
-    id: "c-marina",
-    fullName: "Marina Souza",
-    email: "marina@email.com",
-    phone: null,
-    document: null,
-    status: "ACTIVE",
-    activePlan: null,
-  },
-  {
-    id: "c-rafael",
-    fullName: "Rafael Andrade",
-    email: "rafael@email.com",
-    phone: null,
-    document: null,
-    status: "ACTIVE",
-    activePlan: null,
-  },
+const CLIENTS: ReservationClientOption[] = [
+  { id: "c-marina", fullName: "Marina Souza", email: "marina@email.com" },
+  { id: "c-rafael", fullName: "Rafael Andrade", email: "rafael@email.com" },
 ];
 
 function occurrence(id: string, name: string, time: string, available: number): ClientAgendaItem {
@@ -113,7 +97,12 @@ function reservation(
     },
     createdAt: "2026-09-20T10:00:00.000Z",
     cancelledAt: null,
-    client: { id: "c-marina", fullName: "Marina Souza", email: "marina@email.com" },
+    client: {
+      id: "c-marina",
+      fullName: "Marina Souza",
+      email: "marina@email.com",
+      status: "ACTIVE",
+    },
     createdBy: { id: "user-1", fullName: "Alice Admin", kind: "STAFF" },
     cancelledBy: null,
     ...overrides,
@@ -123,7 +112,12 @@ function reservation(
 const RESERVATIONS: AdminReservationDetail[] = [
   reservation("r-1"),
   reservation("r-2", {
-    client: { id: "c-rafael", fullName: "Rafael Andrade", email: "rafael@email.com" },
+    client: {
+      id: "c-rafael",
+      fullName: "Rafael Andrade",
+      email: "rafael@email.com",
+      status: "ACTIVE",
+    },
     createdBy: { id: "c-rafael", fullName: "Rafael Andrade", kind: "CLIENT" },
   }),
   reservation("r-3", {
@@ -170,7 +164,14 @@ describe("Reservas administrativas (equipe)", () => {
           ),
         );
       }),
-      http.get("/api/clients", () => HttpResponse.json(CLIENTS)),
+      // O seletor e o filtro usam a busca das Reservas: quem só tem esse módulo não vê /api/clients.
+      http.get("/api/admin/reservations/clients", () => HttpResponse.json(CLIENTS)),
+      http.get("/api/clients", () =>
+        HttpResponse.json(
+          { code: "FORBIDDEN", message: "Você não tem permissão para executar esta ação." },
+          { status: 403 },
+        ),
+      ),
       http.get("/api/agenda", () => HttpResponse.json(AGENDA)),
       http.post("/api/admin/reservations", async ({ request }) => {
         posts.push({
@@ -354,7 +355,7 @@ describe("Reservas administrativas (equipe)", () => {
       await waitFor(() => expect(listRequests.length).toBeGreaterThan(listCalls));
     });
 
-    it("mostra o erro específico quando o servidor recusa e mantém a mesma chave ao repetir", async () => {
+    it("mostra o erro específico quando o servidor recusa e usa uma chave nova ao tentar de novo", async () => {
       let attempts = 0;
       server.use(
         http.post("/api/admin/reservations", async ({ request }) => {
@@ -389,7 +390,49 @@ describe("Reservas administrativas (equipe)", () => {
       await user.click(within(dialog).getByRole("button", { name: "Confirmar reserva" }));
       await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
       expect(posts).toHaveLength(2);
+      // O servidor memoriza a recusa por (cliente, chave): repetir a chave repetiria a recusa antiga.
+      expect(posts[1].key).not.toBe(posts[0].key);
+    });
+
+    it("depois de uma falha sem resposta do servidor (erro 500), a nova tentativa reaproveita a chave", async () => {
+      let attempts = 0;
+      server.use(
+        http.post("/api/admin/reservations", async ({ request }) => {
+          posts.push({
+            url: new URL(request.url).pathname,
+            key: request.headers.get("Idempotency-Key"),
+            body: await request.json(),
+          });
+          attempts += 1;
+          return attempts === 1
+            ? HttpResponse.json({}, { status: 500 })
+            : HttpResponse.json(reservation("r-new"), { status: 201 });
+        }),
+      );
+      const { user, dialog } = await openNewReservation();
+      await user.selectOptions(await within(dialog).findByLabelText("Cliente"), "c-marina");
+      await user.selectOptions(within(dialog).getByLabelText("Aula"), "o-funcional");
+      await within(dialog).findByText(/Vaga disponível/);
+
+      await user.click(within(dialog).getByRole("button", { name: "Confirmar reserva" }));
+      expect(await within(dialog).findByRole("alert")).toBeInTheDocument();
+      await user.click(within(dialog).getByRole("button", { name: "Confirmar reserva" }));
+
+      await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+      expect(posts).toHaveLength(2);
       expect(posts[1].key).toBe(posts[0].key);
+    });
+
+    it("o seletor de clientes usa a busca das Reservas (não exige o módulo Clientes)", async () => {
+      const { user, dialog } = await openNewReservation();
+
+      const select = await within(dialog).findByLabelText("Cliente");
+      const options = within(select).getAllByRole("option").map((option) => option.textContent);
+
+      expect(options).toEqual(["Selecione o cliente", "Marina Souza", "Rafael Andrade"]);
+      expect(within(dialog).queryByText(/Não foi possível carregar os clientes/)).toBeNull();
+      await user.selectOptions(select, "c-rafael");
+      expect(within(dialog).getByText("rafael@email.com")).toBeInTheDocument();
     });
 
     it("trocar cliente ou aula é outra intenção: gera outra chave", async () => {
@@ -497,6 +540,93 @@ describe("Reservas administrativas (equipe)", () => {
       expect(reschedules[0].key).toMatch(/^[0-9a-f-]{36}$/);
       await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
       expect(screen.getByRole("status")).toHaveTextContent("Reserva remarcada.");
+    });
+
+    it("recusa na remarcação: a nova tentativa usa outra chave e a original continua confirmada", async () => {
+      const keys: Array<string | null> = [];
+      let attempts = 0;
+      server.use(
+        http.post("/api/admin/reservations/:id/reschedule", ({ request }) => {
+          keys.push(request.headers.get("Idempotency-Key"));
+          attempts += 1;
+          return attempts === 1
+            ? HttpResponse.json(
+                { code: "CLASS_FULL", message: "Essa aula ficou lotada.", details: {} },
+                { status: 409 },
+              )
+            : HttpResponse.json(reservation("r-new"), { status: 201 });
+        }),
+      );
+      const user = userEvent.setup();
+      renderPage();
+      await screen.findByText("CANCELADA");
+      await user.click(screen.getByRole("button", { name: "Remarcar reserva de Marina Souza" }));
+      const dialog = await screen.findByRole("dialog", { name: "Remarcar reserva" });
+      await user.selectOptions(await within(dialog).findByLabelText("Nova aula"), "o-yoga");
+      await within(dialog).findByText(/Vaga disponível/);
+
+      await user.click(within(dialog).getByRole("button", { name: "Confirmar remarcação" }));
+      expect(await within(dialog).findByRole("alert")).toHaveTextContent(
+        "A reserva original continua confirmada.",
+      );
+      await user.click(within(dialog).getByRole("button", { name: "Confirmar remarcação" }));
+
+      await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+      expect(keys).toHaveLength(2);
+      expect(keys[1]).not.toBe(keys[0]);
+    });
+  });
+
+  describe("reserva de cliente excluído", () => {
+    const DELETED_CLIENT = {
+      id: "c-gone",
+      fullName: "Usuário excluído",
+      email: "excluido-c-gone@anonimizado.invalid",
+      status: "DELETED" as const,
+    };
+
+    it("não oferece Remarcar (só Cancelar) para a reserva de um cliente excluído", async () => {
+      server.use(
+        http.get("/api/admin/reservations", () =>
+          HttpResponse.json([
+            reservation("r-gone", { client: DELETED_CLIENT }),
+            reservation("r-1"),
+          ]),
+        ),
+      );
+      renderPage();
+
+      const gone = (await screen.findByText("Usuário excluído", { selector: "td" })).closest("tr")!;
+      expect(within(gone).queryByRole("button", { name: /Remarcar/ })).not.toBeInTheDocument();
+      expect(
+        within(gone).getByRole("button", { name: "Cancelar reserva de Usuário excluído" }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: "Remarcar reserva de Marina Souza" }),
+      ).toBeInTheDocument();
+    });
+
+    it("explica a recusa por cliente excluído sem pedir para reativar o cadastro", async () => {
+      previewFor = () => ({
+        canBook: false,
+        capacity: 14,
+        availableSpots: 6,
+        reason: {
+          code: "USER_ALREADY_DELETED",
+          message: "O cadastro deste cliente foi excluído. Não é possível reservar em nome dele.",
+        },
+      });
+      const user = userEvent.setup();
+      renderPage();
+      await screen.findByText("CANCELADA");
+      await user.click(screen.getByRole("button", { name: "+ Nova reserva" }));
+      const dialog = await screen.findByRole("dialog", { name: "Nova reserva (administrativa)" });
+      await user.selectOptions(await within(dialog).findByLabelText("Cliente"), "c-marina");
+      await user.selectOptions(within(dialog).getByLabelText("Aula"), "o-funcional");
+
+      const alert = await within(dialog).findByRole("alert");
+      expect(alert).toHaveTextContent("Cliente excluído.");
+      expect(alert).not.toHaveTextContent(/reative/i);
     });
   });
 

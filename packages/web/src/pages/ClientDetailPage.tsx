@@ -15,6 +15,7 @@ import { ApiError } from "../lib/auth/api";
 import { useAuth } from "../lib/auth/AuthContext";
 import { deleteClientRecord, getClientOverview, setClientActive } from "../lib/clients/api";
 import { formatHistoryWhen } from "../lib/gamification/format";
+import { invalidateAfterDeletion } from "../lib/invalidate-after-deletion";
 import { PlanHistoryList } from "./plans/PlanHistoryList";
 import { statusBadge } from "./workout-sheets/status";
 import { ClientEditForm } from "./clients/ClientEditForm";
@@ -269,7 +270,7 @@ export function ClientDetailPage() {
               name={overview.client.fullName}
               onConfirm={() => deleteClientRecord(id)}
               onDeleted={() => {
-                void queryClient.invalidateQueries({ queryKey: ["clients"] });
+                void invalidateAfterDeletion(queryClient);
                 navigate("/clientes");
               }}
               onClose={() => setConfirmingDelete(false)}

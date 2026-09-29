@@ -4,6 +4,7 @@ import type { Request } from "express";
 import type { AccessProfile } from "@prisma/client";
 import { ErrorCode, ErrorStatus, type PermissionScopeName } from "@fitburn/contracts";
 import { DomainError } from "../common/errors/domain-error.js";
+import { PrismaService } from "../prisma/prisma.service.js";
 
 export interface AuthTokenPayload {
   sub: string;
@@ -18,7 +19,10 @@ export interface AuthenticatedRequest extends Request {
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
-  constructor(private readonly jwtService: JwtService) {}
+  constructor(
+    private readonly jwtService: JwtService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
@@ -28,12 +32,27 @@ export class JwtAuthGuard implements CanActivate {
       throw this.unauthenticated();
     }
 
+    let payload: AuthTokenPayload;
     try {
-      request.authUser = await this.jwtService.verifyAsync<AuthTokenPayload>(token);
-      return true;
+      payload = await this.jwtService.verifyAsync<AuthTokenPayload>(token);
     } catch {
       throw this.unauthenticated();
     }
+
+    // O token segue válido por alguns minutos depois de a pessoa ser excluída
+    // (anonimizada): quem foi excluído perde o acesso na hora, em toda rota
+    // autenticada. Desativado (INACTIVE) não é barrado aqui: as rotas de
+    // domínio respondem USER_INACTIVE com a mensagem própria de cada uma.
+    const user = await this.prisma.user.findUnique({
+      where: { id: payload.sub },
+      select: { status: true },
+    });
+    if (user?.status === "DELETED") {
+      throw this.unauthenticated();
+    }
+
+    request.authUser = payload;
+    return true;
   }
 
   private extractToken(request: Request): string | undefined {

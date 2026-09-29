@@ -22,8 +22,10 @@ function LoggedIn({ children }: { children: React.ReactNode }) {
   return ready ? <>{children}</> : null;
 }
 
-function renderAt(path: string) {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+function renderAt(
+  path: string,
+  queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } }),
+) {
   return render(
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
@@ -372,6 +374,42 @@ describe("Clientes (equipe)", () => {
       expect(await screen.findByRole("button", { name: "Editar dados" })).toBeInTheDocument();
     });
 
+    it("telefone, nascimento, documento e endereço são obrigatórios: não envia campo vazio nem só com espaços", async () => {
+      const user = userEvent.setup();
+      const bodies: unknown[] = [];
+      server.use(
+        http.patch("/api/clients/:id", async ({ request }) => {
+          bodies.push(await request.json());
+          return HttpResponse.json(OVERVIEW.client);
+        }),
+      );
+      renderAt("/clientes/c-marina");
+      await user.click(await screen.findByRole("button", { name: "Editar dados" }));
+
+      for (const label of ["Telefone", "Data de nascimento", "Documento", "Endereço"]) {
+        expect(screen.getByLabelText(label)).toBeRequired();
+      }
+      const address = screen.getByLabelText("Endereço");
+      await user.clear(address);
+      await user.type(address, "   ");
+      await user.click(screen.getByRole("button", { name: "Salvar" }));
+
+      expect(await screen.findByRole("alert")).toHaveTextContent(/obrigat/i);
+      expect(bodies).toHaveLength(0);
+
+      await user.clear(address);
+      await user.type(address, "Rua Nova, 5");
+      await user.click(screen.getByRole("button", { name: "Salvar" }));
+
+      await waitFor(() => expect(bodies).toHaveLength(1));
+      expect(bodies[0]).toMatchObject({
+        phone: "11999990000",
+        birthDate: "1994-03-12",
+        document: "123.456.789-00",
+        address: "Rua Nova, 5",
+      });
+    });
+
     it("exclui o cliente a partir do detalhe, com confirmação, e volta para a lista", async () => {
       const user = userEvent.setup();
       const calls: string[] = [];
@@ -391,6 +429,38 @@ describe("Clientes (equipe)", () => {
       await waitFor(() => expect(calls).toEqual(["c-marina"]));
       expect(await screen.findByRole("heading", { name: "Clientes" })).toBeInTheDocument();
       expect(await screen.findByText("Bruno Lima")).toBeInTheDocument();
+    });
+
+    it("depois de excluir, invalida a lista de usuários, o dashboard, o ranking e as opções de atribuição", async () => {
+      const user = userEvent.setup();
+      server.use(
+        http.delete("/api/clients/:id", () =>
+          HttpResponse.json({ ...OVERVIEW.client, fullName: "Usuário excluído", status: "DELETED" }),
+        ),
+      );
+      const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+      const otherScreens = [
+        ["users", { status: "" }],
+        ["dashboard", "week"],
+        ["gamification", "ranking", "week"],
+        ["plan-options"],
+        ["assignment-options"],
+        ["workout-sheet-clients"],
+      ];
+      for (const key of otherScreens) queryClient.setQueryData(key, []);
+      renderAt("/clientes/c-marina", queryClient);
+
+      await user.click(await screen.findByRole("button", { name: "Excluir cliente" }));
+      await user.click(
+        within(screen.getByRole("dialog", { name: "Excluir cliente?" })).getByRole("button", {
+          name: "Excluir e anonimizar",
+        }),
+      );
+
+      expect(await screen.findByRole("heading", { name: "Clientes" })).toBeInTheDocument();
+      for (const key of otherScreens) {
+        expect(queryClient.getQueryState(key)?.isInvalidated, JSON.stringify(key)).toBe(true);
+      }
     });
 
     it("um cliente excluído aparece como excluído e sem ações", async () => {

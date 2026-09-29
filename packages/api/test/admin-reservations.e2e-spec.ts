@@ -267,6 +267,31 @@ describe("Reservas administrativas (HTTP)", () => {
       expect(response.body.code).toBe("USER_INACTIVE");
     });
 
+    it("recusa cliente excluído com USER_ALREADY_DELETED, na criação, na remarcação e na prévia", async () => {
+      const ana = await createClient("ana");
+      const occurrence = await createOccurrence(inFuture(3));
+      const other = await createOccurrence(inFuture(6), { name: "Yoga" });
+      const reserved = await reserveFor(adminToken, ana.user.id, occurrence.id);
+      await testPrisma.user.update({ where: { id: ana.user.id }, data: { status: "DELETED" } });
+
+      const created = await reserveFor(adminToken, ana.user.id, other.id);
+      const rescheduled = await rescheduleFor(adminToken, reserved.body.id, other.id);
+      const previewed = await preview(
+        adminToken,
+        `clientId=${ana.user.id}&occurrenceId=${other.id}`,
+      );
+
+      for (const response of [created, rescheduled]) {
+        expect(response.status).toBe(409);
+        expect(response.body.code).toBe("USER_ALREADY_DELETED");
+        expect(response.body.message).not.toMatch(/reative|inativo/i);
+      }
+      expect(previewed.body).toMatchObject({
+        canBook: false,
+        reason: { code: "USER_ALREADY_DELETED" },
+      });
+    });
+
     it("devolve 404 para aula ou cliente inexistente (ou que não é cliente) e 400 sem os campos", async () => {
       const ana = await createClient("ana");
       const occurrence = await createOccurrence(inFuture(3));
@@ -542,7 +567,12 @@ describe("Reservas administrativas (HTTP)", () => {
         s.biaPast.id,
       ]);
       expect(response.body[1]).toMatchObject({
-        client: { id: s.ana.user.id, fullName: "ana", email: "ana@fitburn.local" },
+        client: {
+          id: s.ana.user.id,
+          fullName: "ana",
+          email: "ana@fitburn.local",
+          status: "ACTIVE",
+        },
         occurrence: { name: "Spinning" },
         createdBy: { id: adminId, kind: "STAFF" },
       });
@@ -740,6 +770,63 @@ describe("Reservas administrativas (HTTP)", () => {
           )
         ).status,
       ).toBe(403);
+    });
+  });
+
+  describe("busca de clientes para reservar", () => {
+    const lookup = (token: string, query = "") =>
+      request(app.getHttpServer())
+        .get(`/api/admin/reservations/clients${query}`)
+        .set("Authorization", `Bearer ${token}`);
+
+    it("devolve id, nome e e-mail só dos clientes ativos, em ordem de nome, e filtra pela busca", async () => {
+      const bia = await createClient("bia");
+      const ana = await createClient("ana");
+      await createClient("caio", "INACTIVE");
+      const deleted = await createClient("dora");
+      await testPrisma.user.update({ where: { id: deleted.user.id }, data: { status: "DELETED" } });
+
+      const all = await lookup(adminToken);
+      const searched = await lookup(adminToken, "?search=BI");
+
+      expect(all.status).toBe(200);
+      // Só id, nome e e-mail: nada de telefone, documento ou endereço; equipe não aparece.
+      expect(all.body).toEqual([
+        { id: ana.user.id, fullName: "ana", email: "ana@fitburn.local" },
+        { id: bia.user.id, fullName: "bia", email: "bia@fitburn.local" },
+      ]);
+      expect(searched.body).toEqual([
+        { id: bia.user.id, fullName: "bia", email: "bia@fitburn.local" },
+      ]);
+    });
+
+    it("funciona só com a permissão de Reservas (sem o módulo Clientes) e exige ver reservas", async () => {
+      const ana = await createClient("ana");
+      const viewer = await createStaff("vera", { actions: ["VIEW"], scope: "ALL" });
+      const creatorOnly = await createStaff("carla", { actions: ["CREATE"], scope: "ALL" });
+
+      const allowed = await lookup(viewer.token);
+
+      expect(allowed.status).toBe(200);
+      expect(allowed.body.map((item: { id: string }) => item.id)).toEqual([ana.user.id]);
+      expect((await lookup(creatorOnly.token)).status).toBe(403);
+      expect((await lookup(ana.token)).status).toBe(403);
+      expect((await request(app.getHttpServer()).get("/api/admin/reservations/clients")).status).toBe(
+        401,
+      );
+    });
+
+    it("respeita o escopo do professor", async () => {
+      const ana = await createClient("ana");
+      await createClient("bia");
+      const teacher = await createStaff("paulo", { actions: ["VIEW"], scope: "ASSIGNED_CLIENTS" });
+      await testPrisma.teacherClientAssignment.create({
+        data: { teacherId: teacher.user.id, clientId: ana.user.id },
+      });
+
+      const response = await lookup(teacher.token);
+
+      expect(response.body.map((item: { id: string }) => item.id)).toEqual([ana.user.id]);
     });
   });
 

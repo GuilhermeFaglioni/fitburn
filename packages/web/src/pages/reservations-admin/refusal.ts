@@ -53,6 +53,11 @@ export function describeRefusal(
         title: "Cliente inativo.",
         text: "Reative o cadastro do cliente antes de reservar.",
       };
+    case ErrorCode.USER_ALREADY_DELETED:
+      return {
+        title: "Cliente excluído.",
+        text: "O cadastro deste cliente foi excluído: não é possível reservar nem remarcar em nome dele.",
+      };
     default:
       return { title: null, text: refusal.message };
   }

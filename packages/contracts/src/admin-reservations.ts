@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { localDateSchema } from "./agenda.js";
+import { userStatusSchema } from "./auth.js";
 import { reservationDetailSchema, reservationStatusSchema } from "./reservations.js";
 
 /** Quem executou uma ação: o próprio cliente ou um membro da equipe. */
@@ -23,7 +24,13 @@ export type ReservationActor = z.infer<typeof reservationActorSchema>;
  * ou ainda não canceladas).
  */
 export const adminReservationDetailSchema = reservationDetailSchema.extend({
-  client: z.object({ id: z.string(), fullName: z.string(), email: z.string() }),
+  client: z.object({
+    id: z.string(),
+    fullName: z.string(),
+    email: z.string(),
+    /** Excluído (anonimizado): a reserva fica no histórico, mas não se reserva nem remarca por ele. */
+    status: userStatusSchema,
+  }),
   createdBy: reservationActorSchema.nullable(),
   cancelledBy: reservationActorSchema.nullable(),
 });
@@ -77,3 +84,17 @@ export const reservationPreviewSchema = z.object({
   reason: reservationRefusalSchema.nullable(),
 });
 export type ReservationPreview = z.infer<typeof reservationPreviewSchema>;
+
+/** Busca de clientes para reservar: `search` casa (sem diferenciar maiúsculas) com nome ou e-mail. */
+export const reservationClientsQuerySchema = z.object({
+  search: z.string().trim().optional(),
+});
+export type ReservationClientsQuery = z.infer<typeof reservationClientsQuerySchema>;
+
+/** Cliente ativo que a equipe pode escolher ao reservar: só o necessário para identificá-lo. */
+export const reservationClientOptionSchema = z.object({
+  id: z.string(),
+  fullName: z.string(),
+  email: z.string(),
+});
+export type ReservationClientOption = z.infer<typeof reservationClientOptionSchema>;

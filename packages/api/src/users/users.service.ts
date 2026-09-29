@@ -6,6 +6,7 @@ import {
   ErrorCode,
   ErrorStatus,
   PermissionScope,
+  SystemProfileName,
   type CreateClientRequest,
   type CreateStaffRequest,
   type CurrentUser,
@@ -14,6 +15,8 @@ import {
   type UserDetail,
 } from "@fitburn/contracts";
 import { PrismaService } from "../prisma/prisma.service.js";
+import { lockAdvisory } from "../prisma/advisory-lock.js";
+import { isUniqueViolation } from "../prisma/unique-violation.js";
 import { PermissionsService } from "../permissions/permissions.service.js";
 import { DomainError } from "../common/errors/domain-error.js";
 import { hashPassword } from "../auth/password.util.js";
@@ -82,19 +85,21 @@ export class UsersService {
     await this.assertDocumentAvailable(input.document);
     const passwordHash = await hashPassword(input.password);
 
-    return this.prisma.user.create({
-      data: {
-        email: input.email,
-        passwordHash,
-        fullName: input.fullName,
-        phone: input.phone,
-        birthDate: new Date(input.birthDate),
-        document: input.document,
-        address: input.address,
-        profileId: clientProfile.id,
-      },
-      include: { profile: true },
-    });
+    return this.prisma.user
+      .create({
+        data: {
+          email: input.email,
+          passwordHash,
+          fullName: input.fullName,
+          phone: input.phone,
+          birthDate: new Date(input.birthDate),
+          document: input.document,
+          address: input.address,
+          profileId: clientProfile.id,
+        },
+        include: { profile: true },
+      })
+      .catch((error: unknown) => this.rethrowUniqueViolation(error, input.email, input.document));
   }
 
   async createStaff(input: CreateStaffRequest): Promise<UserWithProfile> {
@@ -102,15 +107,17 @@ export class UsersService {
     await this.assertEmailAvailable(input.email);
     const passwordHash = await hashPassword(input.password);
 
-    return this.prisma.user.create({
-      data: {
-        email: input.email,
-        passwordHash,
-        fullName: input.fullName,
-        profileId: profile.id,
-      },
-      include: { profile: true },
-    });
+    return this.prisma.user
+      .create({
+        data: {
+          email: input.email,
+          passwordHash,
+          fullName: input.fullName,
+          profileId: profile.id,
+        },
+        include: { profile: true },
+      })
+      .catch((error: unknown) => this.rethrowUniqueViolation(error, input.email));
   }
 
   async update(id: string, input: UpdateUserRequest): Promise<UserWithProfile> {
@@ -124,6 +131,12 @@ export class UsersService {
       await this.assertDocumentAvailable(input.document, id);
     }
 
+    return this.updateRow(id, input).catch((error: unknown) =>
+      this.rethrowUniqueViolation(error, input.email, input.document, id),
+    );
+  }
+
+  private updateRow(id: string, input: UpdateUserRequest): Promise<UserWithProfile> {
     return this.prisma.$transaction(async (tx) => {
       await this.lockLiveUser(tx, id);
       return tx.user.update({
@@ -189,6 +202,7 @@ export class UsersService {
     const passwordHash = await hashPassword(randomBytes(32).toString("hex"));
     return this.prisma.$transaction(async (tx) => {
       await this.lockLiveUser(tx, id);
+      await this.assertNotLastAdmin(tx, id);
       const user = await tx.user.update({
         where: { id },
         data: {
@@ -206,6 +220,29 @@ export class UsersService {
       await this.revokeSessions(tx, id);
       return user;
     });
+  }
+
+  /**
+   * O sistema nunca fica sem administrador ativo: excluir o último é recusado.
+   * O lock consultivo serializa exclusões simultâneas (dois administradores
+   * excluindo um ao outro), senão ambos veriam "sobra o outro" e passariam.
+   */
+  private async assertNotLastAdmin(tx: Prisma.TransactionClient, id: string): Promise<void> {
+    await lockAdvisory(tx, "users-last-admin");
+    const adminWhere = {
+      status: "ACTIVE",
+      profile: { name: SystemProfileName.ADMIN, isSystem: true },
+    } satisfies Prisma.UserWhereInput;
+    const isActiveAdmin = await tx.user.count({ where: { id, ...adminWhere } });
+    if (isActiveAdmin === 0) return;
+    const otherAdmins = await tx.user.count({ where: { ...adminWhere, id: { not: id } } });
+    if (otherAdmins === 0) {
+      throw new DomainError(
+        ErrorCode.VALIDATION_ERROR,
+        "Não é possível excluir o último administrador ativo. Cadastre ou reative outro administrador antes.",
+        ErrorStatus.VALIDATION,
+      );
+    }
   }
 
   private revokeSessions(tx: Prisma.TransactionClient, userId: string) {
@@ -282,12 +319,29 @@ export class UsersService {
     return profile;
   }
 
-  // Checagem proativa em vez de traduzir a violação de unicidade do
-  // Postgres: com o driver adapter-pg, o Prisma não preenche
-  // error.meta.target (vem {}), então não dá para descobrir qual coluna
-  // colidiu a partir do erro. A constraint do banco continua como rede de
-  // segurança final contra uma corrida real, só não vira uma mensagem
-  // amigável nesse caso raríssimo.
+  // Checagem proativa (mensagem amigável no caso comum). Com o driver
+  // adapter-pg o Prisma não preenche error.meta.target (vem {}), então a
+  // violação de unicidade de uma corrida real não diz qual coluna colidiu:
+  // ver rethrowUniqueViolation.
+  /**
+   * Duas requisições simultâneas passam juntas pela checagem proativa e a
+   * segunda esbarra no unique do banco (P2002). Refaz a checagem, agora com a
+   * linha da vencedora já gravada, para devolver o erro de domínio certo
+   * (e-mail ou documento em uso), nunca um 500.
+   */
+  private async rethrowUniqueViolation(
+    error: unknown,
+    email: string | undefined,
+    document?: string | null,
+    excludeUserId?: string,
+  ): Promise<never> {
+    if (isUniqueViolation(error)) {
+      if (email !== undefined) await this.assertEmailAvailable(email, excludeUserId);
+      await this.assertDocumentAvailable(document, excludeUserId);
+    }
+    throw error;
+  }
+
   private async assertEmailAvailable(email: string, excludeUserId?: string): Promise<void> {
     const existing = await this.prisma.user.findUnique({ where: { email } });
     if (existing && existing.id !== excludeUserId) {
