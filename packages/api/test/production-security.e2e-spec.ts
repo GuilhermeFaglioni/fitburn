@@ -217,6 +217,7 @@ describe("Segurança em configuração de produção (HTTP)", () => {
 
       expect(response.status).toBe(413);
       expect(Object.keys(response.body).sort()).toEqual(["code", "message"]);
+      expect(response.body.code).toBe(ErrorCode.PAYLOAD_TOO_LARGE);
       expect(response.text).not.toMatch(/PayloadTooLargeError|node_modules|\.js:\d+/);
     });
 
@@ -424,24 +425,24 @@ describe("Rate limiting em produção (HTTP)", () => {
     expect(Number(response.headers["retry-after"])).toBeGreaterThan(0);
   });
 
-  it("conta tentativas certas e erradas: login bem-sucedido também consome a cota", async () => {
+  it("só tentativas de login que falham contam: logins bem-sucedidos não consomem a cota", async () => {
     const limited = await appWith({ AUTH_RATE_LIMIT_MAX: "2" });
     const user = await createClientUser();
-    const login = () =>
-      request(limited.getHttpServer()).post("/api/auth/login").send({ email: user.email, password: PASSWORD });
+    const login = (password = PASSWORD) =>
+      request(limited.getHttpServer()).post("/api/auth/login").send({ email: user.email, password });
 
-    expect((await login()).status).toBe(201);
-    expect((await login()).status).toBe(201);
-    expect((await login()).status).toBe(429);
+    for (let i = 0; i < 5; i++) expect((await login()).status).toBe(201);
+
+    expect((await login("senha-errada")).status).toBe(401);
+    expect((await login("senha-errada")).status).toBe(401);
+    expect((await login("senha-errada")).status).toBe(429);
   });
 
-  it("limita também o refresh", async () => {
+  it("não limita o refresh (a web o chama a cada carga de página; vários usuários atrás do mesmo NAT)", async () => {
     const limited = await appWith({ AUTH_RATE_LIMIT_MAX: "2" });
     const refresh = () => request(limited.getHttpServer()).post("/api/auth/refresh");
 
-    expect((await refresh()).status).toBe(401);
-    expect((await refresh()).status).toBe(401);
-    expect((await refresh()).status).toBe(429);
+    for (let i = 0; i < 6; i++) expect((await refresh()).status).toBe(401);
   });
 
   it("não limita os demais endpoints", async () => {

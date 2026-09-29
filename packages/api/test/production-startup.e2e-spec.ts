@@ -68,9 +68,27 @@ describe("Inicialização em produção (falha rápida)", () => {
     expect(config.isProduction).toBe(true);
   });
 
-  it("fora de produção não exige as configurações críticas", () => {
-    const config = loadAppConfig({ NODE_ENV: "test" });
+  it.each(["test", "development"])("só NODE_ENV=%s é tratado como não-produção", (nodeEnv) => {
+    const config = loadAppConfig({ NODE_ENV: nodeEnv });
 
     expect(config.isProduction).toBe(false);
+  });
+
+  it.each([undefined, "", "prod", "staging", "Production", "producao"])(
+    "NODE_ENV=%j aplica as travas de produção (falha fechada)",
+    (nodeEnv) => {
+      const env: NodeJS.ProcessEnv = nodeEnv === undefined ? {} : { NODE_ENV: nodeEnv };
+
+      expect(() => loadAppConfig(env)).toThrow(AppConfigError);
+      const config = loadAppConfig({ ...validProductionEnv, NODE_ENV: nodeEnv });
+      expect(config.isProduction).toBe(true);
+      expect(config.refreshCookie.secure).toBe(true);
+      expect(config.authRateLimit.enabled).toBe(true);
+      expect(config.corsOrigins).toEqual([]);
+    },
+  );
+
+  it("aceita NODE_ENV=development/test com espaços e caixa diferente", () => {
+    expect(loadAppConfig({ NODE_ENV: " Development " }).isProduction).toBe(false);
   });
 });

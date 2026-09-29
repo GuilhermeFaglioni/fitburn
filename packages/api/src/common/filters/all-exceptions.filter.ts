@@ -86,8 +86,16 @@ export class AllExceptionsFilter implements ExceptionFilter {
   }
 
   private messageForClientStatus(status: number): string {
-    if (status === HttpStatus.PAYLOAD_TOO_LARGE) return "O corpo da requisição é grande demais.";
-    return "Requisição inválida.";
+    switch (status) {
+      case HttpStatus.PAYLOAD_TOO_LARGE:
+        return "O corpo da requisição é grande demais.";
+      case HttpStatus.UNSUPPORTED_MEDIA_TYPE:
+        return "Tipo de conteúdo não suportado.";
+      case HttpStatus.TOO_MANY_REQUESTS:
+        return "Muitas requisições. Aguarde um pouco e tente novamente.";
+      default:
+        return "Requisição inválida.";
+    }
   }
 
   private codeForStatus(status: number): string {
@@ -100,6 +108,16 @@ export class AllExceptionsFilter implements ExceptionFilter {
         return ErrorCode.UNAUTHENTICATED;
       case HttpStatus.FORBIDDEN:
         return ErrorCode.FORBIDDEN;
+      case HttpStatus.METHOD_NOT_ALLOWED:
+        return ErrorCode.METHOD_NOT_ALLOWED;
+      case HttpStatus.CONFLICT:
+        return ErrorCode.CONFLICT;
+      case HttpStatus.PAYLOAD_TOO_LARGE:
+        return ErrorCode.PAYLOAD_TOO_LARGE;
+      case HttpStatus.UNSUPPORTED_MEDIA_TYPE:
+        return ErrorCode.UNSUPPORTED_MEDIA_TYPE;
+      case HttpStatus.TOO_MANY_REQUESTS:
+        return ErrorCode.TOO_MANY_REQUESTS;
       default:
         return status >= HttpStatus.INTERNAL_SERVER_ERROR
           ? ErrorCode.INTERNAL_ERROR
