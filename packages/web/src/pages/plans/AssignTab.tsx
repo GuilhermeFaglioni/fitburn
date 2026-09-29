@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Module, PermissionAction } from "@fitburn/contracts";
+import { assignPlanRequestSchema, Module, PermissionAction } from "@fitburn/contracts";
 import { BlockedAction } from "../../components/BlockedAction";
 import { formatLocalDate } from "../../lib/agenda/format";
 import { errorMessage } from "../../lib/auth/api";
@@ -11,8 +11,8 @@ import { assignPlan, getPlanAssignmentOptions, listClientPlans } from "../../lib
 /**
  * "Atribuir a cliente" (PlanosAdmin.dc.html): cliente, plano e as datas de
  * início e término; se o cliente já tem um plano ativo, o aviso de que a nova
- * atribuição o encerra. Abaixo, o histórico de planos do cliente escolhido.
- * O artboard não tem as datas (o spec as pede na atribuição).
+ * atribuição o substitui (o atual termina na véspera do início do novo).
+ * Abaixo, o histórico de planos do cliente escolhido. O artboard não tem as datas (o spec as pede na atribuição).
  */
 const EMPTY_FORM = { clientId: "", planId: "", startDate: "", endDate: "" };
 
@@ -48,6 +48,8 @@ export function AssignTab() {
 
   const canAssign = can(Module.PLANOS, PermissionAction.CREATE);
   const complete = clientId !== "" && planId !== "" && startDate !== "" && endDate !== "";
+  const parsed = assignPlanRequestSchema.safeParse({ clientId, planId, startDate, endDate });
+  const invalidReason = complete && !parsed.success ? parsed.error.issues[0].message : null;
 
   function reset() {
     setForm(EMPTY_FORM);
@@ -127,11 +129,13 @@ export function AssignTab() {
           <span>
             <strong>{client.fullName} já possui um plano ativo</strong> ({client.activePlan.name},
             até {formatLocalDate(client.activePlan.endDate)}). Um cliente só pode ter um plano ativo
-            por vez — atribuir este novo plano encerrará o atual imediatamente.
+            por vez — ao atribuir este novo plano, o atual passa a terminar na véspera do início do
+            novo plano (ou mantém o término atual, se ele já for anterior a essa data).
           </span>
         </div>
       )}
 
+      {invalidReason && <p role="alert">{invalidReason}</p>}
       {assignMutation.isError && (
         <p role="alert">
           {errorMessage(assignMutation.error, "Não foi possível atribuir o plano.")}
@@ -147,10 +151,10 @@ export function AssignTab() {
           <button
             type="button"
             className="fb-btn-primary"
-            disabled={!complete || assignMutation.isPending}
+            disabled={!complete || !parsed.success || assignMutation.isPending}
             onClick={() => assignMutation.mutate({ clientId, planId, startDate, endDate })}
           >
-            {client?.activePlan ? "Encerrar atual e atribuir" : "Atribuir plano"}
+            {client?.activePlan ? "Atribuir e substituir o atual" : "Atribuir plano"}
           </button>
         </BlockedAction>
       </div>

@@ -80,6 +80,21 @@ describe("Plano do cliente", () => {
     expect(within(card).getByText("15/11/2026")).toBeInTheDocument();
   });
 
+  it("com início futuro mostra 'Começa em dd/mm' e as datas, sem o selo de ativo", async () => {
+    mockPlan({
+      active: assignment("1", "Plano Performance", "2099-01-10", "2099-06-10", "ACTIVE"),
+      history: [],
+    });
+
+    renderPage();
+
+    const card = await screen.findByRole("region", { name: "Plano ativo" });
+    expect(within(card).getByText("Começa em 10/01")).toBeInTheDocument();
+    expect(within(card).queryByText("ATIVO")).not.toBeInTheDocument();
+    expect(within(card).getByText("10/01/2099")).toBeInTheDocument();
+    expect(within(card).getByText("10/06/2099")).toBeInTheDocument();
+  });
+
   it("lista o histórico de planos, do mais recente ao mais antigo, como encerrados", async () => {
     mockPlan({
       active: assignment("1", "Plano Performance", "2026-08-15", "2026-11-15", "ACTIVE"),

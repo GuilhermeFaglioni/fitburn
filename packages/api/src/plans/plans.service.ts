@@ -17,9 +17,14 @@ import {
 } from "@fitburn/contracts";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { DomainError } from "../common/errors/domain-error.js";
-import { ACTIVE_CLIENT_WHERE, assertIsActiveClient } from "../permissions/client-scope.js";
+import {
+  ACTIVE_CLIENT_WHERE,
+  assertClientInScope,
+  assertIsActiveClient,
+} from "../permissions/client-scope.js";
 import { assertFullScope, type ScopedRequester } from "../permissions/scoped-requester.js";
 import { lockAdvisory } from "../prisma/advisory-lock.js";
+import { isUniqueViolation } from "../prisma/unique-violation.js";
 
 const ASSIGNMENT_INCLUDE = {
   plan: { select: { id: true, name: true, description: true } },
@@ -59,9 +64,9 @@ export class PlansService {
   async create(input: CreatePlanRequest, requester: ScopedRequester): Promise<PlanDetail> {
     assertFullScope(requester, FULL_SCOPE_MESSAGE);
     await this.assertNameAvailable(input.name);
-    const plan = await this.prisma.plan.create({
-      data: { name: input.name, description: input.description || null },
-    });
+    const plan = await this.prisma.plan
+      .create({ data: { name: input.name, description: input.description || null } })
+      .catch((error: unknown) => this.rethrowNameTaken(error));
     return this.toDetail(plan, 0);
   }
 
@@ -73,13 +78,15 @@ export class PlansService {
     assertFullScope(requester, FULL_SCOPE_MESSAGE);
     await this.findPlanOrThrow(id);
     if (input.name !== undefined) await this.assertNameAvailable(input.name, id);
-    const plan = await this.prisma.plan.update({
-      where: { id },
-      data: {
-        name: input.name,
-        description: input.description === undefined ? undefined : input.description || null,
-      },
-    });
+    const plan = await this.prisma.plan
+      .update({
+        where: { id },
+        data: {
+          name: input.name,
+          description: input.description === undefined ? undefined : input.description || null,
+        },
+      })
+      .catch((error: unknown) => this.rethrowNameTaken(error));
     return this.detailWithCount(plan);
   }
 
@@ -170,6 +177,7 @@ export class PlansService {
   /** Todas as atribuições de um cliente, da mais recente para a mais antiga (consulta da administração). */
   async historyOf(clientId: string, requester: ScopedRequester): Promise<PlanAssignment[]> {
     assertFullScope(requester, FULL_SCOPE_MESSAGE);
+    await assertClientInScope(this.prisma, clientId, requester);
     const today = gymToday();
     const rows = await this.assignmentsOf(clientId);
     return rows.map((row) => this.toAssignment(row, today));
@@ -216,13 +224,20 @@ export class PlansService {
 
   private async assertNameAvailable(name: string, exceptId?: string): Promise<void> {
     const existing = await this.prisma.plan.findUnique({ where: { name } });
-    if (existing && existing.id !== exceptId) {
-      throw new DomainError(
-        ErrorCode.VALIDATION_ERROR,
-        "Já existe um plano com este nome.",
-        ErrorStatus.VALIDATION,
-      );
-    }
+    if (existing && existing.id !== exceptId) throw this.nameTaken();
+  }
+
+  private nameTaken(): DomainError {
+    return new DomainError(
+      ErrorCode.VALIDATION_ERROR,
+      "Já existe um plano com este nome.",
+      ErrorStatus.VALIDATION,
+    );
+  }
+
+  /** A checagem de nome perdeu a corrida: o índice único do banco recusou o mesmo nome. */
+  private rethrowNameTaken(error: unknown): never {
+    throw isUniqueViolation(error) ? this.nameTaken() : error;
   }
 
   private async detailWithCount(plan: Plan): Promise<PlanDetail> {

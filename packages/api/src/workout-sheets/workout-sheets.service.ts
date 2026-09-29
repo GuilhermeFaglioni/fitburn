@@ -111,6 +111,11 @@ export class WorkoutSheetsService {
   ): Promise<WorkoutSheet> {
     await this.assertSheetInScope(id, requester);
     const sheet = await this.prisma.$transaction(async (tx) => {
+      // Trava a linha da ficha: edições simultâneas esperam a fila em vez de
+      // apagar e recriar os exercícios ao mesmo tempo (e violar (ficha, posição)).
+      const locked = await tx.$queryRaw<Array<{ id: string }>>`
+        SELECT id FROM workout_sheets WHERE id = ${id} FOR UPDATE`;
+      if (locked.length === 0) throw this.notFound();
       if (input.exercises) {
         await tx.workoutExercise.deleteMany({ where: { sheetId: id } });
       }

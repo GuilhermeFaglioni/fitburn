@@ -77,6 +77,12 @@ export function formatClassMoment(startsAt: string): string {
   return `${formatClassDay(startsAt).toLowerCase()} às ${formatInstantHour(startsAt)}`;
 }
 
+/** "2026-09-20" → "20/09": o dia e o mês de uma data local. */
+export function formatDayMonth(date: string): string {
+  const { day, month } = parts(date);
+  return `${String(day).padStart(2, "0")}/${String(month).padStart(2, "0")}`;
+}
+
 /** "2026-09-20" → "20/09/2026": uma data local por extenso numérico, como nas tabelas administrativas. */
 export function formatLocalDate(date: string): string {
   const { year, month, day } = parts(date);

@@ -82,6 +82,18 @@ describe("Perfil / Minha conta (HTTP)", () => {
       });
     });
 
+    it("recusa um usuário desativado depois do login com USER_INACTIVE", async () => {
+      const { token, user } = await loginAsClient();
+      await testPrisma.user.update({ where: { id: user.id }, data: { status: "INACTIVE" } });
+
+      const response = await request(app.getHttpServer())
+        .get("/api/me")
+        .set("Authorization", `Bearer ${token}`);
+
+      expect(response.status).toBe(401);
+      expect(response.body.code).toBe("USER_INACTIVE");
+    });
+
     it("exige autenticação", async () => {
       const response = await request(app.getHttpServer()).get("/api/me");
       expect(response.status).toBe(401);
@@ -212,6 +224,63 @@ describe("Perfil / Minha conta (HTTP)", () => {
       expect(stored.profileId).toBe(user.profileId);
       expect(stored.status).toBe("ACTIVE");
       expect(stored.passwordHash).toBe(user.passwordHash);
+    });
+
+    it.each([["phone"], ["birthDate"], ["document"], ["address"]])(
+      "recusa anular %s de um cliente (cadastro obrigatório), sem mudar nada",
+      async (field) => {
+        const { token, user } = await loginAsClient();
+
+        const response = await request(app.getHttpServer())
+          .patch("/api/me")
+          .set("Authorization", `Bearer ${token}`)
+          .send({ fullName: "Outro Nome", [field]: null });
+
+        expect(response.status).toBe(400);
+        expect(response.body.code).toBe("VALIDATION_ERROR");
+        const stored = await testPrisma.user.findUniqueOrThrow({ where: { id: user.id } });
+        expect(stored.fullName).toBe("Marina Souza");
+        expect(stored[field as "phone" | "birthDate" | "document" | "address"]).not.toBeNull();
+      },
+    );
+
+    it("a equipe pode limpar telefone, data de nascimento, documento e endereço", async () => {
+      const profile = await createAccessProfile({ name: "Recepção" });
+      await createUser({
+        email: "staff@fitburn.local",
+        password: PASSWORD,
+        profileId: profile.id,
+        document: "22222222222",
+      });
+      const token = await loginAndGetAccessToken(app, "staff@fitburn.local", PASSWORD);
+
+      const response = await request(app.getHttpServer())
+        .patch("/api/me")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ phone: null, birthDate: null, document: null, address: null });
+
+      expect(response.status).toBe(200);
+      expect(response.body).toMatchObject({
+        phone: null,
+        birthDate: null,
+        document: null,
+        address: null,
+      });
+    });
+
+    it("recusa um usuário desativado depois do login, sem alterar nada", async () => {
+      const { token, user } = await loginAsClient();
+      await testPrisma.user.update({ where: { id: user.id }, data: { status: "INACTIVE" } });
+
+      const response = await request(app.getHttpServer())
+        .patch("/api/me")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ fullName: "Outro Nome" });
+
+      expect(response.status).toBe(401);
+      expect(response.body.code).toBe("USER_INACTIVE");
+      const stored = await testPrisma.user.findUniqueOrThrow({ where: { id: user.id } });
+      expect(stored.fullName).toBe("Marina Souza");
     });
 
     it("exige autenticação", async () => {
