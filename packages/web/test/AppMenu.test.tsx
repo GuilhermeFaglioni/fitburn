@@ -90,6 +90,19 @@ describe("AppMenu", () => {
     expect(screen.queryByRole("link", { name: "Atribuições" })).not.toBeInTheDocument();
   });
 
+  it("Metas aparece para quem pode ver a gamificação dos clientes", async () => {
+    mockSuccessfulLogin("Professor", [
+      {
+        module: Module.GAMIFICACAO,
+        actions: [PermissionAction.VIEW],
+        scope: PermissionScope.ASSIGNED_CLIENTS,
+      },
+    ]);
+    renderMenuAsAuthenticated();
+
+    expect(await screen.findByRole("link", { name: "Metas" })).toHaveAttribute("href", "/metas");
+  });
+
   it("Atribuições aparece para quem tem a ação de criar clientes", async () => {
     mockSuccessfulLogin("Administrador");
     renderMenuAsAuthenticated();

@@ -1,20 +1,16 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Module, PermissionAction, utcToGymDateTime } from "@fitburn/contracts";
+import { Module, PermissionAction } from "@fitburn/contracts";
 import { BlockedAction } from "../components/BlockedAction";
-import { ApiError } from "../lib/auth/api";
+import { errorMessage } from "../lib/auth/api";
 import { useAuth } from "../lib/auth/AuthContext";
-import { formatLocalDate } from "../lib/agenda/format";
+import { formatInstantDate } from "../lib/agenda/format";
 import {
   createAssignment,
   deleteAssignment,
   getAssignmentOptions,
   listAssignments,
 } from "../lib/assignments/api";
-
-function failureMessage(error: unknown, fallback: string): string {
-  return error instanceof ApiError ? error.message : fallback;
-}
 
 /**
  * Atribuição de clientes a professores: a administração escolhe um professor,
@@ -51,13 +47,13 @@ export function AssignmentsPage() {
       setClientId("");
       return refresh();
     },
-    onError: (error) => setFailure(failureMessage(error, "Não foi possível atribuir o cliente.")),
+    onError: (error) => setFailure(errorMessage(error, "Não foi possível atribuir o cliente.")),
   });
   const removeMutation = useMutation({
     mutationFn: deleteAssignment,
     onMutate: () => setFailure(null),
     onSuccess: refresh,
-    onError: (error) => setFailure(failureMessage(error, "Não foi possível remover a atribuição.")),
+    onError: (error) => setFailure(errorMessage(error, "Não foi possível remover a atribuição.")),
   });
 
   const options = optionsQuery.data;
@@ -149,7 +145,7 @@ export function AssignmentsPage() {
                         {item.client.email}
                       </td>
                       <td className="fb-td" style={{ color: "#5a5a5a" }}>
-                        {formatLocalDate(utcToGymDateTime(item.createdAt).date)}
+                        {formatInstantDate(item.createdAt)}
                       </td>
                       <td className="fb-td" style={{ textAlign: "right" }}>
                         <BlockedAction

@@ -82,3 +82,8 @@ export function formatLocalDate(date: string): string {
   const { year, month, day } = parts(date);
   return `${String(day).padStart(2, "0")}/${String(month).padStart(2, "0")}/${year}`;
 }
+
+/** A data local da academia de um instante ISO, como "20/09/2026". */
+export function formatInstantDate(iso: string): string {
+  return formatLocalDate(utcToGymDateTime(iso).date);
+}

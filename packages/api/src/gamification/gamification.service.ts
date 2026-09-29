@@ -28,9 +28,13 @@ import {
 } from "./ranking.js";
 import { currentStreak, planStreak, type RegisteredAttendance, type StreakPlan } from "./streak.js";
 
-type PointsEntryWithSubject = Prisma.PointsEntryGetPayload<{
-  include: { reservation: { select: { occurrence: { select: { name: true } } } } };
-}>;
+/** O que o histórico precisa de cada lançamento além dele mesmo: o nome da aula ou o título da meta. */
+const HISTORY_INCLUDE = {
+  reservation: { select: { occurrence: { select: { name: true } } } },
+  goal: { select: { title: true } },
+} satisfies Prisma.PointsEntryInclude;
+
+type PointsEntryWithSubject = Prisma.PointsEntryGetPayload<{ include: typeof HISTORY_INCLUDE }>;
 
 /** Quantos colocados o ranking traz (mais quem consultou, se estiver fora deles). */
 const RANKING_SIZE = 10;
@@ -53,7 +57,7 @@ export class GamificationService {
       this.prisma.pointsEntry.aggregate({ where: { clientId }, _sum: { points: true } }),
       this.prisma.pointsEntry.findMany({
         where: { clientId },
-        include: { reservation: { select: { occurrence: { select: { name: true } } } } },
+        include: HISTORY_INCLUDE,
         // A presença e o bônus que ela desperta têm o mesmo instante: a sequência desempata.
         orderBy: [{ occurredAt: "desc" }, { sequence: "desc" }],
         take: RECENT_HISTORY_SIZE,
@@ -154,6 +158,23 @@ export class GamificationService {
   ): Promise<GamificationSummary> {
     await assertClientInScope(this.prisma, clientId, requester);
     return this.summaryOf(clientId);
+  }
+
+  /** Lança os pontos de uma meta concluída (regra GOAL_POINTS), na transação de quem a concluiu. */
+  async awardGoal(
+    tx: Prisma.TransactionClient,
+    input: { clientId: string; goalId: string; occurredAt: Date },
+  ): Promise<void> {
+    const points = await this.pointsFor(tx, "GOAL_POINTS");
+    await tx.pointsEntry.create({
+      data: {
+        type: PointsEntryType.GOAL,
+        points,
+        clientId: input.clientId,
+        goalId: input.goalId,
+        occurredAt: input.occurredAt,
+      },
+    });
   }
 
   /**
@@ -308,7 +329,7 @@ export class GamificationService {
       type: entry.type,
       points: entry.points,
       occurredAt: entry.occurredAt.toISOString(),
-      subject: entry.reservation?.occurrence.name ?? null,
+      subject: entry.reservation?.occurrence.name ?? entry.goal?.title ?? null,
       milestone: entry.milestone,
     };
   }

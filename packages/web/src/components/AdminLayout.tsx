@@ -11,7 +11,7 @@ export function AdminLayout() {
   return (
     <div style={{ display: "flex", flexGrow: 1, minHeight: 0 }}>
       <AppMenu />
-      <main className="fb-admin-content" style={{ flexGrow: 1, minWidth: 0, padding: "32px 40px", overflow: "auto" }}>
+      <main className="fb-admin-content" style={{ flexGrow: 1, minWidth: 0, overflow: "auto" }}>
         <Outlet />
       </main>
     </div>

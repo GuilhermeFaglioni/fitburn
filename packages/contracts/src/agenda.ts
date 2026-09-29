@@ -18,7 +18,11 @@ export const occurrenceStatusSchema = z.enum(
 export const localDateSchema = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida.")
-  .refine((value) => !Number.isNaN(Date.parse(`${value}T00:00:00Z`)), "Data inválida.");
+  // Ida e volta: "2026-02-31" viraria 3 de março, então não é um dia que existe.
+  .refine((value) => {
+    const parsed = new Date(`${value}T00:00:00Z`);
+    return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
+  }, "Data inválida.");
 
 export const localTimeSchema = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Horário inválido.");
 

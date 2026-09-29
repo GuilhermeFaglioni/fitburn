@@ -4,8 +4,6 @@ import {
   ErrorCode,
   ErrorStatus,
   PermissionScope,
-  SystemProfileName,
-  UserStatus,
   type Assignment,
   type AssignmentOptions,
   type AssignmentsQuery,
@@ -15,6 +13,7 @@ import { PrismaService } from "../prisma/prisma.service.js";
 import { DomainError } from "../common/errors/domain-error.js";
 import { InstructorsService } from "../catalog/instructors.service.js";
 import { isUniqueViolation } from "../prisma/unique-violation.js";
+import { ACTIVE_CLIENT_WHERE } from "../permissions/client-scope.js";
 import type { ScopedRequester } from "../permissions/scoped-requester.js";
 
 const ASSIGNMENT_INCLUDE = {
@@ -25,8 +24,6 @@ const ASSIGNMENT_INCLUDE = {
 type AssignmentWithPeople = Prisma.TeacherClientAssignmentGetPayload<{
   include: typeof ASSIGNMENT_INCLUDE;
 }>;
-
-const CLIENT_PROFILE = { name: SystemProfileName.CLIENT, isSystem: true };
 
 /**
  * Atribuição manual de clientes a professores, feita pela administração. Junto
@@ -61,7 +58,7 @@ export class AssignmentsService {
     const [teachers, clients] = await Promise.all([
       this.instructors.list(),
       this.prisma.user.findMany({
-        where: { status: UserStatus.ACTIVE, profile: CLIENT_PROFILE },
+        where: ACTIVE_CLIENT_WHERE,
         select: { id: true, fullName: true, email: true },
         orderBy: { fullName: "asc" },
       }),
@@ -108,7 +105,7 @@ export class AssignmentsService {
   /** O cliente da atribuição precisa ser um cliente ativo (como o professor, um usuário de equipe ativo). */
   private async assertIsActiveClient(clientId: string): Promise<void> {
     const client = await this.prisma.user.findFirst({
-      where: { id: clientId, status: UserStatus.ACTIVE, profile: CLIENT_PROFILE },
+      where: { id: clientId, ...ACTIVE_CLIENT_WHERE },
       select: { id: true },
     });
     if (!client) {

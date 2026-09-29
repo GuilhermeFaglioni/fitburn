@@ -13,6 +13,7 @@ import { ReservationsModule } from "./reservations/reservations.module.js";
 import { AttendanceModule } from "./attendance/attendance.module.js";
 import { GamificationModule } from "./gamification/gamification.module.js";
 import { AssignmentsModule } from "./assignments/assignments.module.js";
+import { GoalsModule } from "./goals/goals.module.js";
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { AssignmentsModule } from "./assignments/assignments.module.js";
     AttendanceModule,
     GamificationModule,
     AssignmentsModule,
+    GoalsModule,
     AuthModule,
   ],
 })

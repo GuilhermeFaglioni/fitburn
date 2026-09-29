@@ -7,6 +7,7 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import {
   gymDateTimeToUtc,
   type GamificationSummary,
+  type GoalDetail,
   type PointsHistoryItem,
   type Ranking,
   type RankingEntry,
@@ -114,11 +115,16 @@ describe("Gamificação do cliente", () => {
     mockSuccessfulLogin("Cliente");
     rankingRequests.length = 0;
     mockRanking({ week: [], month: [] });
+    mockGoals([]);
   });
 
   afterEach(() => {
     vi.useRealTimers();
   });
+
+  function mockGoals(goals: GoalDetail[]) {
+    server.use(http.get("/api/goals/mine", () => HttpResponse.json(goals)));
+  }
 
   /** O ranking de cada período; registra qual período cada consulta pediu. */
   function mockRanking(entries: Record<RankingPeriodName, RankingEntry[]>) {
@@ -381,6 +387,67 @@ describe("Gamificação do cliente", () => {
 
     expect(await within(ranking).findByRole("alert")).toHaveTextContent(
       "Não foi possível carregar o ranking.",
+    );
+  });
+
+  it("mostra as metas do professor: a ativa com o prazo e a concluída", async () => {
+    mockSummary({ ...NO_STREAK, totalPoints: 25, history: [] });
+    mockGoals([
+      {
+        id: "g-1",
+        clientId: "c-1",
+        title: "Treinar 4x por semana",
+        description: "Sem faltar",
+        dueDate: "2026-05-30",
+        status: "ACTIVE",
+        concludedAt: null,
+        createdAt: "2026-05-01T12:00:00.000Z",
+      },
+      {
+        id: "g-2",
+        clientId: "c-1",
+        title: "Completar 12 aulas no mês",
+        description: null,
+        dueDate: null,
+        status: "COMPLETED",
+        concludedAt: "2026-05-04T21:00:00.000Z",
+        createdAt: "2026-05-01T12:00:00.000Z",
+      },
+    ]);
+
+    renderPage();
+
+    const goals = await screen.findByRole("region", { name: "Metas do professor" });
+    const items = await within(goals).findAllByRole("listitem");
+    expect(items).toHaveLength(2);
+    expect(within(items[0]).getByText("Treinar 4x por semana")).toBeInTheDocument();
+    expect(within(items[0]).getByText("Prazo: 30/05/2026")).toBeInTheDocument();
+    expect(within(items[0]).getByText("Sem faltar")).toBeInTheDocument();
+    expect(within(items[1]).getByText("Completar 12 aulas no mês")).toBeInTheDocument();
+    expect(within(items[1]).getByText("Concluída em 04/05/2026")).toBeInTheDocument();
+    expect(items[1]).toHaveClass("fb-gami__goal--done");
+  });
+
+  it("sem metas mostra o estado vazio", async () => {
+    mockSummary({ ...NO_STREAK, totalPoints: 0, history: [] });
+    renderPage();
+    const goals = await screen.findByRole("region", { name: "Metas do professor" });
+    expect(await within(goals).findByText("Nenhuma meta no momento.")).toBeInTheDocument();
+  });
+
+  it("avisa quando as metas não carregam", async () => {
+    mockSummary({ ...NO_STREAK, totalPoints: 0, history: [] });
+    server.use(
+      http.get("/api/goals/mine", () =>
+        HttpResponse.json({ code: "INTERNAL_ERROR", message: "Erro inesperado." }, { status: 500 }),
+      ),
+    );
+    renderPage();
+
+    const goals = await screen.findByRole("region", { name: "Metas do professor" });
+
+    expect(await within(goals).findByRole("alert")).toHaveTextContent(
+      "Não foi possível carregar as metas.",
     );
   });
 

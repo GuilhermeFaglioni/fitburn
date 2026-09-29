@@ -5,9 +5,21 @@ import {
   PermissionScope,
   ReservationStatus,
   SystemProfileName,
+  UserStatus,
 } from "@fitburn/contracts";
 import { DomainError } from "../common/errors/domain-error.js";
 import type { ScopedRequester } from "./scoped-requester.js";
+
+/** Usuário do perfil de sistema Cliente. */
+export const CLIENT_PROFILE_WHERE = {
+  profile: { name: SystemProfileName.CLIENT, isSystem: true },
+} satisfies Prisma.UserWhereInput;
+
+/** Cliente com cadastro ativo. */
+export const ACTIVE_CLIENT_WHERE = {
+  status: UserStatus.ACTIVE,
+  ...CLIENT_PROFILE_WHERE,
+} satisfies Prisma.UserWhereInput;
 
 /**
  * Filtro dos clientes que o escopo do perfil enxerga:
@@ -58,7 +70,7 @@ export async function assertClientInScope(
   requester: ScopedRequester,
 ): Promise<void> {
   const client = await prisma.user.findFirst({
-    where: { id: clientId, profile: { name: SystemProfileName.CLIENT, isSystem: true } },
+    where: { id: clientId, ...CLIENT_PROFILE_WHERE },
     select: { id: true },
   });
   if (!client) {

@@ -104,6 +104,10 @@ model User {
   teacherAssignments  TeacherClientAssignment[] @relation("TeacherAssignments")
   /// Professores a quem este usuário, cliente, foi atribuído.
   clientAssignments   TeacherClientAssignment[] @relation("ClientAssignments")
+  /// Metas individuais deste usuário, cliente.
+  goals               Goal[]                    @relation("ClientGoals")
+  /// Metas que este usuário, da equipe, criou.
+  createdGoals        Goal[]                    @relation("CreatedGoals")
 
   @@map("users")
 }
@@ -294,12 +298,17 @@ model PointsEntry {
   client   User   @relation(fields: [clientId], references: [id], onDelete: Restrict)
 
   /// Origem do lançamento quando vem de uma presença (presença, bônus de
-  /// streak e estorno); metas apontam para a meta (issue de metas).
+  /// streak e estorno); os de meta apontam para a meta (goalId).
   reservationId String?
   reservation   Reservation? @relation(fields: [reservationId], references: [id], onDelete: Restrict)
 
+  /// Origem de um lançamento GOAL: a meta concluída.
+  goalId String?
+  goal   Goal?   @relation(fields: [goalId], references: [id], onDelete: Restrict)
+
   @@index([clientId, occurredAt])
   @@index([reservationId])
+  @@index([goalId])
   @@map("points_entries")
 }
 
@@ -339,6 +348,38 @@ model TeacherClientAssignment {
   @@unique([teacherId, clientId])
   @@index([clientId])
   @@map("teacher_client_assignments")
+}
+
+enum GoalStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+/// Meta individual de um cliente, criada por quem é da equipe (em geral o
+/// professor): concluí-la lança os pontos da regra GOAL_POINTS no ledger. Uma
+/// meta concluída ou cancelada não muda mais.
+model Goal {
+  id          String     @id @default(uuid())
+  title       String
+  description String?
+  /// Prazo opcional: um dia local da academia, sem horário.
+  dueDate     DateTime?  @db.Date
+  status      GoalStatus @default(ACTIVE)
+  concludedAt DateTime?  @db.Timestamptz(3)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  clientId String
+  client   User   @relation("ClientGoals", fields: [clientId], references: [id], onDelete: Restrict)
+
+  createdById String
+  createdBy   User   @relation("CreatedGoals", fields: [createdById], references: [id], onDelete: Restrict)
+
+  pointsEntries PointsEntry[]
+
+  @@index([clientId, status])
+  @@map("goals")
 }
 
 model RefreshToken {

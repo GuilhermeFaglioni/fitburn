@@ -16,6 +16,7 @@ import { MyClassesPage } from "./pages/MyClassesPage";
 import { AttendancePage } from "./pages/AttendancePage";
 import { GamificationPage } from "./pages/GamificationPage";
 import { AssignmentsPage } from "./pages/AssignmentsPage";
+import { GoalsPage } from "./pages/GoalsPage";
 
 export default function App() {
   return (
@@ -62,6 +63,7 @@ export function AppRoutes() {
         <Route path="/templates-e-modalidades" element={<TemplatesModalidadesPage />} />
         <Route path="/minhas-aulas" element={<MyClassesPage />} />
         <Route path="/atribuicoes" element={<AssignmentsPage />} />
+        <Route path="/metas" element={<GoalsPage />} />
       </Route>
       {/* Presença é uma tela cheia (PresencaMobile.dc.html), sem a sidebar administrativa. */}
       <Route
