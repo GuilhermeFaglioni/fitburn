@@ -1,0 +1,227 @@
+/**
+ * Plano do cliente — PlanoDesktop.dc.html e PlanoMobile.dc.html no canvas de
+ * design (Claude Design), https://claude.ai/artifact/VncuMf9CffiWGUEQYywLVX.
+ * Mobile: cartão de 20px 18px e título de 19px; desktop (≥768px): cartão de
+ * 24px, no máximo 640px de largura, título de 24px.
+ */
+.fb-plan {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  font-family: var(--font-sans);
+  color: var(--color-ink-on-dark);
+}
+
+.fb-plan__title {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 700;
+}
+
+.fb-plan__alert {
+  margin: 0;
+  box-sizing: border-box;
+  padding: 10px 14px;
+  background: var(--color-danger-bg);
+  border: 1px solid var(--color-danger-border);
+  border-radius: 5px;
+  font-size: 13px;
+  color: var(--color-danger);
+}
+
+.fb-plan__card {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px 18px;
+  background: #1a1a1a;
+  border-radius: 5px;
+}
+
+.fb-plan__card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.fb-plan__card-name {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.fb-plan__badge {
+  flex-shrink: 0;
+  padding: 5px 10px;
+  border-radius: 5px;
+  background: rgba(237, 110, 52, 0.14);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--color-primary-orange);
+}
+
+.fb-plan__card-text {
+  margin: 0;
+  font-size: 13px;
+  line-height: 20px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.fb-plan__dates {
+  display: flex;
+  gap: 20px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.fb-plan__date {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.fb-plan__date-label {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.fb-plan__date-value {
+  font-size: 13px;
+}
+
+.fb-plan__empty {
+  box-sizing: border-box;
+  padding: 24px 18px;
+  background: #1a1a1a;
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  border-radius: 5px;
+  text-align: center;
+  font-size: 13px;
+  line-height: 19px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.fb-plan__history {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.fb-plan__history-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.fb-plan__none {
+  margin: 0;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.fb-plan__history-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.fb-plan__history-item {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 5px;
+}
+
+.fb-plan__history-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.fb-plan__history-name {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.fb-plan__history-dates {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.fb-plan__history-status {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.fb-plan__admin-history {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fb-plan__admin-history-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* Consulta da administração (casca clara): o mesmo item, nas cores do painel. */
+.fb-plan__history-list--light .fb-plan__history-item {
+  border-color: #eeeeee;
+  padding: 10px 14px;
+}
+
+.fb-plan__history-list--light .fb-plan__history-name {
+  font-size: 13px;
+  color: var(--color-ink-on-light);
+}
+
+.fb-plan__history-list--light .fb-plan__history-dates,
+.fb-plan__history-list--light .fb-plan__history-status {
+  color: #8a8a8a;
+}
+
+@media (min-width: 768px) {
+  .fb-plan__title {
+    font-size: 24px;
+  }
+
+  .fb-plan__card,
+  .fb-plan__empty,
+  .fb-plan__history {
+    max-width: 640px;
+  }
+
+  .fb-plan__card {
+    padding: 24px;
+  }
+
+  .fb-plan__card-name {
+    font-size: 19px;
+  }
+
+  .fb-plan__dates {
+    gap: 32px;
+    padding-top: 12px;
+  }
+
+  .fb-plan__date-value {
+    font-size: 14px;
+  }
+
+  .fb-plan__empty {
+    padding: 24px;
+    text-align: left;
+  }
+}

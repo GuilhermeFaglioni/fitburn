@@ -12,3 +12,5 @@ export * from "./attendance.js";
 export * from "./gamification.js";
 export * from "./assignments.js";
 export * from "./goals.js";
+export * from "./plans.js";
+export * from "./workout-sheets.js";

@@ -108,6 +108,12 @@ model User {
   goals               Goal[]                    @relation("ClientGoals")
   /// Metas que este usuário, da equipe, criou.
   createdGoals        Goal[]                    @relation("CreatedGoals")
+  /// Planos atribuídos a este usuário, cliente (o ativo e o histórico).
+  planAssignments     PlanAssignment[]
+  /// Fichas de treino deste usuário, cliente.
+  workoutSheets       WorkoutSheet[]            @relation("ClientWorkoutSheets")
+  /// Fichas de treino que este usuário, da equipe, montou.
+  authoredWorkoutSheets WorkoutSheet[]          @relation("AuthoredWorkoutSheets")
 
   @@map("users")
 }
@@ -380,6 +386,99 @@ model Goal {
 
   @@index([clientId, status])
   @@map("goals")
+}
+
+/// Plano do catálogo (informativo no MVP: não bloqueia reserva nem tem preço).
+/// Um plano inativo não pode ser atribuído, mas as atribuições dele seguem.
+model Plan {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  assignments PlanAssignment[]
+
+  @@map("plans")
+}
+
+enum PlanAssignmentStatus {
+  ACTIVE
+  ENDED
+}
+
+/// Atribuição de um plano a um cliente, com datas de início e fim. Um cliente
+/// tem no máximo uma atribuição ATIVA: garantido pelo índice único parcial
+/// "plan_assignments_client_active_key" (clientId) WHERE status = 'ACTIVE',
+/// criado à mão na migration (o Prisma não modela índice parcial). Atribuir um
+/// plano novo encerra a ativa anterior na mesma transação.
+model PlanAssignment {
+  id        String               @id @default(uuid())
+  /// Dias locais da academia, sem horário.
+  startDate DateTime             @db.Date
+  endDate   DateTime             @db.Date
+  status    PlanAssignmentStatus @default(ACTIVE)
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+
+  planId String
+  plan   Plan   @relation(fields: [planId], references: [id], onDelete: Restrict)
+
+  clientId String
+  client   User   @relation(fields: [clientId], references: [id], onDelete: Restrict)
+
+  @@index([clientId, status])
+  @@index([planId, status])
+  @@map("plan_assignments")
+}
+
+enum WorkoutSheetStatus {
+  ACTIVE
+  COMPLETED
+  ARCHIVED
+}
+
+/// Ficha de treino de um cliente, montada pela equipe (em geral o professor).
+/// Um cliente pode ter várias, inclusive várias ativas; o cliente só lê.
+model WorkoutSheet {
+  id        String             @id @default(uuid())
+  title     String
+  notes     String?
+  status    WorkoutSheetStatus @default(ACTIVE)
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  clientId String
+  client   User   @relation("ClientWorkoutSheets", fields: [clientId], references: [id], onDelete: Restrict)
+
+  authorId String
+  author   User   @relation("AuthoredWorkoutSheets", fields: [authorId], references: [id], onDelete: Restrict)
+
+  exercises WorkoutExercise[]
+
+  @@index([clientId, status])
+  @@map("workout_sheets")
+}
+
+/// Exercício de uma ficha, em texto livre; `position` (0, 1, 2...) é a ordem na
+/// ficha. Os campos além do nome são opcionais e livres ("4", "40kg", "45s").
+model WorkoutExercise {
+  id       String  @id @default(uuid())
+  position Int
+  name     String
+  sets     String?
+  reps     String?
+  load     String?
+  duration String?
+  distance String?
+  notes    String?
+
+  sheetId String
+  sheet   WorkoutSheet @relation(fields: [sheetId], references: [id], onDelete: Cascade)
+
+  @@unique([sheetId, position])
+  @@map("workout_exercises")
 }
 
 model RefreshToken {

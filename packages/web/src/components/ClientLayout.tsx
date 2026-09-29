@@ -32,14 +32,46 @@ function AgendaIcon({ color }: { color: string }) {
   );
 }
 
+function PlanIcon({ color }: { color: string }) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <rect x="2.5" y="5" width="15" height="10" rx="1.5" stroke={color} strokeWidth="1.4" />
+      <path d="M2.5 8.3H17.5" stroke={color} strokeWidth="1.4" />
+    </svg>
+  );
+}
+
+function WorkoutIcon({ color }: { color: string }) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path d="M4 6H16M4 10H16M4 14H12" stroke={color} strokeWidth="1.4" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function ProfileIcon({ color }: { color: string }) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <circle cx="10" cy="7" r="3" stroke={color} strokeWidth="1.4" />
+      <path
+        d="M3.5 17C4.5 13.5 7 12 10 12C13 12 15.5 13.5 16.5 17"
+        stroke={color}
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 const ACTIVE = "#ed6e34";
 const INACTIVE = "rgba(255,255,255,0.65)";
 
-// Só as telas do cliente que já existem; Plano, Ficha de treino e Perfil
-// entram quando suas fases forem implementadas (Fase 6).
 const ITEMS = [
   { to: "/", label: "Home", Icon: HomeIcon },
   { to: "/agenda", label: "Agenda", Icon: AgendaIcon },
+  { to: "/plano", label: "Plano", Icon: PlanIcon },
+  { to: "/ficha-treino", label: "Treino", Icon: WorkoutIcon },
+  { to: "/perfil", label: "Perfil", Icon: ProfileIcon },
 ];
 
 /** Casca do cliente: sidebar no desktop e barra inferior no mobile (AgendaDesktop/AgendaMobile). */
@@ -56,7 +88,7 @@ export function ClientLayout() {
               <NavLink
                 key={to}
                 to={to}
-                end
+                end={to === "/"}
                 className={({ isActive }) => `fb-client__nav-item${isActive ? " active" : ""}`}
               >
                 {({ isActive }) => (
@@ -83,7 +115,7 @@ export function ClientLayout() {
           <NavLink
             key={to}
             to={to}
-            end
+            end={to === "/"}
             className={({ isActive }) => `fb-client__tab${isActive ? " active" : ""}`}
           >
             {({ isActive }) => (
@@ -94,14 +126,6 @@ export function ClientLayout() {
             )}
           </NavLink>
         ))}
-        <button
-          type="button"
-          className="fb-client__tab"
-          style={{ background: "none", border: "none", fontFamily: "inherit", cursor: "pointer" }}
-          onClick={() => void logout()}
-        >
-          Sair
-        </button>
       </nav>
     </div>
   );

@@ -89,3 +89,21 @@ export async function assertClientInScope(
     );
   }
 }
+
+/** O cliente precisa existir, ser cliente e estar ativo (400 se não for). */
+export async function assertIsActiveClient(
+  prisma: Pick<PrismaClient, "user">,
+  clientId: string,
+): Promise<void> {
+  const client = await prisma.user.findFirst({
+    where: { id: clientId, ...ACTIVE_CLIENT_WHERE },
+    select: { id: true },
+  });
+  if (!client) {
+    throw new DomainError(
+      ErrorCode.VALIDATION_ERROR,
+      "O cliente precisa ser um cliente ativo.",
+      ErrorStatus.VALIDATION,
+    );
+  }
+}

@@ -32,6 +32,8 @@ export const ADMIN_MENU_ITEMS: AdminMenuItem[] = [
   },
   { modules: [Module.OCORRENCIAS], label: "Agenda", to: "/agenda-administrativa" },
   { modules: [Module.PRESENCA], label: "Minhas aulas", to: "/minhas-aulas" },
+  { modules: [Module.PLANOS], label: "Planos", to: "/planos" },
+  { modules: [Module.FICHAS_DE_TREINO], label: "Fichas de treino", to: "/fichas" },
   { modules: [Module.GAMIFICACAO], label: "Metas", to: "/metas" },
   {
     modules: [Module.CLIENTES],
@@ -48,7 +50,10 @@ export const ADMIN_MENU_ITEMS: AdminMenuItem[] = [
 ];
 
 /** Telas do cliente com uma equivalente na área administrativa. */
-const ADMIN_EQUIVALENT: Record<string, string> = { "/agenda": "/agenda-administrativa" };
+const ADMIN_EQUIVALENT: Record<string, string> = {
+  "/agenda": "/agenda-administrativa",
+  "/ficha-treino": "/fichas",
+};
 
 function canAccess(user: CurrentUser, item: AdminMenuItem): boolean {
   const action = item.action ?? PermissionAction.VIEW;

@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
   addDays,
@@ -92,7 +93,19 @@ export function ClientAgendaPage() {
   const [selectedDay, setSelectedDay] = useState(today);
   const [openItem, setOpenItem] = useState<ClientAgendaItem | null>(null);
   const [tab, setTab] = useState<AgendaTab>("upcoming");
-  const [rescheduling, setRescheduling] = useState<Rescheduling | null>(null);
+  // A Home leva à agenda já em remarcação (state.rescheduling).
+  // O state é consumido uma vez e limpo, para não reabrir a remarcação em back/reload.
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [rescheduling, setRescheduling] = useState<Rescheduling | null>(
+    () => (location.state as { rescheduling?: Rescheduling } | null)?.rescheduling ?? null,
+  );
+  const hasRouteRescheduling =
+    (location.state as { rescheduling?: Rescheduling } | null)?.rescheduling !== undefined;
+
+  useEffect(() => {
+    if (hasRouteRescheduling) navigate(location.pathname + location.search, { replace: true });
+  }, [hasRouteRescheduling, navigate, location.pathname, location.search]);
 
   const weekEnd = addDays(weekStart, 6);
   const agendaQuery = useQuery({

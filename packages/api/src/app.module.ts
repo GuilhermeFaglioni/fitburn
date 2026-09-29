@@ -14,6 +14,8 @@ import { AttendanceModule } from "./attendance/attendance.module.js";
 import { GamificationModule } from "./gamification/gamification.module.js";
 import { AssignmentsModule } from "./assignments/assignments.module.js";
 import { GoalsModule } from "./goals/goals.module.js";
+import { PlansModule } from "./plans/plans.module.js";
+import { WorkoutSheetsModule } from "./workout-sheets/workout-sheets.module.js";
 
 @Module({
   imports: [
@@ -31,6 +33,8 @@ import { GoalsModule } from "./goals/goals.module.js";
     GamificationModule,
     AssignmentsModule,
     GoalsModule,
+    PlansModule,
+    WorkoutSheetsModule,
     AuthModule,
   ],
 })

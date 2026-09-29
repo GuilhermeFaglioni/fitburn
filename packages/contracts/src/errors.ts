@@ -33,6 +33,7 @@ export const ErrorCode = {
   CLIENT_ALREADY_ASSIGNED: "CLIENT_ALREADY_ASSIGNED",
   GOAL_ALREADY_CONCLUDED: "GOAL_ALREADY_CONCLUDED",
   GOAL_NOT_ACTIVE: "GOAL_NOT_ACTIVE",
+  PLAN_INACTIVE: "PLAN_INACTIVE",
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];
