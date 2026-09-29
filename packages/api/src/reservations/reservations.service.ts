@@ -294,6 +294,14 @@ export class ReservationsService {
 
   private async assertClientActive(db: Pick<Tx, "user">, clientId: string): Promise<void> {
     const client = await db.user.findUnique({ where: { id: clientId }, select: { status: true } });
+    // Excluído (anonimizado) não tem volta: mensagem própria, sem sugerir reativar.
+    if (client?.status === UserStatus.DELETED) {
+      throw new DomainError(
+        ErrorCode.USER_ALREADY_DELETED,
+        "O cadastro deste cliente foi excluído. Não é possível reservar em nome dele.",
+        ErrorStatus.CONFLICT,
+      );
+    }
     if (client?.status !== UserStatus.ACTIVE) {
       throw new DomainError(
         ErrorCode.USER_INACTIVE,

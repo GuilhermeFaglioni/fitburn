@@ -10,12 +10,18 @@ import {
   type AdminReservationsQuery,
   type CreateAdminReservationRequest,
   type RescheduleReservationRequest,
+  type ReservationClientOption,
+  type ReservationClientsQuery,
   type ReservationActor,
   type ReservationPreview,
   type ReservationPreviewQuery,
 } from "@fitburn/contracts";
 import { DomainError } from "../common/errors/domain-error.js";
-import { assertClientInScope, clientScopeFilter } from "../permissions/client-scope.js";
+import {
+  ACTIVE_CLIENT_WHERE,
+  assertClientInScope,
+  clientScopeFilter,
+} from "../permissions/client-scope.js";
 import type { ScopedRequester } from "../permissions/scoped-requester.js";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { DETAIL_INCLUDE, toReservationDetail } from "./reservation-detail.js";
@@ -25,7 +31,7 @@ const ACTOR_SELECT = { id: true, fullName: true } as const;
 
 const ADMIN_INCLUDE = {
   ...DETAIL_INCLUDE,
-  client: { select: { id: true, fullName: true, email: true } },
+  client: { select: { id: true, fullName: true, email: true, status: true } },
   createdBy: { select: ACTOR_SELECT },
   cancelledBy: { select: ACTOR_SELECT },
 } satisfies Prisma.ReservationInclude;
@@ -67,6 +73,27 @@ export class AdminReservationsService {
       orderBy: [{ occurrence: { startsAt: "desc" } }, { createdAt: "asc" }, { id: "asc" }],
     });
     return reservations.map(toAdminDetail);
+  }
+
+  /** Clientes ativos no escopo de quem pede, para escolher em nome de quem reservar. */
+  async searchClients(
+    query: ReservationClientsQuery,
+    requester: ScopedRequester,
+  ): Promise<ReservationClientOption[]> {
+    const contains = query.search
+      ? ({ contains: query.search, mode: "insensitive" } as const)
+      : undefined;
+    return this.prisma.user.findMany({
+      where: {
+        AND: [
+          ACTIVE_CLIENT_WHERE,
+          clientScopeFilter(requester),
+          ...(contains ? [{ OR: [{ fullName: contains }, { email: contains }] }] : []),
+        ],
+      },
+      select: { id: true, fullName: true, email: true },
+      orderBy: [{ fullName: "asc" }, { id: "asc" }],
+    });
   }
 
   async preview(

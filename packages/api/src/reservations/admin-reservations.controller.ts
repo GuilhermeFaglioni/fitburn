@@ -15,12 +15,15 @@ import {
   createAdminReservationRequestSchema,
   Module,
   PermissionAction,
+  reservationClientsQuerySchema,
   rescheduleReservationRequestSchema,
   reservationPreviewQuerySchema,
   type AdminReservationDetail,
   type AdminReservationsQuery,
   type CreateAdminReservationRequest,
   type RescheduleReservationRequest,
+  type ReservationClientOption,
+  type ReservationClientsQuery,
   type ReservationPreview,
   type ReservationPreviewQuery,
 } from "@fitburn/contracts";
@@ -49,6 +52,16 @@ export class AdminReservationsController {
     @Req() req: AuthenticatedRequest,
   ): Promise<AdminReservationDetail[]> {
     return this.adminReservationsService.list(query, requesterOf(req));
+  }
+
+  /** Clientes ativos para o seletor de quem reservar: só precisa de Reservas, não de Clientes. */
+  @RequirePermission(Module.RESERVAS, PermissionAction.VIEW)
+  @Get("clients")
+  clients(
+    @Query(new ZodValidationPipe(reservationClientsQuerySchema)) query: ReservationClientsQuery,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<ReservationClientOption[]> {
+    return this.adminReservationsService.searchClients(query, requesterOf(req));
   }
 
   @RequirePermission(Module.RESERVAS, PermissionAction.VIEW)

@@ -181,6 +181,18 @@ describe("Exclusão com anonimização (HTTP)", () => {
       expect(created.body.email).toBe(ana.user.email);
     });
 
+    it("o token de um cliente excluído deixa de valer também nas rotas só com autenticação", async () => {
+      const admin = await createAdmin();
+      const ana = await createClient("ana");
+      expect((await getJson(ana.token, "/reservations")).status).toBe(200);
+
+      await deleteClient(admin.token, ana.user.id);
+
+      for (const path of ["/reservations", "/agenda", "/me", "/auth/me"]) {
+        expect((await getJson(ana.token, path)).status, path).toBe(401);
+      }
+    });
+
     it("excluir de novo devolve USER_ALREADY_DELETED e não mexe no registro", async () => {
       const admin = await createAdmin();
       const ana = await createClient("ana");
@@ -287,6 +299,82 @@ describe("Exclusão com anonimização (HTTP)", () => {
       expect((await deleteUser(admin.token, "00000000-0000-0000-0000-000000000000")).status).toBe(
         404,
       );
+    });
+  });
+
+  describe("Último administrador", () => {
+    const secondAdmin = () => signIn("admin2", adminProfileId);
+
+    it("recusa excluir o único administrador ativo, mesmo por outra pessoa com permissão", async () => {
+      const admin = await createAdmin();
+      const rafael = await createTeacher("rafael");
+      await grantModuleAccess({
+        profileId: teacherProfileId,
+        module: "USUARIOS",
+        actions: ["VIEW", "EDIT", "DELETE"],
+        scope: "ALL",
+      });
+
+      const response = await deleteUser(rafael.token, admin.user.id);
+
+      expect(response.status).toBe(400);
+      expect(response.body.code).toBe("VALIDATION_ERROR");
+      expect(response.body.message).toMatch(/último administrador/i);
+      expect(
+        (await testPrisma.user.findUniqueOrThrow({ where: { id: admin.user.id } })).status,
+      ).toBe("ACTIVE");
+    });
+
+    it("com dois administradores ativos exclui um; o que sobrar não pode ser excluído", async () => {
+      const admin = await createAdmin();
+      const other = await secondAdmin();
+
+      expect((await deleteUser(admin.token, other.user.id)).status).toBe(200);
+      const rafael = await createTeacher("rafael");
+      await grantModuleAccess({
+        profileId: teacherProfileId,
+        module: "USUARIOS",
+        actions: ["VIEW", "EDIT", "DELETE"],
+        scope: "ALL",
+      });
+      const last = await deleteUser(rafael.token, admin.user.id);
+
+      expect(last.status).toBe(400);
+    });
+
+    it("um administrador inativo não conta: excluir o único ativo é recusado", async () => {
+      const admin = await createAdmin();
+      const other = await secondAdmin();
+      await testPrisma.user.update({ where: { id: other.user.id }, data: { status: "INACTIVE" } });
+      const rafael = await createTeacher("rafael");
+      await grantModuleAccess({
+        profileId: teacherProfileId,
+        module: "USUARIOS",
+        actions: ["VIEW", "EDIT", "DELETE"],
+        scope: "ALL",
+      });
+
+      expect((await deleteUser(rafael.token, admin.user.id)).status).toBe(400);
+    });
+
+    it("dois administradores excluindo um ao outro ao mesmo tempo: só um cai, sempre sobra um", async () => {
+      const admin = await createAdmin();
+      const other = await secondAdmin();
+
+      const responses = await Promise.all([
+        deleteUser(admin.token, other.user.id),
+        deleteUser(other.token, admin.user.id),
+      ]);
+
+      // A que perde recebe 400 (último administrador) ou 401, se o vencedor já a
+      // excluiu antes de o token dela ser conferido; nunca 200 nem 500.
+      expect(responses.filter((r) => r.status === 200)).toHaveLength(1);
+      expect(responses.filter((r) => r.status === 400 || r.status === 401)).toHaveLength(1);
+      expect(
+        await testPrisma.user.count({
+          where: { profileId: adminProfileId, status: "ACTIVE" },
+        }),
+      ).toBe(1);
     });
   });
 
