@@ -57,3 +57,9 @@ export async function setClientActive(id: string, active: boolean): Promise<User
   });
   return userDetailSchema.parse(await parseOrThrow(response));
 }
+
+/** Exclusão com anonimização (irreversível). */
+export async function deleteClientRecord(id: string): Promise<UserDetail> {
+  const response = await authFetch(`/api/clients/${id}`, { method: "DELETE" });
+  return userDetailSchema.parse(await parseOrThrow(response));
+}

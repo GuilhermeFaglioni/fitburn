@@ -20,7 +20,11 @@ import { occurrenceScopeFilter } from "../agenda/occurrence-scope.js";
 import { GamificationService } from "../gamification/gamification.service.js";
 import { rankingWindow } from "../gamification/ranking.js";
 import { currentStreak } from "../gamification/streak.js";
-import { ACTIVE_CLIENT_WHERE, clientScopeFilter } from "../permissions/client-scope.js";
+import {
+  ACTIVE_CLIENT_WHERE,
+  clientScopeFilter,
+  HISTORICAL_CLIENT_WHERE,
+} from "../permissions/client-scope.js";
 import { PermissionsService } from "../permissions/permissions.service.js";
 import type { ScopedRequester } from "../permissions/scoped-requester.js";
 import { PrismaService } from "../prisma/prisma.service.js";
@@ -143,6 +147,11 @@ export class DashboardService {
     const clientWhere: Prisma.UserWhereInput = {
       AND: [ACTIVE_CLIENT_WHERE, clientScopeFilter(viewer)],
     };
+    // Pontos e presenças do período são histórico: continuam contando para
+    // quem foi excluído. Streak e topo do ranking são do momento: só ativos.
+    const historicalWhere: Prisma.UserWhereInput = {
+      AND: [HISTORICAL_CLIENT_WHERE, clientScopeFilter(viewer)],
+    };
     const occurredAt = {
       gte: gymDateTimeToUtc(window.from, "00:00"),
       lt: gymDateTimeToUtc(addDays(window.to, 1), "00:00"),
@@ -150,7 +159,7 @@ export class DashboardService {
 
     const [points, attendances, streakHistory, standings] = await Promise.all([
       this.prisma.pointsEntry.aggregate({
-        where: { occurredAt, client: clientWhere },
+        where: { occurredAt, client: historicalWhere },
         _sum: { points: true },
       }),
       this.prisma.pointsEntry.count({
@@ -158,7 +167,7 @@ export class DashboardService {
           occurredAt,
           type: PointsEntryType.ATTENDANCE,
           reversedBy: null,
-          client: clientWhere,
+          client: historicalWhere,
         },
       }),
       this.prisma.reservation.findMany({

@@ -223,6 +223,81 @@ describe("Clientes (equipe)", () => {
       await waitFor(() => expect(calls).toEqual(["c-marina/deactivate", "c-bruno/reactivate"]));
     });
 
+    describe("Exclusão com anonimização", () => {
+      function mockDeletion(calls: string[], remaining: ClientListItem[] = CLIENTS) {
+        let current = remaining;
+        server.use(
+          http.get("/api/clients", () => HttpResponse.json(current)),
+          http.delete("/api/clients/:id", ({ params }) => {
+            calls.push(String(params.id));
+            current = current.filter((client) => client.id !== params.id);
+            return HttpResponse.json({
+              ...OVERVIEW.client,
+              id: params.id,
+              fullName: "Usuário excluído",
+              status: "DELETED",
+            });
+          }),
+        );
+      }
+
+      it("pede confirmação explicando que a anonimização é irreversível, sem excluir antes disso", async () => {
+        const user = userEvent.setup();
+        const calls: string[] = [];
+        mockDeletion(calls);
+        renderAt("/clientes");
+
+        await user.click(await screen.findByRole("button", { name: "Excluir Marina Souza" }));
+
+        const dialog = screen.getByRole("dialog", { name: "Excluir cliente?" });
+        expect(dialog).toHaveTextContent("Marina Souza");
+        expect(dialog).toHaveTextContent(/anonimizados/i);
+        expect(dialog).toHaveTextContent(/não pode ser desfeita/i);
+        expect(dialog).toHaveTextContent(/histórico.*mantido/i);
+        expect(calls).toEqual([]);
+
+        await user.click(within(dialog).getByRole("button", { name: "Cancelar" }));
+        expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+        expect(calls).toEqual([]);
+      });
+
+      it("ao confirmar, exclui o cliente e ele some da lista", async () => {
+        const user = userEvent.setup();
+        const calls: string[] = [];
+        mockDeletion(calls);
+        renderAt("/clientes");
+
+        await user.click(await screen.findByRole("button", { name: "Excluir Marina Souza" }));
+        await user.click(screen.getByRole("button", { name: "Excluir e anonimizar" }));
+
+        await waitFor(() => expect(calls).toEqual(["c-marina"]));
+        await waitFor(() => expect(screen.queryByText("Marina Souza")).not.toBeInTheDocument());
+        expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+        expect(screen.getByText("Bruno Lima")).toBeInTheDocument();
+      });
+
+      it("mostra a recusa da API sem fechar a confirmação", async () => {
+        const user = userEvent.setup();
+        server.use(
+          http.delete("/api/clients/:id", () =>
+            HttpResponse.json(
+              { code: "USER_ALREADY_DELETED", message: "Este usuário já foi excluído." },
+              { status: 409 },
+            ),
+          ),
+        );
+        renderAt("/clientes");
+
+        await user.click(await screen.findByRole("button", { name: "Excluir Marina Souza" }));
+        await user.click(screen.getByRole("button", { name: "Excluir e anonimizar" }));
+
+        const dialog = screen.getByRole("dialog");
+        expect(await within(dialog).findByRole("alert")).toHaveTextContent(
+          "Este usuário já foi excluído.",
+        );
+      });
+    });
+
     it("cadastra um cliente pelo modal", async () => {
       const user = userEvent.setup();
       let body: unknown;
@@ -295,6 +370,53 @@ describe("Clientes (equipe)", () => {
 
       await waitFor(() => expect(body).toMatchObject({ phone: "11955554444" }));
       expect(await screen.findByRole("button", { name: "Editar dados" })).toBeInTheDocument();
+    });
+
+    it("exclui o cliente a partir do detalhe, com confirmação, e volta para a lista", async () => {
+      const user = userEvent.setup();
+      const calls: string[] = [];
+      server.use(
+        http.delete("/api/clients/:id", ({ params }) => {
+          calls.push(String(params.id));
+          return HttpResponse.json({ ...OVERVIEW.client, fullName: "Usuário excluído", status: "DELETED" });
+        }),
+      );
+      renderAt("/clientes/c-marina");
+
+      await user.click(await screen.findByRole("button", { name: "Excluir cliente" }));
+      const dialog = screen.getByRole("dialog", { name: "Excluir cliente?" });
+      expect(dialog).toHaveTextContent(/não pode ser desfeita/i);
+      await user.click(within(dialog).getByRole("button", { name: "Excluir e anonimizar" }));
+
+      await waitFor(() => expect(calls).toEqual(["c-marina"]));
+      expect(await screen.findByRole("heading", { name: "Clientes" })).toBeInTheDocument();
+      expect(await screen.findByText("Bruno Lima")).toBeInTheDocument();
+    });
+
+    it("um cliente excluído aparece como excluído e sem ações", async () => {
+      server.use(
+        http.get("/api/clients/:id", () =>
+          HttpResponse.json({
+            ...OVERVIEW,
+            client: {
+              ...OVERVIEW.client,
+              fullName: "Usuário excluído",
+              email: "excluido-c-marina@anonimizado.invalid",
+              phone: null,
+              birthDate: null,
+              document: null,
+              address: null,
+              status: "DELETED",
+            },
+          }),
+        ),
+      );
+      renderAt("/clientes/c-marina");
+
+      expect(await screen.findByText("EXCLUÍDO")).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Excluir cliente" })).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Desativar cliente" })).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Editar dados" })).not.toBeInTheDocument();
     });
 
     it("explica quando o cliente está fora do escopo", async () => {

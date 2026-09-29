@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, Req, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuards } from "@nestjs/common";
 import {
   clientsQuerySchema,
   createClientRequestSchema,
@@ -62,6 +62,12 @@ export class ClientsController {
   @Post(":id/deactivate")
   deactivate(@Param("id") id: string, @Req() req: AuthenticatedRequest): Promise<UserDetail> {
     return this.clientsService.deactivate(id, requesterOf(req));
+  }
+
+  @RequirePermission(Module.CLIENTES, PermissionAction.DELETE)
+  @Delete(":id")
+  remove(@Param("id") id: string, @Req() req: AuthenticatedRequest): Promise<UserDetail> {
+    return this.clientsService.remove(id, requesterOf(req));
   }
 
   @RequirePermission(Module.CLIENTES, PermissionAction.EDIT)

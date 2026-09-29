@@ -33,3 +33,9 @@ export async function reactivateUser(id: string): Promise<UserDetail> {
   const response = await authFetch(`/api/users/${id}/reactivate`, { method: "POST" });
   return userDetailSchema.parse(await parseOrThrow(response));
 }
+
+/** Exclusão com anonimização (irreversível) de qualquer usuário. */
+export async function deleteUser(id: string): Promise<UserDetail> {
+  const response = await authFetch(`/api/users/${id}`, { method: "DELETE" });
+  return userDetailSchema.parse(await parseOrThrow(response));
+}

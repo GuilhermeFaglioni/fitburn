@@ -9,6 +9,9 @@ datasource db {
 enum UserStatus {
   ACTIVE
   INACTIVE
+  /// Anonimizado: dados pessoais neutros, sem acesso, histórico mantido.
+  /// Distinto de INACTIVE, que é reversível.
+  DELETED
 }
 
 enum Module {
