@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import type { Goal, Prisma } from "@prisma/client";
 import {
+  dateOnlyToLocalDate,
   ErrorCode,
   ErrorStatus,
   GoalStatus,
@@ -187,7 +188,7 @@ export class GoalsService {
       clientId: goal.clientId,
       title: goal.title,
       description: goal.description,
-      dueDate: goal.dueDate?.toISOString().slice(0, 10) ?? null,
+      dueDate: goal.dueDate ? dateOnlyToLocalDate(goal.dueDate) : null,
       status: goal.status,
       concludedAt: goal.concludedAt?.toISOString() ?? null,
       createdAt: goal.createdAt.toISOString(),

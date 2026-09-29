@@ -1,23 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-import { PlanAssignmentStatus, type PlanAssignment } from "@fitburn/contracts";
 import { formatLocalDate } from "../lib/agenda/format";
 import { getMyPlan } from "../lib/plans/api";
-
-function HistoryItem({ item }: { item: PlanAssignment }) {
-  return (
-    <li className="fb-plan__history-item">
-      <div className="fb-plan__history-info">
-        <span className="fb-plan__history-name">{item.plan.name}</span>
-        <span className="fb-plan__history-dates">
-          {formatLocalDate(item.startDate)} – {formatLocalDate(item.endDate)}
-        </span>
-      </div>
-      <span className="fb-plan__history-status">
-        {item.status === PlanAssignmentStatus.ACTIVE ? "ATIVO" : "ENCERRADO"}
-      </span>
-    </li>
-  );
-}
+import { PlanHistoryList } from "./plans/PlanHistoryList";
 
 /**
  * Plano (PlanoDesktop.dc.html / PlanoMobile.dc.html): o plano ativo do
@@ -75,11 +59,7 @@ export function PlanPage() {
           {plan.history.length === 0 ? (
             <p className="fb-plan__none">Nenhum plano anterior.</p>
           ) : (
-            <ul className="fb-plan__history-list">
-              {plan.history.map((item) => (
-                <HistoryItem key={item.id} item={item} />
-              ))}
-            </ul>
+            <PlanHistoryList items={plan.history} />
           )}
         </section>
       )}

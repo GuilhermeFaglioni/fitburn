@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Module, PermissionAction, PlanAssignmentStatus } from "@fitburn/contracts";
+import { Module, PermissionAction } from "@fitburn/contracts";
 import { BlockedAction } from "../../components/BlockedAction";
 import { formatLocalDate } from "../../lib/agenda/format";
 import { errorMessage } from "../../lib/auth/api";
 import { useAuth } from "../../lib/auth/AuthContext";
+import { PlanHistoryList } from "./PlanHistoryList";
 import { assignPlan, getPlanAssignmentOptions, listClientPlans } from "../../lib/plans/api";
 
 /**
@@ -13,13 +14,15 @@ import { assignPlan, getPlanAssignmentOptions, listClientPlans } from "../../lib
  * atribuição o encerra. Abaixo, o histórico de planos do cliente escolhido.
  * O artboard não tem as datas (o spec as pede na atribuição).
  */
+const EMPTY_FORM = { clientId: "", planId: "", startDate: "", endDate: "" };
+
 export function AssignTab() {
   const { can } = useAuth();
   const queryClient = useQueryClient();
-  const [clientId, setClientId] = useState("");
-  const [planId, setPlanId] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [form, setForm] = useState(EMPTY_FORM);
+  const { clientId, planId, startDate, endDate } = form;
+  const setField = (field: keyof typeof EMPTY_FORM, value: string) =>
+    setForm((current) => ({ ...current, [field]: value }));
   const [assignedTo, setAssignedTo] = useState<string | null>(null);
 
   const optionsQuery = useQuery({ queryKey: ["plan-options"], queryFn: getPlanAssignmentOptions });
@@ -37,9 +40,7 @@ export function AssignTab() {
     onMutate: () => setAssignedTo(null),
     onSuccess: async () => {
       setAssignedTo(client?.fullName ?? null);
-      setPlanId("");
-      setStartDate("");
-      setEndDate("");
+      setForm((current) => ({ ...EMPTY_FORM, clientId: current.clientId }));
       await queryClient.invalidateQueries({ queryKey: ["plans"] });
       await queryClient.invalidateQueries({ queryKey: ["plan-options"] });
     },
@@ -49,10 +50,7 @@ export function AssignTab() {
   const complete = clientId !== "" && planId !== "" && startDate !== "" && endDate !== "";
 
   function reset() {
-    setClientId("");
-    setPlanId("");
-    setStartDate("");
-    setEndDate("");
+    setForm(EMPTY_FORM);
     setAssignedTo(null);
     assignMutation.reset();
   }
@@ -70,7 +68,7 @@ export function AssignTab() {
           className="fb-field"
           value={clientId}
           onChange={(event) => {
-            setClientId(event.target.value);
+            setField("clientId", event.target.value);
             setAssignedTo(null);
             assignMutation.reset();
           }}
@@ -90,7 +88,7 @@ export function AssignTab() {
           id="assign-plan"
           className="fb-field"
           value={planId}
-          onChange={(event) => setPlanId(event.target.value)}
+          onChange={(event) => setField("planId", event.target.value)}
         >
           <option value="">Selecione um plano</option>
           {options?.plans.map((item) => (
@@ -109,7 +107,7 @@ export function AssignTab() {
             type="date"
             className="fb-field"
             value={startDate}
-            onChange={(event) => setStartDate(event.target.value)}
+            onChange={(event) => setField("startDate", event.target.value)}
           />
         </div>
         <div className="fb-modal__field">
@@ -119,7 +117,7 @@ export function AssignTab() {
             type="date"
             className="fb-field"
             value={endDate}
-            onChange={(event) => setEndDate(event.target.value)}
+            onChange={(event) => setField("endDate", event.target.value)}
           />
         </div>
       </div>
@@ -158,50 +156,11 @@ export function AssignTab() {
       </div>
 
       {client && historyQuery.isSuccess && historyQuery.data.length > 0 && (
-        <section
-          aria-labelledby="assign-history"
-          style={{ display: "flex", flexDirection: "column", gap: 8 }}
-        >
-          <h2 id="assign-history" style={{ margin: 0, fontSize: 14, fontWeight: 700 }}>
+        <section aria-labelledby="assign-history" className="fb-plan__admin-history">
+          <h2 id="assign-history" className="fb-plan__admin-history-title">
             Histórico de planos do cliente
           </h2>
-          <ul
-            style={{
-              margin: 0,
-              padding: 0,
-              listStyle: "none",
-              display: "flex",
-              flexDirection: "column",
-              gap: 8,
-            }}
-          >
-            {historyQuery.data.map((item) => (
-              <li
-                key={item.id}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: 10,
-                  padding: "10px 14px",
-                  border: "1px solid #eeeeee",
-                  borderRadius: 5,
-                }}
-              >
-                <span style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                  <span style={{ fontSize: 13, fontWeight: 500 }}>{item.plan.name}</span>
-                  <span style={{ fontSize: 12, color: "#8a8a8a" }}>
-                    {formatLocalDate(item.startDate)} – {formatLocalDate(item.endDate)}
-                  </span>
-                </span>
-                <span
-                  className={`fb-badge ${item.status === PlanAssignmentStatus.ACTIVE ? "fb-badge--active" : "fb-badge--inactive"}`}
-                >
-                  {item.status === PlanAssignmentStatus.ACTIVE ? "ATIVO" : "ENCERRADO"}
-                </span>
-              </li>
-            ))}
-          </ul>
+          <PlanHistoryList items={historyQuery.data} light />
         </section>
       )}
     </div>

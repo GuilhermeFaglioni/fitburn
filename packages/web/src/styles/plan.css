@@ -164,6 +164,34 @@
   color: rgba(255, 255, 255, 0.45);
 }
 
+.fb-plan__admin-history {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fb-plan__admin-history-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* Consulta da administração (casca clara): o mesmo item, nas cores do painel. */
+.fb-plan__history-list--light .fb-plan__history-item {
+  border-color: #eeeeee;
+  padding: 10px 14px;
+}
+
+.fb-plan__history-list--light .fb-plan__history-name {
+  font-size: 13px;
+  color: var(--color-ink-on-light);
+}
+
+.fb-plan__history-list--light .fb-plan__history-dates,
+.fb-plan__history-list--light .fb-plan__history-status {
+  color: #8a8a8a;
+}
+
 @media (min-width: 768px) {
   .fb-plan__title {
     font-size: 24px;

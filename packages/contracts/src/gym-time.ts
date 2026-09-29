@@ -101,6 +101,11 @@ export function daysBetween(from: string, to: string): number {
   );
 }
 
+/** O dia ("YYYY-MM-DD") de uma data guardada como DATE no banco (UTC 00h00). */
+export function dateOnlyToLocalDate(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
+
 /** Primeiro dia do mês da data local. */
 export function startOfMonth(date: string): string {
   return `${date.slice(0, 8)}01`;

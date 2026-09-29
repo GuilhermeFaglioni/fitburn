@@ -1,17 +1,12 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, Req, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Param, Patch, Post, Req, UseGuards } from "@nestjs/common";
 import {
-  assignPlanRequestSchema,
   createPlanRequestSchema,
   Module,
   PermissionAction,
-  planAssignmentsQuerySchema,
   updatePlanRequestSchema,
-  type AssignPlanRequest,
   type CreatePlanRequest,
   type MyPlan,
-  type PlanAssignment,
   type PlanAssignmentOptions,
-  type PlanAssignmentsQuery,
   type PlanDetail,
   type UpdatePlanRequest,
 } from "@fitburn/contracts";
@@ -75,30 +70,5 @@ export class PlansController {
   @Post(":id/deactivate")
   deactivate(@Param("id") id: string, @Req() req: AuthenticatedRequest): Promise<PlanDetail> {
     return this.plansService.setActive(id, false, requesterOf(req));
-  }
-}
-
-/** Atribuição de planos a clientes (administração). */
-@Controller("plan-assignments")
-@UseGuards(JwtAuthGuard, PermissionsGuard)
-export class PlanAssignmentsController {
-  constructor(private readonly plansService: PlansService) {}
-
-  @RequirePermission(Module.PLANOS, PermissionAction.VIEW)
-  @Get()
-  history(
-    @Query(new ZodValidationPipe(planAssignmentsQuerySchema)) query: PlanAssignmentsQuery,
-    @Req() req: AuthenticatedRequest,
-  ): Promise<PlanAssignment[]> {
-    return this.plansService.historyOf(query.clientId, requesterOf(req));
-  }
-
-  @RequirePermission(Module.PLANOS, PermissionAction.CREATE)
-  @Post()
-  assign(
-    @Body(new ZodValidationPipe(assignPlanRequestSchema)) body: AssignPlanRequest,
-    @Req() req: AuthenticatedRequest,
-  ): Promise<PlanAssignment> {
-    return this.plansService.assign(body, requesterOf(req));
   }
 }

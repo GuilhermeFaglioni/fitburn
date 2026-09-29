@@ -49,10 +49,7 @@ export class PermissionsService {
     return access?.actions.includes(action) ?? false;
   }
 
-  async getEffectiveScope(
-    profile: AccessProfile,
-    module: ModuleName,
-  ): Promise<PermissionScopeName> {
+  async getEffectiveScope(profile: AccessProfile, module: ModuleName): Promise<PermissionScopeName> {
     if (this.isSystemAdmin(profile)) return PermissionScope.ALL;
 
     const access = await this.prisma.profileModuleAccess.findUnique({
@@ -71,9 +68,7 @@ export class PermissionsService {
     }
     if (!profile.isActive) return [];
 
-    const rows = await this.prisma.profileModuleAccess.findMany({
-      where: { profileId: profile.id },
-    });
+    const rows = await this.prisma.profileModuleAccess.findMany({ where: { profileId: profile.id } });
     return rows.map((row) => ({
       module: row.module,
       actions: row.actions,
@@ -85,10 +80,7 @@ export class PermissionsService {
     return profile.isSystem && profile.name === SYSTEM_ADMIN_PROFILE_NAME;
   }
 
-  private enforceScopeFloor(
-    profile: AccessProfile,
-    scope: PermissionScopeName,
-  ): PermissionScopeName {
+  private enforceScopeFloor(profile: AccessProfile, scope: PermissionScopeName): PermissionScopeName {
     if (profile.isSystem && profile.name === SYSTEM_CLIENT_PROFILE_NAME) {
       return PermissionScope.OWN;
     }

@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import type { Plan, PlanAssignment as PlanAssignmentRow, Prisma } from "@prisma/client";
 import {
   addDays,
+  dateOnlyToLocalDate,
   ErrorCode,
   ErrorStatus,
   gymToday,
@@ -27,8 +28,6 @@ const ASSIGNMENT_INCLUDE = {
 type AssignmentWithPlan = Prisma.PlanAssignmentGetPayload<{ include: typeof ASSIGNMENT_INCLUDE }>;
 
 const FULL_SCOPE_MESSAGE = "Só quem tem acesso a todos os clientes gerencia planos.";
-
-const isoDay = (date: Date) => date.toISOString().slice(0, 10);
 
 /**
  * Planos: o catálogo mantido pela administração e as atribuições dele aos
@@ -116,17 +115,7 @@ export class PlansService {
     ]);
     return {
       plans,
-      clients: clients.map((client) => {
-        const current = client.planAssignments[0];
-        return {
-          id: client.id,
-          fullName: client.fullName,
-          email: client.email,
-          activePlan: current
-            ? { name: current.plan.name, endDate: isoDay(current.endDate) }
-            : null,
-        };
-      }),
+      clients: clients.map((client) => this.toClientOption(client)),
     };
   }
 
@@ -160,7 +149,7 @@ export class PlansService {
           where: { id: previous.id },
           data: {
             status: PlanAssignmentStatus.ENDED,
-            endDate: this.endedOn(previous, input.startDate),
+            endDate: this.endDateAfterReplacement(previous, input.startDate),
           },
         });
       }
@@ -211,9 +200,10 @@ export class PlansService {
    * Quando a atribuição encerrada passa a acabar: na véspera do plano novo, se
    * isso a encurta (e não a deixa acabar antes de começar); senão, como estava.
    */
-  private endedOn(previous: PlanAssignmentRow, newStartDate: string): Date {
+  private endDateAfterReplacement(previous: PlanAssignmentRow, newStartDate: string): Date {
     const eve = addDays(newStartDate, -1);
-    return eve < isoDay(previous.endDate) && eve >= isoDay(previous.startDate)
+    return eve < dateOnlyToLocalDate(previous.endDate) &&
+      eve >= dateOnlyToLocalDate(previous.startDate)
       ? new Date(eve)
       : previous.endDate;
   }
@@ -246,6 +236,23 @@ export class PlansService {
     return new DomainError(ErrorCode.NOT_FOUND, message, ErrorStatus.NOT_FOUND);
   }
 
+  private toClientOption(client: {
+    id: string;
+    fullName: string;
+    email: string;
+    planAssignments: Array<{ endDate: Date; plan: { name: string } }>;
+  }): PlanAssignmentOptions["clients"][number] {
+    const current = client.planAssignments[0];
+    return {
+      id: client.id,
+      fullName: client.fullName,
+      email: client.email,
+      activePlan: current
+        ? { name: current.plan.name, endDate: dateOnlyToLocalDate(current.endDate) }
+        : null,
+    };
+  }
+
   private toDetail(plan: Plan, activeClientCount: number): PlanDetail {
     return {
       id: plan.id,
@@ -257,11 +264,11 @@ export class PlansService {
   }
 
   private toAssignment(row: AssignmentWithPlan, today: string): PlanAssignment {
-    const endDate = isoDay(row.endDate);
+    const endDate = dateOnlyToLocalDate(row.endDate);
     return {
       id: row.id,
       plan: row.plan,
-      startDate: isoDay(row.startDate),
+      startDate: dateOnlyToLocalDate(row.startDate),
       endDate,
       status:
         row.status === PlanAssignmentStatus.ACTIVE && endDate >= today
