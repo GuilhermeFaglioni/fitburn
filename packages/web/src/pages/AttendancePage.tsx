@@ -13,6 +13,7 @@ import { ApiError } from "../lib/auth/api";
 import { getAttendanceRoster, markAttendance } from "../lib/attendance/api";
 import { formatClassDay, formatInstantHour } from "../lib/agenda/format";
 import { EmptyState, ErrorState, Feedback, LoadingState } from "../components/states";
+import { RequiresNetwork } from "../components/RequiresNetwork";
 
 function InfoIcon() {
   return (
@@ -204,24 +205,28 @@ export function AttendancePage() {
                       {pending && <span className="fb-att__pending">PENDENTE</span>}
                     </div>
                     <div className="fb-att__marks" role="group" aria-label={entry.client.fullName}>
-                      <button
-                        type="button"
-                        className="fb-seg-btn fb-seg-btn--present"
-                        aria-pressed={entry.status === AttendanceStatus.PRESENT}
-                        disabled={!started}
-                        onClick={() => mark(entry, AttendanceStatus.PRESENT)}
-                      >
-                        Presente
-                      </button>
-                      <button
-                        type="button"
-                        className="fb-seg-btn fb-seg-btn--absent"
-                        aria-pressed={entry.status === AttendanceStatus.ABSENT}
-                        disabled={!started}
-                        onClick={() => mark(entry, AttendanceStatus.ABSENT)}
-                      >
-                        Faltou
-                      </button>
+                      <RequiresNetwork>
+                        <button
+                          type="button"
+                          className="fb-seg-btn fb-seg-btn--present"
+                          aria-pressed={entry.status === AttendanceStatus.PRESENT}
+                          disabled={!started}
+                          onClick={() => mark(entry, AttendanceStatus.PRESENT)}
+                        >
+                          Presente
+                        </button>
+                      </RequiresNetwork>
+                      <RequiresNetwork>
+                        <button
+                          type="button"
+                          className="fb-seg-btn fb-seg-btn--absent"
+                          aria-pressed={entry.status === AttendanceStatus.ABSENT}
+                          disabled={!started}
+                          onClick={() => mark(entry, AttendanceStatus.ABSENT)}
+                        >
+                          Faltou
+                        </button>
+                      </RequiresNetwork>
                     </div>
                   </li>
                 );

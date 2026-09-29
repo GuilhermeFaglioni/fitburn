@@ -7,6 +7,7 @@ import { isClientUser } from "../lib/auth/areas";
 import { formatLocalDate } from "../lib/agenda/format";
 import { getMyProfile, updateMyProfile } from "../lib/profile/api";
 import { ErrorState, Feedback, LoadingState } from "../components/states";
+import { RequiresNetwork } from "../components/RequiresNetwork";
 
 interface FormState {
   fullName: string;
@@ -221,25 +222,27 @@ export function ProfilePage() {
         </>
       )}
 
-      <button type="button" className="fb-profile__logout" onClick={() => void logout()}>
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-          <path
-            d="M6 14H3.5C2.7 14 2 13.3 2 12.5V3.5C2 2.7 2.7 2 3.5 2H6"
-            stroke="currentColor"
-            strokeWidth="1.4"
-            strokeLinecap="round"
-          />
-          <path
-            d="M10.5 11L14 8L10.5 5"
-            stroke="currentColor"
-            strokeWidth="1.4"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <path d="M14 8H6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-        </svg>
-        Sair da conta
-      </button>
+      <RequiresNetwork>
+        <button type="button" className="fb-profile__logout" onClick={() => void logout()}>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path
+              d="M6 14H3.5C2.7 14 2 13.3 2 12.5V3.5C2 2.7 2.7 2 3.5 2H6"
+              stroke="currentColor"
+              strokeWidth="1.4"
+              strokeLinecap="round"
+            />
+            <path
+              d="M10.5 11L14 8L10.5 5"
+              stroke="currentColor"
+              strokeWidth="1.4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path d="M14 8H6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+          </svg>
+          Sair da conta
+        </button>
+      </RequiresNetwork>
     </div>
   );
 }

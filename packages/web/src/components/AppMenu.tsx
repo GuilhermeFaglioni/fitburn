@@ -3,6 +3,7 @@ import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "../lib/auth/AuthContext";
 import { visibleAdminMenuItems } from "../lib/auth/areas";
 import "./AppMenu.css";
+import { RequiresNetwork } from "./RequiresNetwork";
 
 /**
  * Navegação administrativa: barra lateral fixa no desktop; no mobile, uma barra
@@ -86,9 +87,11 @@ export function AppMenu() {
                 Minha conta
               </NavLink>
             </div>
-            <button type="button" className="app-menu__logout" onClick={() => void logout()}>
-              Sair
-            </button>
+            <RequiresNetwork>
+              <button type="button" className="app-menu__logout" onClick={() => void logout()}>
+                Sair
+              </button>
+            </RequiresNetwork>
           </div>
         )}
       </div>

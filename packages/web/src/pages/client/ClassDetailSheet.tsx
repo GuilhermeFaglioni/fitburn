@@ -10,6 +10,7 @@ import {
   createReservation,
   rescheduleReservation,
 } from "../../lib/reservations/api";
+import { RequiresNetwork } from "../../components/RequiresNetwork";
 
 /** Remarcação em andamento: a reserva original, enquanto o cliente escolhe a nova aula. */
 export interface Rescheduling {
@@ -252,14 +253,16 @@ export function ClassDetailSheet({
             >
               Voltar
             </button>
-            <button
-              type="button"
-              className="fb-sheet-btn fb-sheet-btn--danger"
-              disabled={pending}
-              onClick={() => cancelMutation.mutate(reservationId)}
-            >
-              Confirmar cancelamento
-            </button>
+            <RequiresNetwork>
+              <button
+                type="button"
+                className="fb-sheet-btn fb-sheet-btn--danger"
+                disabled={pending}
+                onClick={() => cancelMutation.mutate(reservationId)}
+              >
+                Confirmar cancelamento
+              </button>
+            </RequiresNetwork>
           </div>
         </div>
       );
@@ -306,26 +309,30 @@ export function ClassDetailSheet({
     if (rescheduling) {
       const originalId = rescheduling.reservationId;
       return (
-        <button
-          type="button"
-          className="fb-sheet-btn fb-sheet-btn--primary"
-          disabled={pending || detailQuery.isError}
-          onClick={() => rescheduleMutation.mutate(originalId)}
-        >
-          Remarcar para esta aula
-        </button>
+        <RequiresNetwork>
+          <button
+            type="button"
+            className="fb-sheet-btn fb-sheet-btn--primary"
+            disabled={pending || detailQuery.isError}
+            onClick={() => rescheduleMutation.mutate(originalId)}
+          >
+            Remarcar para esta aula
+          </button>
+        </RequiresNetwork>
       );
     }
 
     return (
-      <button
-        type="button"
-        className="fb-sheet-btn fb-sheet-btn--primary"
-        disabled={pending || detailQuery.isError}
-        onClick={() => reserveMutation.mutate()}
-      >
-        Reservar
-      </button>
+      <RequiresNetwork>
+        <button
+          type="button"
+          className="fb-sheet-btn fb-sheet-btn--primary"
+          disabled={pending || detailQuery.isError}
+          onClick={() => reserveMutation.mutate()}
+        >
+          Reservar
+        </button>
+      </RequiresNetwork>
     );
   }
 

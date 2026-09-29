@@ -7,6 +7,7 @@ import { formatClassDay, formatInstantHour } from "../../lib/agenda/format";
 import { errorMessage } from "../../lib/auth/api";
 import { cancelReservation, listMyReservations } from "../../lib/reservations/api";
 import { ErrorState, Feedback, LoadingState } from "../../components/states";
+import { RequiresNetwork } from "../../components/RequiresNetwork";
 
 /** Quantas reservas cabem na Home (HomeDesktop.dc.html mostra três). */
 const MAX_RESERVATIONS = 3;
@@ -120,31 +121,35 @@ function HomeReservation({ reservation }: { reservation: ReservationDetail }) {
             >
               Voltar
             </button>
-            <button
-              type="button"
-              className="fb-home__ghost-btn fb-home__ghost-btn--danger"
-              disabled={pending}
-              onClick={() => {
-                setError(null);
-                cancelMutation.mutate();
-              }}
-            >
-              Confirmar cancelamento
-            </button>
+            <RequiresNetwork>
+              <button
+                type="button"
+                className="fb-home__ghost-btn fb-home__ghost-btn--danger"
+                disabled={pending}
+                onClick={() => {
+                  setError(null);
+                  cancelMutation.mutate();
+                }}
+              >
+                Confirmar cancelamento
+              </button>
+            </RequiresNetwork>
           </>
         ) : (
           <>
-            <button
-              type="button"
-              className="fb-home__ghost-btn"
-              disabled={pending}
-              onClick={() => {
-                setError(null);
-                rescheduleMutation.mutate();
-              }}
-            >
-              Remarcar
-            </button>
+            <RequiresNetwork>
+              <button
+                type="button"
+                className="fb-home__ghost-btn"
+                disabled={pending}
+                onClick={() => {
+                  setError(null);
+                  rescheduleMutation.mutate();
+                }}
+              >
+                Remarcar
+              </button>
+            </RequiresNetwork>
             <button
               type="button"
               className="fb-home__ghost-btn"

@@ -7,7 +7,10 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: "autoUpdate",
+      // "prompt": o service worker novo, baixado depois de um deploy, espera e o
+      // app mostra "Nova versão disponível" com um botão de recarregar (UpdateBanner).
+      // Assim a versão em uso não troca no meio de uma ação do usuário.
+      registerType: "prompt",
       // Só a casca (o build da Vite) é precacheada. Nenhuma regra de
       // runtimeCaching é declarada, então chamadas a /api nunca passam
       // pelo cache do service worker — dados e ações sempre exigem rede,
@@ -23,6 +26,9 @@ export default defineConfig({
         theme_color: "#0a0a0a",
         background_color: "#0a0a0a",
         display: "standalone",
+        id: "/",
+        start_url: "/",
+        scope: "/",
         icons: [
           { src: "flame.svg", sizes: "any", type: "image/svg+xml", purpose: "any" },
         ],
