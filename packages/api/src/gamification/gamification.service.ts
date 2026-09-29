@@ -111,9 +111,13 @@ export class GamificationService {
   /**
    * A classificação completa do período (dias locais da academia, inclusive):
    * a soma do ledger de cada cliente ativo, com desempate por presenças que
-   * ainda valem. Só entra quem tem pontos líquidos positivos.
+   * ainda valem. Só entra quem tem pontos líquidos positivos. `clientWhere`
+   * limita a classificação aos clientes de um escopo (o dashboard da equipe).
    */
-  private async standings(window: { from: string; to: string }): Promise<RankedStanding[]> {
+  async standings(
+    window: { from: string; to: string },
+    clientWhere: Prisma.UserWhereInput = {},
+  ): Promise<RankedStanding[]> {
     const occurredAt = {
       gte: gymDateTimeToUtc(window.from, "00:00"),
       lt: gymDateTimeToUtc(addDays(window.to, 1), "00:00"),
@@ -121,12 +125,17 @@ export class GamificationService {
     const [sums, presences] = await Promise.all([
       this.prisma.pointsEntry.groupBy({
         by: ["clientId"],
-        where: { occurredAt },
+        where: { occurredAt, client: clientWhere },
         _sum: { points: true },
       }),
       this.prisma.pointsEntry.groupBy({
         by: ["clientId"],
-        where: { occurredAt, type: PointsEntryType.ATTENDANCE, reversedBy: null },
+        where: {
+          occurredAt,
+          type: PointsEntryType.ATTENDANCE,
+          reversedBy: null,
+          client: clientWhere,
+        },
         _count: { _all: true },
       }),
     ]);

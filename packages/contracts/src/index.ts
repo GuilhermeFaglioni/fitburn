@@ -15,3 +15,4 @@ export * from "./goals.js";
 export * from "./plans.js";
 export * from "./workout-sheets.js";
 export * from "./clients.js";
+export * from "./dashboard.js";
