@@ -41,6 +41,14 @@ function PlanIcon({ color }: { color: string }) {
   );
 }
 
+function WorkoutIcon({ color }: { color: string }) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path d="M4 6H16M4 10H16M4 14H12" stroke={color} strokeWidth="1.4" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 function ProfileIcon({ color }: { color: string }) {
   return (
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
@@ -58,12 +66,11 @@ function ProfileIcon({ color }: { color: string }) {
 const ACTIVE = "#ed6e34";
 const INACTIVE = "rgba(255,255,255,0.65)";
 
-// Só as telas do cliente que já existem; Ficha de treino entra
-// junto com as suas telas.
 const ITEMS = [
   { to: "/", label: "Home", Icon: HomeIcon },
   { to: "/agenda", label: "Agenda", Icon: AgendaIcon },
   { to: "/plano", label: "Plano", Icon: PlanIcon },
+  { to: "/ficha-treino", label: "Treino", Icon: WorkoutIcon },
   { to: "/perfil", label: "Perfil", Icon: ProfileIcon },
 ];
 
@@ -81,7 +88,7 @@ export function ClientLayout() {
               <NavLink
                 key={to}
                 to={to}
-                end
+                end={to === "/"}
                 className={({ isActive }) => `fb-client__nav-item${isActive ? " active" : ""}`}
               >
                 {({ isActive }) => (
@@ -108,7 +115,7 @@ export function ClientLayout() {
           <NavLink
             key={to}
             to={to}
-            end
+            end={to === "/"}
             className={({ isActive }) => `fb-client__tab${isActive ? " active" : ""}`}
           >
             {({ isActive }) => (

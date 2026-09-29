@@ -110,6 +110,10 @@ model User {
   createdGoals        Goal[]                    @relation("CreatedGoals")
   /// Planos atribuídos a este usuário, cliente (o ativo e o histórico).
   planAssignments     PlanAssignment[]
+  /// Fichas de treino deste usuário, cliente.
+  workoutSheets       WorkoutSheet[]            @relation("ClientWorkoutSheets")
+  /// Fichas de treino que este usuário, da equipe, montou.
+  authoredWorkoutSheets WorkoutSheet[]          @relation("AuthoredWorkoutSheets")
 
   @@map("users")
 }
@@ -427,6 +431,54 @@ model PlanAssignment {
   @@index([clientId, status])
   @@index([planId, status])
   @@map("plan_assignments")
+}
+
+enum WorkoutSheetStatus {
+  ACTIVE
+  COMPLETED
+  ARCHIVED
+}
+
+/// Ficha de treino de um cliente, montada pela equipe (em geral o professor).
+/// Um cliente pode ter várias, inclusive várias ativas; o cliente só lê.
+model WorkoutSheet {
+  id        String             @id @default(uuid())
+  title     String
+  notes     String?
+  status    WorkoutSheetStatus @default(ACTIVE)
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  clientId String
+  client   User   @relation("ClientWorkoutSheets", fields: [clientId], references: [id], onDelete: Restrict)
+
+  authorId String
+  author   User   @relation("AuthoredWorkoutSheets", fields: [authorId], references: [id], onDelete: Restrict)
+
+  exercises WorkoutExercise[]
+
+  @@index([clientId, status])
+  @@map("workout_sheets")
+}
+
+/// Exercício de uma ficha, em texto livre; `position` (0, 1, 2...) é a ordem na
+/// ficha. Os campos além do nome são opcionais e livres ("4", "40kg", "45s").
+model WorkoutExercise {
+  id       String  @id @default(uuid())
+  position Int
+  name     String
+  sets     String?
+  reps     String?
+  load     String?
+  duration String?
+  distance String?
+  notes    String?
+
+  sheetId String
+  sheet   WorkoutSheet @relation(fields: [sheetId], references: [id], onDelete: Cascade)
+
+  @@unique([sheetId, position])
+  @@map("workout_exercises")
 }
 
 model RefreshToken {

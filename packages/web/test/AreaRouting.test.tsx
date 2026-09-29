@@ -58,6 +58,8 @@ function mockSession(profileName: string, permissions: EffectivePermission[]) {
       HttpResponse.json({ templates: [], instructors: [] }),
     ),
     http.get("/api/agenda", () => HttpResponse.json([])),
+    http.get("/api/workout-sheets/mine", () => HttpResponse.json([])),
+    http.get("/api/workout-sheets/clients", () => HttpResponse.json([])),
     http.get("/api/attendance/classes", () => HttpResponse.json([])),
     http.get("/api/attendance/classes/:occurrenceId", () =>
       HttpResponse.json({
@@ -183,5 +185,65 @@ describe("Área de cada perfil", () => {
 
     await expectLocation("/agenda");
     expect(await screen.findByRole("region", { name: "Aulas do dia" })).toBeInTheDocument();
+  });
+  it("o cliente abre a ficha de treino pelo item Treino da navegação", async () => {
+    mockSession("Cliente", []);
+
+    renderAt("/ficha-treino");
+
+    await expectLocation("/ficha-treino");
+    expect(await screen.findByRole("heading", { name: "Ficha de treino" })).toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: "Treino" })[0]).toHaveAttribute(
+      "href",
+      "/ficha-treino",
+    );
+  });
+
+  it("o cliente não abre o editor de fichas da equipe", async () => {
+    mockSession("Cliente", []);
+
+    renderAt("/fichas");
+
+    await expectLocation("/");
+  });
+
+  it("o professor com acesso às fichas abre o editor e vê o item Fichas de treino no menu", async () => {
+    mockSession("Professor", [
+      {
+        module: Module.FICHAS_DE_TREINO,
+        actions: [PermissionAction.VIEW, PermissionAction.CREATE],
+        scope: PermissionScope.ASSIGNED_CLIENTS,
+      },
+    ]);
+
+    renderAt("/fichas");
+
+    await expectLocation("/fichas");
+    expect(await screen.findByRole("link", { name: "Fichas de treino" })).toHaveAttribute(
+      "href",
+      "/fichas",
+    );
+  });
+
+  it("a equipe sem o módulo de fichas não abre o editor pela URL", async () => {
+    mockSession("Professor", [
+      {
+        module: Module.PRESENCA,
+        actions: [PermissionAction.VIEW],
+        scope: PermissionScope.ASSIGNED_CLASSES,
+      },
+    ]);
+
+    renderAt("/fichas");
+
+    await expectLocation("/minhas-aulas");
+  });
+
+  it("a equipe que abre a ficha do cliente vai para o editor de fichas", async () => {
+    mockSession("Administrador", ADMIN_PERMISSIONS);
+
+    renderAt("/ficha-treino");
+
+    await expectLocation("/fichas");
   });
 });
