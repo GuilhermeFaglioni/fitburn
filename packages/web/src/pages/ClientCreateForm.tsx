@@ -1,4 +1,5 @@
 import { useId, useState, type FormEvent } from "react";
+import type { CreateClientRequest } from "@fitburn/contracts";
 import { ApiError } from "../lib/auth/api";
 import { createClient } from "../lib/users/api";
 
@@ -8,7 +9,14 @@ const ERROR_MESSAGES: Record<string, string> = {
   VALIDATION_ERROR: "Confira os campos e tente novamente.",
 };
 
-export function ClientCreateForm({ onCreated }: { onCreated: () => void }) {
+/** `submit` troca a rota de cadastro (a tela de Clientes usa a do módulo Clientes). */
+export function ClientCreateForm({
+  onCreated,
+  submit = createClient,
+}: {
+  onCreated: () => void;
+  submit?: (input: CreateClientRequest) => Promise<unknown>;
+}) {
   const formId = useId();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -25,7 +33,7 @@ export function ClientCreateForm({ onCreated }: { onCreated: () => void }) {
     setErrorMessage(null);
     setIsSubmitting(true);
     try {
-      await createClient({
+      await submit({
         fullName,
         email,
         phone,

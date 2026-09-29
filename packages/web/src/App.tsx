@@ -9,6 +9,8 @@ import { ProtectedRoute } from "./routes/ProtectedRoute";
 import { LoginPage } from "./pages/LoginPage";
 import { ClientHomePage } from "./pages/ClientHomePage";
 import { DashboardPage } from "./pages/DashboardPage";
+import { ClientsPage } from "./pages/ClientsPage";
+import { ClientDetailPage } from "./pages/ClientDetailPage";
 import { UsuariosPerfisPage } from "./pages/UsuariosPerfisPage";
 import { TemplatesModalidadesPage } from "./pages/TemplatesModalidadesPage";
 import { AgendaAdminPage } from "./pages/AgendaAdminPage";
@@ -70,6 +72,8 @@ export function AppRoutes() {
         }
       >
         <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/clientes" element={<ClientsPage />} />
+        <Route path="/clientes/:id" element={<ClientDetailPage />} />
         <Route path="/usuarios" element={<UsuariosPerfisPage />} />
         <Route path="/agenda-administrativa" element={<AgendaAdminPage />} />
         <Route path="/templates-e-modalidades" element={<TemplatesModalidadesPage />} />
