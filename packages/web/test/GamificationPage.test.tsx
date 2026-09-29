@@ -8,6 +8,9 @@ import {
   gymDateTimeToUtc,
   type GamificationSummary,
   type PointsHistoryItem,
+  type Ranking,
+  type RankingEntry,
+  type RankingPeriodName,
 } from "@fitburn/contracts";
 import { AuthProvider, useAuth } from "../src/lib/auth/AuthContext";
 import { GamificationPage } from "../src/pages/GamificationPage";
@@ -32,6 +35,30 @@ function entry(
     milestone: null,
     ...overrides,
   };
+}
+
+function rankingEntry(
+  position: number,
+  name: string,
+  attendances: number,
+  overrides: Partial<RankingEntry> = {},
+): RankingEntry {
+  return {
+    position,
+    name,
+    firstName: name.split(" ")[0],
+    points: attendances * 10,
+    attendances,
+    tied: false,
+    isMe: false,
+    ...overrides,
+  };
+}
+
+function rankingOf(period: RankingPeriodName, entries: RankingEntry[]): Ranking {
+  return period === "week"
+    ? { period, from: "2026-05-04", to: "2026-05-10", entries }
+    : { period, from: "2026-05-01", to: "2026-05-31", entries };
 }
 
 const NO_STREAK = {
@@ -79,15 +106,31 @@ function totalRow() {
 }
 
 describe("Gamificação do cliente", () => {
+  const rankingRequests: string[] = [];
+
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(NOW);
     mockSuccessfulLogin("Cliente");
+    rankingRequests.length = 0;
+    mockRanking({ week: [], month: [] });
   });
 
   afterEach(() => {
     vi.useRealTimers();
   });
+
+  /** O ranking de cada período; registra qual período cada consulta pediu. */
+  function mockRanking(entries: Record<RankingPeriodName, RankingEntry[]>) {
+    server.use(
+      http.get("/api/gamification/ranking", ({ request }) => {
+        const period = (new URL(request.url).searchParams.get("period") ??
+          "week") as RankingPeriodName;
+        rankingRequests.push(period);
+        return HttpResponse.json(rankingOf(period, entries[period]));
+      }),
+    );
+  }
 
   function mockSummary(summary: GamificationSummary) {
     server.use(http.get("/api/gamification/me", () => HttpResponse.json(summary)));
@@ -242,6 +285,103 @@ describe("Gamificação do cliente", () => {
     await screen.findByText("Nenhum ganho de pontos ainda.");
     expect(screen.queryByRole("region", { name: "Conquistas" })).not.toBeInTheDocument();
     expect(screen.queryByText("dias seguidos de treino")).not.toBeInTheDocument();
+  });
+
+  it("mostra o ranking semanal com a minha posição destacada e o rótulo de empate", async () => {
+    mockSummary({ ...NO_STREAK, totalPoints: 50, history: [] });
+    mockRanking({
+      week: [
+        rankingEntry(1, "Ana P.", 6),
+        rankingEntry(2, "Marina M.", 5, { tied: true, isMe: true }),
+        rankingEntry(2, "Bruno A.", 5, { tied: true }),
+        rankingEntry(4, "Camila D.", 4),
+        rankingEntry(5, "Diego R.", 1),
+      ],
+      month: [],
+    });
+
+    renderPage();
+
+    const ranking = await screen.findByRole("region", { name: "Ranking" });
+    expect(await within(ranking).findByText("Ana P.")).toBeInTheDocument();
+    expect(rankingRequests).toEqual(["week"]);
+    expect(within(ranking).getByRole("button", { name: "Semanal" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+
+    const rows = within(ranking).getAllByRole("listitem");
+    expect(rows).toHaveLength(5);
+    expect(within(rows[0]).getByText("1º")).toBeInTheDocument();
+    expect(within(rows[0]).getByText("6 presenças")).toBeInTheDocument();
+    // A minha linha: só o primeiro nome com "(você)", destacada, e o rótulo de empate.
+    expect(within(rows[1]).getByText("Marina (você)")).toBeInTheDocument();
+    expect(within(rows[1]).getByText("5 presenças · empate")).toBeInTheDocument();
+    expect(rows[1]).toHaveClass("fb-gami__rank-row--me");
+    expect(rows[0]).not.toHaveClass("fb-gami__rank-row--me");
+    expect(within(rows[2]).getByText("2º")).toBeInTheDocument();
+    expect(within(rows[2]).getByText("5 presenças · empate")).toBeInTheDocument();
+    expect(within(rows[3]).getByText("4º")).toBeInTheDocument();
+    expect(within(rows[3]).queryByText(/empate/)).not.toBeInTheDocument();
+    expect(within(rows[4]).getByText("1 presença")).toBeInTheDocument();
+  });
+
+  it("troca para o ranking mensal", async () => {
+    mockSummary({ ...NO_STREAK, totalPoints: 0, history: [] });
+    mockRanking({
+      week: [rankingEntry(1, "Ana P.", 2)],
+      month: [rankingEntry(1, "Bruno A.", 9), rankingEntry(2, "Ana P.", 7)],
+    });
+    const user = userEvent.setup();
+    renderPage();
+    const ranking = await screen.findByRole("region", { name: "Ranking" });
+    await within(ranking).findByText("Ana P.");
+
+    await user.click(within(ranking).getByRole("button", { name: "Mensal" }));
+
+    expect(await within(ranking).findByText("Bruno A.")).toBeInTheDocument();
+    expect(within(ranking).getByText("9 presenças")).toBeInTheDocument();
+    expect(within(ranking).getByRole("button", { name: "Mensal" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(rankingRequests).toEqual(["week", "month"]);
+  });
+
+  it("quem está fora dos primeiros aparece com a posição real, destacado", async () => {
+    mockSummary({ ...NO_STREAK, totalPoints: 10, history: [] });
+    mockRanking({
+      week: [rankingEntry(1, "Ana P.", 9), rankingEntry(12, "Marina M.", 1, { isMe: true })],
+      month: [],
+    });
+
+    renderPage();
+
+    const ranking = await screen.findByRole("region", { name: "Ranking" });
+    const mine = (await within(ranking).findByText("Marina (você)")).closest("li")!;
+    expect(within(mine).getByText("12º")).toBeInTheDocument();
+    expect(mine).toHaveClass("fb-gami__rank-row--me");
+  });
+
+  it("período sem ninguém pontuando mostra o estado vazio; falha do ranking avisa", async () => {
+    mockSummary({ ...NO_STREAK, totalPoints: 0, history: [] });
+    const user = userEvent.setup();
+    renderPage();
+    const ranking = await screen.findByRole("region", { name: "Ranking" });
+    expect(
+      await within(ranking).findByText("Ninguém pontuou neste período ainda."),
+    ).toBeInTheDocument();
+
+    server.use(
+      http.get("/api/gamification/ranking", () =>
+        HttpResponse.json({ code: "INTERNAL_ERROR", message: "Erro inesperado." }, { status: 500 }),
+      ),
+    );
+    await user.click(within(ranking).getByRole("button", { name: "Mensal" }));
+
+    expect(await within(ranking).findByRole("alert")).toHaveTextContent(
+      "Não foi possível carregar o ranking.",
+    );
   });
 
   it("quem ainda não tem pontos vê zero e o estado vazio do histórico", async () => {

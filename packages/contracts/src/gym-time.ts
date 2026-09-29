@@ -101,6 +101,11 @@ export function daysBetween(from: string, to: string): number {
   );
 }
 
+/** Primeiro dia do mês da data local. */
+export function startOfMonth(date: string): string {
+  return `${date.slice(0, 8)}01`;
+}
+
 /** Dia da semana de uma data local: 0 = domingo … 6 = sábado. */
 export function weekdayOf(date: string): number {
   const [year, month, day] = parseLocalDate(date);

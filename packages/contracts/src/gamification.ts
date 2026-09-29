@@ -56,3 +56,45 @@ export const gamificationSummarySchema = z.object({
   badges: z.array(streakBadgeSchema),
 });
 export type GamificationSummary = z.infer<typeof gamificationSummarySchema>;
+
+export const RankingPeriod = { WEEK: "week", MONTH: "month" } as const;
+export type RankingPeriodName = (typeof RankingPeriod)[keyof typeof RankingPeriod];
+export const rankingPeriodSchema = z.enum([RankingPeriod.WEEK, RankingPeriod.MONTH]);
+
+export const rankingQuerySchema = z.object({
+  period: rankingPeriodSchema.default(RankingPeriod.WEEK),
+});
+export type RankingQuery = z.infer<typeof rankingQuerySchema>;
+
+/** Um participante do ranking, identificado só pelo primeiro nome e a inicial do sobrenome. */
+export const rankingEntrySchema = z.object({
+  /** Posição de competição: empatados dividem a posição e a seguinte é pulada (1, 1, 3). */
+  position: z.number().int(),
+  /** Como os outros veem a pessoa: o primeiro nome e a inicial do sobrenome ("Ana P."). */
+  name: z.string(),
+  /** Só o primeiro nome, para a própria linha ("Marina (você)"). */
+  firstName: z.string(),
+  /** Soma do ledger no período (presenças, bônus, metas e estornos). */
+  points: z.number().int(),
+  /** Presenças que valem no período: o critério de desempate. */
+  attendances: z.number().int(),
+  /** Outro participante tem os mesmos pontos e presenças. */
+  tied: z.boolean(),
+  /** É a pessoa que consultou. */
+  isMe: z.boolean(),
+});
+export type RankingEntry = z.infer<typeof rankingEntrySchema>;
+
+/**
+ * Ranking do período atual (semana de segunda a domingo ou mês calendário, no
+ * fuso da academia): os primeiros colocados e, se estiver fora deles, a
+ * própria pessoa com a posição real.
+ */
+export const rankingSchema = z.object({
+  period: rankingPeriodSchema,
+  /** Primeiro e último dia do período, "YYYY-MM-DD". */
+  from: z.string(),
+  to: z.string(),
+  entries: z.array(rankingEntrySchema),
+});
+export type Ranking = z.infer<typeof rankingSchema>;

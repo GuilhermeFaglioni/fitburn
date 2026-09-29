@@ -8,6 +8,7 @@ import {
 import { BackIcon } from "../components/icons/BackIcon";
 import { getMyGamification } from "../lib/gamification/api";
 import { formatHistoryWhen } from "../lib/gamification/format";
+import { RankingSection } from "./gamification/RankingSection";
 
 /** Traço na cor do texto do pai (laranja no marco alcançado, esmaecido no pendente). */
 function MarkIcon() {
@@ -149,8 +150,8 @@ function Achievements({ streak, badges }: Pick<GamificationSummary, "streak" | "
  * total de pontos em laranja com o streak e os marcos, o histórico dos ganhos
  * e as conquistas. No mobile as seções empilham na ordem do artboard; no
  * desktop, coluna de 420px com título, pontos e conquistas, e o histórico ao
- * lado (ver gamification.css). Metas e ranking entram nas próximas issues,
- * nos mesmos encaixes.
+ * lado, com o ranking embaixo (ver gamification.css). As metas entram na
+ * próxima issue, no mesmo encaixe.
  */
 export function GamificationPage() {
   const navigate = useNavigate();
@@ -233,6 +234,7 @@ export function GamificationPage() {
             </section>
           )}
         </div>
+        <RankingSection />
       </div>
     </div>
   );

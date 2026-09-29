@@ -209,6 +209,72 @@
   color: rgba(255, 255, 255, 0.6);
 }
 
+/* Ranking (GamificacaoMobile/Desktop.dc.html): seletor semanal/mensal e a lista de posições. */
+.fb-gami__ranking {
+  order: 6;
+}
+
+/* No mobile o cabeçalho some como caixa: título, seletor e lista empilham no mesmo vão de 12px. */
+.fb-gami__rank-head {
+  display: contents;
+}
+
+/* O controle é o mesmo de "Próximas | Histórico" (.fb-client-tabs); aqui ocupa a largura toda e reparte por igual. */
+.fb-gami__rank-tab {
+  flex: 1;
+  padding: 8px 0;
+}
+
+.fb-gami__rank-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fb-gami__rank-row {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: #1a1a1a;
+  border-radius: 5px;
+}
+
+.fb-gami__rank-pos {
+  width: 20px;
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.fb-gami__rank-name {
+  flex-grow: 1;
+  font-size: 14px;
+}
+
+.fb-gami__rank-info {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.fb-gami__rank-row--me {
+  background: rgba(237, 110, 52, 0.14);
+}
+
+.fb-gami__rank-row--me .fb-gami__rank-pos,
+.fb-gami__rank-row--me .fb-gami__rank-info {
+  color: var(--color-primary-orange);
+}
+
+.fb-gami__rank-row--me .fb-gami__rank-name {
+  font-weight: 700;
+  color: var(--color-primary-orange);
+}
+
 .fb-gami__entries {
   margin: 0;
   padding: 0;
@@ -308,5 +374,21 @@
 
   .fb-gami__badges {
     gap: 14px;
+  }
+
+  /* Desktop: título à esquerda e o seletor de 220px à direita, na mesma linha. */
+  .fb-gami__rank-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  /* No artboard: 220px de botões mais 4px de respiro de cada lado. */
+  .fb-gami__rank-tabs {
+    width: 228px;
+  }
+
+  .fb-gami__rank-pos {
+    width: 24px;
   }
 }

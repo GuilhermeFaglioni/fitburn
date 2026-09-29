@@ -1,26 +1,43 @@
 import { Injectable } from "@nestjs/common";
 import type { GamificationRuleKind, PointsEntry, Prisma } from "@prisma/client";
 import {
+  addDays,
   AttendanceStatus,
   ErrorCode,
   ErrorStatus,
+  gymDateTimeToUtc,
+  gymToday,
   PointsEntryType,
   ReservationStatus,
   SystemProfileName,
+  UserStatus,
   type AttendanceMark,
   type GamificationSummary,
   type PointsHistoryItem,
+  type Ranking,
+  type RankingPeriodName,
 } from "@fitburn/contracts";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { DomainError } from "../common/errors/domain-error.js";
 import { clientScopeFilter } from "../permissions/client-scope.js";
 import type { ScopedRequester } from "../permissions/scoped-requester.js";
 import { lockAdvisory } from "../prisma/advisory-lock.js";
+import {
+  firstName,
+  publicName,
+  rankingWindow,
+  rankStandings,
+  topWithViewer,
+  type RankedStanding,
+} from "./ranking.js";
 import { currentStreak, planStreak, type RegisteredAttendance, type StreakPlan } from "./streak.js";
 
 type PointsEntryWithSubject = Prisma.PointsEntryGetPayload<{
   include: { reservation: { select: { occurrence: { select: { name: true } } } } };
 }>;
+
+/** Quantos colocados o ranking traz (mais quem consultou, se estiver fora deles). */
+const RANKING_SIZE = 10;
 
 /** Quantos lançamentos o "histórico recente" traz. */
 const RECENT_HISTORY_SIZE = 20;
@@ -67,6 +84,71 @@ export class GamificationService {
         awardedAt: earned.get(threshold)?.toISOString() ?? null,
       })),
     };
+  }
+
+  /**
+   * Ranking do período atual: os primeiros colocados e, se estiver fora deles,
+   * quem consultou.
+   */
+  async ranking(period: RankingPeriodName, viewerId: string): Promise<Ranking> {
+    const window = rankingWindow(period, gymToday());
+    const shown = topWithViewer(await this.standings(window), RANKING_SIZE, viewerId);
+    return {
+      period,
+      ...window,
+      entries: shown.map((standing) => ({
+        position: standing.position,
+        name: publicName(standing.fullName),
+        firstName: firstName(standing.fullName),
+        points: standing.points,
+        attendances: standing.attendances,
+        tied: standing.tied,
+        isMe: standing.clientId === viewerId,
+      })),
+    };
+  }
+
+  /**
+   * A classificação completa do período (dias locais da academia, inclusive):
+   * a soma do ledger de cada cliente ativo, com desempate por presenças que
+   * ainda valem. Só entra quem tem pontos líquidos positivos.
+   */
+  private async standings(window: { from: string; to: string }): Promise<RankedStanding[]> {
+    const occurredAt = {
+      gte: gymDateTimeToUtc(window.from, "00:00"),
+      lt: gymDateTimeToUtc(addDays(window.to, 1), "00:00"),
+    };
+    const [sums, presences] = await Promise.all([
+      this.prisma.pointsEntry.groupBy({
+        by: ["clientId"],
+        where: { occurredAt },
+        _sum: { points: true },
+      }),
+      this.prisma.pointsEntry.groupBy({
+        by: ["clientId"],
+        where: { occurredAt, type: PointsEntryType.ATTENDANCE, reversedBy: null },
+        _count: { _all: true },
+      }),
+    ]);
+    const attendances = new Map(presences.map((row) => [row.clientId, row._count._all]));
+
+    const scored = sums.filter((row) => (row._sum.points ?? 0) > 0);
+    const users = await this.prisma.user.findMany({
+      where: { id: { in: scored.map((row) => row.clientId) }, status: UserStatus.ACTIVE },
+      select: { id: true, fullName: true },
+    });
+    const fullNames = new Map(users.map((user) => [user.id, user.fullName]));
+
+    return rankStandings(
+      scored
+        .filter((row) => fullNames.has(row.clientId))
+        .map((row) => ({
+          clientId: row.clientId,
+          fullName: fullNames.get(row.clientId)!,
+          points: row._sum.points ?? 0,
+          attendances: attendances.get(row.clientId) ?? 0,
+        })),
+    );
   }
 
   /** Gamificação de um cliente vista pela equipe, dentro do escopo do perfil. */
