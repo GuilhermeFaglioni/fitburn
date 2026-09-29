@@ -29,4 +29,9 @@ export default tseslint.config(
       "@typescript-eslint/no-require-imports": "off",
     },
   },
+  {
+    // Scripts ESM da raiz (deploy-check.mjs).
+    files: ["scripts/**/*.mjs"],
+    languageOptions: { globals: globals.node },
+  },
 );

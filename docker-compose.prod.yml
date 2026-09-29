@@ -1,0 +1,176 @@
+# Stack de produção/demonstração (VPS): Nginx -> API NestJS -> PostgreSQL.
+# Runbook: docs/deploy-runbook.md.
+#
+# Uso (na raiz do repositório, na VPS):
+#   export COMPOSE_FILE=docker-compose.prod.yml COMPOSE_ENV_FILES=.env.production
+#   docker compose config --quiet   # valida o .env.production
+#
+# Topologia:
+#   internet -> nginx (única porta pública: 80/443) -> api:3333 -> postgres:5432
+#   - "internal" é uma rede sem saída para fora (internal: true): postgres, api e
+#     migrate vivem só nela. Nenhum deles publica porta no host.
+#   - "edge" é a rede com acesso externo: só nginx e certbot entram nela.
+# O acesso técnico ao banco é por `docker compose exec postgres psql ...` ou túnel SSH.
+
+name: fitburn-prod
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+# Variáveis da API (as exigidas em produção estão em packages/api/src/config/app-config.ts;
+# sem elas a API recusa iniciar). Os valores vêm do .env.production (COMPOSE_ENV_FILES).
+x-api-environment: &api-environment
+  NODE_ENV: production
+  PORT: "3333"
+  TZ: ${TZ:-UTC}
+  DATABASE_URL: postgresql://${POSTGRES_USER:-fitburn}:${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD em .env.production}@postgres:5432/${POSTGRES_DB:-fitburn}?schema=public
+  JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?defina JWT_ACCESS_SECRET em .env.production (openssl rand -hex 32)}
+  JWT_ACCESS_TTL_SECONDS: ${JWT_ACCESS_TTL_SECONDS:-900}
+  REFRESH_TOKEN_TTL_DAYS: ${REFRESH_TOKEN_TTL_DAYS:-7}
+  INITIAL_ADMIN_EMAIL: ${INITIAL_ADMIN_EMAIL:?defina INITIAL_ADMIN_EMAIL em .env.production}
+  INITIAL_ADMIN_PASSWORD: ${INITIAL_ADMIN_PASSWORD:?defina INITIAL_ADMIN_PASSWORD em .env.production}
+  INITIAL_ADMIN_NAME: ${INITIAL_ADMIN_NAME:-Administrador Fitburn}
+  CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-}
+  TRUST_PROXY_HOPS: ${TRUST_PROXY_HOPS:-2}
+  AUTH_RATE_LIMIT_MAX: ${AUTH_RATE_LIMIT_MAX:-10}
+  AUTH_RATE_LIMIT_WINDOW_SECONDS: ${AUTH_RATE_LIMIT_WINDOW_SECONDS:-60}
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-fitburn}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD em .env.production}
+      POSTGRES_DB: ${POSTGRES_DB:-fitburn}
+      TZ: ${TZ:-UTC}
+    # Sem "ports": o banco não é publicado em nenhuma interface do host.
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    logging: *default-logging
+
+  # Passo dedicado de migrations: roda `prisma migrate deploy` e sai. A API só
+  # sobe depois que ele termina com sucesso (depends_on abaixo); o runbook também
+  # o executa explicitamente, antes do restart da API.
+  migrate:
+    # Único ponto de build da imagem fitburn-api (a api só referencia a mesma tag).
+    build:
+      context: .
+      dockerfile: docker/api/Dockerfile
+    image: fitburn-api:${IMAGE_TAG:-latest}
+    restart: "no"
+    command: ["pnpm", "--filter", "@fitburn/api", "exec", "prisma", "migrate", "deploy"]
+    environment: *api-environment
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - internal
+    logging: *default-logging
+
+  api:
+    # Mesma imagem do migrate (que é o único ponto de build: `docker compose build`
+    # constrói uma vez só). Nunca tenta baixar de registry.
+    image: fitburn-api:${IMAGE_TAG:-latest}
+    pull_policy: never
+    restart: unless-stopped
+    environment: *api-environment
+    # Porta só interna (D-015): visível para o nginx na rede "internal", nunca no host.
+    expose:
+      - "3333"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - internal
+    healthcheck:
+      # /api/health devolve 200 mesmo com o banco fora; o que vale é status "ok" no corpo.
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3333/api/health').then(r=>r.json()).then(b=>process.exit(b.status==='ok'?0:1)).catch(()=>process.exit(1))"
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    logging: *default-logging
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    environment:
+      DOMAIN: "${DOMAIN:?defina DOMAIN em .env.production, por exemplo api.seudominio.com.br}"
+      # "auto": HTTPS quando já existe certificado, senão só HTTP para emitir o
+      # primeiro (bootstrap). "local": HTTP puro para verificação local (docker-compose.prod.local.yml).
+      NGINX_MODE: auto
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx/templates:/opt/fitburn/nginx-templates:ro
+      - ./docker/nginx/select-config.sh:/docker-entrypoint.d/15-select-config.sh:ro
+      - certbot_www:/var/www/certbot:ro
+      - letsencrypt:/etc/letsencrypt:ro
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - edge
+      - internal
+    # Recarrega a cada 6h para pegar certificados renovados pelo certbot.
+    # Atenção: o "command" substitui o CMD da imagem, e o entrypoint oficial só roda
+    # /docker-entrypoint.d/* (select-config.sh e o envsubst dos templates, que geram
+    # o default.conf) quando o primeiro argumento é "nginx". Por isso o script chama
+    # /docker-entrypoint.sh nginx explicitamente em vez de "exec nginx" direto.
+    command:
+      - /bin/sh
+      - -c
+      - |
+        (while :; do sleep 6h; nginx -s reload; done) &
+        exec /docker-entrypoint.sh nginx -g 'daemon off;'
+    logging: *default-logging
+
+  # Renovação automática: tenta renovar a cada 12h (só renova o que vence em <30 dias).
+  # A primeira emissão é manual (runbook, passo "certificado"); o certbot usa o mesmo
+  # método (webroot servido pelo nginx na porta 80) para renovar.
+  certbot:
+    image: certbot/certbot:latest
+    restart: unless-stopped
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        trap exit TERM
+        while :; do
+          certbot renew --webroot -w /var/www/certbot --quiet
+          sleep 12h & wait $${!}
+        done
+    volumes:
+      - certbot_www:/var/www/certbot
+      - letsencrypt:/etc/letsencrypt
+    networks:
+      - edge
+    logging: *default-logging
+
+networks:
+  internal:
+    internal: true
+  edge: {}
+
+volumes:
+  postgres_data:
+  certbot_www:
+  letsencrypt:

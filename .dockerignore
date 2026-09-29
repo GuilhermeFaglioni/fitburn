@@ -1,0 +1,22 @@
+# Contexto de build da imagem da API: só o que o build precisa.
+.git
+.github
+.claude
+.scratch
+.maestri
+node_modules
+**/node_modules
+**/dist
+**/coverage
+**/*.tsbuildinfo
+.env
+.env.*
+!.env.production.example
+docs
+*.md
+.DS_Store
+
+# O frontend vai para a Vercel; só o manifesto entra, para o pnpm-lock.yaml
+# (que lista o workspace inteiro) continuar consistente com --frozen-lockfile.
+packages/web/*
+!packages/web/package.json
