@@ -160,6 +160,7 @@
   background: var(--color-primary-orange);
   border: none;
   border-radius: var(--radius-sm);
+  color: var(--color-on-orange);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -175,7 +176,7 @@
 .login-form__submit-label {
   font-size: 15px;
   font-weight: 700;
-  color: var(--color-ink-on-dark);
+  color: var(--color-on-orange);
 }
 
 .login-form__spinner {

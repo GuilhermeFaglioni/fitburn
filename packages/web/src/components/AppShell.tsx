@@ -19,8 +19,10 @@ export function AppShell({ children }: { children: ReactNode }) {
       <a href="#conteudo" className="fb-skip-link">
         Ir para o conteúdo
       </a>
-      <OfflineBanner />
-      <UpdateBanner />
+      <div className="fb-banner-stack">
+        <OfflineBanner />
+        <UpdateBanner />
+      </div>
       {children}
     </div>
   );

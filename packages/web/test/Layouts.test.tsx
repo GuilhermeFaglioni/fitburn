@@ -101,6 +101,68 @@ describe("casca administrativa no mobile", () => {
     expect(await screen.findByRole("heading", { name: "Clientes", level: 1 })).toBeInTheDocument();
     expect(toggle).toHaveAttribute("aria-expanded", "false");
   });
+
+  describe("gaveta como diálogo modal (gestão de foco)", () => {
+    async function openDrawer() {
+      renderAt("/dashboard");
+      const user = userEvent.setup();
+      const toggle = await screen.findByRole("button", { name: "Menu" });
+      await user.click(toggle);
+      const panel = document.getElementById(toggle.getAttribute("aria-controls") as string) as HTMLElement;
+      return { user, toggle, panel };
+    }
+
+    it("aberta, é um diálogo modal nomeado e o foco entra nela", async () => {
+      const { panel } = await openDrawer();
+
+      expect(panel).toHaveAttribute("role", "dialog");
+      expect(panel).toHaveAttribute("aria-modal", "true");
+      expect(panel).toHaveAccessibleName("Menu");
+      expect(panel.contains(document.activeElement)).toBe(true);
+    });
+
+    it("fechada (ou no desktop, onde é a barra lateral) não é um diálogo nem rouba o foco", async () => {
+      renderAt("/dashboard");
+      const toggle = await screen.findByRole("button", { name: "Menu" });
+      const panel = document.getElementById(toggle.getAttribute("aria-controls") as string) as HTMLElement;
+
+      expect(panel).not.toHaveAttribute("role");
+      expect(panel).not.toHaveAttribute("aria-modal");
+      expect(panel.contains(document.activeElement)).toBe(false);
+    });
+
+    it("o Tab fica preso na gaveta: do último item volta ao primeiro, e o Shift+Tab faz o inverso", async () => {
+      const { user, panel } = await openDrawer();
+      const items = within(panel).getAllByRole("link").concat(within(panel).getAllByRole("button"));
+      const first = items[0];
+      const last = items[items.length - 1];
+
+      last.focus();
+      await user.tab();
+      expect(first).toHaveFocus();
+
+      await user.tab({ shift: true });
+      expect(last).toHaveFocus();
+    });
+
+    it("fechar pela cortina devolve o foco ao botão Menu", async () => {
+      const { user, toggle } = await openDrawer();
+
+      await user.click(document.querySelector(".app-menu__scrim") as HTMLElement);
+
+      expect(toggle).toHaveAttribute("aria-expanded", "false");
+      expect(toggle).toHaveFocus();
+    });
+
+    it("escolher uma tela não perde o foco: ele vai ao conteúdo da nova tela, não some com a gaveta", async () => {
+      const { user } = await openDrawer();
+
+      await user.click(screen.getByRole("link", { name: "Clientes" }));
+
+      expect(await screen.findByRole("heading", { name: "Clientes", level: 1 })).toBeInTheDocument();
+      expect(screen.getByRole("main")).toHaveFocus();
+    });
+  });
 });
 
 describe("foco ao trocar de tela", () => {

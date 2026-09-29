@@ -232,6 +232,7 @@
 
 .fb-daychip[aria-pressed="true"] {
   background: var(--color-primary-orange);
+  color: var(--color-on-orange);
 }
 
 .fb-daychip__weekday {
@@ -242,7 +243,7 @@
 }
 
 .fb-daychip[aria-pressed="true"] .fb-daychip__weekday {
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--color-on-orange);
 }
 
 .fb-daychip__day {
@@ -373,7 +374,7 @@
 
 .fb-client-tab-btn[aria-pressed="true"] {
   background: var(--color-primary-orange);
-  color: #ffffff;
+  color: var(--color-on-orange);
 }
 
 /* Filtro de estado: pílulas no formato dos chips de dia da agenda. */
@@ -400,7 +401,7 @@
 .fb-filter-chip[aria-pressed="true"] {
   border-color: var(--color-primary-orange);
   background: var(--color-primary-orange);
-  color: #ffffff;
+  color: var(--color-on-orange);
 }
 
 /* Seções do histórico: título no tamanho de "Próximas aulas" (HomeMobile.dc.html). */
@@ -625,6 +626,7 @@
   padding: 13px;
   background: var(--color-primary-orange);
   border: none;
+  color: var(--color-on-orange);
   font-size: 15px;
 }
 

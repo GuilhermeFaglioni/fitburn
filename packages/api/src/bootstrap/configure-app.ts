@@ -7,7 +7,12 @@ import { ErrorCode, type ApiErrorBody } from "@fitburn/contracts";
 import { AllExceptionsFilter } from "../common/filters/all-exceptions.filter.js";
 import type { AppConfig } from "../config/app-config.js";
 
-const RATE_LIMITED_PATHS = ["/api/auth/login", "/api/auth/refresh"] as const;
+/**
+ * Só o login é limitado (força bruta de senha). O refresh NÃO: a web o chama a
+ * cada carga de página e vários usuários atrás do mesmo NAT (Wi-Fi da academia)
+ * esgotariam a cota do IP; o token de refresh já é um segredo de alta entropia.
+ */
+const RATE_LIMITED_PATH = "/api/auth/login";
 
 /**
  * Configuração de HTTP compartilhada entre o main.ts e os testes e2e, para
@@ -44,10 +49,8 @@ export function configureApp(app: INestApplication, config: AppConfig): void {
   });
 
   if (config.authRateLimit.enabled) {
-    for (const path of RATE_LIMITED_PATHS) {
-      // Um limiter (e sua contagem em memória) por endpoint e por app.
-      app.use(path, authRateLimiter(config));
-    }
+    // Um limiter (e sua contagem em memória) por app.
+    app.use(RATE_LIMITED_PATH, authRateLimiter(config));
   }
 
   app.use(cookieParser());
@@ -60,6 +63,9 @@ function authRateLimiter(config: AppConfig) {
     limit: config.authRateLimit.max,
     standardHeaders: "draft-7",
     legacyHeaders: false,
+    // Só tentativas que falham (401/400...) contam: logins legítimos, mesmo
+    // vários do mesmo NAT, não consomem a cota.
+    skipSuccessfulRequests: true,
     skip: (req) => req.method === "OPTIONS",
     handler: (_req, res) => {
       const body: ApiErrorBody = {

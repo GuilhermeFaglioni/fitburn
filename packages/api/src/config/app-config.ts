@@ -1,8 +1,8 @@
 /**
  * Configuração da API lida do ambiente e validada uma única vez, na
  * inicialização. Em produção qualquer configuração crítica ausente ou
- * insegura derruba o boot (falha rápida); fora de produção os valores de
- * desenvolvimento/teste continuam valendo.
+ * insegura derruba o boot (falha rápida); só com NODE_ENV=development ou
+ * NODE_ENV=test (explícito) os valores de desenvolvimento/teste valem.
  */
 
 export const APP_CONFIG = Symbol("APP_CONFIG");
@@ -27,7 +27,7 @@ export interface AppConfig {
    * com 0 o header é ignorado, pois qualquer cliente poderia forjá-lo.
    */
   trustProxyHops: number;
-  /** Limite de tentativas nos endpoints sensíveis (login e refresh), por IP. */
+  /** Limite de tentativas de login que falharam (POST /auth/login), por IP. */
   authRateLimit: { enabled: boolean; max: number; windowMs: number };
 }
 
@@ -137,8 +137,18 @@ function validateCorsOrigins(raw: string | undefined): string | undefined {
     : undefined;
 }
 
+/**
+ * Falha fechada: só `development` e `test` (explícitos) liberam o
+ * comportamento de desenvolvimento. NODE_ENV ausente, `prod`, `staging`,
+ * com typo etc. contam como produção e recebem todas as travas.
+ */
+function isProductionEnvironment(env: NodeJS.ProcessEnv): boolean {
+  const mode = env.NODE_ENV?.trim().toLowerCase();
+  return mode !== "development" && mode !== "test";
+}
+
 export function loadAppConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
-  const isProduction = env.NODE_ENV === "production";
+  const isProduction = isProductionEnvironment(env);
 
   if (isProduction) {
     const problems = validateProductionEnv(env);
