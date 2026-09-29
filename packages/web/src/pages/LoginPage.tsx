@@ -1,26 +1,20 @@
 import { useId, useState, type FormEvent } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
-import { Module, PermissionAction, type CurrentUser } from "@fitburn/contracts";
+import type { CurrentUser } from "@fitburn/contracts";
 import { EyeIcon } from "../components/icons/EyeIcon";
 import { EyeOffIcon } from "../components/icons/EyeOffIcon";
 import { useAuth } from "../lib/auth/AuthContext";
+import { homeRouteFor } from "../lib/auth/areas";
 import "./LoginPage.css";
 
-function defaultRouteFor(user: CurrentUser): string {
-  const canViewDashboard = user.permissions
-    .find((permission) => permission.module === Module.DASHBOARD)
-    ?.actions.includes(PermissionAction.VIEW);
-  return canViewDashboard ? "/dashboard" : "/";
-}
-
 // "/" não conta como rota original a preservar: é só o destino genérico, e
-// cada perfil tem o seu (Início para cliente, Dashboard para
-// administrador). Uma rota mais específica (ex.: /agenda) é sempre
-// preservada. Usado tanto pelo redirecionamento pós-submit quanto pelo de
+// cada perfil tem o seu (homeRouteFor). Uma rota mais específica (ex.:
+// /agenda) é sempre preservada; se ela for da área do outro perfil, o
+// AreaRoute leva à equivalente da área certa. Usado tanto pelo redirecionamento pós-submit quanto pelo de
 // sessão já restaurada — os dois precisam concordar, ou um sobrescreve o
 // destino com "from" do outro na re-renderização que o login dispara.
 function resolveDestination(user: CurrentUser, from: string | undefined): string {
-  return from && from !== "/" ? from : defaultRouteFor(user);
+  return from && from !== "/" ? from : homeRouteFor(user);
 }
 
 export function LoginPage() {

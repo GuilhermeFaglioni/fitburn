@@ -1,38 +1,11 @@
 import { NavLink } from "react-router-dom";
-import { Module, PermissionAction, type ModuleName } from "@fitburn/contracts";
 import { useAuth } from "../lib/auth/AuthContext";
+import { visibleAdminMenuItems } from "../lib/auth/areas";
 import "./AppMenu.css";
 
-interface MenuItem {
-  modules: ModuleName[];
-  label: string;
-  to: string;
-}
-
-// Cada ticket futuro que adicionar uma tela real ganha sua própria entrada
-// aqui — a lista cresce com o produto, o filtro por permissão não muda. Um
-// item fica visível se o usuário tem VIEW em pelo menos um dos módulos
-// listados (ex.: "Usuários e perfis" cobre USUARIOS e PERFIS_DE_ACESSO).
-const MENU_ITEMS: MenuItem[] = [
-  { modules: [Module.DASHBOARD], label: "Dashboard", to: "/dashboard" },
-  {
-    modules: [Module.USUARIOS, Module.PERFIS_DE_ACESSO],
-    label: "Usuários e perfis",
-    to: "/usuarios",
-  },
-  { modules: [Module.OCORRENCIAS], label: "Agenda", to: "/agenda-administrativa" },
-  {
-    modules: [Module.TEMPLATES_DE_AULA],
-    label: "Templates & modalidades",
-    to: "/templates-e-modalidades",
-  },
-];
-
 export function AppMenu() {
-  const { can, user, logout } = useAuth();
-  const visibleItems = MENU_ITEMS.filter((item) =>
-    item.modules.some((module) => can(module, PermissionAction.VIEW)),
-  );
+  const { user, logout } = useAuth();
+  const visibleItems = user ? visibleAdminMenuItems(user) : [];
 
   if (visibleItems.length === 0) return null;
 
