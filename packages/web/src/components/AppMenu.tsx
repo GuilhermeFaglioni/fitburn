@@ -3,6 +3,7 @@ import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "../lib/auth/AuthContext";
 import { visibleAdminMenuItems } from "../lib/auth/areas";
 import "./AppMenu.css";
+import { useDialogFocus } from "./Modal";
 import { RequiresNetwork } from "./RequiresNetwork";
 
 /**
@@ -17,6 +18,9 @@ export function AppMenu() {
   const [open, setOpen] = useState(false);
   const panelId = useId();
   const toggleRef = useRef<HTMLButtonElement>(null);
+  // Aberta, a gaveta se comporta como diálogo modal: o foco entra, o Tab fica preso e o foco
+  // volta ao botão Menu ao fechar. No desktop ela é a barra lateral e nunca "abre".
+  const panelRef = useDialogFocus<HTMLDivElement>(open);
   const { pathname } = useLocation();
 
   // Escolher uma tela fecha a gaveta.
@@ -56,7 +60,15 @@ export function AppMenu() {
       {open && (
         <div className="app-menu__scrim" aria-hidden="true" onClick={() => setOpen(false)} />
       )}
-      <div id={panelId} className={`app-menu${open ? " app-menu--open" : ""}`}>
+      <div
+        ref={panelRef}
+        id={panelId}
+        className={`app-menu${open ? " app-menu--open" : ""}`}
+        role={open ? "dialog" : undefined}
+        aria-modal={open ? true : undefined}
+        aria-label={open ? "Menu" : undefined}
+        tabIndex={open ? -1 : undefined}
+      >
         <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
           <span className="app-menu__brand">FITBURN</span>
           <nav aria-label="Navegação principal">

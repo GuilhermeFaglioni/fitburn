@@ -56,14 +56,15 @@ const FOCUSABLE =
  * Foco de um diálogo modal: ao abrir, leva o foco ao primeiro campo (ou ao
  * próprio diálogo, que é anunciado pelo título); o Tab e o Shift+Tab ficam
  * presos dentro dele; ao fechar, devolve o foco a quem o abriu. Vai no
- * elemento com role="dialog" e tabIndex={-1}.
+ * elemento com role="dialog" e tabIndex={-1}. `active` (padrão: sempre) serve
+ * a painéis que só viram diálogo enquanto estão abertos (a gaveta do menu).
  */
-export function useDialogFocus<T extends HTMLElement>() {
+export function useDialogFocus<T extends HTMLElement>(active = true) {
   const ref = useRef<T>(null);
 
   useEffect(() => {
     const dialog = ref.current;
-    if (!dialog) return;
+    if (!dialog || !active) return;
     const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
 
     const firstField = dialog.querySelector<HTMLElement>(
@@ -94,9 +95,13 @@ export function useDialogFocus<T extends HTMLElement>() {
 
     return () => {
       dialog.removeEventListener("keydown", handleKeyDown);
-      if (opener?.isConnected) opener.focus();
+      // Só devolve o foco se ninguém o levou para outro lugar de propósito (ex.: ao
+      // escolher uma tela, o foco já foi para o conteúdo dela).
+      const current = document.activeElement;
+      const focusWasLost = !current || current === document.body || dialog.contains(current);
+      if (opener?.isConnected && focusWasLost) opener.focus();
     };
-  }, []);
+  }, [active]);
 
   return ref;
 }
