@@ -390,7 +390,7 @@ describe("Clientes (equipe)", () => {
 
       await waitFor(() => expect(calls).toEqual(["c-marina"]));
       expect(await screen.findByRole("heading", { name: "Clientes" })).toBeInTheDocument();
-      expect(screen.getByText("Bruno Lima")).toBeInTheDocument();
+      expect(await screen.findByText("Bruno Lima")).toBeInTheDocument();
     });
 
     it("um cliente excluído aparece como excluído e sem ações", async () => {
