@@ -18,6 +18,8 @@ interface AuthContextValue {
   isInitializing: boolean;
   login: (email: string, password: string) => Promise<CurrentUser>;
   logout: () => Promise<void>;
+  /** Atualiza na sessão os dados de identidade que a pessoa editou (nome e e-mail), sem novo login. */
+  updateIdentity: (identity: Pick<CurrentUser, "fullName" | "email">) => void;
   can: (module: ModuleName, action: PermissionActionName) => boolean;
 }
 
@@ -57,6 +59,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }, []);
 
+  const updateIdentity = useCallback((identity: Pick<CurrentUser, "fullName" | "email">) => {
+    setUser((current) => (current ? { ...current, ...identity } : current));
+  }, []);
+
   const can = useCallback(
     (module: ModuleName, action: PermissionActionName): boolean => {
       const entry = user?.permissions.find((permission) => permission.module === module);
@@ -66,8 +72,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const value = useMemo<AuthContextValue>(
-    () => ({ user, isAuthenticated: user !== null, isInitializing, login, logout, can }),
-    [user, isInitializing, login, logout, can],
+    () => ({
+      user,
+      isAuthenticated: user !== null,
+      isInitializing,
+      login,
+      logout,
+      updateIdentity,
+      can,
+    }),
+    [user, isInitializing, login, logout, updateIdentity, can],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -34,6 +34,12 @@ export function AppMenu() {
           <div className="app-menu__account-info">
             <span className="app-menu__account-name">{user.fullName}</span>
             <span className="app-menu__account-profile">{user.profile.name}</span>
+            <NavLink
+              to="/perfil"
+              className={({ isActive }) => `app-menu__account-link${isActive ? " active" : ""}`}
+            >
+              Minha conta
+            </NavLink>
           </div>
           <button type="button" className="app-menu__logout" onClick={() => void logout()}>
             Sair
