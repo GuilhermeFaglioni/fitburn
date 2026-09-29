@@ -1,3 +1,4 @@
+import { randomBytes } from "node:crypto";
 import { Injectable } from "@nestjs/common";
 import { Prisma, type AccessProfile, type User, type UserStatus } from "@prisma/client";
 import {
@@ -20,6 +21,14 @@ import { hashPassword } from "../auth/password.util.js";
 export type UserWithProfile = User & { profile: AccessProfile };
 
 const CLIENT_PROFILE_NAME = "Cliente";
+
+/** Nome neutro de quem foi excluído (anonimizado). */
+export const DELETED_USER_NAME = "Usuário excluído";
+
+/** E-mail único e não roteável (TLD reservado `.invalid`) de quem foi excluído. */
+export function deletedUserEmail(userId: string): string {
+  return `excluido-${userId}@anonimizado.invalid`;
+}
 
 @Injectable()
 export class UsersService {
@@ -47,9 +56,10 @@ export class UsersService {
     scope: PermissionScopeName,
     requesterId: string,
   ): Promise<UserWithProfile[]> {
+    // Excluídos (anonimizados) nunca aparecem em listagens.
     const where: Prisma.UserWhereInput = {
+      status: filters.status ?? { not: "DELETED" },
       ...(filters.profileId ? { profileId: filters.profileId } : {}),
-      ...(filters.status ? { status: filters.status } : {}),
     };
 
     // Nenhum perfil concede ASSIGNED_CLIENTS/ASSIGNED_CLASSES para o módulo
@@ -59,7 +69,11 @@ export class UsersService {
       where.id = requesterId;
     }
 
-    return this.prisma.user.findMany({ where, include: { profile: true }, orderBy: { fullName: "asc" } });
+    return this.prisma.user.findMany({
+      where,
+      include: { profile: true },
+      orderBy: { fullName: "asc" },
+    });
   }
 
   async createClient(input: CreateClientRequest): Promise<UserWithProfile> {
@@ -110,49 +124,116 @@ export class UsersService {
       await this.assertDocumentAvailable(input.document, id);
     }
 
-    return this.prisma.user.update({
-      where: { id },
-      data: {
-        ...(input.fullName !== undefined ? { fullName: input.fullName } : {}),
-        ...(input.email !== undefined ? { email: input.email } : {}),
-        ...(input.phone !== undefined ? { phone: input.phone } : {}),
-        ...(input.birthDate !== undefined
-          ? { birthDate: input.birthDate ? new Date(input.birthDate) : null }
-          : {}),
-        ...(input.document !== undefined ? { document: input.document } : {}),
-        ...(input.address !== undefined ? { address: input.address } : {}),
-        ...(input.profileId !== undefined ? { profileId: input.profileId } : {}),
-      },
-      include: { profile: true },
+    return this.prisma.$transaction(async (tx) => {
+      await this.lockLiveUser(tx, id);
+      return tx.user.update({
+        where: { id },
+        data: {
+          ...(input.fullName !== undefined ? { fullName: input.fullName } : {}),
+          ...(input.email !== undefined ? { email: input.email } : {}),
+          ...(input.phone !== undefined ? { phone: input.phone } : {}),
+          ...(input.birthDate !== undefined
+            ? { birthDate: input.birthDate ? new Date(input.birthDate) : null }
+            : {}),
+          ...(input.document !== undefined ? { document: input.document } : {}),
+          ...(input.address !== undefined ? { address: input.address } : {}),
+          ...(input.profileId !== undefined ? { profileId: input.profileId } : {}),
+        },
+        include: { profile: true },
+      });
     });
   }
 
   async deactivate(id: string): Promise<UserWithProfile> {
-    const [user] = await this.prisma.$transaction([
-      this.prisma.user.update({
+    return this.prisma.$transaction(async (tx) => {
+      await this.lockLiveUser(tx, id);
+      const user = await tx.user.update({
         where: { id },
         data: { status: "INACTIVE" },
         include: { profile: true },
-      }),
-      this.prisma.refreshToken.updateMany({
-        where: { userId: id, revokedAt: null },
-        data: { revokedAt: new Date() },
-      }),
-    ]);
-    return user;
+      });
+      await this.revokeSessions(tx, id);
+      return user;
+    });
   }
 
   reactivate(id: string): Promise<UserWithProfile> {
-    return this.prisma.user.update({
-      where: { id },
-      data: { status: "ACTIVE" },
-      include: { profile: true },
+    return this.prisma.$transaction(async (tx) => {
+      await this.lockLiveUser(tx, id);
+      return tx.user.update({
+        where: { id },
+        data: { status: "ACTIVE" },
+        include: { profile: true },
+      });
     });
   }
 
   async resetPassword(id: string, newPassword: string): Promise<void> {
     const passwordHash = await hashPassword(newPassword);
-    await this.prisma.user.update({ where: { id }, data: { passwordHash } });
+    await this.prisma.$transaction(async (tx) => {
+      await this.lockLiveUser(tx, id);
+      await tx.user.update({ where: { id }, data: { passwordHash } });
+    });
+  }
+
+  /**
+   * Exclusão com anonimização, numa única transação: os dados pessoais viram
+   * valores neutros, o e-mail vira um placeholder único e não roteável
+   * (`.invalid`), o documento é liberado, a senha deixa de existir, o status
+   * vira DELETED (distinto de INACTIVE, sem volta) e as sessões são
+   * revogadas. Nenhuma referência histórica (reservas, presenças, pontos,
+   * planos, fichas) é tocada.
+   */
+  async anonymize(id: string): Promise<UserWithProfile> {
+    // Hash de uma senha aleatória descartada: ninguém conhece, ninguém entra.
+    const passwordHash = await hashPassword(randomBytes(32).toString("hex"));
+    return this.prisma.$transaction(async (tx) => {
+      await this.lockLiveUser(tx, id);
+      const user = await tx.user.update({
+        where: { id },
+        data: {
+          fullName: DELETED_USER_NAME,
+          email: deletedUserEmail(id),
+          passwordHash,
+          phone: null,
+          birthDate: null,
+          document: null,
+          address: null,
+          status: "DELETED",
+        },
+        include: { profile: true },
+      });
+      await this.revokeSessions(tx, id);
+      return user;
+    });
+  }
+
+  private revokeSessions(tx: Prisma.TransactionClient, userId: string) {
+    return tx.refreshToken.updateMany({
+      where: { userId, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+  }
+
+  /**
+   * Trava a linha do usuário (FOR UPDATE) e garante que existe e não foi
+   * excluído: uma exclusão concorrente não pode ser desfeita por edição,
+   * reativação ou troca de senha, nem duas exclusões passarem juntas.
+   */
+  private async lockLiveUser(tx: Prisma.TransactionClient, id: string): Promise<void> {
+    const rows = await tx.$queryRaw<Array<{ status: string }>>`
+      SELECT status::text AS status FROM users WHERE id = ${id} FOR UPDATE
+    `;
+    if (rows.length === 0) {
+      throw new DomainError(ErrorCode.NOT_FOUND, "Usuário não encontrado.", ErrorStatus.NOT_FOUND);
+    }
+    if (rows[0].status === "DELETED") {
+      throw new DomainError(
+        ErrorCode.USER_ALREADY_DELETED,
+        "Este usuário já foi excluído.",
+        ErrorStatus.CONFLICT,
+      );
+    }
   }
 
   async toCurrentUser(user: UserWithProfile): Promise<CurrentUser> {

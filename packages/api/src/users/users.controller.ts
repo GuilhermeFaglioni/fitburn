@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -109,6 +110,24 @@ export class UsersController {
   @Post(":id/deactivate")
   async deactivate(@Param("id") id: string): Promise<UserDetail> {
     const user = await this.usersService.deactivate(id);
+    return this.usersService.toUserDetail(user);
+  }
+
+  /**
+   * Exclusão com anonimização de qualquer usuário (cliente ou equipe). Quem
+   * exclui não pode excluir a si mesmo: ficaria sem acesso no meio da ação.
+   */
+  @RequirePermission(Module.USUARIOS, PermissionAction.DELETE)
+  @Delete(":id")
+  async remove(@Param("id") id: string, @Req() req: AuthenticatedRequest): Promise<UserDetail> {
+    if (id === req.authUser.sub) {
+      throw new DomainError(
+        ErrorCode.VALIDATION_ERROR,
+        "Você não pode excluir o seu próprio usuário.",
+        ErrorStatus.VALIDATION,
+      );
+    }
+    const user = await this.usersService.anonymize(id);
     return this.usersService.toUserDetail(user);
   }
 

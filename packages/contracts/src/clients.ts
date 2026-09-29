@@ -1,12 +1,13 @@
 import { z } from "zod";
-import { UserStatus } from "./auth.js";
+import { UserStatus, userStatusSchema } from "./auth.js";
 import { gamificationSummarySchema } from "./gamification.js";
 import { myPlanSchema } from "./plans.js";
 import { reservationDetailSchema } from "./reservations.js";
 import { userDetailSchema } from "./users.js";
 import { workoutSheetSchema } from "./workout-sheets.js";
 
-const userStatusSchema = z.enum([UserStatus.ACTIVE, UserStatus.INACTIVE]);
+/** Excluídos nunca aparecem na lista, então não há filtro por eles. */
+const listableStatusSchema = z.enum([UserStatus.ACTIVE, UserStatus.INACTIVE]);
 
 /**
  * Busca da lista de clientes: `search` casa (sem diferenciar maiúsculas)
@@ -14,7 +15,7 @@ const userStatusSchema = z.enum([UserStatus.ACTIVE, UserStatus.INACTIVE]);
  */
 export const clientsQuerySchema = z.object({
   search: z.string().trim().optional(),
-  status: userStatusSchema.optional(),
+  status: listableStatusSchema.optional(),
 });
 export type ClientsQuery = z.infer<typeof clientsQuerySchema>;
 

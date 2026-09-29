@@ -4,7 +4,10 @@ import { effectivePermissionSchema } from "./permissions.js";
 export const UserStatus = {
   ACTIVE: "ACTIVE",
   INACTIVE: "INACTIVE",
+  DELETED: "DELETED",
 } as const;
+
+export const userStatusSchema = z.enum([UserStatus.ACTIVE, UserStatus.INACTIVE, UserStatus.DELETED]);
 
 export const loginRequestSchema = z.object({
   email: z.string().trim().email(),
@@ -22,7 +25,7 @@ export const currentUserSchema = z.object({
   id: z.string(),
   email: z.string(),
   fullName: z.string(),
-  status: z.enum([UserStatus.ACTIVE, UserStatus.INACTIVE]),
+  status: userStatusSchema,
   profile: profileSummarySchema,
   permissions: z.array(effectivePermissionSchema),
 });

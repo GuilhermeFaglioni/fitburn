@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import type { Prisma } from "@prisma/client";
 import {
   dateOnlyToLocalDate,
+  UserStatus,
   type ClientListItem,
   type ClientOverview,
   type ClientsQuery,
@@ -25,8 +26,10 @@ import { WorkoutSheetsService } from "../workout-sheets/workout-sheets.service.j
 /**
  * Clientes: a visão operacional da equipe sobre os usuários do perfil
  * Cliente. Lista e detalhe respeitam o escopo do perfil; cadastro, edição,
- * desativação e reativação reaproveitam as regras de usuários. Desativar
+ * desativação, reativação e exclusão reaproveitam as regras de usuários. Desativar
  * não cancela as reservas existentes: a equipe decide o que fazer com elas.
+ * Excluir anonimiza o cliente sem tocar no histórico; quem foi excluído sai da
+ * lista (mas o detalhe pelo id segue acessível, anonimizado).
  */
 @Injectable()
 export class ClientsService {
@@ -43,6 +46,7 @@ export class ClientsService {
     const conditions: Prisma.UserWhereInput[] = [
       CLIENT_PROFILE_WHERE,
       clientScopeFilter(requester),
+      { status: { not: UserStatus.DELETED } },
     ];
     if (query.status) conditions.push({ status: query.status });
     if (query.search) {
@@ -121,6 +125,12 @@ export class ClientsService {
   async deactivate(id: string, requester: ScopedRequester): Promise<UserDetail> {
     await assertClientInScope(this.prisma, id, requester);
     return this.usersService.toUserDetail(await this.usersService.deactivate(id));
+  }
+
+  /** Exclusão com anonimização (irreversível); o histórico do cliente permanece. */
+  async remove(id: string, requester: ScopedRequester): Promise<UserDetail> {
+    await assertClientInScope(this.prisma, id, requester);
+    return this.usersService.toUserDetail(await this.usersService.anonymize(id));
   }
 
   async reactivate(id: string, requester: ScopedRequester): Promise<UserDetail> {
