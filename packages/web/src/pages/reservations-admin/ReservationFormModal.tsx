@@ -12,6 +12,7 @@ import {
   searchReservationClients,
 } from "../../lib/reservations/admin-api";
 import { describeRefusal } from "./refusal";
+import { RequiresNetwork } from "../../components/RequiresNetwork";
 
 /** Quantos dias à frente a equipe enxerga aulas para reservar. */
 const AGENDA_HORIZON_DAYS = 14;
@@ -252,13 +253,15 @@ export function ReservationFormModal({
           <button type="button" className="fb-btn-secondary" onClick={onClose}>
             Voltar
           </button>
-          <button
-            type="submit"
-            className="fb-btn-primary fb-btn-primary--sm"
-            disabled={!canConfirm}
-          >
-            {rescheduling ? "Confirmar remarcação" : "Confirmar reserva"}
-          </button>
+          <RequiresNetwork>
+            <button
+              type="submit"
+              className="fb-btn-primary fb-btn-primary--sm"
+              disabled={!canConfirm}
+            >
+              {rescheduling ? "Confirmar remarcação" : "Confirmar reserva"}
+            </button>
+          </RequiresNetwork>
         </div>
       </form>
     </Modal>

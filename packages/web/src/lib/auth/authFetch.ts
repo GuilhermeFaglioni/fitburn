@@ -1,3 +1,4 @@
+import { trackedFetch } from "../connectivity/connectivity-store";
 import { refreshSession } from "./api";
 import { tokenStore } from "./token-store";
 
@@ -22,7 +23,7 @@ function refreshOnce() {
  */
 export async function authFetch(input: string, init: RequestInit = {}): Promise<Response> {
   const doFetch = () =>
-    fetch(input, {
+    trackedFetch(input, {
       ...init,
       credentials: "include",
       headers: { ...init.headers, Authorization: `Bearer ${tokenStore.get() ?? ""}` },

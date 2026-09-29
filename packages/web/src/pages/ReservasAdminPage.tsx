@@ -27,6 +27,7 @@ import {
   ReservationFormModal,
   type ReservationFormMode,
 } from "./reservations-admin/ReservationFormModal";
+import { RequiresNetwork } from "../components/RequiresNetwork";
 
 type Period = "today" | "week" | "all";
 
@@ -341,14 +342,16 @@ export function ReservasAdminPage() {
             <button type="button" className="fb-btn-secondary" onClick={() => setCancelling(null)}>
               Voltar
             </button>
-            <button
-              type="button"
-              className="fb-btn-danger"
-              disabled={cancelMutation.isPending}
-              onClick={() => cancelMutation.mutate(cancelling.id)}
-            >
-              Confirmar cancelamento
-            </button>
+            <RequiresNetwork>
+              <button
+                type="button"
+                className="fb-btn-danger"
+                disabled={cancelMutation.isPending}
+                onClick={() => cancelMutation.mutate(cancelling.id)}
+              >
+                Confirmar cancelamento
+              </button>
+            </RequiresNetwork>
           </div>
         </Modal>
       )}
