@@ -11,6 +11,7 @@ import { BlockedAction } from "../components/BlockedAction";
 import { DeleteUserDialog } from "../components/DeleteUserDialog";
 import { Modal } from "../components/Modal";
 import { useAuth } from "../lib/auth/AuthContext";
+import { invalidateAfterDeletion } from "../lib/invalidate-after-deletion";
 import {
   createClientRecord,
   deleteClientRecord,
@@ -104,7 +105,7 @@ export function ClientsPage() {
           onConfirm={() => deleteClientRecord(clientToDelete.id)}
           onDeleted={() => {
             setClientToDelete(null);
-            void queryClient.invalidateQueries({ queryKey: ["clients"] });
+            void invalidateAfterDeletion(queryClient);
           }}
           onClose={() => setClientToDelete(null)}
         />

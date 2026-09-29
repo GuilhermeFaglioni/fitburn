@@ -4,6 +4,7 @@ import { Module, PermissionAction, type UserDetail } from "@fitburn/contracts";
 import { BlockedAction } from "../components/BlockedAction";
 import { DeleteUserDialog } from "../components/DeleteUserDialog";
 import { useAuth } from "../lib/auth/AuthContext";
+import { invalidateAfterDeletion } from "../lib/invalidate-after-deletion";
 import { deactivateUser, deleteUser, listUsers, reactivateUser } from "../lib/users/api";
 import { ClientCreateForm } from "./ClientCreateForm";
 
@@ -106,7 +107,7 @@ export function UsersPage() {
           onConfirm={() => deleteUser(userToDelete.id)}
           onDeleted={() => {
             setUserToDelete(null);
-            void invalidateUsers();
+            void invalidateAfterDeletion(queryClient);
           }}
           onClose={() => setUserToDelete(null)}
         />

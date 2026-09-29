@@ -173,7 +173,7 @@ export function DashboardPage() {
               ) : (
                 <ol className="fb-dash__list" aria-label="Topo do ranking">
                   {dashboard.gamification.top.map((entry) => (
-                    <li key={`${entry.position}-${entry.fullName}`} className="fb-dash__class">
+                    <li key={entry.clientId} className="fb-dash__class">
                       <span className="fb-dash__class-hour">{entry.position}º</span>
                       <span className="fb-dash__class-name">{entry.fullName}</span>
                       <span className="fb-dash__class-count">

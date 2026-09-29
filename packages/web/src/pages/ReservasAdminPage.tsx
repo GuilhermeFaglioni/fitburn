@@ -7,6 +7,7 @@ import {
   PermissionAction,
   ReservationStatus,
   startOfWeek,
+  UserStatus,
   type AdminReservationDetail,
   type AdminReservationsQuery,
   type ReservationActor,
@@ -17,8 +18,11 @@ import { Modal } from "../components/Modal";
 import { formatClassDay, formatClassMoment, formatInstantHour } from "../lib/agenda/format";
 import { errorMessage } from "../lib/auth/api";
 import { useAuth } from "../lib/auth/AuthContext";
-import { listClients } from "../lib/clients/api";
-import { cancelAdminReservation, listAdminReservations } from "../lib/reservations/admin-api";
+import {
+  cancelAdminReservation,
+  listAdminReservations,
+  searchReservationClients,
+} from "../lib/reservations/admin-api";
 import {
   ReservationFormModal,
   type ReservationFormMode,
@@ -69,6 +73,11 @@ function actorText(actor: ReservationActor | null): string {
   return `${actor.fullName} (${actor.kind === "CLIENT" ? "cliente" : "equipe"})`;
 }
 
+/** Reserva de quem foi excluído (anonimizado): fica no histórico, mas não se remarca. */
+function isDeletedClient(reservation: AdminReservationDetail): boolean {
+  return reservation.client.status === UserStatus.DELETED;
+}
+
 /** Só uma reserva confirmada de uma aula que ainda não começou pode ser cancelada ou remarcada. */
 function isChangeable(reservation: AdminReservationDetail): boolean {
   return (
@@ -103,7 +112,7 @@ export function ReservasAdminPage() {
   });
   const clientsQuery = useQuery({
     queryKey: ["clients", "reservation-filter"],
-    queryFn: () => listClients(),
+    queryFn: () => searchReservationClients(),
   });
 
   const cancelMutation = useMutation({
@@ -264,22 +273,24 @@ export function ReservasAdminPage() {
                     <td className="fb-td" style={{ textAlign: "right" }}>
                       {changeable ? (
                         <>
-                          <BlockedAction
-                            allowed={canEdit}
-                            reason="Você não tem permissão para alterar reservas."
-                          >
-                            <button
-                              type="button"
-                              className="fb-row-btn"
-                              aria-label={`Remarcar reserva de ${name}`}
-                              onClick={() => {
-                                setFlash(null);
-                                setForm({ kind: "reschedule", reservation });
-                              }}
+                          {!isDeletedClient(reservation) && (
+                            <BlockedAction
+                              allowed={canEdit}
+                              reason="Você não tem permissão para alterar reservas."
                             >
-                              Remarcar
-                            </button>
-                          </BlockedAction>
+                              <button
+                                type="button"
+                                className="fb-row-btn"
+                                aria-label={`Remarcar reserva de ${name}`}
+                                onClick={() => {
+                                  setFlash(null);
+                                  setForm({ kind: "reschedule", reservation });
+                                }}
+                              >
+                                Remarcar
+                              </button>
+                            </BlockedAction>
+                          )}
                           <BlockedAction
                             allowed={canEdit}
                             reason="Você não tem permissão para alterar reservas."

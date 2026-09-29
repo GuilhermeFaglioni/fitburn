@@ -2,9 +2,11 @@ import { z } from "zod";
 import {
   adminReservationDetailSchema,
   IDEMPOTENCY_KEY_HEADER,
+  reservationClientOptionSchema,
   reservationPreviewSchema,
   type AdminReservationDetail,
   type AdminReservationsQuery,
+  type ReservationClientOption,
   type ReservationPreview,
   type ReservationPreviewQuery,
 } from "@fitburn/contracts";
@@ -26,6 +28,18 @@ export async function listAdminReservations(
 
   const response = await authFetch(`${BASE}${suffix ? `?${suffix}` : ""}`);
   return z.array(adminReservationDetailSchema).parse(await parseOrThrow(response));
+}
+
+/**
+ * Clientes ativos que a equipe pode escolher ao reservar, no escopo dela. Usa a
+ * permissão de Reservas: quem só tem esse módulo não consegue listar /api/clients.
+ */
+export async function searchReservationClients(search = ""): Promise<ReservationClientOption[]> {
+  const params = new URLSearchParams();
+  if (search) params.set("search", search);
+  const suffix = params.toString();
+  const response = await authFetch(`${BASE}/clients${suffix ? `?${suffix}` : ""}`);
+  return z.array(reservationClientOptionSchema).parse(await parseOrThrow(response));
 }
 
 /** "Pode reservar? Por quê?": só leitura, sem efeito colateral. */

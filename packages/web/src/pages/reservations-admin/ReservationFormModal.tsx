@@ -5,16 +5,19 @@ import { Modal } from "../../components/Modal";
 import { listClientAgenda } from "../../lib/agenda/client-api";
 import { formatClassDay, formatClassMoment, formatInstantHour } from "../../lib/agenda/format";
 import { ApiError } from "../../lib/auth/api";
-import { listClients } from "../../lib/clients/api";
 import {
   createAdminReservation,
   previewReservation,
   rescheduleAdminReservation,
+  searchReservationClients,
 } from "../../lib/reservations/admin-api";
 import { describeRefusal } from "./refusal";
 
 /** Quantos dias à frente a equipe enxerga aulas para reservar. */
 const AGENDA_HORIZON_DAYS = 14;
+
+/** Código do erro sem corpo de domínio (falha do servidor): a solicitação pode não ter sido processada. */
+const INTERNAL_ERROR_CODE = "INTERNAL_ERROR";
 
 /** Recusas da nova aula na remarcação: a reserva original continua confirmada. */
 const TARGET_REFUSALS: ReadonlySet<string> = new Set([
@@ -33,8 +36,8 @@ export type ReservationFormMode =
  * "Nova reserva (administrativa)" (ReservasAdmin.dc.html) e a remarcação em
  * nome do cliente. O cliente fica em destaque, a prévia de elegibilidade
  * ("pode reservar? por quê?") aparece antes de confirmar, e cada intenção
- * (cliente + aula) leva a sua chave de idempotência, reenviada nas novas
- * tentativas. Quem decide é o servidor, com as mesmas regras do cliente.
+ * (cliente + aula) leva a sua chave de idempotência, reenviada só se a tentativa
+ * falhou sem resposta do servidor; depois de uma recusa a chave é nova. Quem decide é o servidor, com as mesmas regras do cliente.
  */
 export function ReservationFormModal({
   mode,
@@ -49,7 +52,8 @@ export function ReservationFormModal({
   const rescheduling = mode.kind === "reschedule";
   const [pickedClientId, setPickedClientId] = useState("");
   const [occurrenceId, setOccurrenceId] = useState("");
-  // Uma chave por intenção: trocar cliente ou aula é outra intenção.
+  // Uma chave por intenção: trocar cliente ou aula é outra intenção, e uma
+  // recusa do servidor encerra a intenção (ver onError).
   const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
   const [submitError, setSubmitError] = useState<ApiError | null>(null);
 
@@ -57,7 +61,7 @@ export function ReservationFormModal({
 
   const clientsQuery = useQuery({
     queryKey: ["clients", "reservation-options"],
-    queryFn: () => listClients(),
+    queryFn: () => searchReservationClients(),
     enabled: !rescheduling,
   });
   const today = gymToday();
@@ -96,10 +100,20 @@ export function ReservationFormModal({
           : `Reserva criada para ${client?.fullName ?? "o cliente"}.`,
       ),
     onError: (error) => {
+      // O servidor memoriza a resposta por (cliente, chave), recusas incluídas:
+      // repetir a chave devolveria a recusa antiga mesmo que a situação tenha
+      // mudado. Depois de uma recusa, a nova tentativa é uma nova solicitação.
+      // Só uma falha sem resposta de domínio (rede, 500) reaproveita a chave.
+      if (error instanceof ApiError && error.code !== INTERNAL_ERROR_CODE) {
+        setIdempotencyKey(crypto.randomUUID());
+      }
       setSubmitError(
         error instanceof ApiError
           ? error
-          : new ApiError("INTERNAL_ERROR", "Não foi possível concluir a reserva. Tente novamente."),
+          : new ApiError(
+              INTERNAL_ERROR_CODE,
+              "Não foi possível concluir a reserva. Tente novamente.",
+            ),
       );
       // Depois de uma recusa a disponibilidade mostrada pode ter mudado.
       void previewQuery.refetch();
@@ -180,7 +194,6 @@ export function ReservationFormModal({
               {clients.map((candidate) => (
                 <option key={candidate.id} value={candidate.id}>
                   {candidate.fullName}
-                  {candidate.status === "INACTIVE" ? " (inativo)" : ""}
                 </option>
               ))}
             </select>
