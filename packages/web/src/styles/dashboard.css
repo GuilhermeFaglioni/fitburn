@@ -1,0 +1,105 @@
+/* Dashboard administrativo (casca clara). */
+.fb-dash {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.fb-dash__block {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 18px;
+  background: #f7f7f7;
+  border: 1px solid #ececec;
+  border-radius: var(--radius-sm);
+}
+
+.fb-dash__block-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.fb-dash__block-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.fb-dash__sub-title,
+.fb-dash__day-title {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #4a4a4a;
+}
+
+.fb-dash__columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.fb-dash__day {
+  margin-bottom: 12px;
+}
+
+.fb-dash__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fb-dash__class {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--color-surface-white);
+  border: 1px solid #ececec;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+}
+
+.fb-dash__class-hour {
+  flex-shrink: 0;
+  width: 48px;
+  font-weight: 700;
+}
+
+.fb-dash__class-name {
+  flex-grow: 1;
+  min-width: 0;
+}
+
+.fb-dash__class-count {
+  color: #5a5a5a;
+  font-size: 13px;
+}
+
+.fb-dash__metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.fb-dash__metric {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.fb-dash__metric-value {
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.fb-dash__metric-label {
+  font-size: 13px;
+  color: #5a5a5a;
+}
