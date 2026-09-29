@@ -63,6 +63,7 @@ services:
   # sobe depois que ele termina com sucesso (depends_on abaixo); o runbook também
   # o executa explicitamente, antes do restart da API.
   migrate:
+    # Único ponto de build da imagem fitburn-api (a api só referencia a mesma tag).
     build:
       context: .
       dockerfile: docker/api/Dockerfile
@@ -78,10 +79,10 @@ services:
     logging: *default-logging
 
   api:
-    build:
-      context: .
-      dockerfile: docker/api/Dockerfile
+    # Mesma imagem do migrate (que é o único ponto de build: `docker compose build`
+    # constrói uma vez só). Nunca tenta baixar de registry.
     image: fitburn-api:${IMAGE_TAG:-latest}
+    pull_policy: never
     restart: unless-stopped
     environment: *api-environment
     # Porta só interna (D-015): visível para o nginx na rede "internal", nunca no host.
@@ -130,12 +131,16 @@ services:
       - edge
       - internal
     # Recarrega a cada 6h para pegar certificados renovados pelo certbot.
+    # Atenção: o "command" substitui o CMD da imagem, e o entrypoint oficial só roda
+    # /docker-entrypoint.d/* (select-config.sh e o envsubst dos templates, que geram
+    # o default.conf) quando o primeiro argumento é "nginx". Por isso o script chama
+    # /docker-entrypoint.sh nginx explicitamente em vez de "exec nginx" direto.
     command:
       - /bin/sh
       - -c
       - |
         (while :; do sleep 6h; nginx -s reload; done) &
-        exec nginx -g 'daemon off;'
+        exec /docker-entrypoint.sh nginx -g 'daemon off;'
     logging: *default-logging
 
   # Renovação automática: tenta renovar a cada 12h (só renova o que vence em <30 dias).

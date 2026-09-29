@@ -36,6 +36,19 @@ export function databaseNameFromUrl(url: string | undefined): string | undefined
   }
 }
 
+/** Schema que o reset aceita. O runtime da API (adapter pg) e o seed usam o schema padrão. */
+export const DEMO_RESET_SCHEMA = "public";
+
+/** Schema da URL de conexão (`?schema=`); "public" quando o parâmetro não existe. */
+export function schemaFromUrl(url: string | undefined): string {
+  if (!url?.trim()) return DEMO_RESET_SCHEMA;
+  try {
+    return new URL(url).searchParams.get("schema")?.trim() || DEMO_RESET_SCHEMA;
+  } catch {
+    return DEMO_RESET_SCHEMA;
+  }
+}
+
 /**
  * Todas as travas que valem ANTES de qualquer escrita. Devolve o nome do
  * banco que será apagado. Nunca inclui valores de segredos nas mensagens.
@@ -69,6 +82,15 @@ function assertResetAllowed(options: DemoResetOptions): string {
     throw new DemoResetRefusedError("DATABASE_URL ausente ou inválida.");
   }
 
+  // O cliente da API ignora `?schema=` (usa o schema padrão), mas `prisma migrate deploy` o
+  // respeita: com outro schema as migrations iriam para um lugar e a limpeza/seed para outro.
+  const urlSchema = schemaFromUrl(env.DATABASE_URL);
+  if (urlSchema !== DEMO_RESET_SCHEMA) {
+    throw new DemoResetRefusedError(
+      `A DATABASE_URL usa o schema "${urlSchema}", mas o reset só suporta "${DEMO_RESET_SCHEMA}". Nada foi apagado.`,
+    );
+  }
+
   if (!confirmation?.trim()) {
     throw new DemoResetRefusedError(
       `Confirmação explícita ausente: informe --confirm-database=${databaseName} ` +
@@ -97,6 +119,17 @@ export async function runDemoReset(options: DemoResetOptions): Promise<void> {
     );
   }
 
+  // O schema realmente usado pela conexão tem de ser o da URL: a limpeza vale para ele.
+  const [effective] = await options.prisma.$queryRaw<Array<{ schema: string | null }>>`
+    SELECT current_schema() AS schema
+  `;
+  const schema = effective?.schema;
+  if (schema !== schemaFromUrl(options.env.DATABASE_URL)) {
+    throw new DemoResetRefusedError(
+      `O cliente está no schema "${schema}", diferente do da DATABASE_URL ("${schemaFromUrl(options.env.DATABASE_URL)}"). Nada foi apagado.`,
+    );
+  }
+
   await (options.migrate ?? migrateDeploy)(options.env);
 
   // Limpeza e seed na mesma transação: se o seed falhar, os dados anteriores permanecem.
@@ -104,12 +137,16 @@ export async function runDemoReset(options: DemoResetOptions): Promise<void> {
     async (tx) => {
       const tables = await tx.$queryRaw<Array<{ tablename: string }>>`
         SELECT tablename FROM pg_tables
-        WHERE schemaname = 'public' AND tablename != '_prisma_migrations'
+        WHERE schemaname = ${schema} AND tablename != '_prisma_migrations'
       `;
-      if (tables.length > 0) {
-        const names = tables.map((t) => `"public"."${t.tablename}"`).join(", ");
-        await tx.$executeRawUnsafe(`TRUNCATE TABLE ${names} RESTART IDENTITY CASCADE`);
+      // Sem tabelas não houve limpeza nenhuma: nunca reportar "concluído" assim.
+      if (tables.length === 0) {
+        throw new DemoResetRefusedError(
+          `Nenhuma tabela encontrada no schema "${schema}": nada foi limpado (as migrations foram aplicadas?).`,
+        );
       }
+      const names = tables.map((t) => `"${schema}"."${t.tablename}"`).join(", ");
+      await tx.$executeRawUnsafe(`TRUNCATE TABLE ${names} RESTART IDENTITY CASCADE`);
       await seedBaseData(tx, options.env);
     },
     { timeout: 120_000, maxWait: 30_000 },

@@ -1,3 +1,5 @@
+import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaClient } from "@prisma/client";
 import request from "supertest";
 import { AppConfigError } from "../src/config/app-config.js";
 import { DemoResetRefusedError, runDemoReset } from "../src/demo-reset/demo-reset.js";
@@ -172,6 +174,92 @@ describe("Reset da demonstração: recusas (nada é apagado)", () => {
       runDemoReset({ env, confirmation: databaseName, prisma: testPrisma, migrate: noMigrate }),
     ).rejects.toBeInstanceOf(AppConfigError);
     expect(await sentinelSurvived()).toBe(true);
+  });
+});
+
+describe("Reset da demonstração: schema do banco", () => {
+  let databaseName: string;
+
+  const urlWith = (query: string): string => {
+    const url = new URL(process.env.DATABASE_URL as string);
+    url.search = query;
+    return url.toString();
+  };
+
+  beforeAll(async () => {
+    databaseName = await currentDatabaseName();
+  });
+
+  beforeEach(async () => {
+    await cleanDatabase();
+    await plantSentinelData();
+  });
+
+  it("recusa claramente um schema diferente de public na DATABASE_URL (nada é apagado)", async () => {
+    const env = demoEnv({ DATABASE_URL: urlWith("schema=demo_alt") });
+
+    await expect(
+      runDemoReset({ env, confirmation: databaseName, prisma: testPrisma, migrate: noMigrate }),
+    ).rejects.toThrow(/schema.*demo_alt.*public/i);
+    expect(await sentinelSurvived()).toBe(true);
+  });
+
+  it("aceita ?schema=public explícito e limpa de verdade", async () => {
+    const env = demoEnv({ DATABASE_URL: urlWith("schema=public") });
+
+    await runDemoReset({
+      env,
+      confirmation: databaseName,
+      prisma: testPrisma,
+      migrate: noMigrate,
+    });
+
+    expect(await sentinelSurvived()).toBe(false);
+    expect(await testPrisma.user.count()).toBe(1);
+  });
+
+  it("recusa quando o schema efetivo da conexão não é o da DATABASE_URL (nada é apagado)", async () => {
+    // Conexão com search_path apontando para outro schema, enquanto a URL declara public.
+    const other = new PrismaClient({
+      adapter: new PrismaPg({
+        connectionString: urlWith("options=-c%20search_path%3Dpg_catalog"),
+      }),
+    });
+    try {
+      await expect(
+        runDemoReset({
+          env: demoEnv(),
+          confirmation: databaseName,
+          prisma: other,
+          migrate: noMigrate,
+        }),
+      ).rejects.toThrow(/schema/i);
+    } finally {
+      await other.$disconnect();
+    }
+    expect(await sentinelSurvived()).toBe(true);
+  });
+
+  it("não diz concluído se não havia nenhuma tabela para limpar (banco sem migrations)", async () => {
+    const emptyDb = `fitburn_reset_empty_${process.pid}`;
+    await testPrisma.$executeRawUnsafe(`DROP DATABASE IF EXISTS "${emptyDb}"`);
+    await testPrisma.$executeRawUnsafe(`CREATE DATABASE "${emptyDb}"`);
+    const url = new URL(process.env.DATABASE_URL as string);
+    url.pathname = `/${emptyDb}`;
+    const empty = new PrismaClient({ adapter: new PrismaPg({ connectionString: url.toString() }) });
+    try {
+      await expect(
+        runDemoReset({
+          env: demoEnv({ DATABASE_URL: url.toString() }),
+          confirmation: emptyDb,
+          prisma: empty,
+          migrate: noMigrate,
+        }),
+      ).rejects.toThrow(/nenhuma tabela/i);
+    } finally {
+      await empty.$disconnect();
+      await testPrisma.$executeRawUnsafe(`DROP DATABASE IF EXISTS "${emptyDb}"`);
+    }
   });
 });
 
