@@ -25,6 +25,7 @@ export async function createUser(overrides: {
   fullName?: string;
   status?: UserStatus;
   document?: string;
+  phone?: string;
 }) {
   const passwordHash = await hashPassword(overrides.password);
   return testPrisma.user.create({
@@ -35,6 +36,7 @@ export async function createUser(overrides: {
       profileId: overrides.profileId,
       status: overrides.status ?? "ACTIVE",
       document: overrides.document,
+      phone: overrides.phone,
     },
   });
 }

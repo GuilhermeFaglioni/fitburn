@@ -183,6 +183,21 @@ export class PlansService {
     return rows.map((row) => this.toAssignment(row, today));
   }
 
+  /** O plano ativo hoje de cada cliente informado (só os que têm um), numa consulta. */
+  async activePlansOf(clientIds: string[]): Promise<Map<string, { name: string; endDate: string }>> {
+    if (clientIds.length === 0) return new Map();
+    const rows = await this.prisma.planAssignment.findMany({
+      where: { clientId: { in: clientIds }, ...this.currentWhere() },
+      select: { clientId: true, endDate: true, plan: { select: { name: true } } },
+    });
+    return new Map(
+      rows.map((row) => [
+        row.clientId,
+        { name: row.plan.name, endDate: dateOnlyToLocalDate(row.endDate) },
+      ]),
+    );
+  }
+
   /** O plano do próprio cliente: o ativo (ou nenhum) e o histórico. */
   async mine(clientId: string): Promise<MyPlan> {
     const today = gymToday();

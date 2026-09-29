@@ -16,6 +16,7 @@ import { PrismaService } from "../prisma/prisma.service.js";
 import { PermissionsService } from "../permissions/permissions.service.js";
 import { DomainError } from "../common/errors/domain-error.js";
 import { hashPassword } from "../auth/password.util.js";
+import { isUniqueViolation } from "../prisma/unique-violation.js";
 
 export type UserWithProfile = User & { profile: AccessProfile };
 
@@ -59,7 +60,11 @@ export class UsersService {
       where.id = requesterId;
     }
 
-    return this.prisma.user.findMany({ where, include: { profile: true }, orderBy: { fullName: "asc" } });
+    return this.prisma.user.findMany({
+      where,
+      include: { profile: true },
+      orderBy: { fullName: "asc" },
+    });
   }
 
   async createClient(input: CreateClientRequest): Promise<UserWithProfile> {
@@ -68,19 +73,21 @@ export class UsersService {
     await this.assertDocumentAvailable(input.document);
     const passwordHash = await hashPassword(input.password);
 
-    return this.prisma.user.create({
-      data: {
-        email: input.email,
-        passwordHash,
-        fullName: input.fullName,
-        phone: input.phone,
-        birthDate: new Date(input.birthDate),
-        document: input.document,
-        address: input.address,
-        profileId: clientProfile.id,
-      },
-      include: { profile: true },
-    });
+    return this.prisma.user
+      .create({
+        data: {
+          email: input.email,
+          passwordHash,
+          fullName: input.fullName,
+          phone: input.phone,
+          birthDate: new Date(input.birthDate),
+          document: input.document,
+          address: input.address,
+          profileId: clientProfile.id,
+        },
+        include: { profile: true },
+      })
+      .catch((error: unknown) => this.rethrowUniqueViolation(error, input.email, input.document));
   }
 
   async createStaff(input: CreateStaffRequest): Promise<UserWithProfile> {
@@ -88,15 +95,17 @@ export class UsersService {
     await this.assertEmailAvailable(input.email);
     const passwordHash = await hashPassword(input.password);
 
-    return this.prisma.user.create({
-      data: {
-        email: input.email,
-        passwordHash,
-        fullName: input.fullName,
-        profileId: profile.id,
-      },
-      include: { profile: true },
-    });
+    return this.prisma.user
+      .create({
+        data: {
+          email: input.email,
+          passwordHash,
+          fullName: input.fullName,
+          profileId: profile.id,
+        },
+        include: { profile: true },
+      })
+      .catch((error: unknown) => this.rethrowUniqueViolation(error, input.email));
   }
 
   async update(id: string, input: UpdateUserRequest): Promise<UserWithProfile> {
@@ -110,21 +119,25 @@ export class UsersService {
       await this.assertDocumentAvailable(input.document, id);
     }
 
-    return this.prisma.user.update({
-      where: { id },
-      data: {
-        ...(input.fullName !== undefined ? { fullName: input.fullName } : {}),
-        ...(input.email !== undefined ? { email: input.email } : {}),
-        ...(input.phone !== undefined ? { phone: input.phone } : {}),
-        ...(input.birthDate !== undefined
-          ? { birthDate: input.birthDate ? new Date(input.birthDate) : null }
-          : {}),
-        ...(input.document !== undefined ? { document: input.document } : {}),
-        ...(input.address !== undefined ? { address: input.address } : {}),
-        ...(input.profileId !== undefined ? { profileId: input.profileId } : {}),
-      },
-      include: { profile: true },
-    });
+    return this.prisma.user
+      .update({
+        where: { id },
+        data: {
+          ...(input.fullName !== undefined ? { fullName: input.fullName } : {}),
+          ...(input.email !== undefined ? { email: input.email } : {}),
+          ...(input.phone !== undefined ? { phone: input.phone } : {}),
+          ...(input.birthDate !== undefined
+            ? { birthDate: input.birthDate ? new Date(input.birthDate) : null }
+            : {}),
+          ...(input.document !== undefined ? { document: input.document } : {}),
+          ...(input.address !== undefined ? { address: input.address } : {}),
+          ...(input.profileId !== undefined ? { profileId: input.profileId } : {}),
+        },
+        include: { profile: true },
+      })
+      .catch((error: unknown) =>
+        this.rethrowUniqueViolation(error, input.email, input.document, id),
+      );
   }
 
   async deactivate(id: string): Promise<UserWithProfile> {
@@ -199,6 +212,25 @@ export class UsersService {
       );
     }
     return profile;
+  }
+
+  /**
+   * Duas requisições simultâneas passam juntas pela checagem proativa e a
+   * segunda esbarra no unique do banco (P2002). Como o adapter-pg não diz qual
+   * coluna colidiu, refaz a checagem — agora com a linha da vencedora já
+   * gravada — para devolver o erro de domínio certo, nunca um 500.
+   */
+  private async rethrowUniqueViolation(
+    error: unknown,
+    email: string | undefined,
+    document?: string | null,
+    excludeUserId?: string,
+  ): Promise<never> {
+    if (isUniqueViolation(error)) {
+      if (email !== undefined) await this.assertEmailAvailable(email, excludeUserId);
+      await this.assertDocumentAvailable(document, excludeUserId);
+    }
+    throw error;
   }
 
   // Checagem proativa em vez de traduzir a violação de unicidade do
