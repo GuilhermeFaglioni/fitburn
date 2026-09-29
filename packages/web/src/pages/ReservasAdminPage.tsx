@@ -27,6 +27,8 @@ import {
   ReservationFormModal,
   type ReservationFormMode,
 } from "./reservations-admin/ReservationFormModal";
+import { EmptyState, ErrorState, Feedback, LoadingState } from "../components/states";
+import { RequiresNetwork } from "../components/RequiresNetwork";
 
 type Period = "today" | "week" | "all";
 
@@ -210,19 +212,16 @@ export function ReservasAdminPage() {
         </label>
       </div>
 
-      {flash && (
-        <div role="status" className="fb-success-box">
-          {flash}
-        </div>
-      )}
-      {reservationsQuery.isLoading && <p className="fb-note">Carregando…</p>}
+      {flash && <Feedback tone="success">{flash}</Feedback>}
+      {reservationsQuery.isLoading && <LoadingState />}
       {reservationsQuery.isError && (
-        <p role="alert">
-          {errorMessage(reservationsQuery.error, "Não foi possível carregar as reservas.")}
-        </p>
+        <ErrorState
+          message={errorMessage(reservationsQuery.error, "Não foi possível carregar as reservas.")}
+          onRetry={() => void reservationsQuery.refetch()}
+        />
       )}
       {reservations && reservations.length === 0 && (
-        <p className="fb-note">Nenhuma reserva encontrada.</p>
+        <EmptyState message="Nenhuma reserva encontrada." />
       )}
 
       {reservations && reservations.length > 0 && (
@@ -341,14 +340,16 @@ export function ReservasAdminPage() {
             <button type="button" className="fb-btn-secondary" onClick={() => setCancelling(null)}>
               Voltar
             </button>
-            <button
-              type="button"
-              className="fb-btn-danger"
-              disabled={cancelMutation.isPending}
-              onClick={() => cancelMutation.mutate(cancelling.id)}
-            >
-              Confirmar cancelamento
-            </button>
+            <RequiresNetwork>
+              <button
+                type="button"
+                className="fb-btn-danger"
+                disabled={cancelMutation.isPending}
+                onClick={() => cancelMutation.mutate(cancelling.id)}
+              >
+                Confirmar cancelamento
+              </button>
+            </RequiresNetwork>
           </div>
         </Modal>
       )}

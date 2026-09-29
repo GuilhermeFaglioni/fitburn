@@ -6,6 +6,7 @@ import { EyeOffIcon } from "../components/icons/EyeOffIcon";
 import { useAuth } from "../lib/auth/AuthContext";
 import { homeRouteFor } from "../lib/auth/areas";
 import "./LoginPage.css";
+import { RequiresNetwork } from "../components/RequiresNetwork";
 
 // "/" não conta como rota original a preservar: é só o destino genérico, e
 // cada perfil tem o seu (homeRouteFor). Uma rota mais específica (ex.:
@@ -53,7 +54,7 @@ export function LoginPage() {
   }
 
   return (
-    <div className="login-page">
+    <main id="conteudo" tabIndex={-1} className="login-page">
       <div className="login-page__container">
         <div className="login-page__logo">
           <span className="login-page__logo-mark">FITBURN</span>
@@ -128,35 +129,37 @@ export function LoginPage() {
             </div>
           </div>
 
-          <button type="submit" className="login-form__submit" disabled={isSubmitting}>
-            {isSubmitting ? (
-              <>
-                <svg
-                  className="login-form__spinner"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 16 16"
-                  fill="none"
-                  aria-hidden="true"
-                >
-                  <circle cx="8" cy="8" r="6.5" stroke="rgba(255,255,255,0.35)" strokeWidth="2" />
-                  <path
-                    d="M14.5 8A6.5 6.5 0 0 0 8 1.5"
-                    stroke="#ffffff"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
-                </svg>
-                <span className="login-form__submit-label">Entrando…</span>
-              </>
-            ) : (
-              <span className="login-form__submit-label">Entrar</span>
-            )}
-          </button>
+          <RequiresNetwork>
+            <button type="submit" className="login-form__submit" disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <svg
+                    className="login-form__spinner"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 16 16"
+                    fill="none"
+                    aria-hidden="true"
+                  >
+                    <circle cx="8" cy="8" r="6.5" stroke="rgba(255,255,255,0.35)" strokeWidth="2" />
+                    <path
+                      d="M14.5 8A6.5 6.5 0 0 0 8 1.5"
+                      stroke="#ffffff"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  <span className="login-form__submit-label">Entrando…</span>
+                </>
+              ) : (
+                <span className="login-form__submit-label">Entrar</span>
+              )}
+            </button>
+          </RequiresNetwork>
         </form>
 
         <p className="login-page__footer">Acesso restrito a alunos e equipe Fitburn.</p>
       </div>
-    </div>
+    </main>
   );
 }

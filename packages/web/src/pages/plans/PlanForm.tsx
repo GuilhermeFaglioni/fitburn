@@ -4,6 +4,7 @@ import type { PlanDetail } from "@fitburn/contracts";
 import { Modal } from "../../components/Modal";
 import { errorMessage } from "../../lib/auth/api";
 import { createPlan, updatePlan } from "../../lib/plans/api";
+import { Feedback } from "../../components/states";
 
 interface PlanFormProps {
   /** O plano em edição; ausente para criar um novo. */
@@ -57,9 +58,9 @@ export function PlanForm({ plan, onSaved, onClose }: PlanFormProps) {
           />
         </div>
         {saveMutation.isError && (
-          <p role="alert" className="fb-error-box">
+          <Feedback tone="error">
             {errorMessage(saveMutation.error, "Não foi possível salvar o plano.")}
-          </p>
+          </Feedback>
         )}
         <div className="fb-modal__footer" style={{ justifyContent: "flex-end" }}>
           <button type="button" className="fb-btn-secondary" onClick={onClose}>

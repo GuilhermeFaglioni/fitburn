@@ -7,7 +7,8 @@
  */
 .fb-profile {
   --fb-profile-card: #1a1a1a;
-  --fb-profile-muted: rgba(255, 255, 255, 0.45);
+  --fb-profile-muted: rgba(255, 255, 255, 0.6);
+  --fb-profile-accent: var(--color-primary-orange);
   --fb-profile-soft: rgba(255, 255, 255, 0.6);
   --fb-profile-line: rgba(255, 255, 255, 0.2);
   --fb-profile-input: #0f0f0f;
@@ -21,7 +22,8 @@
 
 .fb-profile--light {
   --fb-profile-card: #fafafa;
-  --fb-profile-muted: #8a8a8a;
+  --fb-profile-muted: #666666;
+  --fb-profile-accent: var(--color-accent-on-light);
   --fb-profile-soft: #4a4a4a;
   --fb-profile-line: #cfcfcf;
   --fb-profile-input: #ffffff;
@@ -63,7 +65,7 @@
   justify-content: center;
   font-size: 18px;
   font-weight: 700;
-  color: var(--color-primary-orange);
+  color: var(--fb-profile-accent);
 }
 
 .fb-profile__identity-text {
@@ -113,7 +115,7 @@
   font-family: inherit;
   font-size: 13px;
   font-weight: 700;
-  color: var(--color-primary-orange);
+  color: var(--fb-profile-accent);
   cursor: pointer;
 }
 
@@ -171,8 +173,7 @@
 }
 
 .fb-profile__input:focus {
-  outline: none;
-  border-color: var(--color-primary-orange);
+  border-color: var(--fb-profile-accent);
 }
 
 .fb-profile__actions {
@@ -200,7 +201,7 @@
 .fb-profile__btn--primary {
   background: var(--color-primary-orange);
   border: none;
-  color: #ffffff;
+  color: var(--color-on-orange);
 }
 
 .fb-profile__btn:disabled {

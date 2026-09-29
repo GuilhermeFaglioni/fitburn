@@ -2,6 +2,7 @@ import { useId, useState, type FormEvent } from "react";
 import type { CreateClientRequest } from "@fitburn/contracts";
 import { ApiError } from "../lib/auth/api";
 import { createClient } from "../lib/users/api";
+import { Feedback } from "../components/states";
 
 const ERROR_MESSAGES: Record<string, string> = {
   EMAIL_ALREADY_IN_USE: "Este e-mail já está em uso.",
@@ -56,7 +57,7 @@ export function ClientCreateForm({
 
   return (
     <form onSubmit={handleSubmit} aria-label="Cadastro de cliente" className="fb-form">
-      {errorMessage && <p role="alert">{errorMessage}</p>}
+      {errorMessage && <Feedback tone="error">{errorMessage}</Feedback>}
 
       <label htmlFor={`${formId}-fullName`}>Nome completo</label>
       <input

@@ -2,6 +2,7 @@ import { useId, useState, type FormEvent } from "react";
 import type { ClassTemplateDetail, InstructorSummary, ModalityDetail } from "@fitburn/contracts";
 import { ApiError } from "../../lib/auth/api";
 import { createClassTemplate, updateClassTemplate } from "../../lib/catalog/api";
+import { Feedback } from "../../components/states";
 
 export function ClassTemplateForm({
   template,
@@ -77,7 +78,7 @@ export function ClassTemplateForm({
 
   return (
     <form onSubmit={handleSubmit} aria-label="Template de aula" className="fb-form">
-      {errorMessage && <p role="alert">{errorMessage}</p>}
+      {errorMessage && <Feedback tone="error">{errorMessage}</Feedback>}
 
       <label htmlFor={`${formId}-name`}>Nome</label>
       <input

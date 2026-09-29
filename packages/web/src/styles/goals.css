@@ -29,7 +29,7 @@
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.03em;
-  color: #8a8a8a;
+  color: var(--color-text-muted-on-light);
   padding: 0 8px;
 }
 
@@ -62,7 +62,7 @@
 
 .fb-goals__student--active {
   background: rgba(237, 110, 52, 0.14);
-  color: var(--color-primary-orange);
+  color: var(--color-accent-on-light);
   font-weight: 700;
 }
 
@@ -70,7 +70,7 @@
   padding: 6px 8px;
   font-size: 11px;
   line-height: 16px;
-  color: #b0b0b0;
+  color: var(--color-text-muted-on-light);
 }
 
 .fb-goals__main {
@@ -154,7 +154,7 @@
 
 .fb-goals__card-meta {
   font-size: 12px;
-  color: #8a8a8a;
+  color: var(--color-text-muted-on-light);
 }
 
 .fb-goals__card-text {

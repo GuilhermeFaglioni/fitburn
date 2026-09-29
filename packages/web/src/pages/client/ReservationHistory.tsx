@@ -10,6 +10,7 @@ import {
 import { getClientAgendaItem } from "../../lib/agenda/client-api";
 import { formatClassDay, formatInstantHour } from "../../lib/agenda/format";
 import { listMyReservations } from "../../lib/reservations/api";
+import { EmptyState, ErrorState, LoadingState } from "../../components/states";
 
 /** Rótulos de cada estado: o selo do cartão e a pílula do filtro. */
 const STATUSES: Array<{
@@ -131,7 +132,14 @@ function ReservationSection({
     <section className="fb-reservation-section" aria-label={title}>
       <h2 className="fb-reservation-section__title">{title}</h2>
 
-      {reservationsQuery.isError && <p role="alert">Não foi possível carregar suas reservas.</p>}
+      {reservationsQuery.isLoading && <LoadingState surface="dark" />}
+      {reservationsQuery.isError && (
+        <ErrorState
+          surface="dark"
+          message="Não foi possível carregar suas reservas."
+          onRetry={() => void reservationsQuery.refetch()}
+        />
+      )}
       {unavailable && (
         <p role="alert" className="fb-reservation-section__notice">
           Esta aula não está mais disponível na agenda (foi cancelada ou já começou).
@@ -140,7 +148,7 @@ function ReservationSection({
 
       {reservationsQuery.isSuccess &&
         (reservationsQuery.data.length === 0 ? (
-          <div className="fb-client-empty">{empty}</div>
+          <EmptyState surface="dark" message={empty} />
         ) : (
           <ul className="fb-reservation-list">
             {reservationsQuery.data.map((reservation) => (

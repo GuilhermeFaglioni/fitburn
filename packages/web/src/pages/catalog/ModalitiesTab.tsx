@@ -11,6 +11,7 @@ import {
   listModalities,
 } from "../../lib/catalog/api";
 import { ModalityForm } from "./ModalityForm";
+import { EmptyState, ErrorState, Feedback, LoadingState } from "../../components/states";
 
 type FormState =
   { mode: "closed" } | { mode: "create" } | { mode: "edit"; modality: ModalityDetail };
@@ -64,15 +65,20 @@ export function ModalitiesTab() {
         />
       )}
 
-      {modalitiesQuery.isLoading && <p className="fb-note">Carregando…</p>}
-      {modalitiesQuery.isError && <p role="alert">Não foi possível carregar as modalidades.</p>}
+      {modalitiesQuery.isLoading && <LoadingState />}
+      {modalitiesQuery.isError && (
+        <ErrorState
+          message="Não foi possível carregar as modalidades."
+          onRetry={() => void modalitiesQuery.refetch()}
+        />
+      )}
       {toggleMutation.isError && (
-        <p role="alert">
+        <Feedback tone="error">
           {toggleMutation.error.message || "Não foi possível alterar a modalidade."}
-        </p>
+        </Feedback>
       )}
       {modalitiesQuery.data && modalitiesQuery.data.length === 0 && (
-        <p className="fb-note">Nenhuma modalidade cadastrada.</p>
+        <EmptyState message="Nenhuma modalidade cadastrada." />
       )}
 
       {modalitiesQuery.data && modalitiesQuery.data.length > 0 && (

@@ -23,6 +23,7 @@ import {
 } from "../lib/agenda/format";
 import { ClassDetailSheet, type Rescheduling } from "./client/ClassDetailSheet";
 import { ReservationHistory } from "./client/ReservationHistory";
+import { EmptyState, ErrorState, LoadingState } from "../components/states";
 
 type AgendaTab = "upcoming" | "history";
 
@@ -201,7 +202,14 @@ export function ClientAgendaPage() {
             <span>Disponibilidade sujeita a confirmação no momento da reserva.</span>
           </div>
 
-          {agendaQuery.isError && <p role="alert">Não foi possível carregar a agenda.</p>}
+          {agendaQuery.isLoading && <LoadingState surface="dark" />}
+          {agendaQuery.isError && (
+            <ErrorState
+              surface="dark"
+              message="Não foi possível carregar a agenda."
+              onRetry={() => void agendaQuery.refetch()}
+            />
+          )}
 
           <section className="fb-client-mobile-only" aria-label="Aulas do dia">
             <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -222,7 +230,7 @@ export function ClientAgendaPage() {
               </div>
 
               {agendaQuery.data && dayItems.length === 0 && (
-                <div className="fb-client-empty">Nenhuma aula agendada para este dia.</div>
+                <EmptyState surface="dark" message="Nenhuma aula agendada para este dia." />
               )}
 
               {dayItems.length > 0 && (
@@ -262,7 +270,7 @@ export function ClientAgendaPage() {
 
           <section className="fb-client-desktop-only" aria-label="Grade da semana">
             {agendaQuery.data && agendaQuery.data.length === 0 ? (
-              <div className="fb-client-empty">Nenhuma aula agendada para esta semana.</div>
+              <EmptyState surface="dark" message="Nenhuma aula agendada para esta semana." />
             ) : (
               <div className="fb-client-grid">
                 <div className="fb-client-cell fb-client-cell--head" />

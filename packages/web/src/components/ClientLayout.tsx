@@ -1,5 +1,7 @@
 import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../lib/auth/AuthContext";
+import { useFocusOnNavigation } from "./useFocusOnNavigation";
+import { RequiresNetwork } from "./RequiresNetwork";
 
 function HomeIcon({ color }: { color: string }) {
   return (
@@ -77,6 +79,7 @@ const ITEMS = [
 /** Casca do cliente: sidebar no desktop e barra inferior no mobile (AgendaDesktop/AgendaMobile). */
 export function ClientLayout() {
   const { logout } = useAuth();
+  const mainRef = useFocusOnNavigation();
 
   return (
     <div className="fb-client">
@@ -101,12 +104,14 @@ export function ClientLayout() {
             ))}
           </div>
         </div>
-        <button type="button" className="fb-client__logout" onClick={() => void logout()}>
-          Sair
-        </button>
+        <RequiresNetwork>
+          <button type="button" className="fb-client__logout" onClick={() => void logout()}>
+            Sair
+          </button>
+        </RequiresNetwork>
       </nav>
 
-      <main className="fb-client__content">
+      <main ref={mainRef} id="conteudo" tabIndex={-1} className="fb-client__content">
         <Outlet />
       </main>
 

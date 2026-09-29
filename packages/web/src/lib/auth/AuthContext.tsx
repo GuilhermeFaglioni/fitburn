@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import type { CurrentUser, ModuleName, PermissionActionName } from "@fitburn/contracts";
+import { isOnline, subscribeToConnectivity } from "../connectivity/connectivity-store";
 import * as authApi from "./api";
 
 interface AuthContextValue {
@@ -23,6 +24,9 @@ interface AuthContextValue {
   can: (module: ModuleName, action: PermissionActionName) => boolean;
 }
 
+/** Quantas vezes seguidas a restauração repete de imediato quando a conexão voltou durante a requisição. */
+const MAX_RECONNECT_RETRIES = 3;
+
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -34,15 +38,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
-    authApi.refreshSession().then((restoredUser) => {
-      if (cancelled) return;
-      if (!hasExplicitAuthActionRef.current) {
-        setUser(restoredUser);
-      }
-      setIsInitializing(false);
-    });
+    let stopWaitingForConnection = () => {};
+
+    function restore(attempt = 0) {
+      // A conexão pode voltar DURANTE o refresh (o evento "online" chega antes de a
+      // requisição em andamento falhar): sem essa marca a retomada esperaria um
+      // evento que já passou.
+      let reconnectedDuringRequest = false;
+      const stopWatching = subscribeToConnectivity(() => {
+        if (isOnline()) reconnectedDuringRequest = true;
+      });
+      void authApi.refreshSessionOutcome().then((outcome) => {
+        stopWatching();
+        if (cancelled) return;
+        if (outcome.status === "transient") {
+          // Não dá para saber se a sessão vale (sem rede, 429, 5xx, erro de proxy): a casca
+          // abre (login) sem encerrar nada e a restauração é retomada sozinha.
+          if (outcome.reason === "network" && reconnectedDuringRequest && attempt < MAX_RECONNECT_RETRIES) {
+            restore(attempt + 1);
+            return;
+          }
+          stopWaitingForConnection = subscribeToConnectivity(() => {
+            if (!isOnline()) return;
+            stopWaitingForConnection();
+            restore();
+          });
+        } else if (!hasExplicitAuthActionRef.current) {
+          setUser(outcome.status === "ok" ? outcome.user : null);
+        }
+        setIsInitializing(false);
+      });
+    }
+    restore();
+
     return () => {
       cancelled = true;
+      stopWaitingForConnection();
     };
   }, []);
 

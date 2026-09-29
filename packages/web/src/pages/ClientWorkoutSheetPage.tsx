@@ -5,6 +5,7 @@ import { formatInstantDate } from "../lib/agenda/format";
 import { errorMessage } from "../lib/auth/api";
 import { getMyWorkoutSheet } from "../lib/workout-sheets/api";
 import { statusBadge } from "./workout-sheets/status";
+import { EmptyState, Feedback } from "../components/states";
 
 /** Os campos de um exercício, na ordem do artboard; os que o professor não preencheu ficam de fora. */
 const CHIPS: Array<{ field: "sets" | "reps" | "load" | "duration" | "distance"; label: string }> = [
@@ -57,9 +58,9 @@ export function ClientWorkoutSheetPage() {
       </Link>
 
       {sheetQuery.isError && (
-        <p role="alert" className="fb-workout__alert">
+        <Feedback tone="error" surface="dark">
           {errorMessage(sheetQuery.error, "Não foi possível carregar a ficha.")}
-        </p>
+        </Feedback>
       )}
 
       {sheet && (
@@ -83,7 +84,7 @@ export function ClientWorkoutSheetPage() {
           {sheet.notes && <p className="fb-workout__notes">{sheet.notes}</p>}
 
           {sheet.exercises.length === 0 ? (
-            <div className="fb-workout__empty">Esta ficha ainda não tem exercícios.</div>
+            <EmptyState surface="dark" message="Esta ficha ainda não tem exercícios." />
           ) : (
             <ul className="fb-workout__exercises" aria-label="Exercícios">
               {sheet.exercises.map((exercise) => (

@@ -1,7 +1,7 @@
 import { useId, useState, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ErrorCode, type ClientAgendaItem } from "@fitburn/contracts";
-import { useCloseOnEscape } from "../../components/Modal";
+import { useCloseOnEscape, useDialogFocus } from "../../components/Modal";
 import { ApiError } from "../../lib/auth/api";
 import { getClientAgendaItem } from "../../lib/agenda/client-api";
 import { formatClassDay, formatClassMoment, formatInstantHour } from "../../lib/agenda/format";
@@ -10,6 +10,7 @@ import {
   createReservation,
   rescheduleReservation,
 } from "../../lib/reservations/api";
+import { RequiresNetwork } from "../../components/RequiresNetwork";
 
 /** Remarcação em andamento: a reserva original, enquanto o cliente escolhe a nova aula. */
 export interface Rescheduling {
@@ -150,6 +151,7 @@ export function ClassDetailSheet({
   const pending =
     reserveMutation.isPending || cancelMutation.isPending || rescheduleMutation.isPending;
 
+  const dialogRef = useDialogFocus<HTMLDivElement>();
   useCloseOnEscape(onClose);
 
   const day = formatClassDay(occurrence.startsAt);
@@ -251,14 +253,16 @@ export function ClassDetailSheet({
             >
               Voltar
             </button>
-            <button
-              type="button"
-              className="fb-sheet-btn fb-sheet-btn--danger"
-              disabled={pending}
-              onClick={() => cancelMutation.mutate(reservationId)}
-            >
-              Confirmar cancelamento
-            </button>
+            <RequiresNetwork>
+              <button
+                type="button"
+                className="fb-sheet-btn fb-sheet-btn--danger"
+                disabled={pending}
+                onClick={() => cancelMutation.mutate(reservationId)}
+              >
+                Confirmar cancelamento
+              </button>
+            </RequiresNetwork>
           </div>
         </div>
       );
@@ -305,26 +309,30 @@ export function ClassDetailSheet({
     if (rescheduling) {
       const originalId = rescheduling.reservationId;
       return (
-        <button
-          type="button"
-          className="fb-sheet-btn fb-sheet-btn--primary"
-          disabled={pending || detailQuery.isError}
-          onClick={() => rescheduleMutation.mutate(originalId)}
-        >
-          Remarcar para esta aula
-        </button>
+        <RequiresNetwork>
+          <button
+            type="button"
+            className="fb-sheet-btn fb-sheet-btn--primary"
+            disabled={pending || detailQuery.isError}
+            onClick={() => rescheduleMutation.mutate(originalId)}
+          >
+            Remarcar para esta aula
+          </button>
+        </RequiresNetwork>
       );
     }
 
     return (
-      <button
-        type="button"
-        className="fb-sheet-btn fb-sheet-btn--primary"
-        disabled={pending || detailQuery.isError}
-        onClick={() => reserveMutation.mutate()}
-      >
-        Reservar
-      </button>
+      <RequiresNetwork>
+        <button
+          type="button"
+          className="fb-sheet-btn fb-sheet-btn--primary"
+          disabled={pending || detailQuery.isError}
+          onClick={() => reserveMutation.mutate()}
+        >
+          Reservar
+        </button>
+      </RequiresNetwork>
     );
   }
 
@@ -335,7 +343,14 @@ export function ClassDetailSheet({
         if (event.target === event.currentTarget) onClose();
       }}
     >
-      <div className="fb-sheet" role="dialog" aria-modal="true" aria-labelledby={titleId}>
+      <div
+        ref={dialogRef}
+        className="fb-sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+      >
         <div className="fb-sheet__handle" aria-hidden="true" />
 
         <div className="fb-sheet__header">

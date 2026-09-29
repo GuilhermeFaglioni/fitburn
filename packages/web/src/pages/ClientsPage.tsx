@@ -20,6 +20,7 @@ import {
 } from "../lib/clients/api";
 import { formatLocalDate } from "../lib/agenda/format";
 import { ClientCreateForm } from "./ClientCreateForm";
+import { EmptyState, ErrorState, Feedback, LoadingState } from "../components/states";
 
 /** Clientes: busca, filtro de status, plano ativo e ações rápidas da equipe. */
 export function ClientsPage() {
@@ -54,7 +55,7 @@ export function ClientsPage() {
       </div>
 
       <div className="fb-toolbar">
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
           <input
             type="search"
             className="fb-field"
@@ -111,10 +112,17 @@ export function ClientsPage() {
         />
       )}
 
-      {clientsQuery.isLoading && <p className="fb-note">Carregando…</p>}
-      {clientsQuery.isError && <p role="alert">Não foi possível carregar os clientes.</p>}
-      {toggleMutation.isError && <p role="alert">Não foi possível alterar o cliente.</p>}
-      {clients && clients.length === 0 && <p className="fb-note">Nenhum cliente encontrado.</p>}
+      {clientsQuery.isLoading && <LoadingState />}
+      {clientsQuery.isError && (
+        <ErrorState
+          message="Não foi possível carregar os clientes."
+          onRetry={() => void clientsQuery.refetch()}
+        />
+      )}
+      {toggleMutation.isError && (
+        <Feedback tone="error">Não foi possível alterar o cliente.</Feedback>
+      )}
+      {clients && clients.length === 0 && <EmptyState message="Nenhum cliente encontrado." />}
 
       {clients && clients.length > 0 && (
         <div className="fb-table-wrap">
