@@ -3,7 +3,7 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { http, HttpResponse } from "msw";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, useLocation } from "react-router-dom";
 import {
   addDays,
   gymDateTimeToUtc,
@@ -56,6 +56,12 @@ function LoggedInPage() {
   return <ClientAgendaPage />;
 }
 
+/** Expõe o state da rota atual, para checar que a remarcação não sobrevive no histórico. */
+function LocationState() {
+  const { state } = useLocation();
+  return <output aria-label="state da rota">{JSON.stringify(state ?? null)}</output>;
+}
+
 function renderPage(state?: unknown) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
@@ -63,6 +69,7 @@ function renderPage(state?: unknown) {
       <AuthProvider>
         <MemoryRouter initialEntries={[{ pathname: "/agenda", state }]}>
           <LoggedInPage />
+          <LocationState />
         </MemoryRouter>
       </AuthProvider>
     </QueryClientProvider>,
@@ -85,6 +92,20 @@ describe("ClientAgendaPage", () => {
     });
 
     expect(await screen.findByText(/Remarcando Treino Funcional/)).toBeInTheDocument();
+  });
+
+  it("limpa o state da rota ao consumir a remarcação, para não voltar em back/reload", async () => {
+    server.use(http.get("/api/agenda", () => HttpResponse.json([])));
+
+    renderPage({
+      rescheduling: {
+        reservationId: "res-1",
+        from: item(TODAY, "18:00", { myReservationId: "res-1" }),
+      },
+    });
+
+    expect(await screen.findByText(/Remarcando Treino Funcional/)).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByLabelText("state da rota")).toHaveTextContent("null"));
   });
 
   it("agrupa por dia: mostra as aulas do dia selecionado (hoje por padrão) em ordem", async () => {
