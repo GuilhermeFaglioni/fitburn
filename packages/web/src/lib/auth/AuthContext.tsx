@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import type { CurrentUser, ModuleName, PermissionActionName } from "@fitburn/contracts";
+import { isOnline, subscribeToConnectivity } from "../connectivity/connectivity-store";
 import * as authApi from "./api";
 
 interface AuthContextValue {
@@ -34,15 +35,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
-    authApi.refreshSession().then((restoredUser) => {
-      if (cancelled) return;
-      if (!hasExplicitAuthActionRef.current) {
-        setUser(restoredUser);
-      }
-      setIsInitializing(false);
-    });
+    let stopWaitingForConnection = () => {};
+
+    function restore() {
+      void authApi.refreshSession().then((restoredUser) => {
+        if (cancelled) return;
+        if (!restoredUser && !isOnline()) {
+          // Sem rede não dá para saber se a sessão vale: a casca abre (login) e a
+          // restauração é retomada sozinha quando a conexão voltar.
+          stopWaitingForConnection = subscribeToConnectivity(() => {
+            if (!isOnline()) return;
+            stopWaitingForConnection();
+            restore();
+          });
+        } else if (!hasExplicitAuthActionRef.current) {
+          setUser(restoredUser);
+        }
+        setIsInitializing(false);
+      });
+    }
+    restore();
+
     return () => {
       cancelled = true;
+      stopWaitingForConnection();
     };
   }, []);
 

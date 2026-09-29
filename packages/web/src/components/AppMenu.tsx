@@ -2,6 +2,7 @@ import { NavLink } from "react-router-dom";
 import { useAuth } from "../lib/auth/AuthContext";
 import { visibleAdminMenuItems } from "../lib/auth/areas";
 import "./AppMenu.css";
+import { RequiresNetwork } from "./RequiresNetwork";
 
 export function AppMenu() {
   const { user, logout } = useAuth();
@@ -41,9 +42,11 @@ export function AppMenu() {
               Minha conta
             </NavLink>
           </div>
-          <button type="button" className="app-menu__logout" onClick={() => void logout()}>
-            Sair
-          </button>
+          <RequiresNetwork>
+            <button type="button" className="app-menu__logout" onClick={() => void logout()}>
+              Sair
+            </button>
+          </RequiresNetwork>
         </div>
       )}
     </div>

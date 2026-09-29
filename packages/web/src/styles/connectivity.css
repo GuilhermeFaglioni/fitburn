@@ -1,0 +1,46 @@
+/* Banner global de "sem conexão", aviso de nova versão e ações que dependem de rede. */
+.fb-offline-banner {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  padding: 10px 16px;
+  background: #2a1512;
+  border-bottom: 1px solid var(--color-danger-border);
+  color: var(--color-danger);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  text-align: center;
+}
+
+.fb-offline-banner strong {
+  font-weight: 700;
+}
+
+.fb-offline-banner__retry,
+.fb-update-banner__action {
+  margin-left: 12px;
+  padding: 4px 12px;
+  background: transparent;
+  border: 1px solid currentColor;
+  border-radius: var(--radius-sm);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.fb-update-banner {
+  position: sticky;
+  top: 0;
+  z-index: 99;
+  padding: 10px 16px;
+  background: var(--color-surface-raised);
+  border-bottom: 1px solid var(--color-primary-orange);
+  color: var(--color-ink-on-dark);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  text-align: center;
+}
+
+.fb-update-banner__action {
+  color: var(--color-primary-orange);
+}

@@ -1,4 +1,5 @@
 import { loginResponseSchema, type CurrentUser } from "@fitburn/contracts";
+import { trackedFetch } from "../connectivity/connectivity-store";
 import { tokenStore } from "./token-store";
 
 export class ApiError extends Error {
@@ -30,7 +31,7 @@ export async function parseOrThrow(response: Response): Promise<unknown> {
 }
 
 export async function login(email: string, password: string): Promise<CurrentUser> {
-  const response = await fetch("/api/auth/login", {
+  const response = await trackedFetch("/api/auth/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
@@ -42,7 +43,7 @@ export async function login(email: string, password: string): Promise<CurrentUse
 }
 
 export async function logout(): Promise<void> {
-  await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+  await trackedFetch("/api/auth/logout", { method: "POST", credentials: "include" });
   tokenStore.set(null);
 }
 
@@ -53,7 +54,14 @@ export async function logout(): Promise<void> {
  * authFetch depois de um 401.
  */
 export async function refreshSession(): Promise<CurrentUser | null> {
-  const response = await fetch("/api/auth/refresh", { method: "POST", credentials: "include" });
+  let response: Response;
+  try {
+    response = await trackedFetch("/api/auth/refresh", { method: "POST", credentials: "include" });
+  } catch {
+    // Sem rede não dá para saber se a sessão vale: o banner de "sem conexão"
+    // já foi acionado pelo trackedFetch e o token em memória é preservado.
+    return null;
+  }
   if (!response.ok) {
     tokenStore.set(null);
     return null;
