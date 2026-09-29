@@ -1,0 +1,275 @@
+/**
+ * Presença do professor — PresencaMobile.dc.html no canvas de design
+ * (Claude Design), https://claude.ai/artifact/VncuMf9CffiWGUEQYywLVX.
+ * As regras de .fb-att* reproduzem os estilos inline do artboard (390px de
+ * largura, fundo #0a0a0a); em telas maiores a coluna fica centralizada.
+ * "Minhas aulas" (fb-myclass*) não tem artboard: usa a casca administrativa
+ * clara com as cores e os espaçamentos de admin.css.
+ */
+.fb-att {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 390px;
+  min-height: 100%;
+  margin: 0 auto;
+  padding: 24px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  font-family: var(--font-sans);
+  color: var(--color-ink-on-dark);
+}
+
+.fb-att__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.fb-att__back {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.fb-att__heading {
+  display: flex;
+  flex-direction: column;
+}
+
+.fb-att__title {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 700;
+}
+
+.fb-att__subtitle {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.fb-att__progress {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-sizing: border-box;
+  padding: 10px 14px;
+  background: #1a1a1a;
+  border-radius: 5px;
+}
+
+.fb-att__progress-count {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.fb-att__progress-hint {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.fb-att__note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.fb-att__note svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.fb-att__note-text {
+  font-size: 11px;
+  line-height: 16px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/* Estados sem artboard (aula que ainda não começou, erro): a mesma faixa do andamento. */
+.fb-att__notice {
+  margin: 0;
+  box-sizing: border-box;
+  padding: 10px 14px;
+  background: #1a1a1a;
+  border-radius: 5px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.fb-att__alert {
+  margin: 0;
+  box-sizing: border-box;
+  padding: 10px 14px;
+  background: var(--color-danger-bg);
+  border: 1px solid var(--color-danger-border);
+  border-radius: 5px;
+  font-size: 13px;
+  color: var(--color-danger);
+}
+
+/* Mesma faixa tracejada dos estados vazios do cliente (.fb-client-empty). */
+.fb-att__empty {
+  box-sizing: border-box;
+  padding: 24px 16px;
+  background: #1a1a1a;
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  border-radius: 5px;
+  text-align: center;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.fb-att__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fb-att__row {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px 16px;
+  background: #1a1a1a;
+  border-radius: 5px;
+}
+
+.fb-att__who {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.fb-att__name {
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.fb-att__pending {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.fb-att__marks {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.fb-seg-btn {
+  box-sizing: border-box;
+  padding: 10px 14px;
+  border-radius: 5px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.65);
+  min-width: 84px;
+}
+
+.fb-seg-btn:disabled {
+  cursor: default;
+}
+
+/* Sem artboard: a opção que não vale mais (linha já marcada ou aula que não começou) esmaece. */
+.fb-seg-btn:disabled:not([aria-pressed="true"]) {
+  opacity: 0.45;
+}
+
+.fb-seg-btn[aria-pressed="true"] {
+  color: #ffffff;
+}
+
+.fb-seg-btn--present[aria-pressed="true"] {
+  background: var(--color-primary-orange);
+  border-color: var(--color-primary-orange);
+}
+
+.fb-seg-btn--absent[aria-pressed="true"] {
+  background: var(--color-flame-red);
+  border-color: var(--color-flame-red);
+}
+
+/* Minhas aulas (casca administrativa clara). */
+.fb-myclass-day {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.fb-myclass-day__title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #4a4a4a;
+}
+
+.fb-myclass-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fb-myclass {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 16px;
+  background: #f7f7f7;
+  border: 1px solid #ececec;
+  border-radius: var(--radius-sm);
+  color: var(--color-ink-on-light);
+  text-decoration: none;
+}
+
+.fb-myclass:hover {
+  background: #f2f2f2;
+}
+
+.fb-myclass__hour {
+  flex-shrink: 0;
+  width: 56px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.fb-myclass__info {
+  flex-grow: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.fb-myclass__title {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.fb-myclass__sub {
+  font-size: 13px;
+  color: #5a5a5a;
+}

@@ -17,7 +17,7 @@ import {
 } from "@fitburn/contracts";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { DomainError } from "../common/errors/domain-error.js";
-import { lockOccurrenceRows } from "../agenda/occurrence-lock.js";
+import { lockOccurrenceRows, OCCURRENCE_TRANSACTION_OPTIONS } from "../agenda/occurrence-lock.js";
 import { replay, runIdempotent } from "./idempotency.js";
 
 const DETAIL_INCLUDE = {
@@ -31,16 +31,6 @@ const DETAIL_INCLUDE = {
 
 type ReservationWithOccurrence = Prisma.ReservationGetPayload<{ include: typeof DETAIL_INCLUDE }>;
 type Tx = Prisma.TransactionClient;
-
-/**
- * Sob disputa, as transações esperam na fila do lock da ocorrência: os
- * limites padrão do Prisma (2s/5s) virariam 500 em vez da recusa correta.
- */
-const TRANSACTION_OPTIONS = {
-  isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted,
-  maxWait: 10_000,
-  timeout: 15_000,
-};
 
 /**
  * Motor de reserva: dono da regra de confirmação. A disponibilidade exibida
@@ -108,7 +98,7 @@ export class ReservationsService {
           return this.detailById(tx, reservationId);
         },
       );
-    }, TRANSACTION_OPTIONS);
+    }, OCCURRENCE_TRANSACTION_OPTIONS);
     return replay(outcome);
   }
 
@@ -123,7 +113,7 @@ export class ReservationsService {
       await this.lockClient(tx, clientId);
       await this.cancelLocked(tx, reservationId, "cancelar");
       return this.detailById(tx, reservationId);
-    }, TRANSACTION_OPTIONS);
+    }, OCCURRENCE_TRANSACTION_OPTIONS);
   }
 
   /**
@@ -160,7 +150,7 @@ export class ReservationsService {
           return this.detailById(tx, newReservationId);
         },
       );
-    }, TRANSACTION_OPTIONS);
+    }, OCCURRENCE_TRANSACTION_OPTIONS);
     return replay(outcome);
   }
 

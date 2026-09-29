@@ -24,6 +24,7 @@ export const ADMIN_MENU_ITEMS: AdminMenuItem[] = [
     to: "/usuarios",
   },
   { modules: [Module.OCORRENCIAS], label: "Agenda", to: "/agenda-administrativa" },
+  { modules: [Module.PRESENCA], label: "Minhas aulas", to: "/minhas-aulas" },
   {
     modules: [Module.TEMPLATES_DE_AULA],
     label: "Templates & modalidades",

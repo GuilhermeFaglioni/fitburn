@@ -58,6 +58,23 @@ function mockSession(profileName: string, permissions: EffectivePermission[]) {
       HttpResponse.json({ templates: [], instructors: [] }),
     ),
     http.get("/api/agenda", () => HttpResponse.json([])),
+    http.get("/api/attendance/classes", () => HttpResponse.json([])),
+    http.get("/api/attendance/classes/:occurrenceId", () =>
+      HttpResponse.json({
+        class: {
+          id: "occ-1",
+          name: "Treino Funcional",
+          modality: { id: "mod-1", name: "Treino Funcional" },
+          instructor: null,
+          startsAt: "2026-05-04T21:00:00.000Z",
+          endsAt: "2026-05-04T22:00:00.000Z",
+          durationMinutes: 60,
+          totalCount: 0,
+          registeredCount: 0,
+        },
+        entries: [],
+      }),
+    ),
   );
 }
 
@@ -100,6 +117,32 @@ describe("Área de cada perfil", () => {
     renderAt("/");
 
     await expectLocation("/agenda-administrativa");
+  });
+
+  it("o professor que só registra presença vai para Minhas aulas", async () => {
+    mockSession("Professor", [
+      {
+        module: Module.PRESENCA,
+        actions: [PermissionAction.VIEW, PermissionAction.EXECUTE],
+        scope: PermissionScope.ASSIGNED_CLASSES,
+      },
+    ]);
+
+    renderAt("/");
+
+    await expectLocation("/minhas-aulas");
+    expect(screen.getByRole("link", { name: "Minhas aulas" })).toHaveAttribute(
+      "href",
+      "/minhas-aulas",
+    );
+  });
+
+  it("a tela de presença é da equipe: o cliente que a abre volta para a Home", async () => {
+    mockSession("Cliente", []);
+
+    renderAt("/presenca/occ-1");
+
+    await expectLocation("/");
   });
 
   it("o cliente não entra na área administrativa", async () => {

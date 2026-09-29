@@ -10,6 +10,7 @@ import { ProfilesModule } from "./profiles/profiles.module.js";
 import { CatalogModule } from "./catalog/catalog.module.js";
 import { AgendaModule } from "./agenda/agenda.module.js";
 import { ReservationsModule } from "./reservations/reservations.module.js";
+import { AttendanceModule } from "./attendance/attendance.module.js";
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { ReservationsModule } from "./reservations/reservations.module.js";
     CatalogModule,
     AgendaModule,
     ReservationsModule,
+    AttendanceModule,
     AuthModule,
   ],
 })
