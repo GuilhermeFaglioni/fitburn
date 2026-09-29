@@ -49,15 +49,29 @@ function WorkoutIcon({ color }: { color: string }) {
   );
 }
 
+function ProfileIcon({ color }: { color: string }) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <circle cx="10" cy="7" r="3" stroke={color} strokeWidth="1.4" />
+      <path
+        d="M3.5 17C4.5 13.5 7 12 10 12C13 12 15.5 13.5 16.5 17"
+        stroke={color}
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 const ACTIVE = "#ed6e34";
 const INACTIVE = "rgba(255,255,255,0.65)";
 
-// Só as telas do cliente que já existem; o Perfil entra junto com a sua tela.
 const ITEMS = [
   { to: "/", label: "Home", Icon: HomeIcon },
   { to: "/agenda", label: "Agenda", Icon: AgendaIcon },
   { to: "/plano", label: "Plano", Icon: PlanIcon },
   { to: "/ficha-treino", label: "Treino", Icon: WorkoutIcon },
+  { to: "/perfil", label: "Perfil", Icon: ProfileIcon },
 ];
 
 /** Casca do cliente: sidebar no desktop e barra inferior no mobile (AgendaDesktop/AgendaMobile). */
@@ -112,14 +126,6 @@ export function ClientLayout() {
             )}
           </NavLink>
         ))}
-        <button
-          type="button"
-          className="fb-client__tab"
-          style={{ background: "none", border: "none", fontFamily: "inherit", cursor: "pointer" }}
-          onClick={() => void logout()}
-        >
-          Sair
-        </button>
       </nav>
     </div>
   );

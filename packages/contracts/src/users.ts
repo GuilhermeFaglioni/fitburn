@@ -48,3 +48,20 @@ export const userDetailSchema = z.object({
   profile: z.object({ id: z.string(), name: z.string() }),
 });
 export type UserDetail = z.infer<typeof userDetailSchema>;
+
+/**
+ * Edição dos próprios dados pessoais (Minha conta). `.strict()`: perfil de
+ * acesso, status e senha não fazem parte do contrato, então uma tentativa de
+ * enviá-los é recusada em vez de ignorada em silêncio.
+ */
+export const updateOwnProfileRequestSchema = z
+  .object({
+    fullName: z.string().trim().min(1, "Nome completo é obrigatório.").optional(),
+    email: z.string().trim().email("E-mail inválido.").optional(),
+    phone: z.string().trim().min(1).nullable().optional(),
+    birthDate: z.string().date("Data de nascimento inválida.").nullable().optional(),
+    document: z.string().trim().min(1).nullable().optional(),
+    address: z.string().trim().min(1).nullable().optional(),
+  })
+  .strict();
+export type UpdateOwnProfileRequest = z.infer<typeof updateOwnProfileRequestSchema>;
