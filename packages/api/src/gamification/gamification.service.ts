@@ -3,13 +3,10 @@ import type { GamificationRuleKind, PointsEntry, Prisma } from "@prisma/client";
 import {
   addDays,
   AttendanceStatus,
-  ErrorCode,
-  ErrorStatus,
   gymDateTimeToUtc,
   gymToday,
   PointsEntryType,
   ReservationStatus,
-  SystemProfileName,
   UserStatus,
   type AttendanceMark,
   type GamificationSummary,
@@ -18,8 +15,7 @@ import {
   type RankingPeriodName,
 } from "@fitburn/contracts";
 import { PrismaService } from "../prisma/prisma.service.js";
-import { DomainError } from "../common/errors/domain-error.js";
-import { clientScopeFilter } from "../permissions/client-scope.js";
+import { assertClientInScope } from "../permissions/client-scope.js";
 import type { ScopedRequester } from "../permissions/scoped-requester.js";
 import { lockAdvisory } from "../prisma/advisory-lock.js";
 import {
@@ -156,25 +152,7 @@ export class GamificationService {
     clientId: string,
     requester: ScopedRequester,
   ): Promise<GamificationSummary> {
-    const client = await this.prisma.user.findFirst({
-      where: { id: clientId, profile: { name: SystemProfileName.CLIENT, isSystem: true } },
-      select: { id: true },
-    });
-    if (!client) {
-      throw new DomainError(ErrorCode.NOT_FOUND, "Cliente não encontrado.", ErrorStatus.NOT_FOUND);
-    }
-
-    // AND, não spread: o filtro de escopo "próprio" também é uma condição sobre `id`.
-    const inScope = await this.prisma.user.count({
-      where: { AND: [{ id: clientId }, clientScopeFilter(requester)] },
-    });
-    if (inScope === 0) {
-      throw new DomainError(
-        ErrorCode.OUT_OF_SCOPE,
-        "Este cliente está fora do seu escopo.",
-        ErrorStatus.FORBIDDEN,
-      );
-    }
+    await assertClientInScope(this.prisma, clientId, requester);
     return this.summaryOf(clientId);
   }
 

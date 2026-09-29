@@ -1,21 +1,28 @@
 import {
   Module,
   PermissionAction,
+  PermissionScope,
   SystemProfileName,
   type CurrentUser,
   type ModuleName,
+  type PermissionActionName,
 } from "@fitburn/contracts";
 
 export interface AdminMenuItem {
   modules: ModuleName[];
   label: string;
   to: string;
+  /** A ação que o item exige (padrão: visualizar); telas de gestão exigem a de criar. */
+  action?: PermissionActionName;
+  /** Exige acesso a todos os registros do módulo (telas que só a administração usa). */
+  fullScope?: boolean;
 }
 
 // Cada ticket futuro que adicionar uma tela real ganha sua própria entrada
 // aqui — a lista cresce com o produto, o filtro por permissão não muda. Um
-// item fica visível se o usuário tem VIEW em pelo menos um dos módulos
-// listados (ex.: "Usuários e perfis" cobre USUARIOS e PERFIS_DE_ACESSO).
+// item fica visível se o usuário tem a ação exigida (VIEW, por padrão) em pelo
+// menos um dos módulos listados (ex.: "Usuários e perfis" cobre USUARIOS e
+// PERFIS_DE_ACESSO), e o escopo total quando o item o pede.
 export const ADMIN_MENU_ITEMS: AdminMenuItem[] = [
   { modules: [Module.DASHBOARD], label: "Dashboard", to: "/dashboard" },
   {
@@ -26,6 +33,13 @@ export const ADMIN_MENU_ITEMS: AdminMenuItem[] = [
   { modules: [Module.OCORRENCIAS], label: "Agenda", to: "/agenda-administrativa" },
   { modules: [Module.PRESENCA], label: "Minhas aulas", to: "/minhas-aulas" },
   {
+    modules: [Module.CLIENTES],
+    label: "Atribuições",
+    to: "/atribuicoes",
+    action: PermissionAction.CREATE,
+    fullScope: true,
+  },
+  {
     modules: [Module.TEMPLATES_DE_AULA],
     label: "Templates & modalidades",
     to: "/templates-e-modalidades",
@@ -35,16 +49,17 @@ export const ADMIN_MENU_ITEMS: AdminMenuItem[] = [
 /** Telas do cliente com uma equivalente na área administrativa. */
 const ADMIN_EQUIVALENT: Record<string, string> = { "/agenda": "/agenda-administrativa" };
 
-function canView(user: CurrentUser, modules: ModuleName[]): boolean {
-  return modules.some((module) =>
-    user.permissions
-      .find((permission) => permission.module === module)
-      ?.actions.includes(PermissionAction.VIEW),
-  );
+function canAccess(user: CurrentUser, item: AdminMenuItem): boolean {
+  const action = item.action ?? PermissionAction.VIEW;
+  return item.modules.some((module) => {
+    const permission = user.permissions.find((candidate) => candidate.module === module);
+    if (!permission?.actions.includes(action)) return false;
+    return !item.fullScope || permission.scope === PermissionScope.ALL;
+  });
 }
 
 export function visibleAdminMenuItems(user: CurrentUser): AdminMenuItem[] {
-  return ADMIN_MENU_ITEMS.filter((item) => canView(user, item.modules));
+  return ADMIN_MENU_ITEMS.filter((item) => canAccess(user, item));
 }
 
 /**
@@ -69,5 +84,5 @@ export function homeRouteFor(user: CurrentUser): string {
 export function adminRouteForClientPath(user: CurrentUser, path: string): string {
   const equivalent = ADMIN_EQUIVALENT[path];
   const item = ADMIN_MENU_ITEMS.find((candidate) => candidate.to === equivalent);
-  return item && canView(user, item.modules) ? item.to : homeRouteFor(user);
+  return item && canAccess(user, item) ? item.to : homeRouteFor(user);
 }

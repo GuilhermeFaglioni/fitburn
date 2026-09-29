@@ -100,6 +100,10 @@ model User {
   idempotencyRecords  IdempotencyRecord[]
   pointsEntries       PointsEntry[]
   streakBadges        StreakBadge[]
+  /// Clientes atribuídos a este usuário como professor (atribuição manual).
+  teacherAssignments  TeacherClientAssignment[] @relation("TeacherAssignments")
+  /// Professores a quem este usuário, cliente, foi atribuído.
+  clientAssignments   TeacherClientAssignment[] @relation("ClientAssignments")
 
   @@map("users")
 }
@@ -317,6 +321,24 @@ model StreakBadge {
 
   @@unique([clientId, milestone])
   @@map("streak_badges")
+}
+
+/// Atribuição manual de um cliente a um professor, feita pela administração:
+/// junto dos clientes com reserva nas aulas do professor, forma o escopo
+/// "clientes atribuídos". É estado atual, não histórico: remover apaga a linha.
+model TeacherClientAssignment {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+
+  teacherId String
+  teacher   User   @relation("TeacherAssignments", fields: [teacherId], references: [id], onDelete: Cascade)
+
+  clientId String
+  client   User   @relation("ClientAssignments", fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@unique([teacherId, clientId])
+  @@index([clientId])
+  @@map("teacher_client_assignments")
 }
 
 model RefreshToken {

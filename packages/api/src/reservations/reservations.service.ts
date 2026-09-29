@@ -17,6 +17,7 @@ import {
 } from "@fitburn/contracts";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { lockAdvisory } from "../prisma/advisory-lock.js";
+import { isUniqueViolation } from "../prisma/unique-violation.js";
 import { DomainError } from "../common/errors/domain-error.js";
 import { lockOccurrenceRows, OCCURRENCE_TRANSACTION_OPTIONS } from "../agenda/occurrence-lock.js";
 import { replay, runIdempotent } from "./idempotency.js";
@@ -343,9 +344,4 @@ export class ReservationsService {
       cancelledAt: reservation.cancelledAt?.toISOString() ?? null,
     };
   }
-}
-
-/** Duck typing: com o driver adapter, `instanceof` nos erros do Prisma não é confiável. */
-function isUniqueViolation(error: unknown): boolean {
-  return (error as { code?: unknown } | null)?.code === "P2002";
 }

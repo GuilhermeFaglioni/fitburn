@@ -10,3 +10,4 @@ export * from "./agenda.js";
 export * from "./reservations.js";
 export * from "./attendance.js";
 export * from "./gamification.js";
+export * from "./assignments.js";

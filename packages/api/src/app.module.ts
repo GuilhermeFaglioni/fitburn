@@ -12,6 +12,7 @@ import { AgendaModule } from "./agenda/agenda.module.js";
 import { ReservationsModule } from "./reservations/reservations.module.js";
 import { AttendanceModule } from "./attendance/attendance.module.js";
 import { GamificationModule } from "./gamification/gamification.module.js";
+import { AssignmentsModule } from "./assignments/assignments.module.js";
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { GamificationModule } from "./gamification/gamification.module.js";
     ReservationsModule,
     AttendanceModule,
     GamificationModule,
+    AssignmentsModule,
     AuthModule,
   ],
 })
