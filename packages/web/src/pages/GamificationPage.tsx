@@ -73,7 +73,10 @@ function describeEntry(item: PointsHistoryItem): string {
     case PointsEntryType.STREAK_BONUS:
       return item.milestone ? `Streak de ${item.milestone} dias consecutivos` : "Bônus de streak";
     case PointsEntryType.REVERSAL:
-      return withSubject("Correção de presença", item.subject);
+      // O estorno de um bônus de streak herda o marco; o de uma presença, a aula.
+      return item.milestone
+        ? `Bônus de streak estornado · ${item.milestone} dias`
+        : withSubject("Correção de presença", item.subject);
   }
 }
 

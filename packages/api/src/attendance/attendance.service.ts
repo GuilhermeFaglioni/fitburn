@@ -153,7 +153,10 @@ export class AttendanceService {
     };
   }
 
-  /** Registra presente/faltou numa reserva confirmada de uma aula já iniciada. */
+  /**
+   * Registra presente/faltou numa reserva (confirmada ou já marcada, no caso de
+   * uma correção) de uma aula já iniciada.
+   */
   async mark(
     reservationId: string,
     mark: AttendanceMark,
@@ -184,10 +187,10 @@ export class AttendanceService {
       });
 
       this.assertInScope(reservation.occurrence.instructorId, requester);
-      if (reservation.status !== ReservationStatus.CONFIRMED) {
+      if (reservation.status === ReservationStatus.CANCELLED) {
         throw new DomainError(
           ErrorCode.RESERVATION_NOT_ATTENDABLE,
-          "Só é possível registrar presença em reservas confirmadas que ainda não foram marcadas.",
+          "Não é possível registrar presença numa reserva cancelada.",
           ErrorStatus.CONFLICT,
         );
       }
@@ -199,19 +202,25 @@ export class AttendanceService {
         );
       }
 
+      // Marcar de novo o mesmo estado (um toque repetido) não muda nada.
+      const target = RESERVATION_STATUS_BY_MARK[mark];
+      if (reservation.status === target) return this.toEntry(reservation);
+
       const updated = await tx.reservation.update({
         where: { id: reservationId },
-        data: { status: RESERVATION_STATUS_BY_MARK[mark] },
+        data: { status: target },
         include: ENTRY_INCLUDE,
       });
-      // Os pontos entram na mesma transação: presença sem o lançamento não vale.
-      if (mark === AttendanceStatus.PRESENT) {
-        await this.gamification.recordAttendance(tx, {
-          clientId: reservation.clientId,
-          reservationId,
-          occurredAt: reservation.occurrence.startsAt,
-        });
-      }
+      // Os pontos, o streak e os badges acompanham na mesma transação: uma
+      // marcação sem os lançamentos não vale. Vale também para a correção
+      // (presente ↔ faltou), que estorna e recalcula.
+      await this.gamification.applyAttendanceChange(tx, {
+        clientId: reservation.clientId,
+        reservationId,
+        occurredAt: reservation.occurrence.startsAt,
+        wasPresent: reservation.status === ReservationStatus.COMPLETED,
+        mark,
+      });
       return this.toEntry(updated);
     }, OCCURRENCE_TRANSACTION_OPTIONS);
   }

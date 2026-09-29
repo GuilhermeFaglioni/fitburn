@@ -305,25 +305,57 @@ describe("Presença (HTTP)", () => {
       expect(await statusOf(reservation.id)).toBe("CONFIRMED");
     });
 
-    it("recusa reserva cancelada e reserva que já tem presença registrada", async () => {
+    it("recusa reserva cancelada", async () => {
+      const rafael = await createProfessor("rafael");
+      const marina = await createClient("marina");
+      const occurrence = await createOccurrence(startedRecently(), {
+        instructorId: rafael.user.id,
+      });
+      const cancelled = await reserve(marina.user.id, occurrence.id, "CANCELLED");
+
+      const response = await mark(rafael.token, cancelled.id, "PRESENT");
+
+      expect(response.status).toBe(409);
+      expect(response.body.code).toBe("RESERVATION_NOT_ATTENDABLE");
+      expect(await statusOf(cancelled.id)).toBe("CANCELLED");
+    });
+
+    it("corrige a marcação: presente vira faltou e faltou vira presente", async () => {
       const rafael = await createProfessor("rafael");
       const marina = await createClient("marina");
       const bruno = await createClient("bruno");
       const occurrence = await createOccurrence(startedRecently(), {
         instructorId: rafael.user.id,
       });
-      const cancelled = await reserve(marina.user.id, occurrence.id, "CANCELLED");
-      const completed = await reserve(bruno.user.id, occurrence.id, "COMPLETED");
+      const wasPresent = await reserve(marina.user.id, occurrence.id, "COMPLETED");
+      const wasAbsent = await reserve(bruno.user.id, occurrence.id, "NO_SHOW");
 
-      const onCancelled = await mark(rafael.token, cancelled.id, "PRESENT");
-      const onCompleted = await mark(rafael.token, completed.id, "ABSENT");
+      const toAbsent = await mark(rafael.token, wasPresent.id, "ABSENT");
+      const toPresent = await mark(rafael.token, wasAbsent.id, "PRESENT");
 
-      expect(onCancelled.status).toBe(409);
-      expect(onCancelled.body.code).toBe("RESERVATION_NOT_ATTENDABLE");
-      expect(onCompleted.status).toBe(409);
-      expect(onCompleted.body.code).toBe("RESERVATION_NOT_ATTENDABLE");
-      expect(await statusOf(cancelled.id)).toBe("CANCELLED");
-      expect(await statusOf(completed.id)).toBe("COMPLETED");
+      expect(toAbsent.status).toBe(200);
+      expect(toAbsent.body.status).toBe("ABSENT");
+      expect(toPresent.status).toBe(200);
+      expect(toPresent.body.status).toBe("PRESENT");
+      expect(await statusOf(wasPresent.id)).toBe("NO_SHOW");
+      expect(await statusOf(wasAbsent.id)).toBe("COMPLETED");
+    });
+
+    it("marcar de novo o mesmo estado é aceito e não muda nada", async () => {
+      const rafael = await createProfessor("rafael");
+      const marina = await createClient("marina");
+      const occurrence = await createOccurrence(startedRecently(), {
+        instructorId: rafael.user.id,
+      });
+      const reservation = await reserve(marina.user.id, occurrence.id);
+
+      const first = await mark(rafael.token, reservation.id, "PRESENT");
+      const again = await mark(rafael.token, reservation.id, "PRESENT");
+
+      expect(first.status).toBe(200);
+      expect(again.status).toBe(200);
+      expect(again.body.status).toBe("PRESENT");
+      expect(await statusOf(reservation.id)).toBe("COMPLETED");
     });
 
     it("recusa o professor de outra aula", async () => {
@@ -427,7 +459,26 @@ describe("Presença (HTTP)", () => {
       expect(await statusOf(reservation.id)).toBe("CONFIRMED");
     });
 
-    it("dois registros simultâneos na mesma reserva: só um vale, o outro é recusado", async () => {
+    it("dois registros simultâneos iguais na mesma reserva: os pontos entram uma vez só", async () => {
+      const rafael = await createProfessor("rafael");
+      const admin = await createAdmin();
+      const marina = await createClient("marina");
+      const occurrence = await createOccurrence(startedRecently(), {
+        instructorId: rafael.user.id,
+      });
+      const reservation = await reserve(marina.user.id, occurrence.id);
+
+      const [byProfessor, byAdmin] = await Promise.all([
+        mark(rafael.token, reservation.id, "PRESENT"),
+        mark(admin.token, reservation.id, "PRESENT"),
+      ]);
+
+      expect([byProfessor.status, byAdmin.status]).toEqual([200, 200]);
+      expect(await statusOf(reservation.id)).toBe("COMPLETED");
+      expect(await testPrisma.pointsEntry.count()).toBe(1);
+    });
+
+    it("presente e faltou simultâneos na mesma reserva: valem em fila e os pontos batem com o estado final", async () => {
       const rafael = await createProfessor("rafael");
       const admin = await createAdmin();
       const marina = await createClient("marina");
@@ -441,12 +492,11 @@ describe("Presença (HTTP)", () => {
         mark(admin.token, reservation.id, "ABSENT"),
       ]);
 
-      const statuses = [asPresent.status, asAbsent.status].sort();
-      expect(statuses).toEqual([200, 409]);
-      const loser = asPresent.status === 409 ? asPresent : asAbsent;
-      expect(loser.body.code).toBe("RESERVATION_NOT_ATTENDABLE");
-      const winner = asPresent.status === 200 ? "COMPLETED" : "NO_SHOW";
-      expect(await statusOf(reservation.id)).toBe(winner);
+      expect([asPresent.status, asAbsent.status]).toEqual([200, 200]);
+      const finalStatus = await statusOf(reservation.id);
+      const entries = await testPrisma.pointsEntry.findMany();
+      const total = entries.reduce((sum, entry) => sum + entry.points, 0);
+      expect(total).toBe(finalStatus === "COMPLETED" ? 10 : 0);
     });
   });
 });

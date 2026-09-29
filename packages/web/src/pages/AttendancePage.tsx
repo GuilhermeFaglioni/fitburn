@@ -51,7 +51,7 @@ function failureMessage(error: unknown, entry: AttendanceEntry): string {
   const name = entry.client.fullName;
   if (error instanceof ApiError) {
     if (error.code === ErrorCode.RESERVATION_NOT_ATTENDABLE) {
-      return `A presença de ${name} já foi registrada ou a reserva foi cancelada.`;
+      return `A reserva de ${name} foi cancelada e não aceita presença.`;
     }
     if (error.code === ErrorCode.ATTENDANCE_NOT_OPEN) {
       return "A presença só abre a partir do início da aula.";
@@ -70,9 +70,11 @@ interface MarkVariables {
 
 /**
  * Presença (PresencaMobile.dc.html): o professor marca cada cliente com
- * reserva confirmada como presente ou faltou, com um toque. A linha muda na
- * hora e o pedido segue em segundo plano — não há botão "salvar"; se o
- * servidor recusar, a linha volta a pendente e a tela explica o motivo.
+ * reserva confirmada como presente ou faltou, com um toque; um toque no outro
+ * botão corrige uma marcação errada (o servidor estorna os pontos e recalcula
+ * streak e bônus). A linha muda na hora e o pedido segue em segundo plano —
+ * não há botão "salvar"; se o servidor recusar, a linha volta ao que era e a
+ * tela explica o motivo.
  */
 export function AttendancePage() {
   const { occurrenceId = "" } = useParams();
@@ -107,17 +109,24 @@ export function AttendancePage() {
       setFailure(null);
       setEntry(entry.reservationId, (item) => ({ ...item, status }));
     },
-    onSuccess: (saved) => {
-      setEntry(saved.reservationId, () => saved);
+    // A linha já mostra a marcação (otimista): a resposta não a sobrescreve, para
+    // uma resposta atrasada não desfazer um toque mais novo na mesma linha.
+    onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["attendance-classes"] });
     },
     onError: (error, { entry }) => {
-      setEntry(entry.reservationId, (item) => ({ ...item, status: AttendanceStatus.PENDING }));
+      // Volta à marcação anterior: pendente numa primeira marcação, a outra opção numa correção.
+      setEntry(entry.reservationId, (item) => ({ ...item, status: entry.status }));
       setFailure(failureMessage(error, entry));
       // A recusa costuma significar que a lista mudou (outra pessoa registrou, reserva cancelada).
       void queryClient.invalidateQueries({ queryKey: rosterKey });
     },
   });
+
+  /** Marca ou corrige; tocar no que já está marcado não muda nada. */
+  function mark(entry: AttendanceEntry, status: AttendanceMark) {
+    if (entry.status !== status) markMutation.mutate({ entry, status });
+  }
 
   const entries = roster?.entries ?? [];
   const registered = entries.filter((entry) => entry.status !== AttendanceStatus.PENDING).length;
@@ -184,7 +193,6 @@ export function AttendancePage() {
             <ul className="fb-att__list">
               {entries.map((entry) => {
                 const pending = entry.status === AttendanceStatus.PENDING;
-                const locked = !started || !pending;
                 return (
                   <li key={entry.reservationId} className="fb-att__row">
                     <div className="fb-att__who">
@@ -196,10 +204,8 @@ export function AttendancePage() {
                         type="button"
                         className="fb-seg-btn fb-seg-btn--present"
                         aria-pressed={entry.status === AttendanceStatus.PRESENT}
-                        disabled={locked}
-                        onClick={() =>
-                          markMutation.mutate({ entry, status: AttendanceStatus.PRESENT })
-                        }
+                        disabled={!started}
+                        onClick={() => mark(entry, AttendanceStatus.PRESENT)}
                       >
                         Presente
                       </button>
@@ -207,10 +213,8 @@ export function AttendancePage() {
                         type="button"
                         className="fb-seg-btn fb-seg-btn--absent"
                         aria-pressed={entry.status === AttendanceStatus.ABSENT}
-                        disabled={locked}
-                        onClick={() =>
-                          markMutation.mutate({ entry, status: AttendanceStatus.ABSENT })
-                        }
+                        disabled={!started}
+                        onClick={() => mark(entry, AttendanceStatus.ABSENT)}
                       >
                         Faltou
                       </button>

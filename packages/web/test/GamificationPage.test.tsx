@@ -134,13 +134,14 @@ describe("Gamificação do cliente", () => {
     expect(within(items[2]).getByText("Há 3 dias")).toBeInTheDocument();
   });
 
-  it("mostra a correção de presença com os pontos negativos", async () => {
+  it("mostra as correções (estorno da presença e do bônus) com os pontos negativos", async () => {
     mockSummary({
       ...NO_STREAK,
       totalPoints: 0,
       history: [
-        entry("e1", "2026-05-06", "17:30", { type: "REVERSAL", points: -10 }),
-        entry("e2", "2026-05-06", "17:30"),
+        entry("e1", "2026-05-06", "17:30", { type: "REVERSAL", points: -5, milestone: 3 }),
+        entry("e2", "2026-05-06", "17:30", { type: "REVERSAL", points: -10 }),
+        entry("e3", "2026-05-06", "17:30"),
       ],
     });
 
@@ -148,10 +149,12 @@ describe("Gamificação do cliente", () => {
 
     const history = await screen.findByRole("region", { name: "Histórico recente" });
     const items = within(history).getAllByRole("listitem");
+    expect(within(items[0]).getByText("Bônus de streak estornado · 3 dias")).toBeInTheDocument();
+    expect(within(items[0]).getByText("-5")).toBeInTheDocument();
     expect(
-      within(items[0]).getByText("Correção de presença · Treino Funcional"),
+      within(items[1]).getByText("Correção de presença · Treino Funcional"),
     ).toBeInTheDocument();
-    expect(within(items[0]).getByText("-10")).toBeInTheDocument();
+    expect(within(items[1]).getByText("-10")).toBeInTheDocument();
     expect(within(totalRow()).getByText("0")).toBeInTheDocument();
   });
 

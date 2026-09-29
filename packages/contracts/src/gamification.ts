@@ -20,7 +20,7 @@ export const pointsHistoryItemSchema = z.object({
   occurredAt: z.string(),
   /** O que gerou os pontos: o nome da aula ou o título da meta; null quando não há. */
   subject: z.string().nullable(),
-  /** O marco de streak que um bônus celebra; null nos demais tipos. */
+  /** O marco de streak a que o lançamento se refere (o do bônus e o do estorno dele); null nos demais. */
   milestone: z.number().int().nullable(),
 });
 export type PointsHistoryItem = z.infer<typeof pointsHistoryItemSchema>;

@@ -276,8 +276,15 @@ model PointsEntry {
   /// presença e o bônus de streak que ela desperta nascem na mesma
   /// transação, com createdAt igual.
   sequence   Int             @default(autoincrement())
-  /// Marco de streak que um lançamento STREAK_BONUS celebra (3, 5, 10 …).
+  /// Marco de streak a que o lançamento se refere (3, 5, 10 …): o de um
+  /// STREAK_BONUS e o do REVERSAL que o desfaz.
   milestone  Int?
+
+  /// Só em REVERSAL: o lançamento que este estorno desfaz. Um lançamento é
+  /// estornado no máximo uma vez; "vivo" é o que nenhum estorno desfez.
+  reversesEntryId String?      @unique
+  reversesEntry   PointsEntry? @relation("EntryReversal", fields: [reversesEntryId], references: [id], onDelete: Restrict)
+  reversedBy      PointsEntry? @relation("EntryReversal")
 
   clientId String
   client   User   @relation(fields: [clientId], references: [id], onDelete: Restrict)
@@ -294,13 +301,16 @@ model PointsEntry {
 
 /// Badge de um marco de streak: um por cliente e marco, concedido na primeira
 /// vez que uma sequência de presenças o atinge (o bônus de pontos, ao
-/// contrário, se repete a cada nova sequência).
+/// contrário, se repete a cada nova sequência). Uma correção de presença que
+/// desfaz todas as sequências que alcançavam o marco o revoga (`revokedAt`);
+/// a linha fica, e uma nova sequência o reativa.
 model StreakBadge {
-  id        String   @id @default(uuid())
+  id        String    @id @default(uuid())
   milestone Int
   /// Quando o marco foi atingido (o início da aula que completou a sequência).
-  awardedAt DateTime @db.Timestamptz(3)
-  createdAt DateTime @default(now())
+  awardedAt DateTime  @db.Timestamptz(3)
+  revokedAt DateTime? @db.Timestamptz(3)
+  createdAt DateTime  @default(now())
 
   clientId String
   client   User   @relation(fields: [clientId], references: [id], onDelete: Restrict)

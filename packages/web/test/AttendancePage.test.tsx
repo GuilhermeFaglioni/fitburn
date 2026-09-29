@@ -212,7 +212,7 @@ describe("Presença (professor)", () => {
     expect(screen.getByText("2 de 4 registrados")).toBeInTheDocument();
   });
 
-  it("mostra o que o servidor diz quando a reserva já não aceita presença", async () => {
+  it("explica e relê a lista quando a reserva já não aceita presença (cancelada)", async () => {
     let served = 0;
     server.use(
       http.get("/api/attendance/classes/occ-1", () => {
@@ -240,7 +240,7 @@ describe("Presença (professor)", () => {
     await user.click(within(rowOf("Marina Souza")).getByRole("button", { name: "Presente" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "A presença de Marina Souza já foi registrada ou a reserva foi cancelada.",
+      "A reserva de Marina Souza foi cancelada e não aceita presença.",
     );
     await waitFor(() =>
       expect(within(rowOf("Marina Souza")).getByRole("button", { name: "Faltou" })).toHaveAttribute(
@@ -250,17 +250,82 @@ describe("Presença (professor)", () => {
     );
   });
 
-  it("não deixa mudar quem já tem presença registrada", async () => {
+  it("corrige uma marcação com um toque no outro botão", async () => {
     mockRoster(rosterOf(DEFAULT_ENTRIES));
+    server.use(
+      http.post("/api/attendance/reservations/:reservationId", async ({ params, request }) => {
+        marks.push({ reservationId: String(params.reservationId), body: await request.json() });
+        return HttpResponse.json(entry("r-bruno", "Bruno Alves", "ABSENT"));
+      }),
+    );
+    const user = userEvent.setup();
     renderPage();
     await screen.findByText("2 de 4 registrados");
 
-    for (const button of within(rowOf("Bruno Alves")).getAllByRole("button")) {
-      expect(button).toBeDisabled();
-    }
-    for (const button of within(rowOf("Marina Souza")).getAllByRole("button")) {
-      expect(button).toBeEnabled();
-    }
+    await user.click(within(rowOf("Bruno Alves")).getByRole("button", { name: "Faltou" }));
+
+    expect(within(rowOf("Bruno Alves")).getByRole("button", { name: "Faltou" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(within(rowOf("Bruno Alves")).getByRole("button", { name: "Presente" })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+    // Corrigir não muda quantos já foram registrados nem volta a linha para pendente.
+    expect(screen.getByText("2 de 4 registrados")).toBeInTheDocument();
+    expect(within(rowOf("Bruno Alves")).queryByText("PENDENTE")).not.toBeInTheDocument();
+    await waitFor(() =>
+      expect(marks).toEqual([{ reservationId: "r-bruno", body: { status: "ABSENT" } }]),
+    );
+  });
+
+  it("tocar de novo no botão já marcado não envia nada", async () => {
+    mockRoster(rosterOf(DEFAULT_ENTRIES));
+    server.use(
+      http.post("/api/attendance/reservations/:reservationId", async ({ params, request }) => {
+        marks.push({ reservationId: String(params.reservationId), body: await request.json() });
+        return HttpResponse.json(entry("r-bruno", "Bruno Alves", "PRESENT"));
+      }),
+    );
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText("2 de 4 registrados");
+
+    await user.click(within(rowOf("Bruno Alves")).getByRole("button", { name: "Presente" }));
+
+    expect(marks).toEqual([]);
+    expect(within(rowOf("Bruno Alves")).getByRole("button", { name: "Presente" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+  });
+
+  it("se a correção falha, a linha volta à marcação anterior e a tela avisa", async () => {
+    mockRoster(rosterOf(DEFAULT_ENTRIES));
+    server.use(
+      http.post("/api/attendance/reservations/:reservationId", () =>
+        HttpResponse.json({ code: "INTERNAL_ERROR", message: "Erro inesperado." }, { status: 500 }),
+      ),
+    );
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText("2 de 4 registrados");
+
+    await user.click(within(rowOf("Bruno Alves")).getByRole("button", { name: "Faltou" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Não foi possível registrar a presença de Bruno Alves. Tente novamente.",
+    );
+    expect(within(rowOf("Bruno Alves")).getByRole("button", { name: "Presente" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(within(rowOf("Bruno Alves")).getByRole("button", { name: "Faltou" })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+    expect(within(rowOf("Bruno Alves")).queryByText("PENDENTE")).not.toBeInTheDocument();
   });
 
   it("antes do início da aula, avisa quando abre e não deixa marcar", async () => {

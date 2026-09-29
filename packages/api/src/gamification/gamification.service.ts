@@ -1,11 +1,13 @@
 import { Injectable } from "@nestjs/common";
-import type { GamificationRuleKind, Prisma } from "@prisma/client";
+import type { GamificationRuleKind, PointsEntry, Prisma } from "@prisma/client";
 import {
+  AttendanceStatus,
   ErrorCode,
   ErrorStatus,
   PointsEntryType,
   ReservationStatus,
   SystemProfileName,
+  type AttendanceMark,
   type GamificationSummary,
   type PointsHistoryItem,
 } from "@fitburn/contracts";
@@ -14,7 +16,7 @@ import { DomainError } from "../common/errors/domain-error.js";
 import { clientScopeFilter } from "../permissions/client-scope.js";
 import type { ScopedRequester } from "../permissions/scoped-requester.js";
 import { lockAdvisory } from "../prisma/advisory-lock.js";
-import { currentStreak, runContaining, streakAwards, type RegisteredAttendance } from "./streak.js";
+import { currentStreak, planStreak, type RegisteredAttendance, type StreakPlan } from "./streak.js";
 
 type PointsEntryWithSubject = Prisma.PointsEntryGetPayload<{
   include: { reservation: { select: { occurrence: { select: { name: true } } } } };
@@ -45,7 +47,7 @@ export class GamificationService {
       }),
       this.attendanceHistory(this.prisma, clientId),
       this.streakMilestones(this.prisma),
-      this.prisma.streakBadge.findMany({ where: { clientId } }),
+      this.prisma.streakBadge.findMany({ where: { clientId, revokedAt: null } }),
     ]);
 
     const streak = currentStreak(history);
@@ -95,75 +97,125 @@ export class GamificationService {
   }
 
   /**
-   * Efeitos de uma presença (não de uma falta): lança os pontos da presença e,
-   * se ela completa um marco de streak, o bônus e o badge. Roda na transação
-   * de quem registrou a presença: se algo falhar, a presença também não vale.
+   * Efeitos de uma marcação de presença sobre pontos, streak e badges: lança os
+   * pontos de uma presença nova, estorna os de uma presença corrigida para
+   * falta e ajusta bônus e badges ao histórico de agora (uma falta pode
+   * desfazer uma sequência premiada; uma presença pode fundir duas). Roda na
+   * transação de quem registrou: se algo falhar, a marcação também não vale.
+   * O lock por cliente serializa registros simultâneos em aulas diferentes,
+   * para nenhum deles perder ou repetir um bônus.
    */
-  async recordAttendance(
+  async applyAttendanceChange(
     tx: Prisma.TransactionClient,
-    input: { clientId: string; reservationId: string; occurredAt: Date },
+    input: {
+      clientId: string;
+      reservationId: string;
+      occurredAt: Date;
+      /** Se a reserva já estava marcada como presente antes (é uma correção de presente para falta, se `mark` é faltou). */
+      wasPresent: boolean;
+      /** O que o professor marcou. */
+      mark: AttendanceMark;
+    },
   ): Promise<void> {
-    const points = await this.pointsFor(tx, "ATTENDANCE_POINTS");
-    await tx.pointsEntry.create({
-      data: {
-        type: PointsEntryType.ATTENDANCE,
-        points,
-        clientId: input.clientId,
-        reservationId: input.reservationId,
-        occurredAt: input.occurredAt,
-      },
-    });
-    await this.awardStreak(tx, input.clientId, input.reservationId);
+    await lockAdvisory(tx, `gamification-client:${input.clientId}`);
+
+    if (input.mark === AttendanceStatus.PRESENT) {
+      const points = await this.pointsFor(tx, "ATTENDANCE_POINTS");
+      await tx.pointsEntry.create({
+        data: {
+          type: PointsEntryType.ATTENDANCE,
+          points,
+          clientId: input.clientId,
+          reservationId: input.reservationId,
+          occurredAt: input.occurredAt,
+        },
+      });
+    } else if (input.wasPresent) {
+      const live = await tx.pointsEntry.findMany({
+        where: {
+          reservationId: input.reservationId,
+          type: PointsEntryType.ATTENDANCE,
+          reversedBy: null,
+        },
+      });
+      for (const entry of live) await this.reverse(tx, entry);
+    }
+
+    await this.reconcileStreak(tx, input.clientId, input.reservationId);
   }
 
   /**
-   * Concede o que a sequência da presença recém-registrada merece e ainda não
-   * recebeu: o bônus de cada marco que ela alcançou (uma vez por sequência,
-   * então uma nova sequência paga de novo) e o badge do marco (uma vez na
-   * vida). A sequência é recalculada a partir do histórico cronológico, então
-   * uma presença registrada fora de ordem também conta. O lock por cliente
-   * serializa registros simultâneos em aulas diferentes, para nenhum deles
-   * perder o bônus.
+   * Ajusta bônus e badges do cliente ao histórico cronológico de presenças e
+   * faltas depois da marcação de uma reserva (ver planStreak).
    */
-  private async awardStreak(
+  private async reconcileStreak(
     tx: Prisma.TransactionClient,
     clientId: string,
-    reservationId: string,
+    changedReservationId: string,
   ): Promise<void> {
-    await lockAdvisory(tx, `gamification-client:${clientId}`);
-
-    const run = runContaining(await this.attendanceHistory(tx, clientId), reservationId);
-    if (!run) return;
-    const rewarded = await tx.pointsEntry.findMany({
-      where: { clientId, type: PointsEntryType.STREAK_BONUS },
-      select: { milestone: true, reservationId: true },
+    const badges = await tx.streakBadge.findMany({ where: { clientId } });
+    const liveBonuses = await tx.pointsEntry.findMany({
+      where: { clientId, type: PointsEntryType.STREAK_BONUS, reversedBy: null },
+      orderBy: [{ occurredAt: "asc" }, { sequence: "asc" }],
     });
-    const badges = await tx.streakBadge.findMany({
-      where: { clientId },
-      select: { milestone: true },
-    });
-    const badgedMilestones = new Set(badges.map((badge) => badge.milestone));
 
-    const milestones = await this.streakMilestones(tx);
-    for (const award of streakAwards(run, milestones, rewarded)) {
-      if (award.bonusDue) {
-        await tx.pointsEntry.create({
-          data: {
-            type: PointsEntryType.STREAK_BONUS,
-            points: award.points,
-            milestone: award.threshold,
-            clientId,
-            reservationId: award.completing.reservationId,
-            occurredAt: award.completing.startsAt,
-          },
-        });
-      }
-      if (!badgedMilestones.has(award.threshold)) {
-        await tx.streakBadge.create({
-          data: { clientId, milestone: award.threshold, awardedAt: award.completing.startsAt },
-        });
-      }
+    const plan = planStreak({
+      history: await this.attendanceHistory(tx, clientId),
+      changedReservationId,
+      milestones: await this.streakMilestones(tx),
+      liveBonuses,
+      activeBadges: new Set(badges.filter((b) => b.revokedAt === null).map((b) => b.milestone)),
+    });
+    await this.applyStreakPlan(tx, clientId, plan);
+  }
+
+  private async applyStreakPlan(
+    tx: Prisma.TransactionClient,
+    clientId: string,
+    plan: StreakPlan<PointsEntry>,
+  ): Promise<void> {
+    for (const bonus of plan.surplus) await this.reverse(tx, bonus);
+    for (const award of plan.awards) {
+      await tx.pointsEntry.create({
+        data: {
+          type: PointsEntryType.STREAK_BONUS,
+          points: award.points,
+          milestone: award.threshold,
+          clientId,
+          reservationId: award.completing.reservationId,
+          occurredAt: award.completing.startsAt,
+        },
+      });
     }
+    for (const { threshold, awardedAt } of plan.badgesToGrant) {
+      await tx.streakBadge.upsert({
+        where: { clientId_milestone: { clientId, milestone: threshold } },
+        create: { clientId, milestone: threshold, awardedAt },
+        update: { awardedAt, revokedAt: null },
+      });
+    }
+    if (plan.badgesToRevoke.length > 0) {
+      await tx.streakBadge.updateMany({
+        where: { clientId, milestone: { in: plan.badgesToRevoke } },
+        data: { revokedAt: new Date() },
+      });
+    }
+  }
+
+  /** Estorna um lançamento: outro lançamento, de sinal contrário e do mesmo instante, que aponta para ele. */
+  private reverse(tx: Prisma.TransactionClient, entry: PointsEntry) {
+    return tx.pointsEntry.create({
+      data: {
+        type: PointsEntryType.REVERSAL,
+        points: -entry.points,
+        clientId: entry.clientId,
+        milestone: entry.milestone,
+        reservationId: entry.reservationId,
+        // No instante do evento original: os totais por período continuam fechando.
+        occurredAt: entry.occurredAt,
+        reversesEntryId: entry.id,
+      },
+    });
   }
 
   /**
