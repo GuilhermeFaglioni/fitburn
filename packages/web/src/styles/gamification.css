@@ -374,7 +374,52 @@
   color: var(--color-danger);
 }
 
+/* Com a barra lateral do cliente (≥768px): os tamanhos do artboard desktop. */
 @media (min-width: 768px) {
+  /* A barra lateral já leva de volta ao início. */
+  .fb-gami__back {
+    display: none;
+  }
+
+  .fb-gami__title {
+    font-size: 32px;
+  }
+
+  .fb-gami__points {
+    padding: 24px 20px;
+  }
+
+  .fb-gami__points-total {
+    font-size: 56px;
+  }
+
+  .fb-gami__badges {
+    gap: 14px;
+  }
+
+  /* Título à esquerda e o seletor à direita, na mesma linha. */
+  .fb-gami__rank-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  /* No artboard: 220px de botões mais 4px de respiro de cada lado. */
+  .fb-gami__rank-tabs {
+    width: 228px;
+  }
+
+  .fb-gami__rank-pos {
+    width: 24px;
+  }
+}
+
+/*
+ * As duas colunas do artboard (420px + histórico e metas lado a lado) pedem os
+ * 1440px dele: a partir de 1280px do conteúdo cabem; abaixo disso as seções
+ * empilham como no mobile, sem espremer o histórico nem cortar as metas.
+ */
+@media (min-width: 1280px) {
   .fb-gami {
     flex-direction: row;
     gap: 40px;
@@ -404,42 +449,5 @@
   /* Cada seção da linha ocupa metade (menos meio vão), como no artboard. */
   .fb-gami__row > * {
     flex: 0 1 calc(50% - 12px);
-  }
-
-  /* No desktop a barra lateral já leva de volta ao início. */
-  .fb-gami__back {
-    display: none;
-  }
-
-  .fb-gami__title {
-    font-size: 32px;
-  }
-
-  .fb-gami__points {
-    padding: 24px 20px;
-  }
-
-  .fb-gami__points-total {
-    font-size: 56px;
-  }
-
-  .fb-gami__badges {
-    gap: 14px;
-  }
-
-  /* Desktop: título à esquerda e o seletor de 220px à direita, na mesma linha. */
-  .fb-gami__rank-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  /* No artboard: 220px de botões mais 4px de respiro de cada lado. */
-  .fb-gami__rank-tabs {
-    width: 228px;
-  }
-
-  .fb-gami__rank-pos {
-    width: 24px;
   }
 }

@@ -87,3 +87,13 @@ export function adminRouteForClientPath(user: CurrentUser, path: string): string
   const item = ADMIN_MENU_ITEMS.find((candidate) => candidate.to === equivalent);
   return item && canAccess(user, item) ? item.to : homeRouteFor(user);
 }
+
+/**
+ * A rota administrativa pode ser aberta por este usuário? Só as telas do menu
+ * têm regra própria (a permissão do item); as demais (ex.: a Presença de uma
+ * aula) deixam a decisão para a API.
+ */
+export function canOpenAdminRoute(user: CurrentUser, path: string): boolean {
+  const item = ADMIN_MENU_ITEMS.find((candidate) => candidate.to === path);
+  return !item || canAccess(user, item);
+}
