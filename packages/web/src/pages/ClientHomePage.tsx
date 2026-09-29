@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { RankingPeriod, type GamificationSummary } from "@fitburn/contracts";
-import { formatLocalDate } from "../lib/agenda/format";
+import { gymToday, RankingPeriod, type GamificationSummary } from "@fitburn/contracts";
+import { formatDayMonth, formatLocalDate } from "../lib/agenda/format";
 import { useAuth } from "../lib/auth/AuthContext";
 import { getMyGamification, getRanking } from "../lib/gamification/api";
 import { getMyPlan } from "../lib/plans/api";
@@ -48,6 +48,7 @@ export function ClientHomePage() {
 
   const planQuery = useQuery({ queryKey: ["plans", "mine"], queryFn: getMyPlan });
   const activePlan = planQuery.data?.active ?? null;
+  const startsLater = activePlan !== null && activePlan.startDate > gymToday();
 
   return (
     <div className="fb-home">
@@ -65,10 +66,15 @@ export function ClientHomePage() {
               <div className="fb-home__plan-info">
                 <span className="fb-home__plan-name">{activePlan.plan.name}</span>
                 <span className="fb-home__plan-until">
-                  Ativo até {formatLocalDate(activePlan.endDate)}
+                  {startsLater
+                    ? `Começa em ${formatDayMonth(activePlan.startDate)}`
+                    : `Ativo até ${formatLocalDate(activePlan.endDate)}`}
+                </span>
+                <span className="fb-home__plan-until">
+                  {formatLocalDate(activePlan.startDate)} – {formatLocalDate(activePlan.endDate)}
                 </span>
               </div>
-              <span className="fb-home__badge">ATIVO</span>
+              {!startsLater && <span className="fb-home__badge">ATIVO</span>}
             </section>
           )}
           {planQuery.data && !activePlan && (

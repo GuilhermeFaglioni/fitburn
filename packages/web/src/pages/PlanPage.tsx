@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { formatLocalDate } from "../lib/agenda/format";
+import { gymToday } from "@fitburn/contracts";
+import { formatDayMonth, formatLocalDate } from "../lib/agenda/format";
 import { getMyPlan } from "../lib/plans/api";
 import { PlanHistoryList } from "./plans/PlanHistoryList";
 
@@ -26,7 +27,11 @@ export function PlanPage() {
         <section className="fb-plan__card" aria-label="Plano ativo">
           <div className="fb-plan__card-head">
             <span className="fb-plan__card-name">{plan.active.plan.name}</span>
-            <span className="fb-plan__badge">ATIVO</span>
+            <span className="fb-plan__badge">
+              {plan.active.startDate > gymToday()
+                ? `Começa em ${formatDayMonth(plan.active.startDate)}`
+                : "ATIVO"}
+            </span>
           </div>
           {plan.active.plan.description && (
             <p className="fb-plan__card-text">{plan.active.plan.description}</p>

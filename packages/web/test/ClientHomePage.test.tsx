@@ -209,6 +209,30 @@ describe("Home do cliente", () => {
       expect(within(card).getByText("Ativo até 15/11/2026")).toBeInTheDocument();
     });
 
+    it("mostra as datas de início e término do plano ativo", async () => {
+      mockHome({ plan: ACTIVE_PLAN });
+      renderPage();
+
+      const card = await screen.findByRole("region", { name: "Plano ativo" });
+      expect(within(card).getByText("15/08/2026 – 15/11/2026")).toBeInTheDocument();
+    });
+
+    it("com início futuro mostra 'Começa em dd/mm' no lugar de 'Ativo até'", async () => {
+      mockHome({
+        plan: {
+          active: { ...ACTIVE_PLAN.active!, startDate: "2099-01-10", endDate: "2099-06-10" },
+          history: [],
+        },
+      });
+      renderPage();
+
+      const card = await screen.findByRole("region", { name: "Plano ativo" });
+      expect(within(card).getByText("Começa em 10/01")).toBeInTheDocument();
+      expect(within(card).getByText("10/01/2099 – 10/06/2099")).toBeInTheDocument();
+      expect(within(card).queryByText(/Ativo até/)).not.toBeInTheDocument();
+      expect(within(card).queryByText("ATIVO")).not.toBeInTheDocument();
+    });
+
     it("sem plano ativo mostra o estado vazio, sem oferta de venda", async () => {
       mockHome({ plan: NO_PLAN });
       renderPage();

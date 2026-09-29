@@ -287,7 +287,7 @@ describe("Planos (administração)", () => {
       ).toEqual(["Selecione um plano", "Plano Performance", "Plano Essencial"]);
     });
 
-    it("avisa antes de confirmar que o cliente já tem um plano ativo, que será encerrado", async () => {
+    it("avisa antes de confirmar que o cliente já tem um plano ativo, que será substituído", async () => {
       const user = await openAssign();
 
       await user.selectOptions(screen.getByLabelText("Cliente"), "Marina Souza (plano ativo)");
@@ -295,8 +295,12 @@ describe("Planos (administração)", () => {
       const warning = screen.getByRole("note");
       expect(warning).toHaveTextContent("Marina Souza já possui um plano ativo");
       expect(warning).toHaveTextContent("Plano Performance, até 15/11/2026");
-      expect(warning).toHaveTextContent("encerrará o atual imediatamente");
-      expect(screen.getByRole("button", { name: "Encerrar atual e atribuir" })).toBeInTheDocument();
+      expect(warning).toHaveTextContent("na véspera do início do novo plano");
+      expect(warning).toHaveTextContent("mantém o término atual");
+      expect(warning).not.toHaveTextContent("imediatamente");
+      expect(
+        screen.getByRole("button", { name: "Atribuir e substituir o atual" }),
+      ).toBeInTheDocument();
     });
 
     it("cliente sem plano ativo: sem aviso e com o botão Atribuir plano", async () => {
@@ -342,6 +346,27 @@ describe("Planos (administração)", () => {
       expect(screen.getByRole("button", { name: "Atribuir plano" })).toBeDisabled();
 
       await user.type(screen.getByLabelText("Término"), "2026-12-31");
+      expect(screen.getByRole("button", { name: "Atribuir plano" })).toBeEnabled();
+    });
+
+    it("recusa no cliente um término anterior ao início, com o motivo, sem enviar", async () => {
+      const user = await openAssign();
+      await user.selectOptions(screen.getByLabelText("Cliente"), "Bruno Lima (sem plano ativo)");
+      await user.selectOptions(screen.getByLabelText("Plano"), "Plano Performance");
+      await user.type(screen.getByLabelText("Início"), "2026-12-31");
+      await user.type(screen.getByLabelText("Término"), "2026-10-01");
+
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "A data de término não pode ser anterior à de início.",
+      );
+      const button = screen.getByRole("button", { name: "Atribuir plano" });
+      expect(button).toBeDisabled();
+      await user.click(button);
+      expect(calls).toEqual([]);
+
+      await user.clear(screen.getByLabelText("Término"));
+      await user.type(screen.getByLabelText("Término"), "2027-01-31");
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
       expect(screen.getByRole("button", { name: "Atribuir plano" })).toBeEnabled();
     });
 
