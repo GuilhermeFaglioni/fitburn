@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { GoalStatus, type GoalDetail } from "@fitburn/contracts";
 import { formatInstantDate, formatLocalDate } from "../../lib/agenda/format";
 import { listMyGoals } from "../../lib/goals/api";
+import { EmptyState, ErrorState, LoadingState } from "../../components/states";
 
 /** À direita do título da meta: a data de conclusão, ou o prazo se ainda está ativa. */
 function goalMeta(goal: GoalDetail): string {
@@ -39,14 +40,17 @@ export function GoalsSection() {
       <h2 id="fb-gami-goals" className="fb-gami__section-title">
         Metas do professor
       </h2>
+      {goalsQuery.isLoading && <LoadingState surface="dark" />}
       {goalsQuery.isError && (
-        <p role="alert" className="fb-gami__alert">
-          Não foi possível carregar as metas.
-        </p>
+        <ErrorState
+          surface="dark"
+          message="Não foi possível carregar as metas."
+          onRetry={() => void goalsQuery.refetch()}
+        />
       )}
       {goalsQuery.isSuccess &&
         (goalsQuery.data.length === 0 ? (
-          <div className="fb-client-empty">Nenhuma meta no momento.</div>
+          <EmptyState surface="dark" message="Nenhuma meta no momento." />
         ) : (
           <ul className="fb-gami__goal-list">
             {goalsQuery.data.map((goal) => (

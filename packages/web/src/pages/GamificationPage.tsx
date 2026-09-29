@@ -10,6 +10,7 @@ import { getMyGamification } from "../lib/gamification/api";
 import { formatHistoryWhen } from "../lib/gamification/format";
 import { GoalsSection } from "./gamification/GoalsSection";
 import { RankingSection } from "./gamification/RankingSection";
+import { EmptyState, ErrorState, LoadingState } from "../components/states";
 
 /** Traço na cor do texto do pai (laranja no marco alcançado, esmaecido no pendente). */
 function MarkIcon() {
@@ -177,10 +178,13 @@ export function GamificationPage() {
           <h1 className="fb-gami__title">Sua evolução</h1>
         </div>
 
+        {summaryQuery.isLoading && <LoadingState surface="dark" />}
         {summaryQuery.isError && (
-          <p role="alert" className="fb-gami__alert">
-            Não foi possível carregar sua evolução.
-          </p>
+          <ErrorState
+            surface="dark"
+            message="Não foi possível carregar sua evolução."
+            onRetry={() => void summaryQuery.refetch()}
+          />
         )}
 
         {summary && (
@@ -211,7 +215,7 @@ export function GamificationPage() {
                 Histórico recente
               </h2>
               {summary.history.length === 0 ? (
-                <div className="fb-client-empty">Nenhum ganho de pontos ainda.</div>
+                <EmptyState surface="dark" message="Nenhum ganho de pontos ainda." />
               ) : (
                 <ul className="fb-gami__entries">
                   {summary.history.map((item) => (

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { RankingPeriod, type RankingEntry, type RankingPeriodName } from "@fitburn/contracts";
 import { getRanking } from "../../lib/gamification/api";
+import { EmptyState, ErrorState, LoadingState } from "../../components/states";
 
 const RANKING_TABS: Array<{ period: RankingPeriodName; label: string }> = [
   { period: RankingPeriod.WEEK, label: "Semanal" },
@@ -64,14 +65,17 @@ export function RankingSection() {
         </div>
       </div>
 
+      {rankingQuery.isLoading && <LoadingState surface="dark" />}
       {rankingQuery.isError && (
-        <p role="alert" className="fb-gami__alert">
-          Não foi possível carregar o ranking.
-        </p>
+        <ErrorState
+          surface="dark"
+          message="Não foi possível carregar o ranking."
+          onRetry={() => void rankingQuery.refetch()}
+        />
       )}
       {rankingQuery.data &&
         (rankingQuery.data.entries.length === 0 ? (
-          <div className="fb-client-empty">Ninguém pontuou neste período ainda.</div>
+          <EmptyState surface="dark" message="Ninguém pontuou neste período ainda." />
         ) : (
           <ul className="fb-gami__rank-list">
             {rankingQuery.data.entries.map((entry, index) => (

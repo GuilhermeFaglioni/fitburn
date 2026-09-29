@@ -6,6 +6,7 @@ import { useAuth } from "../lib/auth/AuthContext";
 import { getMyGamification, getRanking } from "../lib/gamification/api";
 import { getMyPlan } from "../lib/plans/api";
 import { HomeReservations } from "./home/HomeReservations";
+import { EmptyState, ErrorState, LoadingState } from "../components/states";
 
 const SHORTCUTS = [
   { to: "/agenda", label: "Agenda" },
@@ -56,10 +57,13 @@ export function ClientHomePage() {
         <div className="fb-home__block">
           <h1 className="fb-home__greeting">{firstName ? `Olá, ${firstName}` : "Olá"}</h1>
 
+          {planQuery.isLoading && <LoadingState surface="dark" />}
           {planQuery.isError && (
-            <p role="alert" className="fb-home__alert">
-              Não foi possível carregar o seu plano.
-            </p>
+            <ErrorState
+              surface="dark"
+              message="Não foi possível carregar o seu plano."
+              onRetry={() => void planQuery.refetch()}
+            />
           )}
           {activePlan && (
             <section className="fb-home__plan" aria-label="Plano ativo">
@@ -129,17 +133,20 @@ function Evolution() {
         </Link>
       </div>
 
+      {summaryQuery.isLoading && <LoadingState surface="dark" />}
       {summaryQuery.isError && (
-        <p role="alert" className="fb-home__alert">
-          Não foi possível carregar sua evolução.
-        </p>
+        <ErrorState
+          surface="dark"
+          message="Não foi possível carregar sua evolução."
+          onRetry={() => void summaryQuery.refetch()}
+        />
       )}
 
       {summary && !hasPoints && (
-        <div className="fb-client-empty">
-          Você ainda não tem pontos. Reserve uma aula e confirme sua presença para começar a
-          pontuar.
-        </div>
+        <EmptyState
+          surface="dark"
+          message="Você ainda não tem pontos. Reserve uma aula e confirme sua presença para começar a pontuar."
+        />
       )}
 
       {summary && hasPoints && (

@@ -12,6 +12,7 @@ import {
 import { useAuth } from "../lib/auth/AuthContext";
 import { listAttendanceClasses } from "../lib/attendance/api";
 import { formatDayHeading, formatInstantHour } from "../lib/agenda/format";
+import { EmptyState, ErrorState, LoadingState } from "../components/states";
 
 type Tab = "today" | "week";
 
@@ -107,12 +108,18 @@ export function MyClassesPage() {
         </button>
       </div>
 
-      {classesQuery.isError && <p role="alert">Não foi possível carregar as aulas.</p>}
+      {classesQuery.isLoading && <LoadingState />}
+      {classesQuery.isError && (
+        <ErrorState
+          message="Não foi possível carregar as aulas."
+          onRetry={() => void classesQuery.refetch()}
+        />
+      )}
 
       {classesQuery.isSuccess && byDay.size === 0 && (
-        <p className="fb-note">
-          {tab === "today" ? "Nenhuma aula hoje." : "Nenhuma aula nesta semana."}
-        </p>
+        <EmptyState
+          message={tab === "today" ? "Nenhuma aula hoje." : "Nenhuma aula nesta semana."}
+        />
       )}
 
       {classesQuery.isSuccess && tab === "today" && byDay.size > 0 && (

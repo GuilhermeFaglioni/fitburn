@@ -1,0 +1,91 @@
+/**
+ * Estados compartilhados (carregando, vazio, erro, feedback) — components/states.tsx.
+ * Duas superfícies: --light (telas administrativas, conteúdo claro) e --dark
+ * (telas do cliente e a de Presença, fundo escuro). A faixa tracejada do vazio
+ * e o vermelho do erro seguem o canvas de design (.fb-client-empty / Login).
+ */
+.fb-state {
+  margin: 0;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  line-height: 19px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  overflow-wrap: anywhere;
+}
+
+.fb-state--loading {
+  padding: 4px 0;
+}
+
+.fb-state--empty {
+  padding: 24px 16px;
+  justify-content: center;
+  text-align: center;
+  border: 1px dashed transparent;
+}
+
+.fb-state--light.fb-state--loading,
+.fb-state--light.fb-state--empty {
+  color: var(--color-text-muted-on-light);
+}
+
+.fb-state--light.fb-state--empty {
+  background: #fafafa;
+  border-color: #d6d6d6;
+}
+
+.fb-state--light.fb-state--error {
+  background: rgba(194, 58, 31, 0.08);
+  border: 1px solid rgba(194, 58, 31, 0.35);
+  color: var(--color-error-text-on-light);
+}
+
+.fb-state--light.fb-state--success {
+  background: #eaf7ee;
+  border: 1px solid #bfe6c9;
+  color: #1e6b34;
+}
+
+.fb-state--dark.fb-state--loading,
+.fb-state--dark.fb-state--empty {
+  color: var(--color-text-muted-on-dark);
+}
+
+.fb-state--dark.fb-state--empty {
+  background: var(--color-surface-raised);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.fb-state--dark.fb-state--error {
+  background: var(--color-danger-bg);
+  border: 1px solid var(--color-danger-border);
+  color: var(--color-danger);
+}
+
+.fb-state--dark.fb-state--success {
+  background: rgba(237, 110, 52, 0.12);
+  border: 1px solid rgba(237, 110, 52, 0.35);
+  color: var(--color-ink-on-dark);
+}
+
+.fb-state__retry {
+  min-height: 32px;
+  padding: 5px 12px;
+  background: transparent;
+  border: 1px solid currentColor;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 700;
+  color: inherit;
+  cursor: pointer;
+}
+
+.fb-state__retry:hover {
+  background: rgba(127, 127, 127, 0.15);
+}

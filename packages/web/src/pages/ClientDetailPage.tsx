@@ -19,6 +19,7 @@ import { invalidateAfterDeletion } from "../lib/invalidate-after-deletion";
 import { PlanHistoryList } from "./plans/PlanHistoryList";
 import { statusBadge } from "./workout-sheets/status";
 import { ClientEditForm } from "./clients/ClientEditForm";
+import { EmptyState, ErrorState, Feedback, LoadingState } from "../components/states";
 
 type Tab = "dados" | "plano" | "reservas" | "gamificacao" | "fichas";
 
@@ -48,7 +49,7 @@ function valueOrDash(value: string | null): string {
 }
 
 function ReservationRows({ items, empty }: { items: ReservationDetail[]; empty: string }) {
-  if (items.length === 0) return <p className="fb-note">{empty}</p>;
+  if (items.length === 0) return <EmptyState message={empty} />;
   return (
     <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: 8 }}>
       {items.map((reservation) => (
@@ -115,7 +116,7 @@ function TabContent({
           {plan.active ? (
             <PlanHistoryList items={[plan.active]} light />
           ) : (
-            <p className="fb-note">Sem plano ativo.</p>
+            <EmptyState message="Sem plano ativo." />
           )}
           {plan.history.length > 0 && (
             <>
@@ -152,7 +153,7 @@ function TabContent({
             ))}
           </ul>
           {gamification.history.length === 0 ? (
-            <p className="fb-note">Nenhum ponto ainda.</p>
+            <EmptyState message="Nenhum ponto ainda." />
           ) : (
             <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: 6 }}>
               {gamification.history.map((item) => (
@@ -172,7 +173,7 @@ function TabContent({
       );
     case "fichas":
       return overview.workoutSheets.length === 0 ? (
-        <p className="fb-note">Nenhuma ficha de treino.</p>
+        <EmptyState message="Nenhuma ficha de treino." />
       ) : (
         <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: 8 }}>
           {overview.workoutSheets.map((sheet) => (
@@ -215,15 +216,20 @@ export function ClientDetailPage() {
     <div style={{ display: "flex", flexDirection: "column", gap: 18, height: "100%" }}>
       <Link to="/clientes">← Clientes</Link>
 
-      {overviewQuery.isLoading && <p className="fb-note">Carregando…</p>}
+      {overviewQuery.isLoading && <LoadingState />}
       {overviewQuery.isError && (
-        <p role="alert">
-          {overviewQuery.error instanceof ApiError && overviewQuery.error.code === "OUT_OF_SCOPE"
-            ? "Este cliente está fora do seu escopo."
-            : "Não foi possível carregar o cliente."}
-        </p>
+        <ErrorState
+          message={
+            overviewQuery.error instanceof ApiError && overviewQuery.error.code === "OUT_OF_SCOPE"
+              ? "Este cliente está fora do seu escopo."
+              : "Não foi possível carregar o cliente."
+          }
+          onRetry={() => void overviewQuery.refetch()}
+        />
       )}
-      {toggleMutation.isError && <p role="alert">Não foi possível alterar o cliente.</p>}
+      {toggleMutation.isError && (
+        <Feedback tone="error">Não foi possível alterar o cliente.</Feedback>
+      )}
 
       {overview && (
         <>

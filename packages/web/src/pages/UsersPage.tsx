@@ -7,6 +7,7 @@ import { useAuth } from "../lib/auth/AuthContext";
 import { invalidateAfterDeletion } from "../lib/invalidate-after-deletion";
 import { deactivateUser, deleteUser, listUsers, reactivateUser } from "../lib/users/api";
 import { ClientCreateForm } from "./ClientCreateForm";
+import { LoadingState, ErrorState, EmptyState } from "../components/states";
 
 export function UsersPage() {
   const { can, user: currentUser } = useAuth();
@@ -113,11 +114,16 @@ export function UsersPage() {
         />
       )}
 
-      {usersQuery.isLoading && <p className="fb-note">Carregando…</p>}
-      {usersQuery.isError && <p role="alert">Não foi possível carregar os usuários.</p>}
+      {usersQuery.isLoading && <LoadingState />}
+      {usersQuery.isError && (
+        <ErrorState
+          message="Não foi possível carregar os usuários."
+          onRetry={() => void usersQuery.refetch()}
+        />
+      )}
 
       {filteredUsers && filteredUsers.length === 0 && (
-        <p className="fb-note">Nenhum usuário encontrado.</p>
+        <EmptyState message="Nenhum usuário encontrado." />
       )}
 
       {filteredUsers && filteredUsers.length > 0 && (

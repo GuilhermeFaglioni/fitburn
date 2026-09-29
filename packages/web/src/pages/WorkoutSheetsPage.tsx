@@ -19,6 +19,7 @@ import {
 import { StudentList } from "./goals/StudentList";
 import { SheetEditor, type SheetFormValues } from "./workout-sheets/SheetEditor";
 import { statusBadge } from "./workout-sheets/status";
+import { EmptyState, ErrorState, Feedback, LoadingState } from "../components/states";
 
 const BADGE_CLASS = {
   [WorkoutSheetStatus.ACTIVE]: "fb-badge--active",
@@ -106,11 +107,19 @@ export function WorkoutSheetsPage() {
       />
 
       <div className="fb-sheets__main">
-        {clientsQuery.isError && <p role="alert">Não foi possível carregar os alunos.</p>}
+        {clientsQuery.isLoading && <LoadingState />}
+        {clientsQuery.isError && (
+          <ErrorState
+            message="Não foi possível carregar os alunos."
+            onRetry={() => void clientsQuery.refetch()}
+          />
+        )}
         {clientsQuery.isSuccess && clients.length === 0 && (
-          <p className="fb-note">
-            {allStudents ? "Nenhum cliente ativo." : "Você ainda não tem alunos vinculados."}
-          </p>
+          <EmptyState
+            message={
+              allStudents ? "Nenhum cliente ativo." : "Você ainda não tem alunos vinculados."
+            }
+          />
         )}
         {clientsQuery.isSuccess && clients.length > 0 && !selected && (
           <p className="fb-note">Selecione um aluno para ver e montar fichas.</p>
@@ -132,7 +141,7 @@ export function WorkoutSheetsPage() {
               )}
             </div>
 
-            {failure && <p role="alert">{failure}</p>}
+            {failure && <Feedback tone="error">{failure}</Feedback>}
 
             <SheetEditor
               key={`${editing?.id ?? "new"}-${formVersion}`}
@@ -149,9 +158,15 @@ export function WorkoutSheetsPage() {
               <h2 id="fb-sheets-list" className="fb-sheets__section-title">
                 Fichas de {selected.fullName}
               </h2>
-              {sheetsQuery.isError && <p role="alert">Não foi possível carregar as fichas.</p>}
+              {sheetsQuery.isLoading && <LoadingState />}
+              {sheetsQuery.isError && (
+                <ErrorState
+                  message="Não foi possível carregar as fichas."
+                  onRetry={() => void sheetsQuery.refetch()}
+                />
+              )}
               {sheetsQuery.isSuccess && sheets.length === 0 && (
-                <p className="fb-note">Este aluno ainda não tem fichas.</p>
+                <EmptyState message="Este aluno ainda não tem fichas." />
               )}
               <ul className="fb-sheets__list" aria-label={`Fichas de ${selected.fullName}`}>
                 {sheets.map((sheet) => (

@@ -11,6 +11,7 @@ import {
   getAssignmentOptions,
   listAssignments,
 } from "../lib/assignments/api";
+import { ErrorState, Feedback, LoadingState } from "../components/states";
 
 /**
  * Atribuição de clientes a professores: a administração escolhe um professor,
@@ -78,11 +79,17 @@ export function AssignmentsPage() {
         aqui.
       </div>
 
-      {optionsQuery.isLoading && <p className="fb-note">Carregando…</p>}
+      {optionsQuery.isLoading && <LoadingState />}
       {(optionsQuery.isError || assignmentsQuery.isError) && (
-        <p role="alert">Não foi possível carregar as atribuições.</p>
+        <ErrorState
+          message="Não foi possível carregar as atribuições."
+          onRetry={() => {
+            void optionsQuery.refetch();
+            void assignmentsQuery.refetch();
+          }}
+        />
       )}
-      {failure && <p role="alert">{failure}</p>}
+      {failure && <Feedback tone="error">{failure}</Feedback>}
 
       {options && (
         <>

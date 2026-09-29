@@ -4,6 +4,7 @@ import { WorkoutSheetStatus, type WorkoutSheet } from "@fitburn/contracts";
 import { formatInstantDate } from "../lib/agenda/format";
 import { listMyWorkoutSheets } from "../lib/workout-sheets/api";
 import { statusBadge } from "./workout-sheets/status";
+import { EmptyState, ErrorState, LoadingState } from "../components/states";
 
 function exerciseCount(sheet: WorkoutSheet): string {
   const count = sheet.exercises.length;
@@ -28,20 +29,24 @@ export function ClientWorkoutSheetsPage() {
     <div className="fb-workout">
       <h1 className="fb-workout__title">Ficha de treino</h1>
 
+      {sheetsQuery.isLoading && <LoadingState surface="dark" />}
       {sheetsQuery.isError && (
-        <p role="alert" className="fb-workout__alert">
-          Não foi possível carregar as suas fichas.
-        </p>
+        <ErrorState
+          surface="dark"
+          message="Não foi possível carregar as suas fichas."
+          onRetry={() => void sheetsQuery.refetch()}
+        />
       )}
 
       {sheetsQuery.isSuccess && sheets.length === 0 && (
-        <div className="fb-workout__empty">
-          Você ainda não tem fichas de treino. Fale com o seu professor para receber a sua.
-        </div>
+        <EmptyState
+          surface="dark"
+          message="Você ainda não tem fichas de treino. Fale com o seu professor para receber a sua."
+        />
       )}
 
       {sheetsQuery.isSuccess && sheets.length > 0 && active.length === 0 && (
-        <div className="fb-workout__empty">Nenhuma ficha ativa no momento.</div>
+        <EmptyState surface="dark" message="Nenhuma ficha ativa no momento." />
       )}
 
       {active.length > 0 && (

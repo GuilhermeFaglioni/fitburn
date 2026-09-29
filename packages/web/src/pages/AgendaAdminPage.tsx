@@ -17,6 +17,7 @@ import { listOccurrences } from "../lib/agenda/api";
 import { formatDayLabel, formatInstantHour, formatWeekRange } from "../lib/agenda/format";
 import { OccurrenceEditModal } from "./agenda/OccurrenceEditModal";
 import { OccurrenceFormModal } from "./agenda/OccurrenceFormModal";
+import { ErrorState, LoadingState } from "../components/states";
 
 type ModalState =
   | { mode: "closed" }
@@ -93,7 +94,13 @@ export function AgendaAdminPage() {
         </div>
       </div>
 
-      {occurrencesQuery.isError && <p role="alert">Não foi possível carregar a agenda.</p>}
+      {occurrencesQuery.isLoading && <LoadingState />}
+      {occurrencesQuery.isError && (
+        <ErrorState
+          message="Não foi possível carregar a agenda."
+          onRetry={() => void occurrencesQuery.refetch()}
+        />
+      )}
 
       <div className="fb-week-grid">
         {days.map((date) => {

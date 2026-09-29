@@ -14,6 +14,7 @@ import {
 import { GoalCard } from "./goals/GoalCard";
 import { GoalForm, type GoalFormValues } from "./goals/GoalForm";
 import { StudentList } from "./goals/StudentList";
+import { EmptyState, ErrorState, Feedback, LoadingState } from "../components/states";
 
 /**
  * Metas individuais (MetasAdmin.dc.html): à esquerda os alunos do professor
@@ -93,11 +94,19 @@ export function GoalsPage() {
       />
 
       <div className="fb-goals__main">
-        {clientsQuery.isError && <p role="alert">Não foi possível carregar os alunos.</p>}
+        {clientsQuery.isLoading && <LoadingState />}
+        {clientsQuery.isError && (
+          <ErrorState
+            message="Não foi possível carregar os alunos."
+            onRetry={() => void clientsQuery.refetch()}
+          />
+        )}
         {clientsQuery.isSuccess && clients.length === 0 && (
-          <p className="fb-note">
-            {allStudents ? "Nenhum cliente ativo." : "Você ainda não tem alunos vinculados."}
-          </p>
+          <EmptyState
+            message={
+              allStudents ? "Nenhum cliente ativo." : "Você ainda não tem alunos vinculados."
+            }
+          />
         )}
         {clientsQuery.isSuccess && clients.length > 0 && !selected && (
           <p className="fb-note">Selecione um aluno para ver e criar metas.</p>
@@ -119,15 +128,21 @@ export function GoalsPage() {
               </span>
             </div>
 
-            {failure && <p role="alert">{failure}</p>}
-            {goalsQuery.isError && <p role="alert">Não foi possível carregar as metas.</p>}
+            {failure && <Feedback tone="error">{failure}</Feedback>}
+            {goalsQuery.isLoading && <LoadingState />}
+            {goalsQuery.isError && (
+              <ErrorState
+                message="Não foi possível carregar as metas."
+                onRetry={() => void goalsQuery.refetch()}
+              />
+            )}
 
             <section className="fb-goals__section" aria-labelledby="fb-goals-list">
               <h2 id="fb-goals-list" className="fb-goals__section-title">
                 Metas ativas
               </h2>
               {goalsQuery.isSuccess && goals.length === 0 && (
-                <p className="fb-note">Este aluno ainda não tem metas.</p>
+                <EmptyState message="Este aluno ainda não tem metas." />
               )}
               <ul className="fb-goals__list">
                 {goals.map((goal) => (

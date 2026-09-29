@@ -13,6 +13,7 @@ import {
   deactivateClassTemplate,
 } from "../../lib/catalog/api";
 import { ClassTemplateForm } from "./ClassTemplateForm";
+import { EmptyState, ErrorState, Feedback, LoadingState } from "../../components/states";
 
 type FormState =
   { mode: "closed" } | { mode: "create" } | { mode: "edit"; template: ClassTemplateDetail };
@@ -73,13 +74,20 @@ export function ClassTemplatesTab() {
         />
       )}
 
-      {templatesQuery.isLoading && <p className="fb-note">Carregando…</p>}
-      {templatesQuery.isError && <p role="alert">Não foi possível carregar os templates.</p>}
+      {templatesQuery.isLoading && <LoadingState />}
+      {templatesQuery.isError && (
+        <ErrorState
+          message="Não foi possível carregar os templates."
+          onRetry={() => void templatesQuery.refetch()}
+        />
+      )}
       {toggleMutation.isError && (
-        <p role="alert">{toggleMutation.error.message || "Não foi possível alterar o template."}</p>
+        <Feedback tone="error">
+          {toggleMutation.error.message || "Não foi possível alterar o template."}
+        </Feedback>
       )}
       {templatesQuery.data && templatesQuery.data.length === 0 && (
-        <p className="fb-note">Nenhum template cadastrado.</p>
+        <EmptyState message="Nenhum template cadastrado." />
       )}
 
       {templatesQuery.data && templatesQuery.data.length > 0 && (

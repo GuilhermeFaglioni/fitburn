@@ -13,6 +13,7 @@ import "./styles/workout.css";
 import "./styles/profile.css";
 import "./styles/home.css";
 import "./styles/dashboard.css";
+import "./styles/states.css";
 
 const queryClient = new QueryClient();
 

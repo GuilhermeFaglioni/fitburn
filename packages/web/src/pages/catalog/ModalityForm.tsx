@@ -2,6 +2,7 @@ import { useId, useState, type FormEvent } from "react";
 import type { ModalityDetail } from "@fitburn/contracts";
 import { ApiError } from "../../lib/auth/api";
 import { createModality, updateModality } from "../../lib/catalog/api";
+import { Feedback } from "../../components/states";
 
 export function ModalityForm({
   modality,
@@ -40,7 +41,7 @@ export function ModalityForm({
 
   return (
     <form onSubmit={handleSubmit} aria-label="Modalidade" className="fb-form">
-      {errorMessage && <p role="alert">{errorMessage}</p>}
+      {errorMessage && <Feedback tone="error">{errorMessage}</Feedback>}
 
       <label htmlFor={`${formId}-name`}>Nome</label>
       <input

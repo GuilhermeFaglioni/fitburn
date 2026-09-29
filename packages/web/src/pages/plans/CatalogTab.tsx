@@ -6,6 +6,7 @@ import { useAuth } from "../../lib/auth/AuthContext";
 import { errorMessage } from "../../lib/auth/api";
 import { listPlans, setPlanActive } from "../../lib/plans/api";
 import { PlanForm } from "./PlanForm";
+import { EmptyState, ErrorState, Feedback, LoadingState } from "../../components/states";
 
 type FormState = { mode: "closed" } | { mode: "create" } | { mode: "edit"; plan: PlanDetail };
 
@@ -38,15 +39,20 @@ export function CatalogTab() {
         </BlockedAction>
       </div>
 
-      {plansQuery.isLoading && <p className="fb-note">Carregando…</p>}
-      {plansQuery.isError && <p role="alert">Não foi possível carregar os planos.</p>}
+      {plansQuery.isLoading && <LoadingState />}
+      {plansQuery.isError && (
+        <ErrorState
+          message="Não foi possível carregar os planos."
+          onRetry={() => void plansQuery.refetch()}
+        />
+      )}
       {toggleMutation.isError && (
-        <p role="alert">
+        <Feedback tone="error">
           {errorMessage(toggleMutation.error, "Não foi possível alterar o plano.")}
-        </p>
+        </Feedback>
       )}
       {plansQuery.isSuccess && plansQuery.data.length === 0 && (
-        <p className="fb-note">Nenhum plano cadastrado.</p>
+        <EmptyState message="Nenhum plano cadastrado." />
       )}
 
       {plansQuery.isSuccess && plansQuery.data.length > 0 && (
