@@ -1,11 +1,22 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { Module, PermissionAction, type ClientsQuery } from "@fitburn/contracts";
+import {
+  Module,
+  PermissionAction,
+  type ClientListItem,
+  type ClientsQuery,
+} from "@fitburn/contracts";
 import { BlockedAction } from "../components/BlockedAction";
+import { DeleteUserDialog } from "../components/DeleteUserDialog";
 import { Modal } from "../components/Modal";
 import { useAuth } from "../lib/auth/AuthContext";
-import { createClientRecord, listClients, setClientActive } from "../lib/clients/api";
+import {
+  createClientRecord,
+  deleteClientRecord,
+  listClients,
+  setClientActive,
+} from "../lib/clients/api";
 import { formatLocalDate } from "../lib/agenda/format";
 import { ClientCreateForm } from "./ClientCreateForm";
 
@@ -16,6 +27,7 @@ export function ClientsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [status, setStatus] = useState<ClientsQuery["status"]>(undefined);
   const [showCreate, setShowCreate] = useState(false);
+  const [clientToDelete, setClientToDelete] = useState<ClientListItem | null>(null);
 
   const search = searchTerm.trim();
   const clientsQuery = useQuery({
@@ -30,6 +42,7 @@ export function ClientsPage() {
 
   const canCreate = can(Module.CLIENTES, PermissionAction.CREATE);
   const canEdit = can(Module.CLIENTES, PermissionAction.EDIT);
+  const canDelete = can(Module.CLIENTES, PermissionAction.DELETE);
   const clients = clientsQuery.data;
 
   return (
@@ -82,6 +95,19 @@ export function ClientsPage() {
             }}
           />
         </Modal>
+      )}
+
+      {clientToDelete && (
+        <DeleteUserDialog
+          kind="cliente"
+          name={clientToDelete.fullName}
+          onConfirm={() => deleteClientRecord(clientToDelete.id)}
+          onDeleted={() => {
+            setClientToDelete(null);
+            void queryClient.invalidateQueries({ queryKey: ["clients"] });
+          }}
+          onClose={() => setClientToDelete(null)}
+        />
       )}
 
       {clientsQuery.isLoading && <p className="fb-note">Carregando…</p>}
@@ -142,6 +168,19 @@ export function ClientsPage() {
                         }
                       >
                         {client.status === "ACTIVE" ? "Desativar" : "Reativar"}
+                      </button>
+                    </BlockedAction>
+                    <BlockedAction
+                      allowed={canDelete}
+                      reason="Você não tem permissão para excluir clientes."
+                    >
+                      <button
+                        type="button"
+                        className="fb-row-btn fb-row-btn--danger"
+                        aria-label={`Excluir ${client.fullName}`}
+                        onClick={() => setClientToDelete(client)}
+                      >
+                        Excluir
                       </button>
                     </BlockedAction>
                   </td>
