@@ -32,14 +32,24 @@ function AgendaIcon({ color }: { color: string }) {
   );
 }
 
+function PlanIcon({ color }: { color: string }) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <rect x="2.5" y="5" width="15" height="10" rx="1.5" stroke={color} strokeWidth="1.4" />
+      <path d="M2.5 8.3H17.5" stroke={color} strokeWidth="1.4" />
+    </svg>
+  );
+}
+
 const ACTIVE = "#ed6e34";
 const INACTIVE = "rgba(255,255,255,0.65)";
 
-// Só as telas do cliente que já existem; Plano, Ficha de treino e Perfil
-// entram quando suas fases forem implementadas (Fase 6).
+// Só as telas do cliente que já existem; Ficha de treino e Perfil entram
+// junto com as suas telas.
 const ITEMS = [
   { to: "/", label: "Home", Icon: HomeIcon },
   { to: "/agenda", label: "Agenda", Icon: AgendaIcon },
+  { to: "/plano", label: "Plano", Icon: PlanIcon },
 ];
 
 /** Casca do cliente: sidebar no desktop e barra inferior no mobile (AgendaDesktop/AgendaMobile). */

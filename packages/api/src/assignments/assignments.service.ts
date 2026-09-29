@@ -13,8 +13,8 @@ import { PrismaService } from "../prisma/prisma.service.js";
 import { DomainError } from "../common/errors/domain-error.js";
 import { InstructorsService } from "../catalog/instructors.service.js";
 import { isUniqueViolation } from "../prisma/unique-violation.js";
-import { ACTIVE_CLIENT_WHERE } from "../permissions/client-scope.js";
-import type { ScopedRequester } from "../permissions/scoped-requester.js";
+import { ACTIVE_CLIENT_WHERE, assertIsActiveClient } from "../permissions/client-scope.js";
+import { assertFullScope, type ScopedRequester } from "../permissions/scoped-requester.js";
 
 const ASSIGNMENT_INCLUDE = {
   teacher: { select: { id: true, fullName: true } },
@@ -24,6 +24,8 @@ const ASSIGNMENT_INCLUDE = {
 type AssignmentWithPeople = Prisma.TeacherClientAssignmentGetPayload<{
   include: typeof ASSIGNMENT_INCLUDE;
 }>;
+
+const FULL_SCOPE_MESSAGE = "Só quem tem acesso a todos os clientes gerencia atribuições.";
 
 /**
  * Atribuição manual de clientes a professores, feita pela administração. Junto
@@ -54,7 +56,7 @@ export class AssignmentsService {
 
   /** Professores (equipe ativa) e clientes ativos, para o formulário de atribuição. */
   async options(requester: ScopedRequester): Promise<AssignmentOptions> {
-    this.assertFullScope(requester);
+    assertFullScope(requester, FULL_SCOPE_MESSAGE);
     const [teachers, clients] = await Promise.all([
       this.instructors.list(),
       this.prisma.user.findMany({
@@ -67,9 +69,9 @@ export class AssignmentsService {
   }
 
   async create(input: CreateAssignmentRequest, requester: ScopedRequester): Promise<Assignment> {
-    this.assertFullScope(requester);
+    assertFullScope(requester, FULL_SCOPE_MESSAGE);
     await this.instructors.assertIsInstructor(input.teacherId);
-    await this.assertIsActiveClient(input.clientId);
+    await assertIsActiveClient(this.prisma, input.clientId);
 
     // A checagem prévia dá a resposta certa; o índice único é a última defesa
     // contra duas atribuições simultâneas (meta.target vem vazio com adapter-pg).
@@ -91,39 +93,13 @@ export class AssignmentsService {
   }
 
   async remove(id: string, requester: ScopedRequester): Promise<void> {
-    this.assertFullScope(requester);
+    assertFullScope(requester, FULL_SCOPE_MESSAGE);
     const { count } = await this.prisma.teacherClientAssignment.deleteMany({ where: { id } });
     if (count === 0) {
       throw new DomainError(
         ErrorCode.NOT_FOUND,
         "Atribuição não encontrada.",
         ErrorStatus.NOT_FOUND,
-      );
-    }
-  }
-
-  /** O cliente da atribuição precisa ser um cliente ativo (como o professor, um usuário de equipe ativo). */
-  private async assertIsActiveClient(clientId: string): Promise<void> {
-    const client = await this.prisma.user.findFirst({
-      where: { id: clientId, ...ACTIVE_CLIENT_WHERE },
-      select: { id: true },
-    });
-    if (!client) {
-      throw new DomainError(
-        ErrorCode.VALIDATION_ERROR,
-        "O cliente precisa ser um cliente ativo.",
-        ErrorStatus.VALIDATION,
-      );
-    }
-  }
-
-  /** Atribuir e remover é da administração: exige acesso a todos os clientes. */
-  private assertFullScope(requester: ScopedRequester): void {
-    if (requester.scope !== PermissionScope.ALL) {
-      throw new DomainError(
-        ErrorCode.OUT_OF_SCOPE,
-        "Só quem tem acesso a todos os clientes gerencia atribuições.",
-        ErrorStatus.FORBIDDEN,
       );
     }
   }

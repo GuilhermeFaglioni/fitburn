@@ -8,6 +8,7 @@ import "./styles/client.css";
 import "./styles/attendance.css";
 import "./styles/gamification.css";
 import "./styles/goals.css";
+import "./styles/plan.css";
 
 const queryClient = new QueryClient();
 

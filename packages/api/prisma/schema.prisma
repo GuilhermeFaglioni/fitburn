@@ -108,6 +108,8 @@ model User {
   goals               Goal[]                    @relation("ClientGoals")
   /// Metas que este usuário, da equipe, criou.
   createdGoals        Goal[]                    @relation("CreatedGoals")
+  /// Planos atribuídos a este usuário, cliente (o ativo e o histórico).
+  planAssignments     PlanAssignment[]
 
   @@map("users")
 }
@@ -380,6 +382,51 @@ model Goal {
 
   @@index([clientId, status])
   @@map("goals")
+}
+
+/// Plano do catálogo (informativo no MVP: não bloqueia reserva nem tem preço).
+/// Um plano inativo não pode ser atribuído, mas as atribuições dele seguem.
+model Plan {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  assignments PlanAssignment[]
+
+  @@map("plans")
+}
+
+enum PlanAssignmentStatus {
+  ACTIVE
+  ENDED
+}
+
+/// Atribuição de um plano a um cliente, com datas de início e fim. Um cliente
+/// tem no máximo uma atribuição ATIVA: garantido pelo índice único parcial
+/// "plan_assignments_client_active_key" (clientId) WHERE status = 'ACTIVE',
+/// criado à mão na migration (o Prisma não modela índice parcial). Atribuir um
+/// plano novo encerra a ativa anterior na mesma transação.
+model PlanAssignment {
+  id        String               @id @default(uuid())
+  /// Dias locais da academia, sem horário.
+  startDate DateTime             @db.Date
+  endDate   DateTime             @db.Date
+  status    PlanAssignmentStatus @default(ACTIVE)
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+
+  planId String
+  plan   Plan   @relation(fields: [planId], references: [id], onDelete: Restrict)
+
+  clientId String
+  client   User   @relation(fields: [clientId], references: [id], onDelete: Restrict)
+
+  @@index([clientId, status])
+  @@index([planId, status])
+  @@map("plan_assignments")
 }
 
 model RefreshToken {

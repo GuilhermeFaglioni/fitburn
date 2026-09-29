@@ -3,7 +3,10 @@ import { Reflector } from "@nestjs/core";
 import { ErrorCode, ErrorStatus } from "@fitburn/contracts";
 import type { AuthenticatedRequest } from "../auth/jwt-auth.guard.js";
 import { DomainError } from "../common/errors/domain-error.js";
-import { PERMISSION_METADATA_KEY, type RequiredPermission } from "./require-permission.decorator.js";
+import {
+  PERMISSION_METADATA_KEY,
+  type RequiredPermission,
+} from "./require-permission.decorator.js";
 import { PermissionsService } from "./permissions.service.js";
 
 /**
