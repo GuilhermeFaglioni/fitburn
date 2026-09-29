@@ -1,6 +1,10 @@
 import { useId, useState, type FormEvent } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import type { UserDetail } from "@fitburn/contracts";
+import {
+  updateClientRequestSchema,
+  type UpdateClientRequest,
+  type UserDetail,
+} from "@fitburn/contracts";
 import { ApiError } from "../../lib/auth/api";
 import { updateClientRecord } from "../../lib/clients/api";
 
@@ -21,16 +25,10 @@ export function ClientEditForm({ client, onDone }: { client: UserDetail; onDone:
   const [documentNumber, setDocumentNumber] = useState(client.document ?? "");
   const [address, setAddress] = useState(client.address ?? "");
 
+  const [validationError, setValidationError] = useState<string | null>(null);
+
   const mutation = useMutation({
-    mutationFn: () =>
-      updateClientRecord(client.id, {
-        fullName,
-        email,
-        phone: phone || null,
-        birthDate: birthDate || null,
-        document: documentNumber || null,
-        address: address || null,
-      }),
+    mutationFn: (input: UpdateClientRequest) => updateClientRecord(client.id, input),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["clients"] });
       onDone();
@@ -39,15 +37,31 @@ export function ClientEditForm({ client, onDone }: { client: UserDetail; onDone:
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    mutation.mutate();
+    // Para o cliente estes dados são obrigatórios: nada de campo vazio (o servidor recusa null).
+    const parsed = updateClientRequestSchema.safeParse({
+      fullName,
+      email,
+      phone,
+      birthDate,
+      document: documentNumber,
+      address,
+    });
+    if (!parsed.success) {
+      setValidationError("Preencha todos os campos: todos são obrigatórios para o cliente.");
+      return;
+    }
+    setValidationError(null);
+    mutation.mutate(parsed.data);
   }
 
   const error = mutation.error;
-  const errorMessage = error
-    ? error instanceof ApiError
-      ? (ERROR_MESSAGES[error.code] ?? error.message)
-      : "Não foi possível salvar o cliente."
-    : null;
+  const errorMessage = validationError
+    ? validationError
+    : error
+      ? error instanceof ApiError
+        ? (ERROR_MESSAGES[error.code] ?? error.message)
+        : "Não foi possível salvar o cliente."
+      : null;
 
   const fields: Array<[string, string, string, (value: string) => void, string?]> = [
     ["fullName", "Nome completo", fullName, setFullName],
@@ -70,7 +84,7 @@ export function ClientEditForm({ client, onDone }: { client: UserDetail; onDone:
             type={type ?? "text"}
             value={value}
             onChange={(event) => setValue(event.target.value)}
-            required={name === "fullName" || name === "email"}
+            required
           />
         </div>
       ))}

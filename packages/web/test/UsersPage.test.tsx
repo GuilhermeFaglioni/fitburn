@@ -23,6 +23,10 @@ function LoggedInUsersPage() {
 
 function renderUsersPage() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return renderWith(queryClient);
+}
+
+function renderWith(queryClient: QueryClient) {
   return render(
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
@@ -149,5 +153,77 @@ describe("UsersPage", () => {
     await waitFor(() => {
       expect(within(row).getByRole("button", { name: "Desativar" })).toBeInTheDocument();
     });
+  });
+  it("exclui um usuário com confirmação irreversível e ele sai da lista", async () => {
+    const other = { ...CLIENT_ATIVO, id: "user-9", fullName: "Rafael Professor" };
+    let usersInDb = [CLIENT_ATIVO, other];
+    const deleted: string[] = [];
+    server.use(
+      http.get("/api/users", () => HttpResponse.json(usersInDb)),
+      http.delete("/api/users/:id", ({ params }) => {
+        deleted.push(String(params.id));
+        usersInDb = usersInDb.filter((candidate) => candidate.id !== params.id);
+        return HttpResponse.json({ ...other, fullName: "Usuário excluído", status: "DELETED" });
+      }),
+    );
+
+    renderUsersPage();
+    const user = userEvent.setup();
+
+    const row = (await screen.findByText("Rafael Professor")).closest("tr")!;
+    await user.click(within(row).getByRole("button", { name: "Excluir" }));
+    const dialog = screen.getByRole("dialog", { name: "Excluir usuário?" });
+    expect(dialog).toHaveTextContent(/anonimizados/i);
+    expect(dialog).toHaveTextContent(/não pode ser desfeita/i);
+    expect(deleted).toEqual([]);
+    await user.click(within(dialog).getByRole("button", { name: "Excluir e anonimizar" }));
+
+    await waitFor(() => expect(deleted).toEqual(["user-9"]));
+    await waitFor(() => expect(screen.queryByText("Rafael Professor")).not.toBeInTheDocument());
+  });
+
+  it("depois de excluir, invalida também clientes, dashboard, ranking e as opções de planos, atribuição e professores", async () => {
+    const other = { ...CLIENT_ATIVO, id: "user-9", fullName: "Rafael Professor" };
+    server.use(
+      http.get("/api/users", () => HttpResponse.json([CLIENT_ATIVO, other])),
+      http.delete("/api/users/:id", () =>
+        HttpResponse.json({ ...other, fullName: "Usuário excluído", status: "DELETED" }),
+      ),
+    );
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    // Listas de outras telas, já em cache, que ainda mostram quem vai ser excluído.
+    const otherScreens = [
+      ["clients", { search: "", status: "" }],
+      ["dashboard", "week"],
+      ["gamification", "ranking", "week"],
+      ["plan-options"],
+      ["assignment-options"],
+      ["instructors"],
+    ];
+    for (const key of otherScreens) queryClient.setQueryData(key, []);
+    renderWith(queryClient);
+    const user = userEvent.setup();
+
+    const row = (await screen.findByText("Rafael Professor")).closest("tr")!;
+    await user.click(within(row).getByRole("button", { name: "Excluir" }));
+    await user.click(
+      within(screen.getByRole("dialog", { name: "Excluir usuário?" })).getByRole("button", {
+        name: "Excluir e anonimizar",
+      }),
+    );
+
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    for (const key of otherScreens) {
+      expect(queryClient.getQueryState(key)?.isInvalidated, JSON.stringify(key)).toBe(true);
+    }
+  });
+
+  it("não oferece excluir o próprio usuário", async () => {
+    server.use(http.get("/api/users", () => HttpResponse.json([CLIENT_ATIVO])));
+
+    renderUsersPage();
+
+    const row = (await screen.findByText("Cliente Ativo")).closest("tr")!;
+    expect(within(row).queryByRole("button", { name: "Excluir" })).not.toBeInTheDocument();
   });
 });

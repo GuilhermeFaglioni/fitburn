@@ -19,8 +19,11 @@ import {
 import { occurrenceScopeFilter } from "../agenda/occurrence-scope.js";
 import { GamificationService } from "../gamification/gamification.service.js";
 import { rankingWindow } from "../gamification/ranking.js";
-import { currentStreak } from "../gamification/streak.js";
-import { ACTIVE_CLIENT_WHERE, clientScopeFilter } from "../permissions/client-scope.js";
+import {
+  ACTIVE_CLIENT_WHERE,
+  clientScopeFilter,
+  HISTORICAL_CLIENT_WHERE,
+} from "../permissions/client-scope.js";
 import { PermissionsService } from "../permissions/permissions.service.js";
 import type { ScopedRequester } from "../permissions/scoped-requester.js";
 import { PrismaService } from "../prisma/prisma.service.js";
@@ -56,13 +59,19 @@ export class DashboardService {
       this.viewerOf(profile, userId, Module.GAMIFICACAO),
     ]);
 
+    // Os três blocos são independentes: consultam juntos.
+    const [occupancyBlock, activeClientsBlock, gamificationBlock] = await Promise.all([
+      occupancy ? this.occupancy(occupancy, today) : null,
+      clients ? this.activeClients(clients) : null,
+      gamification ? this.gamificationBlock(gamification, window) : null,
+    ]);
     return {
       period,
       ...window,
       today,
-      occupancy: occupancy ? await this.occupancy(occupancy, today) : null,
-      activeClients: clients ? await this.activeClients(clients) : null,
-      gamification: gamification ? await this.gamificationBlock(gamification, window) : null,
+      occupancy: occupancyBlock,
+      activeClients: activeClientsBlock,
+      gamification: gamificationBlock,
     };
   }
 
@@ -143,14 +152,19 @@ export class DashboardService {
     const clientWhere: Prisma.UserWhereInput = {
       AND: [ACTIVE_CLIENT_WHERE, clientScopeFilter(viewer)],
     };
+    // Pontos e presenças do período são histórico: continuam contando para
+    // quem foi excluído. Streak e topo do ranking são do momento: só ativos.
+    const historicalWhere: Prisma.UserWhereInput = {
+      AND: [HISTORICAL_CLIENT_WHERE, clientScopeFilter(viewer)],
+    };
     const occurredAt = {
       gte: gymDateTimeToUtc(window.from, "00:00"),
       lt: gymDateTimeToUtc(addDays(window.to, 1), "00:00"),
     };
 
-    const [points, attendances, streakHistory, standings] = await Promise.all([
+    const [points, attendances, clientsWithActiveStreak, standings] = await Promise.all([
       this.prisma.pointsEntry.aggregate({
-        where: { occurredAt, client: clientWhere },
+        where: { occurredAt, client: historicalWhere },
         _sum: { points: true },
       }),
       this.prisma.pointsEntry.count({
@@ -158,47 +172,19 @@ export class DashboardService {
           occurredAt,
           type: PointsEntryType.ATTENDANCE,
           reversedBy: null,
-          client: clientWhere,
+          client: historicalWhere,
         },
       }),
-      this.prisma.reservation.findMany({
-        where: {
-          client: clientWhere,
-          status: { in: [ReservationStatus.COMPLETED, ReservationStatus.NO_SHOW] },
-        },
-        select: {
-          id: true,
-          clientId: true,
-          status: true,
-          occurrence: { select: { startsAt: true } },
-        },
-        orderBy: [{ occurrence: { startsAt: "asc" } }, { createdAt: "asc" }, { id: "asc" }],
-      }),
+      this.countActiveStreaks(clientWhere),
       this.gamification.standings(window, clientWhere),
     ]);
-
-    const historyByClient = new Map<
-      string,
-      Array<{ reservationId: string; present: boolean; startsAt: Date }>
-    >();
-    for (const row of streakHistory) {
-      const history = historyByClient.get(row.clientId) ?? [];
-      history.push({
-        reservationId: row.id,
-        present: row.status === ReservationStatus.COMPLETED,
-        startsAt: row.occurrence.startsAt,
-      });
-      historyByClient.set(row.clientId, history);
-    }
-    const clientsWithActiveStreak = [...historyByClient.values()].filter(
-      (history) => currentStreak(history) > 0,
-    ).length;
 
     return {
       pointsDistributed: points._sum.points ?? 0,
       attendances,
       clientsWithActiveStreak,
       top: standings.slice(0, TOP_SIZE).map((standing) => ({
+        clientId: standing.clientId,
         position: standing.position,
         fullName: standing.fullName,
         points: standing.points,
@@ -206,5 +192,30 @@ export class DashboardService {
         tied: standing.tied,
       })),
     };
+  }
+
+  /**
+   * Quantos clientes têm streak ativo: a última marcação (presença ou falta),
+   * na mesma ordem do streak do cliente (aula, criação, id), é uma presença.
+   * O banco escolhe a última marcação de cada cliente (DISTINCT ON), sem
+   * trazer o histórico inteiro para a memória.
+   */
+  private async countActiveStreaks(clientWhere: Prisma.UserWhereInput): Promise<number> {
+    const clients = await this.prisma.user.findMany({ where: clientWhere, select: { id: true } });
+    if (clients.length === 0) return 0;
+    const clientIds = clients.map((client) => client.id);
+    const rows = await this.prisma.$queryRaw<Array<{ count: number }>>`
+      SELECT count(*)::int AS count
+      FROM (
+        SELECT DISTINCT ON (r."clientId") r.status::text AS status
+        FROM reservations r
+        JOIN class_occurrences o ON o.id = r."occurrenceId"
+        WHERE r."clientId" = ANY(${clientIds}::text[])
+          AND r.status::text IN (${ReservationStatus.COMPLETED}, ${ReservationStatus.NO_SHOW})
+        ORDER BY r."clientId", o."startsAt" DESC, r."createdAt" DESC, r.id DESC
+      ) latest
+      WHERE latest.status = ${ReservationStatus.COMPLETED}
+    `;
+    return rows[0]?.count ?? 0;
   }
 }

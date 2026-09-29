@@ -1,18 +1,21 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   Module,
   PermissionAction,
   type ClientOverview,
   type ReservationDetail,
+  type UserDetail,
 } from "@fitburn/contracts";
 import { BlockedAction } from "../components/BlockedAction";
+import { DeleteUserDialog } from "../components/DeleteUserDialog";
 import { formatClassDay, formatInstantDate, formatLocalDate } from "../lib/agenda/format";
 import { ApiError } from "../lib/auth/api";
 import { useAuth } from "../lib/auth/AuthContext";
-import { getClientOverview, setClientActive } from "../lib/clients/api";
+import { deleteClientRecord, getClientOverview, setClientActive } from "../lib/clients/api";
 import { formatHistoryWhen } from "../lib/gamification/format";
+import { invalidateAfterDeletion } from "../lib/invalidate-after-deletion";
 import { PlanHistoryList } from "./plans/PlanHistoryList";
 import { statusBadge } from "./workout-sheets/status";
 import { ClientEditForm } from "./clients/ClientEditForm";
@@ -26,6 +29,12 @@ const TABS: Array<{ id: Tab; label: string }> = [
   { id: "gamificacao", label: "Gamificação" },
   { id: "fichas", label: "Fichas" },
 ];
+
+const STATUS_BADGE: Record<UserDetail["status"], { label: string; className: string }> = {
+  ACTIVE: { label: "ATIVO", className: "fb-badge--active" },
+  INACTIVE: { label: "INATIVO", className: "fb-badge--inactive" },
+  DELETED: { label: "EXCLUÍDO", className: "fb-badge--neutral" },
+};
 
 const RESERVATION_LABEL: Record<ReservationDetail["status"], string> = {
   CONFIRMED: "CONFIRMADA",
@@ -86,13 +95,18 @@ function TabContent({
             <dt>Endereço</dt>
             <dd>{valueOrDash(client.address)}</dd>
           </dl>
-          <div>
-            <BlockedAction allowed={canEdit} reason="Você não tem permissão para editar clientes.">
-              <button type="button" className="fb-row-btn" onClick={() => setEditing(true)}>
-                Editar dados
-              </button>
-            </BlockedAction>
-          </div>
+          {client.status !== "DELETED" && (
+            <div>
+              <BlockedAction
+                allowed={canEdit}
+                reason="Você não tem permissão para editar clientes."
+              >
+                <button type="button" className="fb-row-btn" onClick={() => setEditing(true)}>
+                  Editar dados
+                </button>
+              </BlockedAction>
+            </div>
+          )}
         </div>
       );
     case "plano":
@@ -180,7 +194,9 @@ export function ClientDetailPage() {
   const { id = "" } = useParams();
   const { can } = useAuth();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>("dados");
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   const overviewQuery = useQuery({
     queryKey: ["clients", "overview", id],
@@ -192,6 +208,7 @@ export function ClientDetailPage() {
   });
 
   const canEdit = can(Module.CLIENTES, PermissionAction.EDIT);
+  const canDelete = can(Module.CLIENTES, PermissionAction.DELETE);
   const overview = overviewQuery.data;
 
   return (
@@ -213,22 +230,52 @@ export function ClientDetailPage() {
           <div className="fb-toolbar">
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               <h1 className="fb-page-title">{overview.client.fullName}</h1>
-              <span
-                className={`fb-badge ${overview.client.status === "ACTIVE" ? "fb-badge--active" : "fb-badge--inactive"}`}
-              >
-                {overview.client.status === "ACTIVE" ? "ATIVO" : "INATIVO"}
+              <span className={`fb-badge ${STATUS_BADGE[overview.client.status].className}`}>
+                {STATUS_BADGE[overview.client.status].label}
               </span>
             </div>
-            <BlockedAction allowed={canEdit} reason="Você não tem permissão para alterar clientes.">
-              <button
-                type="button"
-                className="fb-row-btn"
-                onClick={() => toggleMutation.mutate(overview.client.status !== "ACTIVE")}
-              >
-                {overview.client.status === "ACTIVE" ? "Desativar cliente" : "Reativar cliente"}
-              </button>
-            </BlockedAction>
+            {overview.client.status !== "DELETED" && (
+              <div style={{ display: "flex", gap: 8 }}>
+                <BlockedAction
+                  allowed={canEdit}
+                  reason="Você não tem permissão para alterar clientes."
+                >
+                  <button
+                    type="button"
+                    className="fb-row-btn"
+                    onClick={() => toggleMutation.mutate(overview.client.status !== "ACTIVE")}
+                  >
+                    {overview.client.status === "ACTIVE" ? "Desativar cliente" : "Reativar cliente"}
+                  </button>
+                </BlockedAction>
+                <BlockedAction
+                  allowed={canDelete}
+                  reason="Você não tem permissão para excluir clientes."
+                >
+                  <button
+                    type="button"
+                    className="fb-row-btn fb-row-btn--danger"
+                    onClick={() => setConfirmingDelete(true)}
+                  >
+                    Excluir cliente
+                  </button>
+                </BlockedAction>
+              </div>
+            )}
           </div>
+
+          {confirmingDelete && (
+            <DeleteUserDialog
+              kind="cliente"
+              name={overview.client.fullName}
+              onConfirm={() => deleteClientRecord(id)}
+              onDeleted={() => {
+                void invalidateAfterDeletion(queryClient);
+                navigate("/clientes");
+              }}
+              onClose={() => setConfirmingDelete(false)}
+            />
+          )}
 
           <div className="fb-tabs" role="tablist">
             {TABS.map((item) => (

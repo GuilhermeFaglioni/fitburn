@@ -32,6 +32,9 @@ export class PermissionsService {
       where: { id: userId },
       include: { profile: true },
     });
+    // Excluído (anonimizado) perde o acesso na hora, mesmo com um token ainda
+    // válido (o JwtAuthGuard já barra; aqui é rede de segurança).
+    if (user?.status === "DELETED") return null;
     return user?.profile ?? null;
   }
 

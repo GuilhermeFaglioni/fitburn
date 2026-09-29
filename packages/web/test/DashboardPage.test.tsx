@@ -21,8 +21,14 @@ function dashboardOf(period: RankingPeriodName, overrides: Partial<Dashboard> = 
           attendances: 4,
           clientsWithActiveStreak: 1,
           top: [
-            { position: 1, fullName: "Bruno Alves", points: 35, attendances: 1, tied: false },
-            { position: 2, fullName: "Ana Paula Souza", points: 20, attendances: 2, tied: false },
+            {
+              clientId: "c-bruno",
+              position: 1,
+              fullName: "Bruno Alves", points: 35, attendances: 1, tied: false },
+            {
+              clientId: "c-ana",
+              position: 2,
+              fullName: "Ana Paula Souza", points: 20, attendances: 2, tied: false },
           ],
         }
       : {
@@ -30,7 +36,11 @@ function dashboardOf(period: RankingPeriodName, overrides: Partial<Dashboard> = 
           attendances: 18,
           clientsWithActiveStreak: 3,
           top: [
-            { position: 1, fullName: "Ana Paula Souza", points: 120, attendances: 9, tied: false },
+            {
+              clientId: "c-ana",
+              position: 1,
+              fullName: "Ana Paula Souza",
+              points: 120, attendances: 9, tied: false },
           ],
         };
   return {
@@ -162,6 +172,30 @@ describe("Dashboard administrativo", () => {
     expect(screen.getByText("clientes com streak ativo").previousSibling).toHaveTextContent("3");
     expect(screen.getByRole("button", { name: "Mês" })).toHaveAttribute("aria-pressed", "true");
     expect(periods).toEqual(["week", "month"]);
+  });
+
+  it("dois clientes empatados com o mesmo nome aparecem os dois, sem chave de lista repetida", async () => {
+    const errors = vi.spyOn(console, "error").mockImplementation(() => {});
+    serve((period) =>
+      dashboardOf(period, {
+        gamification: {
+          pointsDistributed: 40,
+          attendances: 4,
+          clientsWithActiveStreak: 0,
+          top: [
+            { clientId: "c-1", position: 1, fullName: "Ana Souza", points: 20, attendances: 2, tied: true },
+            { clientId: "c-2", position: 1, fullName: "Ana Souza", points: 20, attendances: 2, tied: true },
+          ],
+        },
+      }),
+    );
+    renderPage();
+
+    const top = await screen.findByRole("list", { name: "Topo do ranking" });
+    expect(within(top).getAllByRole("listitem")).toHaveLength(2);
+    const duplicateKey = errors.mock.calls.some((call) => String(call[0]).includes("same key"));
+    errors.mockRestore();
+    expect(duplicateKey).toBe(false);
   });
 
   it("não mostra os blocos que o servidor omitiu", async () => {

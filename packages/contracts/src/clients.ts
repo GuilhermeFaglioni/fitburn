@@ -1,12 +1,13 @@
 import { z } from "zod";
-import { UserStatus } from "./auth.js";
+import { UserStatus, userStatusSchema } from "./auth.js";
 import { gamificationSummarySchema } from "./gamification.js";
 import { myPlanSchema } from "./plans.js";
 import { reservationDetailSchema } from "./reservations.js";
 import { userDetailSchema } from "./users.js";
 import { workoutSheetSchema } from "./workout-sheets.js";
 
-const userStatusSchema = z.enum([UserStatus.ACTIVE, UserStatus.INACTIVE]);
+/** Excluídos nunca aparecem na lista, então não há filtro por eles. */
+const listableStatusSchema = z.enum([UserStatus.ACTIVE, UserStatus.INACTIVE]);
 
 /**
  * Busca da lista de clientes: `search` casa (sem diferenciar maiúsculas)
@@ -14,7 +15,7 @@ const userStatusSchema = z.enum([UserStatus.ACTIVE, UserStatus.INACTIVE]);
  */
 export const clientsQuerySchema = z.object({
   search: z.string().trim().optional(),
-  status: userStatusSchema.optional(),
+  status: listableStatusSchema.optional(),
 });
 export type ClientsQuery = z.infer<typeof clientsQuerySchema>;
 
@@ -30,15 +31,20 @@ export const clientListItemSchema = z.object({
 });
 export type ClientListItem = z.infer<typeof clientListItemSchema>;
 
-/** Edição dos dados do cliente: sem perfil de acesso, status nem senha. */
+/**
+ * Edição dos dados do cliente: sem perfil de acesso, status nem senha.
+ * Telefone, nascimento, documento e endereço são obrigatórios no cadastro do
+ * cliente, então podem ser trocados mas não anulados (a equipe, sim, pode
+ * deixá-los vazios no cadastro de usuário da equipe).
+ */
 export const updateClientRequestSchema = z
   .object({
     fullName: z.string().trim().min(1, "Nome completo é obrigatório.").optional(),
     email: z.string().trim().email("E-mail inválido.").optional(),
-    phone: z.string().trim().min(1).nullable().optional(),
-    birthDate: z.string().date("Data de nascimento inválida.").nullable().optional(),
-    document: z.string().trim().min(1).nullable().optional(),
-    address: z.string().trim().min(1).nullable().optional(),
+    phone: z.string().trim().min(1).optional(),
+    birthDate: z.string().date("Data de nascimento inválida.").optional(),
+    document: z.string().trim().min(1).optional(),
+    address: z.string().trim().min(1).optional(),
   })
   .strict();
 export type UpdateClientRequest = z.infer<typeof updateClientRequestSchema>;

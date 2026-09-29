@@ -22,6 +22,16 @@ export const ACTIVE_CLIENT_WHERE = {
 } satisfies Prisma.UserWhereInput;
 
 /**
+ * Clientes que contam nos agregados históricos: qualquer cliente, seja qual
+ * for o status (ativo, inativo ou excluído/anonimizado). Desativar ou excluir
+ * alguém o tira do que é "do momento", mas o que a pessoa fez (pontos,
+ * presenças) continua nos números do período.
+ */
+export const HISTORICAL_CLIENT_WHERE = {
+  ...CLIENT_PROFILE_WHERE,
+} satisfies Prisma.UserWhereInput;
+
+/**
  * Filtro dos clientes que o escopo do perfil enxerga:
  * - "todos": qualquer cliente;
  * - "clientes atribuídos" (e "aulas atribuídas", que para clientes significa

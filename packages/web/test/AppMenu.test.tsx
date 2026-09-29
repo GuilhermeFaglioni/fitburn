@@ -103,6 +103,22 @@ describe("AppMenu", () => {
     expect(await screen.findByRole("link", { name: "Metas" })).toHaveAttribute("href", "/metas");
   });
 
+  it("Reservas aparece para quem pode ver o módulo de reservas", async () => {
+    mockSuccessfulLogin("Professor", [
+      {
+        module: Module.RESERVAS,
+        actions: [PermissionAction.VIEW],
+        scope: PermissionScope.ASSIGNED_CLIENTS,
+      },
+    ]);
+    renderMenuAsAuthenticated();
+
+    expect(await screen.findByRole("link", { name: "Reservas" })).toHaveAttribute(
+      "href",
+      "/reservas-administrativas",
+    );
+  });
+
   it("Fichas de treino aparece para quem pode ver o módulo de fichas", async () => {
     mockSuccessfulLogin("Professor", [
       {

@@ -19,6 +19,8 @@ export const dashboardOccupancyItemSchema = z.object({
 export type DashboardOccupancyItem = z.infer<typeof dashboardOccupancyItemSchema>;
 
 export const dashboardTopClientSchema = z.object({
+  /** Identificador estável do cliente (chave de lista na tela). */
+  clientId: z.string(),
   position: z.number().int(),
   fullName: z.string(),
   points: z.number().int(),

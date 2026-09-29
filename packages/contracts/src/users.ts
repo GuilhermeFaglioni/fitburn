@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { UserStatus } from "./auth.js";
+import { userStatusSchema } from "./auth.js";
 
 export const createClientRequestSchema = z.object({
   fullName: z.string().trim().min(1, "Nome completo é obrigatório."),
@@ -44,7 +44,7 @@ export const userDetailSchema = z.object({
   birthDate: z.string().nullable(),
   document: z.string().nullable(),
   address: z.string().nullable(),
-  status: z.enum([UserStatus.ACTIVE, UserStatus.INACTIVE]),
+  status: userStatusSchema,
   profile: z.object({ id: z.string(), name: z.string() }),
 });
 export type UserDetail = z.infer<typeof userDetailSchema>;

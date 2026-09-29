@@ -55,6 +55,7 @@ describe("Dashboard da equipe (HTTP)", () => {
     testPrisma.pointsEntry.create({ data: { clientId, type, points: value, occurredAt } });
 
   let occurrences: { a: string; b: string; c: string };
+  let ids: { ana: string; bruno: string; carla: string };
 
   // Cenário conhecido:
   //  - hoje: A 10h (Professor, 3 vagas; Ana e Bruno confirmados, Carla cancelou) e B 14h (sem professor, 2 vagas, lotada);
@@ -63,7 +64,8 @@ describe("Dashboard da equipe (HTTP)", () => {
   //  - fora da semana: E, na semana seguinte, que não aparece;
   //  - passado: Ana compareceu a duas aulas seguidas (streak 2); Bruno compareceu e depois faltou (streak 0);
   //  - pontos no período: Ana 2 presenças (20), Bruno 1 presença + meta (35), Carla 1 presença (10);
-  //    Dora (inativa) e um lançamento de 40 dias atrás ficam de fora.
+  //    Dora (inativa) também conta no histórico do período (10 pontos, 1 presença), mas não é cliente ativa;
+  //    um lançamento de 40 dias atrás fica de fora.
   beforeEach(async () => {
     await cleanDatabase();
     clientProfileId = (await createAccessProfile({ name: "Cliente", isSystem: true })).id;
@@ -90,6 +92,7 @@ describe("Dashboard da equipe (HTTP)", () => {
     const ana = await signIn("ana", clientProfileId, "Ana Paula Souza");
     const bruno = await signIn("bruno", clientProfileId, "Bruno Alves");
     const carla = await signIn("carla", clientProfileId, "Carla Dias");
+    ids = { ana: ana.user.id, bruno: bruno.user.id, carla: carla.user.id };
     const dora = await signIn("dora", clientProfileId, "Dora Melo");
     await testPrisma.user.update({ where: { id: dora.user.id }, data: { status: "INACTIVE" } });
 
@@ -161,13 +164,13 @@ describe("Dashboard da equipe (HTTP)", () => {
 
     expect(response.body.activeClients).toEqual({ total: 3 });
     expect(response.body.gamification).toEqual({
-      pointsDistributed: 65,
-      attendances: 4,
+      pointsDistributed: 75,
+      attendances: 5,
       clientsWithActiveStreak: 1,
       top: [
-        { position: 1, fullName: "Bruno Alves", points: 35, attendances: 1, tied: false },
-        { position: 2, fullName: "Ana Paula Souza", points: 20, attendances: 2, tied: false },
-        { position: 3, fullName: "Carla Dias", points: 10, attendances: 1, tied: false },
+        { position: 1, clientId: ids.bruno, fullName: "Bruno Alves", points: 35, attendances: 1, tied: false },
+        { position: 2, clientId: ids.ana, fullName: "Ana Paula Souza", points: 20, attendances: 2, tied: false },
+        { position: 3, clientId: ids.carla, fullName: "Carla Dias", points: 10, attendances: 1, tied: false },
       ],
     });
   });
@@ -180,7 +183,7 @@ describe("Dashboard da equipe (HTTP)", () => {
     expect(month.status).toBe(200);
     expect(month.body.period).toBe("month");
     expect(month.body.from).toBe(`${today.slice(0, 8)}01`);
-    expect(month.body.gamification.pointsDistributed).toBe(65);
+    expect(month.body.gamification.pointsDistributed).toBe(75);
     // A ocupação é sempre a do dia e da semana.
     expect(month.body.occupancy.week).toHaveLength(3);
   });
@@ -207,8 +210,8 @@ describe("Dashboard da equipe (HTTP)", () => {
       attendances: 3,
       clientsWithActiveStreak: 1,
       top: [
-        { position: 1, fullName: "Bruno Alves", points: 35, attendances: 1, tied: false },
-        { position: 2, fullName: "Ana Paula Souza", points: 20, attendances: 2, tied: false },
+        { position: 1, clientId: ids.bruno, fullName: "Bruno Alves", points: 35, attendances: 1, tied: false },
+        { position: 2, clientId: ids.ana, fullName: "Ana Paula Souza", points: 20, attendances: 2, tied: false },
       ],
     });
   });
