@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { Prisma, type AccessProfile, type User, type UserStatus } from "@prisma/client";
 import {
+  dateOnlyToLocalDate,
   ErrorCode,
   ErrorStatus,
   PermissionScope,
@@ -172,7 +173,7 @@ export class UsersService {
       email: user.email,
       fullName: user.fullName,
       phone: user.phone,
-      birthDate: user.birthDate ? user.birthDate.toISOString().slice(0, 10) : null,
+      birthDate: user.birthDate ? dateOnlyToLocalDate(user.birthDate) : null,
       document: user.document,
       address: user.address,
       status: user.status,
