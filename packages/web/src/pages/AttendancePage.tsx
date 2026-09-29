@@ -133,7 +133,7 @@ export function AttendancePage() {
   const registered = entries.filter((entry) => entry.status !== AttendanceStatus.PENDING).length;
 
   return (
-    <div className="fb-att">
+    <main id="conteudo" tabIndex={-1} className="fb-att">
       <div className="fb-att__header">
         <button
           type="button"
@@ -230,6 +230,6 @@ export function AttendancePage() {
           )}
         </>
       )}
-    </div>
+    </main>
   );
 }

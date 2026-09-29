@@ -1,4 +1,4 @@
-import { useEffect, useId, type ReactNode } from "react";
+import { useEffect, useId, useRef, type ReactNode } from "react";
 
 /** Diálogo modal do canvas de design (fundo escurecido, cartão branco de 460px). */
 export function Modal({
@@ -11,6 +11,7 @@ export function Modal({
   children: ReactNode;
 }) {
   const titleId = useId();
+  const dialogRef = useDialogFocus<HTMLDivElement>();
   useCloseOnEscape(onClose);
 
   return (
@@ -20,7 +21,14 @@ export function Modal({
         if (event.target === event.currentTarget) onClose();
       }}
     >
-      <div className="fb-modal" role="dialog" aria-modal="true" aria-labelledby={titleId}>
+      <div
+        ref={dialogRef}
+        className="fb-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+      >
         <h2 id={titleId} className="fb-modal__title">
           {title}
         </h2>
@@ -39,4 +47,56 @@ export function useCloseOnEscape(onClose: () => void) {
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [onClose]);
+}
+
+const FOCUSABLE =
+  'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+/**
+ * Foco de um diálogo modal: ao abrir, leva o foco ao primeiro campo (ou ao
+ * próprio diálogo, que é anunciado pelo título); o Tab e o Shift+Tab ficam
+ * presos dentro dele; ao fechar, devolve o foco a quem o abriu. Vai no
+ * elemento com role="dialog" e tabIndex={-1}.
+ */
+export function useDialogFocus<T extends HTMLElement>() {
+  const ref = useRef<T>(null);
+
+  useEffect(() => {
+    const dialog = ref.current;
+    if (!dialog) return;
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+
+    const firstField = dialog.querySelector<HTMLElement>(
+      'input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled])',
+    );
+    (firstField ?? dialog).focus();
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key !== "Tab" || !dialog) return;
+      const items = Array.from(dialog.querySelectorAll<HTMLElement>(FOCUSABLE));
+      if (items.length === 0) {
+        event.preventDefault();
+        dialog.focus();
+        return;
+      }
+      const first = items[0];
+      const last = items[items.length - 1];
+      const active = document.activeElement;
+      if (event.shiftKey && (active === first || active === dialog)) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && active === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+    dialog.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      dialog.removeEventListener("keydown", handleKeyDown);
+      if (opener?.isConnected) opener.focus();
+    };
+  }, []);
+
+  return ref;
 }

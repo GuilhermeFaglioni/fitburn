@@ -106,7 +106,7 @@ export function ClientLayout() {
         </button>
       </nav>
 
-      <main className="fb-client__content">
+      <main id="conteudo" tabIndex={-1} className="fb-client__content">
         <Outlet />
       </main>
 

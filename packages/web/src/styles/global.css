@@ -19,3 +19,48 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }
+
+/* Foco visível para quem navega por teclado: laranja da marca, com halo escuro que o mantém
+   legível também sobre o laranja (botão primário) e sobre o conteúdo claro. */
+:focus-visible {
+  outline: 2px solid var(--color-primary-orange);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(10, 10, 10, 0.35);
+}
+
+/* Alvos de foco programático (main, diálogos): sem contorno, pois não são controles. */
+main:focus,
+[role="dialog"]:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.fb-skip-link {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 100;
+  padding: 10px 16px;
+  background: var(--color-surface-white);
+  color: var(--color-ink-on-light);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  transform: translateY(-200%);
+}
+
+.fb-skip-link:focus {
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

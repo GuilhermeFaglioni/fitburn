@@ -108,3 +108,87 @@
   background: rgba(255, 255, 255, 0.08);
   color: var(--color-ink-on-dark);
 }
+
+/* Barra superior e gaveta: só existem no mobile (o canvas de design tem apenas o desktop). */
+.app-topbar,
+.app-menu__scrim {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .fb-admin-shell {
+    flex-direction: column;
+  }
+
+  .app-topbar {
+    flex-shrink: 0;
+    box-sizing: border-box;
+    height: 56px;
+    padding: 0 16px;
+    background: var(--color-surface-000);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .app-topbar__brand {
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--color-ink-on-dark);
+  }
+
+  .app-topbar__toggle {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 14px;
+    background: none;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-ink-on-dark);
+    cursor: pointer;
+  }
+
+  .app-menu {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 30;
+    width: min(280px, 85vw);
+    overflow-y: auto;
+    transform: translateX(-100%);
+    visibility: hidden;
+    transition:
+      transform 0.2s ease,
+      visibility 0s linear 0.2s;
+  }
+
+  .app-menu--open {
+    transform: translateX(0);
+    visibility: visible;
+    transition:
+      transform 0.2s ease,
+      visibility 0s;
+  }
+
+  .app-menu__scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    background: rgba(10, 10, 10, 0.55);
+  }
+
+  .app-menu__link,
+  .app-menu__account-link,
+  .app-menu__logout {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+  }
+}
