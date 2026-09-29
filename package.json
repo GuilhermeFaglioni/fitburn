@@ -19,6 +19,7 @@
     "prisma:migrate": "pnpm --filter @fitburn/api prisma:migrate",
     "prisma:migrate:test": "pnpm --filter @fitburn/api prisma:migrate:test",
     "prisma:studio": "pnpm --filter @fitburn/api prisma:studio",
+    "demo:reset": "pnpm --filter @fitburn/api demo:reset",
     "db:up": "docker compose up -d postgres",
     "db:down": "docker compose down"
   },

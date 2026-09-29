@@ -447,7 +447,7 @@ O ambiente remoto terá comando técnico para:
 
 Templates, modalidades, usuários, clientes, planos, aulas e fichas serão cadastrados manualmente pelo administrador após o reset.
 
-O reset não será exposto como botão público na interface.
+O reset não será exposto como botão público na interface. Ele é o script `pnpm demo:reset --confirm-database=<nome do banco>` da API (fora do servidor HTTP), que só roda com `DEMO_RESET_ENABLED=true` e com a confirmação do nome do banco; as variáveis estão documentadas em `.env.example`.
 
 ## Testes mínimos
 
