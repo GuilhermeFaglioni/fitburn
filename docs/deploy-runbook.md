@@ -152,13 +152,17 @@ curl -fsS https://DOMAIN/api/health
 
 O reset é um comando técnico (ticket #50), fora da interface e sem endpoint HTTP: limpa os dados, roda migrations e seeds, recria o administrador inicial e restaura as regras de gamificação e as configurações. Só roda com a flag de ambiente de demonstração ativa e com confirmação explícita, para nunca apagar um banco errado.
 
-Na VPS, dentro do contêiner da API (a imagem inclui o pnpm e o script):
+Na VPS, dentro do contêiner da API (a imagem inclui o pnpm, o `tsx` e o script). A flag de demonstração **não** fica no `.env.production`: ela é passada só no momento do reset, e a confirmação é o nome do banco (`POSTGRES_DB`, padrão `fitburn`):
 
 ```bash
-docker compose exec api pnpm demo:reset
+docker compose exec -e DEMO_RESET_ENABLED=true api \
+  pnpm demo:reset --confirm-database=fitburn
 ```
 
-O comando informa a flag de ambiente e a confirmação que exige; passe-as conforme a documentação do #50 (por exemplo, `docker compose exec -e NOME_DA_FLAG=... api pnpm demo:reset ...`). Depois do reset só existem o administrador inicial, os perfis de sistema e as configurações; o administrador cadastra o resto manualmente. Rodar o reset duas vezes seguidas produz o mesmo estado.
+- Sem `DEMO_RESET_ENABLED=true` o comando recusa rodar; sem `--confirm-database` igual ao nome do banco da `DATABASE_URL` ele também recusa (em terminal interativo, `docker compose exec -it`, ele pergunta o nome do banco).
+- O comando apaga **todos** os dados, aplica as migrations, refaz os seeds e recria o administrador inicial a partir de `INITIAL_ADMIN_*`.
+- Depois do reset só existem o administrador inicial, os perfis de sistema e as configurações (regras de gamificação); o administrador cadastra o resto manualmente. Rodar o reset duas vezes seguidas produz o mesmo estado.
+- Não existe botão nem endpoint de reset na aplicação.
 
 ## 10. Checklist de verificação remota (após o primeiro deploy e a cada deploy)
 
@@ -175,7 +179,7 @@ Use a URL da Vercel (`APP`) e o domínio da API (`DOMAIN`).
 - [ ] **Só Nginx publica portas:** `docker compose ps --format '{{.Service}} {{.Ports}}'` mostra portas publicadas apenas em `nginx` (80 e 443).
 - [ ] **PWA instalável:** em `APP` no Chrome, DevTools, Application, Manifest mostra o app sem erros e o ícone de instalar aparece na barra de endereço (no celular, "Instalar app" / "Adicionar à tela inicial"). Depois de um novo deploy, o app exibe "Nova versão disponível".
 - [ ] **Renovação do certificado:** `docker compose run --rm --entrypoint certbot certbot renew --dry-run` termina com sucesso.
-- [ ] **Reset remoto:** `docker compose exec api pnpm demo:reset` (seção 9) conclui com sucesso e o login do administrador inicial funciona depois.
+- [ ] **Reset remoto:** `docker compose exec -e DEMO_RESET_ENABLED=true api pnpm demo:reset --confirm-database=fitburn` (seção 9) conclui com sucesso e o login do administrador inicial funciona depois.
 
 ## 11. Deploys seguintes (rotina)
 
