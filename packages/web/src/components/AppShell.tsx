@@ -16,6 +16,9 @@ export function AppShell({ children }: { children: ReactNode }) {
       data-testid="app-shell"
       style={{ minHeight: "100%", display: "flex", flexDirection: "column" }}
     >
+      <a href="#conteudo" className="fb-skip-link">
+        Ir para o conteúdo
+      </a>
       <OfflineBanner />
       <UpdateBanner />
       {children}

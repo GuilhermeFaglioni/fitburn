@@ -7,6 +7,7 @@ import {
 } from "@fitburn/contracts";
 import { ApiError } from "../../lib/auth/api";
 import { updateClientRecord } from "../../lib/clients/api";
+import { Feedback } from "../../components/states";
 
 const ERROR_MESSAGES: Record<string, string> = {
   EMAIL_ALREADY_IN_USE: "Este e-mail já está em uso.",
@@ -74,7 +75,7 @@ export function ClientEditForm({ client, onDone }: { client: UserDetail; onDone:
 
   return (
     <form onSubmit={handleSubmit} aria-label="Edição de cliente" className="fb-form">
-      {errorMessage && <p role="alert">{errorMessage}</p>}
+      {errorMessage && <Feedback tone="error">{errorMessage}</Feedback>}
       {fields.map(([name, label, value, setValue, type]) => (
         <div key={name} style={{ display: "contents" }}>
           <label htmlFor={`${formId}-${name}`}>{label}</label>

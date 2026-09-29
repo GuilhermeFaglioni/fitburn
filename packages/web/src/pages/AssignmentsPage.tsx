@@ -11,6 +11,7 @@ import {
   getAssignmentOptions,
   listAssignments,
 } from "../lib/assignments/api";
+import { ErrorState, Feedback, LoadingState } from "../components/states";
 
 /**
  * Atribuição de clientes a professores: a administração escolhe um professor,
@@ -78,11 +79,17 @@ export function AssignmentsPage() {
         aqui.
       </div>
 
-      {optionsQuery.isLoading && <p className="fb-note">Carregando…</p>}
+      {optionsQuery.isLoading && <LoadingState />}
       {(optionsQuery.isError || assignmentsQuery.isError) && (
-        <p role="alert">Não foi possível carregar as atribuições.</p>
+        <ErrorState
+          message="Não foi possível carregar as atribuições."
+          onRetry={() => {
+            void optionsQuery.refetch();
+            void assignmentsQuery.refetch();
+          }}
+        />
       )}
-      {failure && <p role="alert">{failure}</p>}
+      {failure && <Feedback tone="error">{failure}</Feedback>}
 
       {options && (
         <>
@@ -170,7 +177,7 @@ export function AssignmentsPage() {
           )}
 
           {teacher && (
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
               <label
                 style={{
                   display: "flex",
@@ -183,7 +190,7 @@ export function AssignmentsPage() {
                 Cliente
                 <select
                   className="fb-field"
-                  style={{ minWidth: 260 }}
+                  style={{ minWidth: 0 }}
                   value={clientId}
                   onChange={(event) => setClientId(event.target.value)}
                 >

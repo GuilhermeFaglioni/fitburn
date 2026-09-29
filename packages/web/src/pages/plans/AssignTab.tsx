@@ -7,6 +7,7 @@ import { errorMessage } from "../../lib/auth/api";
 import { useAuth } from "../../lib/auth/AuthContext";
 import { PlanHistoryList } from "./PlanHistoryList";
 import { assignPlan, getPlanAssignmentOptions, listClientPlans } from "../../lib/plans/api";
+import { ErrorState, Feedback, LoadingState } from "../../components/states";
 
 /**
  * "Atribuir a cliente" (PlanosAdmin.dc.html): cliente, plano e as datas de
@@ -59,8 +60,12 @@ export function AssignTab() {
 
   return (
     <div style={{ maxWidth: 620, display: "flex", flexDirection: "column", gap: 16 }}>
+      {optionsQuery.isLoading && <LoadingState />}
       {optionsQuery.isError && (
-        <p role="alert">Não foi possível carregar os clientes e os planos.</p>
+        <ErrorState
+          message="Não foi possível carregar os clientes e os planos."
+          onRetry={() => void optionsQuery.refetch()}
+        />
       )}
 
       <div className="fb-modal__field">
@@ -135,11 +140,11 @@ export function AssignTab() {
         </div>
       )}
 
-      {invalidReason && <p role="alert">{invalidReason}</p>}
+      {invalidReason && <Feedback tone="error">{invalidReason}</Feedback>}
       {assignMutation.isError && (
-        <p role="alert">
+        <Feedback tone="error">
           {errorMessage(assignMutation.error, "Não foi possível atribuir o plano.")}
-        </p>
+        </Feedback>
       )}
       {assignedTo && <p className="fb-note">Plano atribuído a {assignedTo}.</p>}
 

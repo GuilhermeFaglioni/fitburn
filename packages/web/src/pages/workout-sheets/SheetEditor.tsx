@@ -8,6 +8,7 @@ import {
 } from "@fitburn/contracts";
 import { BlockedAction } from "../../components/BlockedAction";
 import { STATUS_LABEL } from "./status";
+import { EmptyState } from "../../components/states";
 
 export interface SheetFormValues {
   title: string;
@@ -193,7 +194,7 @@ export function SheetEditor({ editing, allowed, pending, onCancel, onSubmit }: S
         </button>
       </div>
       {rows.length === 0 && (
-        <p className="fb-note">Nenhum exercício ainda. Adicione o primeiro para montar a ficha.</p>
+        <EmptyState message="Nenhum exercício ainda. Adicione o primeiro para montar a ficha." />
       )}
       <div className="fb-sheets__rows">
         {rows.map((row, index) => (

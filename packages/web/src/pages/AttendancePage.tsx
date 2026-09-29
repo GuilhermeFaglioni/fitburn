@@ -12,6 +12,7 @@ import { BackIcon } from "../components/icons/BackIcon";
 import { ApiError } from "../lib/auth/api";
 import { getAttendanceRoster, markAttendance } from "../lib/attendance/api";
 import { formatClassDay, formatInstantHour } from "../lib/agenda/format";
+import { EmptyState, ErrorState, Feedback, LoadingState } from "../components/states";
 import { RequiresNetwork } from "../components/RequiresNetwork";
 
 function InfoIcon() {
@@ -133,7 +134,7 @@ export function AttendancePage() {
   const registered = entries.filter((entry) => entry.status !== AttendanceStatus.PENDING).length;
 
   return (
-    <div className="fb-att">
+    <main id="conteudo" tabIndex={-1} className="fb-att">
       <div className="fb-att__header">
         <button
           type="button"
@@ -154,10 +155,13 @@ export function AttendancePage() {
         </div>
       </div>
 
+      {rosterQuery.isLoading && <LoadingState surface="dark" />}
       {rosterQuery.isError && (
-        <p role="alert" className="fb-att__alert">
-          Não foi possível carregar a lista de presença.
-        </p>
+        <ErrorState
+          surface="dark"
+          message="Não foi possível carregar a lista de presença."
+          onRetry={() => void rosterQuery.refetch()}
+        />
       )}
 
       {roster && (
@@ -183,13 +187,13 @@ export function AttendancePage() {
           )}
 
           {failure && (
-            <p role="alert" className="fb-att__alert">
+            <Feedback tone="error" surface="dark">
               {failure}
-            </p>
+            </Feedback>
           )}
 
           {entries.length === 0 ? (
-            <div className="fb-att__empty">Nenhum cliente com reserva nesta aula.</div>
+            <EmptyState surface="dark" message="Nenhum cliente com reserva nesta aula." />
           ) : (
             <ul className="fb-att__list">
               {entries.map((entry) => {
@@ -231,6 +235,6 @@ export function AttendancePage() {
           )}
         </>
       )}
-    </div>
+    </main>
   );
 }

@@ -54,7 +54,7 @@ export function LoginPage() {
   }
 
   return (
-    <div className="login-page">
+    <main id="conteudo" tabIndex={-1} className="login-page">
       <div className="login-page__container">
         <div className="login-page__logo">
           <span className="login-page__logo-mark">FITBURN</span>
@@ -160,6 +160,6 @@ export function LoginPage() {
 
         <p className="login-page__footer">Acesso restrito a alunos e equipe Fitburn.</p>
       </div>
-    </div>
+    </main>
   );
 }

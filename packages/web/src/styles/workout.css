@@ -190,7 +190,7 @@
 
 .fb-sheets__item-meta {
   font-size: 12px;
-  color: #8a8a8a;
+  color: var(--color-text-muted-on-light);
 }
 
 .fb-sheets__item-actions {
@@ -332,7 +332,7 @@
 
 .fb-workout__meta {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.45);
+  color: var(--color-text-muted-on-dark);
 }
 
 .fb-workout__count {
@@ -459,7 +459,7 @@
 
 .fb-workout__chip-label {
   font-size: 10px;
-  color: rgba(255, 255, 255, 0.45);
+  color: var(--color-text-muted-on-dark);
 }
 
 .fb-workout__chip-value {

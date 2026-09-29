@@ -3,6 +3,7 @@ import { gymToday } from "@fitburn/contracts";
 import { formatDayMonth, formatLocalDate } from "../lib/agenda/format";
 import { getMyPlan } from "../lib/plans/api";
 import { PlanHistoryList } from "./plans/PlanHistoryList";
+import { EmptyState, ErrorState, LoadingState } from "../components/states";
 
 /**
  * Plano (PlanoDesktop.dc.html / PlanoMobile.dc.html): o plano ativo do
@@ -17,10 +18,13 @@ export function PlanPage() {
     <div className="fb-plan">
       <h1 className="fb-plan__title">Plano</h1>
 
+      {planQuery.isLoading && <LoadingState surface="dark" />}
       {planQuery.isError && (
-        <p role="alert" className="fb-plan__alert">
-          Não foi possível carregar o seu plano.
-        </p>
+        <ErrorState
+          surface="dark"
+          message="Não foi possível carregar o seu plano."
+          onRetry={() => void planQuery.refetch()}
+        />
       )}
 
       {plan?.active && (
@@ -50,10 +54,10 @@ export function PlanPage() {
       )}
 
       {plan && !plan.active && (
-        <div className="fb-plan__empty">
-          Você não tem um plano ativo no momento. Fale com a recepção do Fitburn para contratar um
-          plano.
-        </div>
+        <EmptyState
+          surface="dark"
+          message="Você não tem um plano ativo no momento. Fale com a recepção do Fitburn para contratar um plano."
+        />
       )}
 
       {plan && (

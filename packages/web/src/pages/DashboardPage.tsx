@@ -10,6 +10,7 @@ import {
 } from "@fitburn/contracts";
 import { formatDayHeading, formatInstantHour } from "../lib/agenda/format";
 import { getDashboard } from "../lib/dashboard/api";
+import { EmptyState, ErrorState, LoadingState } from "../components/states";
 
 const PERIODS: Array<{ period: RankingPeriodName; label: string }> = [
   { period: RankingPeriod.WEEK, label: "Semana" },
@@ -58,7 +59,7 @@ function OccupancyBlock({
         <div>
           <h3 className="fb-dash__sub-title">Hoje</h3>
           {occupancy.today.length === 0 ? (
-            <p className="fb-note">Nenhuma aula hoje.</p>
+            <EmptyState message="Nenhuma aula hoje." />
           ) : (
             <ul className="fb-dash__list" aria-label="Aulas de hoje">
               {occupancy.today.map((item) => (
@@ -70,7 +71,7 @@ function OccupancyBlock({
         <div>
           <h3 className="fb-dash__sub-title">Semana</h3>
           {byDay.size === 0 ? (
-            <p className="fb-note">Nenhuma aula nesta semana.</p>
+            <EmptyState message="Nenhuma aula nesta semana." />
           ) : (
             [...byDay.entries()].map(([date, items]) => (
               <div key={date} className="fb-dash__day">
@@ -119,7 +120,13 @@ export function DashboardPage() {
     <div className="fb-dash">
       <h1 className="fb-page-title">Dashboard</h1>
 
-      {dashboardQuery.isError && <p role="alert">Não foi possível carregar o dashboard.</p>}
+      {dashboardQuery.isLoading && <LoadingState />}
+      {dashboardQuery.isError && (
+        <ErrorState
+          message="Não foi possível carregar o dashboard."
+          onRetry={() => void dashboardQuery.refetch()}
+        />
+      )}
 
       {dashboard && (
         <>
@@ -169,7 +176,7 @@ export function DashboardPage() {
               </div>
               <h3 className="fb-dash__sub-title">Topo do ranking</h3>
               {dashboard.gamification.top.length === 0 ? (
-                <p className="fb-note">Ninguém pontuou neste período.</p>
+                <EmptyState message="Ninguém pontuou neste período." />
               ) : (
                 <ol className="fb-dash__list" aria-label="Topo do ranking">
                   {dashboard.gamification.top.map((entry) => (

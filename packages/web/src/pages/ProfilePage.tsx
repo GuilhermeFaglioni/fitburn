@@ -6,6 +6,7 @@ import { useAuth } from "../lib/auth/AuthContext";
 import { isClientUser } from "../lib/auth/areas";
 import { formatLocalDate } from "../lib/agenda/format";
 import { getMyProfile, updateMyProfile } from "../lib/profile/api";
+import { ErrorState, Feedback, LoadingState } from "../components/states";
 import { RequiresNetwork } from "../components/RequiresNetwork";
 
 interface FormState {
@@ -126,10 +127,13 @@ export function ProfilePage() {
     <div className={`fb-profile${light ? " fb-profile--light" : ""}`}>
       <h1 className="fb-profile__title">{light ? "Minha conta" : "Perfil"}</h1>
 
+      {profileQuery.isLoading && <LoadingState surface="dark" />}
       {profileQuery.isError && (
-        <p role="alert" className="fb-profile__alert">
-          Não foi possível carregar os seus dados.
-        </p>
+        <ErrorState
+          surface="dark"
+          message="Não foi possível carregar os seus dados."
+          onRetry={() => void profileQuery.refetch()}
+        />
       )}
 
       {profile && (
@@ -191,9 +195,9 @@ export function ProfilePage() {
                 </div>
 
                 {error && (
-                  <p role="alert" className="fb-profile__alert">
+                  <Feedback tone="error" surface="dark">
                     {error}
-                  </p>
+                  </Feedback>
                 )}
 
                 <div className="fb-profile__actions">

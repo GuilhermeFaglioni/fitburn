@@ -17,6 +17,7 @@ import { listOccurrences } from "../lib/agenda/api";
 import { formatDayLabel, formatInstantHour, formatWeekRange } from "../lib/agenda/format";
 import { OccurrenceEditModal } from "./agenda/OccurrenceEditModal";
 import { OccurrenceFormModal } from "./agenda/OccurrenceFormModal";
+import { ErrorState, LoadingState } from "../components/states";
 
 type ModalState =
   | { mode: "closed" }
@@ -57,13 +58,19 @@ export function AgendaAdminPage() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16, height: "100%" }}>
       <div
-        style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: 12,
+        }}
       >
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           <span className="fb-page-eyebrow">Agenda</span>
           <h1 className="fb-page-title">Ocorrências / agenda administrativa</h1>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
           <button
             type="button"
             className="fb-icon-btn"
@@ -93,7 +100,13 @@ export function AgendaAdminPage() {
         </div>
       </div>
 
-      {occurrencesQuery.isError && <p role="alert">Não foi possível carregar a agenda.</p>}
+      {occurrencesQuery.isLoading && <LoadingState />}
+      {occurrencesQuery.isError && (
+        <ErrorState
+          message="Não foi possível carregar a agenda."
+          onRetry={() => void occurrencesQuery.refetch()}
+        />
+      )}
 
       <div className="fb-week-grid">
         {days.map((date) => {

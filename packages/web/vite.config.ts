@@ -46,6 +46,8 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     globals: true,
+    // Os testes de contraste leem as folhas de estilo de src/styles como texto (?raw).
+    css: { include: [/src\/styles\/.*\.css/] },
     setupFiles: ["./test/setup.ts"],
   },
 });
