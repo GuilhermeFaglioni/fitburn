@@ -128,7 +128,7 @@ export function GoalsPage() {
                 A pontuação de gamificação é calculada automaticamente pelo sistema com base na
                 frequência e no progresso do cliente. Os pontos{" "}
                 <strong>não podem ser editados</strong> nesta tela — aqui você define apenas as
-                metas e acompanha o progresso.
+                metas e marca quando são concluídas.
               </span>
             </div>
 
