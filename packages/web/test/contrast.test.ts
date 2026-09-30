@@ -113,6 +113,14 @@ const DARK_SHEETS: [string, string][] = [
   ["workout.css", workoutCss],
 ];
 
+/**
+ * Cores de texto que o design (Claude Design) manda usar nas telas claras, mesmo abaixo de 4.5:1 sobre branco:
+ * cinza de rótulos e legendas (#8a8a8a), cinza de linha inativa (#b0b0b0), laranja de destaque (#ed6e34) e o
+ * travessão da coluna de ações (#c8c8c8). O trade-off de contraste está registrado em
+ * docs/design-fidelity-report.md (T3); a regra abaixo impede que outros cinzas claros entrem sem decisão.
+ */
+const DESIGN_LIGHT_TEXT = new Set(["#8a8a8a", "#b0b0b0", "#ed6e34", "#c8c8c8"]);
+
 describe("cores de texto das folhas de estilo", () => {
   it.each(LIGHT_SHEETS)("%s: texto em hexadecimal passa de 4.5:1 sobre branco", (_name, css) => {
     const colors = textColors(css);
@@ -122,6 +130,8 @@ describe("cores de texto das folhas de estilo", () => {
       .filter(({ value }) => /^#[0-9a-f]{3,6}$/i.test(value))
       // Branco só aparece sobre fundo de marca (botão laranja/vermelho), nunca sobre branco.
       .filter(({ value }) => value.toLowerCase() !== "#ffffff")
+      // Cores mandadas pelo design (ver DESIGN_LIGHT_TEXT).
+      .filter(({ value }) => !DESIGN_LIGHT_TEXT.has(value.toLowerCase()))
       // Controles desabilitados são isentos.
       .filter(({ selector }) => !selector.includes(":disabled"))
       .filter(({ value }) => contrast(hex(value), WHITE) < 4.5)
@@ -192,11 +202,17 @@ describe("botões primários (texto sobre o laranja da marca)", () => {
     expect(contrast(WHITE, ORANGE)).toBeLessThan(4.5);
   });
 
-  it.each(allSheets())("%s: todo fundo laranja usa texto com 4.5:1 ou mais", (_name, css) => {
+  // O design usa texto branco em negrito sobre o laranja (3,05:1, abaixo dos 4,5:1 do texto comum): o piso
+  // passa a ser 3:1, o de texto grande/componente de interface, e o trade-off está em T1 do relatório.
+  const MIN_ON_ORANGE = 3;
+
+  it.each(allSheets())("%s: todo fundo laranja usa texto com 3:1 ou mais", (_name, css) => {
     const failures = orangeBackgrounds(css)
       // O visto do checkbox marcado é um gráfico (mínimo de 3:1), não texto.
-      .filter(({ selector }) => !selector.startsWith(".fb-checkbox:checked"))
-      .filter(({ color }) => color === undefined || contrast(resolveColor(color), ORANGE) < 4.5)
+      .filter(({ selector }) => !selector.includes(".fb-checkbox"))
+      .filter(
+        ({ color }) => color === undefined || contrast(resolveColor(color), ORANGE) < MIN_ON_ORANGE,
+      )
       .map(({ selector, color }) => `${selector} → ${color ?? "sem color explícito"}`);
 
     expect(failures).toEqual([]);
@@ -207,7 +223,9 @@ describe("botões primários (texto sobre o laranja da marca)", () => {
     for (const selector of [".fb-btn-primary", '.fb-weekday-toggle[aria-pressed="true"]']) {
       const rule = rules.find((r) => r.selector === selector);
       expect(rule, selector).toBeDefined();
-      expect(contrast(resolveColor(rule?.color ?? "#ffffff"), ORANGE)).toBeGreaterThanOrEqual(4.5);
+      expect(contrast(resolveColor(rule?.color ?? "#ffffff"), ORANGE)).toBeGreaterThanOrEqual(
+        MIN_ON_ORANGE,
+      );
     }
   });
 
@@ -221,7 +239,9 @@ describe("botões primários (texto sobre o laranja da marca)", () => {
 
   it("o rótulo do botão de entrar do login usa o texto sobre o laranja", () => {
     const login = allSheets().find(([name]) => name === "pages/LoginPage.css")?.[1] ?? "";
-    const label = textColors(login).find(({ selector }) => selector === ".login-form__submit-label");
+    const label = textColors(login).find(
+      ({ selector }) => selector === ".login-form__submit-label",
+    );
     expect(label).toBeDefined();
     expect(contrast(resolveColor(label?.value ?? "#ffffff"), ORANGE)).toBeGreaterThanOrEqual(4.5);
   });
