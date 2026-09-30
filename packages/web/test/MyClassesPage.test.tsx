@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { http, HttpResponse } from "msw";
@@ -98,6 +98,8 @@ describe("Minhas aulas", () => {
     renderPage();
 
     expect(await screen.findByRole("heading", { name: "Minhas aulas" })).toBeInTheDocument();
+    // O título aparece antes de a consulta sair: espera a requisição ser registrada.
+    await waitFor(() => expect(requests.length).toBeGreaterThan(0));
     expect(requests[0].get("from")).toBe("2026-05-06");
     expect(requests[0].get("to")).toBe("2026-05-06");
     expect(screen.getByRole("button", { name: "Hoje" })).toHaveClass("active");
