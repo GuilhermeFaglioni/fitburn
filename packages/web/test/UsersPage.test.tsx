@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { http, HttpResponse } from "msw";
 import { MemoryRouter } from "react-router-dom";
+import { Module, PermissionAction, PermissionScope } from "@fitburn/contracts";
 import { AuthProvider, useAuth } from "../src/lib/auth/AuthContext";
 import { UsersPage } from "../src/pages/UsersPage";
 import { mockSuccessfulLogin } from "./auth-mocks";
@@ -225,5 +226,28 @@ describe("UsersPage", () => {
 
     const row = (await screen.findByText("Cliente Ativo")).closest("tr")!;
     expect(within(row).queryByRole("button", { name: "Excluir" })).not.toBeInTheDocument();
+  });
+
+  describe("sem permissão", () => {
+    it("cadastrar, desativar e excluir ficam bloqueados, com o motivo", async () => {
+      mockSuccessfulLogin("Professor", [
+        { module: Module.USUARIOS, actions: [PermissionAction.VIEW], scope: PermissionScope.ALL },
+      ]);
+      server.use(
+        http.get("/api/users", () => HttpResponse.json([{ ...CLIENT_ATIVO, id: "user-outro" }])),
+      );
+      renderUsersPage();
+
+      const create = await screen.findByRole("button", { name: "+ Novo cliente" });
+      expect(create).toBeDisabled();
+      expect(create).toHaveAttribute("title", "Você não tem permissão para cadastrar usuários.");
+      const row = (await screen.findByText("Cliente Ativo")).closest("tr")!;
+      const toggle = within(row).getByRole("button", { name: "Desativar" });
+      expect(toggle).toBeDisabled();
+      expect(toggle).toHaveAttribute("title", "Você não tem permissão para alterar usuários.");
+      const remove = within(row).getByRole("button", { name: "Excluir" });
+      expect(remove).toBeDisabled();
+      expect(remove).toHaveAttribute("title", "Você não tem permissão para excluir usuários.");
+    });
   });
 });

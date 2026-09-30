@@ -4,7 +4,13 @@ import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { http, HttpResponse } from "msw";
 import { MemoryRouter } from "react-router-dom";
-import type { ClassTemplateDetail, ModalityDetail } from "@fitburn/contracts";
+import {
+  Module,
+  PermissionAction,
+  PermissionScope,
+  type ClassTemplateDetail,
+  type ModalityDetail,
+} from "@fitburn/contracts";
 import { AuthProvider, useAuth } from "../src/lib/auth/AuthContext";
 import { TemplatesModalidadesPage } from "../src/pages/TemplatesModalidadesPage";
 import { mockSuccessfulLogin } from "./auth-mocks";
@@ -153,5 +159,62 @@ describe("TemplatesModalidadesPage", () => {
         "Esta modalidade tem templates vinculados e não pode ser excluída.",
       ),
     );
+  });
+
+  describe("sem permissão", () => {
+    const VIEW_ONLY = [
+      {
+        module: Module.TEMPLATES_DE_AULA,
+        actions: [PermissionAction.VIEW],
+        scope: PermissionScope.ALL,
+      },
+    ];
+    const TEMPLATE_PRONTO: ClassTemplateDetail = {
+      id: "tpl-1",
+      name: "Spinning 45min",
+      description: null,
+      durationMinutes: 45,
+      capacity: 15,
+      isActive: true,
+      modality: { id: SPINNING.id, name: SPINNING.name },
+      defaultInstructor: null,
+    };
+
+    it("nos templates, criar, editar, desativar e excluir ficam bloqueados, com o motivo", async () => {
+      mockSuccessfulLogin("Professor", VIEW_ONLY);
+      server.use(http.get("/api/class-templates", () => HttpResponse.json([TEMPLATE_PRONTO])));
+      renderPage();
+
+      const create = await screen.findByRole("button", { name: "+ Novo template" });
+      expect(create).toBeDisabled();
+      expect(create).toHaveAttribute("title", "Você não tem permissão para criar templates.");
+      const row = (await screen.findByText("Spinning 45min")).closest("tr")!;
+      const edit = within(row).getByRole("button", { name: "Editar" });
+      expect(edit).toBeDisabled();
+      expect(edit).toHaveAttribute("title", "Você não tem permissão para editar templates.");
+      expect(within(row).getByRole("button", { name: "Desativar" })).toBeDisabled();
+      const remove = within(row).getByRole("button", { name: "Excluir" });
+      expect(remove).toBeDisabled();
+      expect(remove).toHaveAttribute("title", "Você não tem permissão para excluir templates.");
+    });
+
+    it("nas modalidades, criar, editar, desativar e excluir ficam bloqueados, com o motivo", async () => {
+      mockSuccessfulLogin("Professor", VIEW_ONLY);
+      server.use(http.get("/api/class-templates", () => HttpResponse.json([])));
+      renderPage();
+      const user = userEvent.setup();
+
+      await user.click(await screen.findByRole("button", { name: "Modalidades" }));
+
+      const create = await screen.findByRole("button", { name: "+ Nova modalidade" });
+      expect(create).toBeDisabled();
+      expect(create).toHaveAttribute("title", "Você não tem permissão para criar modalidades.");
+      const row = (await screen.findByText("Spinning")).closest("tr")!;
+      expect(within(row).getByRole("button", { name: "Editar" })).toBeDisabled();
+      expect(within(row).getByRole("button", { name: "Desativar" })).toBeDisabled();
+      const remove = within(row).getByRole("button", { name: "Excluir" });
+      expect(remove).toBeDisabled();
+      expect(remove).toHaveAttribute("title", "Você não tem permissão para excluir modalidades.");
+    });
   });
 });
