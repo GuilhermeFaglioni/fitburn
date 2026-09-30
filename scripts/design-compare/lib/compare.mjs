@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import pixelmatch from "pixelmatch";
 import { PNG } from "pngjs";
+import { diffPages, renderDiff } from "./divergences.mjs";
 import { APP_OUT, DESIGN_OUT, DIFF_OUT, OUT_DIR } from "./paths.mjs";
 
 const GAP = 12;
@@ -86,8 +87,25 @@ export async function compareAll(captures, { only } = {}) {
     blit(diff, side, (design.width + GAP) * 2, 0);
     fs.writeFileSync(path.join(DIFF_OUT, `${key}.side.png`), PNG.sync.write(side));
 
+    let divergences;
+    const dj = path.join(DESIGN_OUT, `${key}.json`);
+    const aj = path.join(APP_OUT, `${key}.json`);
+    if (fs.existsSync(dj) && fs.existsSync(aj)) {
+      const result = diffPages(JSON.parse(fs.readFileSync(dj, "utf8")), JSON.parse(fs.readFileSync(aj, "utf8")));
+      fs.mkdirSync(path.join(OUT_DIR, "divergences"), { recursive: true });
+      const note = describeMeta(meta[key]);
+      fs.writeFileSync(path.join(OUT_DIR, "divergences", `${key}.md`), renderDiff(key, result, note));
+      divergences = {
+        pairs: result.pairs,
+        style: result.style.length,
+        position: result.position.length,
+        missing: result.missing.length,
+        extra: result.extra.length,
+      };
+    }
     rows.push({
       ...row,
+      divergences,
       status: "ok",
       percent,
       contentPercent,
@@ -104,6 +122,15 @@ export async function compareAll(captures, { only } = {}) {
   fs.writeFileSync(reportPath, renderReport(rows));
   fs.writeFileSync(path.join(OUT_DIR, "report.json"), JSON.stringify(rows, null, 2));
   return { rows, reportPath };
+}
+
+function describeMeta(m) {
+  if (!m) return "";
+  const parts = [];
+  if (m.route) parts.push(`Rota do app: \`${m.route}\`.`);
+  if (m.fullHeight) parts.push(`Altura total da página no app: ${m.fullHeight}px.`);
+  if (m.stepError) parts.push(`Passo de captura falhou: ${m.stepError}.`);
+  return parts.join(" ");
 }
 
 function dominantColor(png) {
@@ -127,23 +154,27 @@ function countContent(a, b) {
   return n;
 }
 
+function counts(d) {
+  return d ? `${d.style} / ${d.position} / ${d.missing} / ${d.extra}` : "";
+}
+
 function table(rows, title) {
   const lines = [
     `## ${title}`,
     "",
-    "| # | Tela | Grupo | Rota do app | % pixels diferentes | % do conteúdo | Altura da página no app (artboard) |",
-    "|---|---|---|---|---|---|---|",
+    "| # | Tela | Grupo | Rota do app | % pixels diferentes | % do conteúdo | Estilo / posição / só design / só app | Altura da página no app (artboard) |",
+    "|---|---|---|---|---|---|---|---|",
   ];
   rows.forEach((row, i) => {
     if (row.status !== "ok") {
-      lines.push(`| ${i + 1} | ${row.id} | ${row.group} | \`${row.route}\` | ${row.status} | | |`);
+      lines.push(`| ${i + 1} | ${row.id} | ${row.group} | \`${row.route}\` | ${row.status} | | | |`);
       return;
     }
     const overflow =
       row.appFullHeight && row.appFullHeight !== row.height ? `${row.appFullHeight}px (${row.height}px)` : `${row.height}px`;
     const note = row.stepError ? " (passo falhou)" : "";
     lines.push(
-      `| ${i + 1} | ${row.id}${note} | ${row.group} | \`${row.route}\` | ${row.percent.toFixed(2)}% | ${row.contentPercent.toFixed(1)}% | ${overflow} |`,
+      `| ${i + 1} | ${row.id}${note} | ${row.group} | \`${row.route}\` | ${row.percent.toFixed(2)}% | ${row.contentPercent.toFixed(1)}% | ${counts(row.divergences)} | ${overflow} |`,
     );
   });
   return lines.join("\n");
@@ -158,7 +189,7 @@ function renderReport(rows) {
       "",
       `Gerado em ${new Date().toISOString()}. Pixel diferente = pixelmatch (limiar 0,1, sem anti-aliasing).`,
       "`% do conteúdo` = pixels diferentes / pixels que não são fundo em nenhuma das imagens (evita que telas escuras pareçam mais parecidas do que são).",
-      "Imagens em `tmp/design-compare/diff/<Tela>.side.png` (design | app | diferença), ranqueadas da mais para a menos divergente (% pixels diferentes).",
+      "Imagens em `tmp/design-compare/diff/<Tela>.side.png` (design | app | diferença); medidas em `tmp/design-compare/divergences/<Tela>.md`. Ranqueadas da mais para a menos divergente (% pixels diferentes).",
       "",
       table(main, "Artboards (estado padrão)"),
       "",

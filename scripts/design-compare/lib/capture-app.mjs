@@ -3,6 +3,7 @@ import path from "node:path";
 import { launchBrowser, settle } from "./browser.mjs";
 import { readCanvas } from "./design-server.mjs";
 import { ACCOUNTS, apiFor } from "./accounts.mjs";
+import { extractPage } from "./extract.mjs";
 import { routeGoogleFonts } from "./fonts.mjs";
 import { APP_OUT } from "./paths.mjs";
 
@@ -84,6 +85,7 @@ export async function captureApp(captures, { only } = {}) {
           width: document.documentElement.scrollWidth,
           height: document.documentElement.scrollHeight,
         }));
+        fs.writeFileSync(file.replace(/\.png$/, ".json"), JSON.stringify(await extractPage(page)));
         await page.screenshot({ path: file, clip: { x: 0, y: 0, width: board.w, height: board.h } });
         results.push({ id: key, ok: true, file, route, fullHeight: full.height, fullWidth: full.width, errors, stepError });
         console.log(`[app] ${key} ${route} (${board.w}x${board.h}, página ${full.width}x${full.height})`);
