@@ -95,7 +95,9 @@ describe("Presença (professor)", () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(NOW);
     marks.length = 0;
-    mockSuccessfulLogin("Professor");
+    mockSuccessfulLogin("Professor", [
+      { module: Module.PRESENCA, actions: [PermissionAction.VIEW, PermissionAction.EXECUTE], scope: PermissionScope.ASSIGNED_CLASSES },
+    ]);
   });
 
   afterEach(() => {
@@ -343,12 +345,9 @@ describe("Presença (professor)", () => {
     }
   });
 
-  // Achado A3 da auditoria (docs/test-matrix.md): a tela não consulta a ação EXECUTE de Presença, então
-  // quem só visualiza vê Presente/Faltou habilitados (a API recusa). O teste descreve o comportamento
-  // CORRETO e falha hoje, de propósito: com `it.fails` a suíte fica verde enquanto o bug existir e, quando
-  // ele for corrigido, passa a FALHAR; aí troque `it.fails` por `it` (e, no mesmo ticket, dê EXECUTE ao
-  // login dos testes acima, que hoje entram com permissões vazias).
-  it.fails("sem a ação EXECUTE em Presença, os botões Presente e Faltou ficam desabilitados", async () => {
+  // Achado A3 da auditoria (docs/test-matrix.md), corrigido: Presente e Faltou só valem com a ação EXECUTE
+  // em Presença.
+  it("sem a ação EXECUTE em Presença, os botões Presente e Faltou ficam desabilitados", async () => {
     mockSuccessfulLogin("Professor", [
       { module: Module.PRESENCA, actions: [PermissionAction.VIEW], scope: PermissionScope.ASSIGNED_CLASSES },
     ]);

@@ -4,6 +4,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AttendanceStatus,
   ErrorCode,
+  Module,
+  PermissionAction,
   type AttendanceEntry,
   type AttendanceMark,
   type AttendanceRoster,
@@ -14,6 +16,9 @@ import { getAttendanceRoster, markAttendance } from "../lib/attendance/api";
 import { formatClassDay, formatInstantHour } from "../lib/agenda/format";
 import { EmptyState, ErrorState, Feedback, LoadingState } from "../components/states";
 import { RequiresNetwork } from "../components/RequiresNetwork";
+import { useAuth } from "../lib/auth/AuthContext";
+
+const NO_EXECUTE_REASON = "Você não tem permissão para registrar presença.";
 
 function InfoIcon() {
   return (
@@ -82,6 +87,8 @@ export function AttendancePage() {
   const { occurrenceId = "" } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { can } = useAuth();
+  const canExecute = can(Module.PRESENCA, PermissionAction.EXECUTE);
   const rosterKey = ["attendance-roster", occurrenceId];
   const [failure, setFailure] = useState<string | null>(null);
 
@@ -127,7 +134,7 @@ export function AttendancePage() {
 
   /** Marca ou corrige; tocar no que já está marcado não muda nada. */
   function mark(entry: AttendanceEntry, status: AttendanceMark) {
-    if (entry.status !== status) markMutation.mutate({ entry, status });
+    if (canExecute && entry.status !== status) markMutation.mutate({ entry, status });
   }
 
   const entries = roster?.entries ?? [];
@@ -204,13 +211,17 @@ export function AttendancePage() {
                       <span className="fb-att__name">{entry.client.fullName}</span>
                       {pending && <span className="fb-att__pending">PENDENTE</span>}
                     </div>
+                    {/* Dois bloqueios independentes: sem EXECUTE o botão já nasce desabilitado, com o
+                        motivo no title, e o RequiresNetwork só soma o bloqueio por rede (não reabilita). */}
                     <div className="fb-att__marks" role="group" aria-label={entry.client.fullName}>
                       <RequiresNetwork>
                         <button
                           type="button"
                           className="fb-seg-btn fb-seg-btn--present"
                           aria-pressed={entry.status === AttendanceStatus.PRESENT}
-                          disabled={!started}
+                          disabled={!started || !canExecute}
+                          aria-disabled={!canExecute ? true : undefined}
+                          title={canExecute ? undefined : NO_EXECUTE_REASON}
                           onClick={() => mark(entry, AttendanceStatus.PRESENT)}
                         >
                           Presente
@@ -221,7 +232,9 @@ export function AttendancePage() {
                           type="button"
                           className="fb-seg-btn fb-seg-btn--absent"
                           aria-pressed={entry.status === AttendanceStatus.ABSENT}
-                          disabled={!started}
+                          disabled={!started || !canExecute}
+                          aria-disabled={!canExecute ? true : undefined}
+                          title={canExecute ? undefined : NO_EXECUTE_REASON}
                           onClick={() => mark(entry, AttendanceStatus.ABSENT)}
                         >
                           Faltou
