@@ -128,13 +128,24 @@ async function runAppStep(page, step) {
 
 /** Rotas que dependem de ids criados pelo seed. */
 const RESOLVERS = {
+  /**
+   * A chamada do design mostra alunos já marcados (presente e faltou), então
+   * escolhe a aula mais recente da última quinzena que tenha as duas marcações;
+   * sem ela, cai na aula de hoje com mais alunos.
+   */
   async presenca(api) {
-    const day = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date());
-    const list = await api(`/attendance/classes?from=${day}&to=${day}`);
-    const pick =
-      list.find((c) => c.name === "Treino Funcional" && c.totalCount > 1 && isToday(c.startsAt)) ??
-      list.find((c) => c.totalCount > 1) ??
-      list[0];
+    const fmt = (d) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(d);
+    const to = fmt(new Date());
+    const from = fmt(new Date(Date.now() - 14 * 86400000));
+    const list = (await api(`/attendance/classes?from=${from}&to=${to}`)).sort((a, b) =>
+      a.startsAt < b.startsAt ? 1 : -1,
+    );
+    for (const c of list.filter((x) => x.totalCount >= 4)) {
+      const roster = await api(`/attendance/classes/${c.id}`);
+      const status = new Set(roster.entries.map((e) => e.status));
+      if (status.has("PRESENT") && status.has("ABSENT")) return `/presenca/${c.id}`;
+    }
+    const pick = list.find((c) => c.totalCount > 1 && isToday(c.startsAt)) ?? list[0];
     if (!pick) throw new Error("nenhuma aula em /attendance/classes (rode o seed)");
     return `/presenca/${pick.id}`;
   },

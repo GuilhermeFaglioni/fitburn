@@ -61,17 +61,36 @@ export async function extractPage(page) {
     };
 
     const texts = [];
-    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
-    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
-      const raw = node.textContent.replace(/\s+/g, " ").trim();
-      const el = node.parentElement;
-      if (!raw || !el || ["SCRIPT", "STYLE", "NOSCRIPT", "X-DC", "HELMET"].includes(el.tagName)) continue;
-      if (!visible(el)) continue;
-      const range = document.createRange();
-      range.selectNodeContents(node);
-      const rect = range.getBoundingClientRect();
-      if (rect.width === 0 || rect.height === 0) continue;
-      texts.push(describe(el, rect, raw));
+    const SKIP = ["SCRIPT", "STYLE", "NOSCRIPT", "X-DC", "HELMET", "SVG", "OPTION"];
+    const hasDirectText = (el) => [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim());
+    const inlineOnly = (el) =>
+      [...el.children].every((c) => {
+        const d = getComputedStyle(c).display;
+        return (d.startsWith("inline") || d === "contents") && inlineOnly(c);
+      });
+    const collected = [];
+    const push = (el, rect, text) => {
+      if (!text || rect.width === 0 || rect.height === 0) return;
+      texts.push(describe(el, rect, text));
+    };
+    for (const el of document.body.querySelectorAll("*")) {
+      if (SKIP.includes(el.tagName.toUpperCase()) || el instanceof SVGElement) continue;
+      if (collected.some((root) => root.contains(el))) continue;
+      if (!hasDirectText(el) || !visible(el)) continue;
+      if (inlineOnly(el)) {
+        // Texto corrido (com spans/negritos dentro): um item só, como o olho lê.
+        collected.push(el);
+        const range = document.createRange();
+        range.selectNodeContents(el);
+        push(el, range.getBoundingClientRect(), el.textContent.replace(/\s+/g, " ").trim());
+      } else {
+        for (const node of el.childNodes) {
+          if (node.nodeType !== 3 || !node.textContent.trim()) continue;
+          const range = document.createRange();
+          range.selectNodeContents(node);
+          push(el, range.getBoundingClientRect(), node.textContent.replace(/\s+/g, " ").trim());
+        }
+      }
     }
     for (const el of document.querySelectorAll("input, textarea, select")) {
       if (!visible(el)) continue;

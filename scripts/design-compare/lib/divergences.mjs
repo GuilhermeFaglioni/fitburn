@@ -71,7 +71,12 @@ function pairTexts(designTexts, appTexts) {
   return { pairs, missing: leftovers, extra: appTexts.filter((a) => !used.has(a)) };
 }
 
+/** Fora da tela (ex.: o link "Ir para o conteúdo", que só aparece com foco) não entra na comparação. */
+const onScreen = (t) => t.y + t.h > 0 && t.x + t.w > 0;
+
 export function diffPages(design, app) {
+  design = { ...design, texts: design.texts.filter(onScreen) };
+  app = { ...app, texts: app.texts.filter(onScreen) };
   const { pairs, missing, extra } = pairTexts(design.texts, app.texts);
   const style = [];
   const position = [];

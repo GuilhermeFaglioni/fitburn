@@ -165,8 +165,10 @@ export const CAPTURES = [
     app: { role: "client", route: "/plano" },
     design: { variants: [{ name: "sem_plano", props: { hasActivePlan: false } }] },
   },
-  { id: "FichaTreinoDesktop", group: "G4", app: { role: "client", resolve: "ficha" } },
-  { id: "FichaTreinoMobile", group: "G4", app: { role: "client", resolve: "ficha" } },
+  // O design junta, numa página só, a ficha ativa (exercícios) e "Fichas anteriores": no app isso
+  // é /ficha-treino (lista) + /ficha-treino/:id (detalhe). A lista é a tela equivalente.
+  { id: "FichaTreinoDesktop", group: "G4", app: { role: "client", route: "/ficha-treino" } },
+  { id: "FichaTreinoMobile", group: "G4", app: { role: "client", route: "/ficha-treino" } },
   // ---- G5
   {
     id: "ClientesAdmin",
@@ -178,20 +180,66 @@ export const CAPTURES = [
     },
     design: { variants: [{ name: "confirmar_exclusao", props: { showDeleteConfirm: true } }] },
   },
-  { id: "UsuariosPerfis", group: "G5", app: { role: "admin", route: "/usuarios" } },
-  { id: "TemplatesModalidades", group: "G5", app: { role: "admin", route: "/templates-e-modalidades" } },
-  { id: "AgendaAdmin", group: "G5", app: { role: "admin", route: "/agenda-administrativa" } },
+  {
+    id: "UsuariosPerfis",
+    group: "G5",
+    app: { role: "admin", route: "/usuarios", variants: [{ name: "perfis", steps: [{ click: "Perfis de acesso" }] }] },
+    design: { variants: [{ name: "perfis", steps: [{ click: "Perfis de acesso" }] }] },
+  },
+  {
+    id: "TemplatesModalidades",
+    group: "G5",
+    app: {
+      role: "admin",
+      route: "/templates-e-modalidades",
+      variants: [{ name: "modalidades", steps: [{ click: "Modalidades" }] }],
+    },
+    design: { variants: [{ name: "modalidades", steps: [{ click: "Modalidades" }] }] },
+  },
+  {
+    id: "AgendaAdmin",
+    group: "G5",
+    app: {
+      role: "admin",
+      route: "/agenda-administrativa",
+      variants: [{ name: "nova_aula", steps: [{ click: "+ Nova aula" }] }],
+    },
+    design: { variants: [{ name: "nova_aula", steps: [{ click: "+ Nova aula" }] }] },
+  },
   {
     id: "ReservasAdmin",
     group: "G5",
-    app: { role: "admin", route: "/reservas-administrativas" },
+    app: {
+      role: "admin",
+      route: "/reservas-administrativas",
+      variants: [{ name: "nova_reserva", steps: [{ click: "+ Nova reserva" }] }],
+    },
     design: {
       variants: [
-        { name: "erro_lotada", props: { cenario: "erro_lotada" } },
-        { name: "erro_duplicada", props: { cenario: "erro_duplicada" } },
+        { name: "nova_reserva", steps: [{ click: "+ Nova reserva" }] },
+        { name: "erro_lotada", props: { cenario: "erro_lotada" }, steps: [{ click: "+ Nova reserva" }] },
+        { name: "erro_duplicada", props: { cenario: "erro_duplicada" }, steps: [{ click: "+ Nova reserva" }] },
       ],
     },
   },
-  { id: "PlanosAdmin", group: "G5", app: { role: "admin", route: "/planos" } },
-  { id: "FichaTreinoAdmin", group: "G5", app: { role: "professor", route: "/fichas", steps: [{ click: "Marina Souza" }] } },
+  {
+    id: "PlanosAdmin",
+    group: "G5",
+    app: {
+      role: "admin",
+      route: "/planos",
+      variants: [{ name: "atribuir", steps: [{ click: "Atribuir a cliente" }] }],
+    },
+    design: { variants: [{ name: "atribuir", steps: [{ click: "Atribuir a cliente" }] }] },
+  },
+  {
+    id: "FichaTreinoAdmin",
+    group: "G5",
+    // O design mostra a edição da ficha ativa ("Editar ficha — Fase 2"), não o formulário vazio.
+    app: {
+      role: "professor",
+      route: "/fichas",
+      steps: [{ click: "Marina Souza" }, { clickSelector: 'button:has-text("Editar")' }],
+    },
+  },
 ];
