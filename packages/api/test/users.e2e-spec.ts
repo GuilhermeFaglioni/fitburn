@@ -250,9 +250,10 @@ describe("Gestão de usuários (HTTP)", () => {
 
       expect(response.status).toBe(409);
       expect(response.body.code).toBe("EMAIL_ALREADY_IN_USE");
+      // Nada mudou: a linha inteira (nome, e-mail, perfil, senha, updatedAt...) é idêntica à criada pelo factory.
       const stored = await testPrisma.user.findUniqueOrThrow({ where: { id: target.id } });
-      expect(stored.email).toBe("alvo@fitburn.local");
-      expect(stored.fullName).not.toBe("Novo Nome");
+      expect(stored).toEqual(target);
+      expect(stored.fullName).toBe("Usuário de Teste");
     });
 
     it("recusa perfil inexistente, usuário inexistente e corpo inválido", async () => {
@@ -294,8 +295,84 @@ describe("Gestão de usuários (HTTP)", () => {
       expect(forbidden.status).toBe(403);
       expect(forbidden.body.code).toBe("FORBIDDEN");
       expect(anonymous.status).toBe(401);
+      // Nada mudou: a linha inteira é idêntica à criada pelo factory.
       const stored = await testPrisma.user.findUniqueOrThrow({ where: { id: target.id } });
-      expect(stored.fullName).not.toBe("Alterado");
+      expect(stored).toEqual(target);
+      expect(stored.fullName).toBe("Usuário de Teste");
+    });
+  });
+
+  // Achado A1 da auditoria (docs/test-matrix.md): as rotas de escrita de Usuários só checam a ação
+  // (EDIT/DELETE) e ignoram o escopo OWN, que GET /api/users e GET /api/users/:id respeitam. Os
+  // testes `it.fails` descrevem o comportamento CORRETO e falham hoje, de propósito: enquanto o bug
+  // existir a suíte fica verde; quando ele for corrigido o `it.fails` passa a FALHAR, e aí basta
+  // trocar `it.fails` por `it`.
+  describe("Escopo OWN nas rotas de escrita (achado A1: bug conhecido)", () => {
+    async function seedOwnScopeActor() {
+      const ownProfile = await createAccessProfile({ name: "Só os próprios" });
+      await grantModuleAccess({
+        profileId: ownProfile.id,
+        module: "USUARIOS",
+        actions: ["VIEW", "EDIT", "DELETE"],
+        scope: "OWN",
+      });
+      const actor = await createUser({ email: "proprio@fitburn.local", password: PASSWORD, profileId: ownProfile.id });
+      const other = await createUser({ email: "outro@fitburn.local", password: PASSWORD, profileId: ownProfile.id });
+      const token = await loginAndGetAccessToken(app, actor.email, PASSWORD);
+      return { actor, other, token };
+    }
+
+    it("o perfil com escopo OWN não vê outro usuário, mas edita a si mesmo (a base dos testes abaixo)", async () => {
+      const { actor, other, token } = await seedOwnScopeActor();
+
+      const readOther = await request(app.getHttpServer())
+        .get(`/api/users/${other.id}`)
+        .set("Authorization", `Bearer ${token}`);
+      const editSelf = await request(app.getHttpServer())
+        .patch(`/api/users/${actor.id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .send({ fullName: "Eu Mesmo" });
+
+      expect(readOther.status).toBe(403);
+      expect(readOther.body.code).toBe("OUT_OF_SCOPE");
+      expect(editSelf.status).toBe(200);
+    });
+
+    it.fails("EDIT com escopo OWN não edita outro usuário: 403 OUT_OF_SCOPE e nada muda", async () => {
+      const { other, token } = await seedOwnScopeActor();
+
+      const response = await request(app.getHttpServer())
+        .patch(`/api/users/${other.id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .send({ fullName: "Invadido" });
+
+      expect(response.status).toBe(403);
+      expect(response.body.code).toBe("OUT_OF_SCOPE");
+      expect(await testPrisma.user.findUniqueOrThrow({ where: { id: other.id } })).toEqual(other);
+    });
+
+    it.fails("EDIT com escopo OWN não desativa outro usuário: 403 OUT_OF_SCOPE e ele continua ATIVO", async () => {
+      const { other, token } = await seedOwnScopeActor();
+
+      const response = await request(app.getHttpServer())
+        .post(`/api/users/${other.id}/deactivate`)
+        .set("Authorization", `Bearer ${token}`);
+
+      expect(response.status).toBe(403);
+      expect(response.body.code).toBe("OUT_OF_SCOPE");
+      expect(await testPrisma.user.findUniqueOrThrow({ where: { id: other.id } })).toEqual(other);
+    });
+
+    it.fails("DELETE com escopo OWN não anonimiza outro usuário: 403 OUT_OF_SCOPE e os dados ficam intactos", async () => {
+      const { other, token } = await seedOwnScopeActor();
+
+      const response = await request(app.getHttpServer())
+        .delete(`/api/users/${other.id}`)
+        .set("Authorization", `Bearer ${token}`);
+
+      expect(response.status).toBe(403);
+      expect(response.body.code).toBe("OUT_OF_SCOPE");
+      expect(await testPrisma.user.findUniqueOrThrow({ where: { id: other.id } })).toEqual(other);
     });
   });
 

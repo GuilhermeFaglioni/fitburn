@@ -83,7 +83,7 @@ Resumo (detalhes nos passos):
 | Fora do escopo | Professora abre cliente de outro professor | "Este cliente está fora do seu escopo." | `OUT_OF_SCOPE` (403) | Não |
 | Disputa pela última vaga | Dois clientes na mesma aula de 1 vaga | Um confirma; o outro recebe `CLASS_FULL` | 201 e 409 | Não |
 | Remarcação recusada | Cliente remarcando para aula que lotou | "Não foi possível remarcar. ... Sua reserva original em ... continua confirmada." | `CLASS_FULL` (409) | Não |
-| Cancelar depois do início (bônus) | Home do cliente, aula em andamento | "Não é possível cancelar: a aula já começou." | `CANCELLATION_WINDOW_CLOSED` (409) | Sim |
+| Cancelar depois do início (bônus) | Home do cliente, aula em andamento | "Não é mais possível cancelar: a aula já começou." | `CANCELLATION_WINDOW_CLOSED` (409) | Sim |
 
 ### 3.1 Aula cheia
 
@@ -140,7 +140,7 @@ Preparação: Marina tem reserva em X ("Yoga Vinyasa", amanhã 17h00). Aula R2 (
 
 ### 3.8 Bônus: cancelar depois do início da aula
 
-Só se houver uma aula em andamento (PR, a aula-relâmpago, ou P durante a aula). Na Home da cliente que tem reserva nela, **Cancelar** e **Confirmar cancelamento**: "Não é possível cancelar: a aula já começou." Fale: "cancelamento vai até o início da aula". Plano B: pule; a regra está coberta por testes.
+Só se houver uma aula em andamento (PR, a aula-relâmpago, ou P durante a aula). Na Home da cliente que tem reserva nela, **Cancelar** e **Confirmar cancelamento**: "Não é mais possível cancelar: a aula já começou." Fale: "cancelamento vai até o início da aula". Plano B: pule; a regra está coberta por testes.
 
 ## Ato 4: Presença (professora, celular) — 5 min
 

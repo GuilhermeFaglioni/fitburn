@@ -6,6 +6,9 @@ import { http, HttpResponse } from "msw";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import {
   gymDateTimeToUtc,
+  Module,
+  PermissionAction,
+  PermissionScope,
   type AttendanceEntry,
   type AttendanceRoster,
   type AttendanceStatusName,
@@ -338,6 +341,24 @@ describe("Presença (professor)", () => {
     for (const button of within(rowOf("Marina Souza")).getAllByRole("button")) {
       expect(button).toBeDisabled();
     }
+  });
+
+  // Achado A3 da auditoria (docs/test-matrix.md): a tela não consulta a ação EXECUTE de Presença, então
+  // quem só visualiza vê Presente/Faltou habilitados (a API recusa). O teste descreve o comportamento
+  // CORRETO e falha hoje, de propósito: com `it.fails` a suíte fica verde enquanto o bug existir e, quando
+  // ele for corrigido, passa a FALHAR; aí troque `it.fails` por `it` (e, no mesmo ticket, dê EXECUTE ao
+  // login dos testes acima, que hoje entram com permissões vazias).
+  it.fails("sem a ação EXECUTE em Presença, os botões Presente e Faltou ficam desabilitados", async () => {
+    mockSuccessfulLogin("Professor", [
+      { module: Module.PRESENCA, actions: [PermissionAction.VIEW], scope: PermissionScope.ASSIGNED_CLASSES },
+    ]);
+    mockRoster(rosterOf(DEFAULT_ENTRIES));
+    renderPage();
+
+    expect(await screen.findByText("Treino Funcional · Hoje, 17h30")).toBeInTheDocument();
+    const marina = within(rowOf("Marina Souza"));
+    expect(marina.getByRole("button", { name: "Presente" })).toBeDisabled();
+    expect(marina.getByRole("button", { name: "Faltou" })).toBeDisabled();
   });
 
   it("a presença abre sozinha quando a aula começa com a tela aberta", async () => {
