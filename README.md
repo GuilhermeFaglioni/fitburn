@@ -46,6 +46,8 @@ O monorepo (`packages/contracts`, `packages/api`, `packages/web`) é gerenciado 
 - [Pendências e decisões futuras](docs/open-decisions.md)
 - [Vocabulário do domínio](CONTEXT.md)
 - [Runbook de deploy manual (demo remota)](docs/deploy-runbook.md)
+- [Roteiro da demonstração](docs/demo-script.md)
+- [Checklist da massa de dados da demonstração](docs/demo-data-checklist.md)
 
 ## Stack definida até agora
 
