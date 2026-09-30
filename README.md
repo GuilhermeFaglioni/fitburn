@@ -48,6 +48,7 @@ O monorepo (`packages/contracts`, `packages/api`, `packages/web`) é gerenciado 
 - [Runbook de deploy manual (demo remota)](docs/deploy-runbook.md)
 - [Roteiro da demonstração](docs/demo-script.md)
 - [Checklist da massa de dados da demonstração](docs/demo-data-checklist.md)
+- [Matriz de testes mínimos do MVP](docs/test-matrix.md)
 
 ## Stack definida até agora
 
