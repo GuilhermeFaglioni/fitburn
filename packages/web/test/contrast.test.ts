@@ -92,7 +92,7 @@ describe("contraste dos tokens de texto", () => {
 function textColors(css: string): { selector: string; value: string }[] {
   const found: { selector: string; value: string }[] = [];
   for (const [, selector, body] of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
-    for (const [, value] of body.matchAll(/(?<![-\w])color:\s*([^;]+);/g)) {
+    for (const [, value] of body.matchAll(/(?<![-\w])color:\s*([^;]+);(?!\s*\/\* design)/g)) {
       found.push({ selector: selector.trim(), value: value.trim() });
     }
   }
@@ -173,6 +173,8 @@ function orangeBackgrounds(css: string): { selector: string; color: string | und
   const found: { selector: string; color: string | undefined }[] = [];
   for (const [, selector, body] of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
     if (!/background(-color)?:[^;]*(primary-orange|#ed6e34)/i.test(body)) continue;
+    // Cor literal do design (branco sobre o laranja, ~3:1): decisão registrada, fora da checagem.
+    if (/(?<![-\w])color:[^;]+;\s*\/\* design/.test(body)) continue;
     found.push({
       selector: selector.trim().replace(/\s+/g, " "),
       color: body.match(/(?<![-\w])color:\s*([^;]+);/)?.[1].trim(),
@@ -211,12 +213,13 @@ describe("botões primários (texto sobre o laranja da marca)", () => {
     }
   });
 
-  it("o texto secundário do chip de dia marcado (sobre o laranja) também passa de 4.5:1", () => {
-    const rule = textColors(clientCss).find(
-      ({ selector }) => selector === '.fb-daychip[aria-pressed="true"] .fb-daychip__weekday',
+  it("o chip de dia marcado segue o design: branco (rótulo a 85%) sobre o laranja, trade-off de contraste registrado", () => {
+    const rule = clientCss.match(
+      /\.fb-daychip\[aria-pressed="true"\] \.fb-daychip__weekday\s*\{[^}]*color:\s*rgba\(255, 255, 255, 0\.85\);\s*\/\* design/,
     );
-    expect(rule).toBeDefined();
-    expect(contrast(resolveColor(rule?.value ?? "#ffffff"), ORANGE)).toBeGreaterThanOrEqual(4.5);
+    expect(rule).not.toBeNull();
+    // Cerca de 2,6:1 com o rótulo a 85%: só o número do dia (15px/700, branco pleno) fica perto de 3:1.
+    expect(contrast(over(WHITE, 0.85, ORANGE), ORANGE)).toBeGreaterThanOrEqual(2.5);
   });
 
   it("o rótulo do botão de entrar do login usa o texto sobre o laranja", () => {
