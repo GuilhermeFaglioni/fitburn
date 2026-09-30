@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type MouseEvent } from "react";
+import { useEffect, useId, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
 import { GoalStatus, type GoalDetail, type GoalStatusName } from "@fitburn/contracts";
 import { formatInstantDate, formatLocalDate } from "../../lib/agenda/format";
 
@@ -89,7 +89,7 @@ function GoalActions({
     };
   }, [open]);
 
-  function toggle(event: MouseEvent<HTMLButtonElement>) {
+  function toggle(event: ReactMouseEvent<HTMLButtonElement>) {
     // detail 0: o clique veio do teclado (Enter/Espaço), então o foco entra no grupo.
     focusFirstRef.current = !open && event.detail === 0;
     setOpen(!open);
