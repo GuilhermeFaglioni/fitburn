@@ -12,7 +12,6 @@ import { DeleteUserDialog } from "../components/DeleteUserDialog";
 import { useAuth } from "../lib/auth/AuthContext";
 import { invalidateAfterDeletion } from "../lib/invalidate-after-deletion";
 import { deleteClientRecord, listClients, setClientActive } from "../lib/clients/api";
-import { formatLocalDate } from "../lib/agenda/format";
 import { EmptyState, ErrorState, Feedback, LoadingState } from "../components/states";
 
 const NO_PLAN = "__sem_plano__";

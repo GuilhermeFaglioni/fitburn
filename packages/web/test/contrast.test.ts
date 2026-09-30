@@ -151,8 +151,8 @@ describe("cores de texto das folhas de estilo", () => {
       .filter(({ value }) => /^#[0-9a-f]{3,6}$/i.test(value))
       // Branco só aparece sobre fundo de marca (botão laranja/vermelho), nunca sobre branco.
       .filter(({ value }) => value.toLowerCase() !== "#ffffff")
-      // Cinzas do design (exceção conhecida, ver o topo do arquivo): #8a8a8a (3.45:1) e #b0b0b0 (2.17:1, linhas inativas).
-      .filter(({ value }) => !["#8a8a8a", "#b0b0b0", "#c8c8c8", "#ed6e34"].includes(value.toLowerCase()))
+      // Cores mandadas pelo design (ver DESIGN_LIGHT_TEXT).
+      .filter(({ value }) => !DESIGN_LIGHT_TEXT.has(value.toLowerCase()))
       // Controles desabilitados são isentos.
       .filter(({ selector }) => !selector.includes(":disabled"))
       .filter(({ value }) => contrast(hex(value), WHITE) < 4.5)
