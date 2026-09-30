@@ -36,17 +36,30 @@ export async function compareAll(captures, { only } = {}) {
   const meta = Object.fromEntries(capturesMeta.map((m) => [m.id, m]));
   const rows = [];
 
+  const jobs = [];
   for (const capture of captures) {
     if (only && !only.includes(capture.id)) continue;
-    const designFile = path.join(DESIGN_OUT, `${capture.id}.png`);
-    const appFile = path.join(APP_OUT, `${capture.id}.png`);
-    const row = { id: capture.id, group: capture.group, route: meta[capture.id]?.route ?? capture.app?.route ?? "" };
+    jobs.push({ capture, key: capture.id, variant: false });
+    for (const v of capture.app?.variants ?? []) {
+      jobs.push({ capture, key: `${capture.id}__${v.name}`, variant: true });
+    }
+  }
+  for (const { capture, key, variant } of jobs) {
+    const designFile = path.join(DESIGN_OUT, `${key}.png`);
+    const appFile = path.join(APP_OUT, `${key}.png`);
+    const row = {
+      id: key,
+      variant,
+      group: capture.group,
+      route: meta[key]?.route ?? capture.app?.route ?? "",
+      stepError: meta[key]?.stepError,
+    };
     if (!fs.existsSync(designFile)) {
       rows.push({ ...row, status: "sem render do design" });
       continue;
     }
     if (!fs.existsSync(appFile)) {
-      rows.push({ ...row, status: "sem captura do app", error: meta[capture.id]?.error });
+      rows.push({ ...row, status: "sem captura do app", error: meta[key]?.error });
       continue;
     }
     const design = readPng(designFile);
@@ -61,24 +74,28 @@ export async function compareAll(captures, { only } = {}) {
     });
     const total = design.width * design.height;
     const percent = (different / total) * 100;
+    // Só o "conteúdo": pixels que não são o fundo predominante em nenhuma das duas imagens.
+    const content = countContent(design, app);
+    const contentPercent = content ? Math.min(100, (different / content) * 100) : 0;
 
-    fs.writeFileSync(path.join(DIFF_OUT, `${capture.id}.diff.png`), PNG.sync.write(diff));
+    fs.writeFileSync(path.join(DIFF_OUT, `${key}.diff.png`), PNG.sync.write(diff));
     const side = new PNG({ width: design.width * 3 + GAP * 2, height: design.height });
     for (let i = 0; i < side.data.length; i += 4) side.data.set([70, 70, 70, 255], i);
     blit(design, side, 0, 0);
     blit(app, side, design.width + GAP, 0);
     blit(diff, side, (design.width + GAP) * 2, 0);
-    fs.writeFileSync(path.join(DIFF_OUT, `${capture.id}.side.png`), PNG.sync.write(side));
+    fs.writeFileSync(path.join(DIFF_OUT, `${key}.side.png`), PNG.sync.write(side));
 
     rows.push({
       ...row,
       status: "ok",
       percent,
+      contentPercent,
       different,
       total,
       width: design.width,
       height: design.height,
-      appFullHeight: meta[capture.id]?.fullHeight,
+      appFullHeight: meta[key]?.fullHeight,
     });
   }
 
@@ -89,26 +106,63 @@ export async function compareAll(captures, { only } = {}) {
   return { rows, reportPath };
 }
 
-function renderReport(rows) {
+function dominantColor(png) {
+  const counts = new Map();
+  for (let i = 0; i < png.data.length; i += 4 * 7) {
+    const k = (png.data[i] << 16) | (png.data[i + 1] << 8) | png.data[i + 2];
+    counts.set(k, (counts.get(k) ?? 0) + 1);
+  }
+  return [...counts.entries()].sort((a, b) => b[1] - a[1])[0][0];
+}
+
+function countContent(a, b) {
+  const bgA = dominantColor(a);
+  const bgB = dominantColor(b);
+  let n = 0;
+  for (let i = 0; i < a.data.length; i += 4) {
+    const ka = (a.data[i] << 16) | (a.data[i + 1] << 8) | a.data[i + 2];
+    const kb = (b.data[i] << 16) | (b.data[i + 1] << 8) | b.data[i + 2];
+    if (ka !== bgA || kb !== bgB) n++;
+  }
+  return n;
+}
+
+function table(rows, title) {
   const lines = [
-    "# Comparação design x app",
+    `## ${title}`,
     "",
-    `Gerado em ${new Date().toISOString()}. Pixel diferente = pixelmatch (limiar 0,1, sem anti-aliasing).`,
-    "Imagens em `tmp/design-compare/diff/<Artboard>.side.png` (design | app | diferença).",
-    "",
-    "| # | Artboard | Grupo | Rota do app | % pixels diferentes | Altura da página no app (artboard) |",
-    "|---|---|---|---|---|---|",
+    "| # | Tela | Grupo | Rota do app | % pixels diferentes | % do conteúdo | Altura da página no app (artboard) |",
+    "|---|---|---|---|---|---|---|",
   ];
   rows.forEach((row, i) => {
     if (row.status !== "ok") {
-      lines.push(`| ${i + 1} | ${row.id} | ${row.group} | ${row.route} | ${row.status} | |`);
+      lines.push(`| ${i + 1} | ${row.id} | ${row.group} | \`${row.route}\` | ${row.status} | | |`);
       return;
     }
     const overflow =
       row.appFullHeight && row.appFullHeight !== row.height ? `${row.appFullHeight}px (${row.height}px)` : `${row.height}px`;
+    const note = row.stepError ? " (passo falhou)" : "";
     lines.push(
-      `| ${i + 1} | ${row.id} | ${row.group} | \`${row.route}\` | ${row.percent.toFixed(2)}% | ${overflow} |`,
+      `| ${i + 1} | ${row.id}${note} | ${row.group} | \`${row.route}\` | ${row.percent.toFixed(2)}% | ${row.contentPercent.toFixed(1)}% | ${overflow} |`,
     );
   });
-  return lines.join("\n") + "\n";
+  return lines.join("\n");
+}
+
+function renderReport(rows) {
+  const main = rows.filter((r) => !r.variant);
+  const variants = rows.filter((r) => r.variant);
+  return (
+    [
+      "# Comparação design x app",
+      "",
+      `Gerado em ${new Date().toISOString()}. Pixel diferente = pixelmatch (limiar 0,1, sem anti-aliasing).`,
+      "`% do conteúdo` = pixels diferentes / pixels que não são fundo em nenhuma das imagens (evita que telas escuras pareçam mais parecidas do que são).",
+      "Imagens em `tmp/design-compare/diff/<Tela>.side.png` (design | app | diferença), ranqueadas da mais para a menos divergente (% pixels diferentes).",
+      "",
+      table(main, "Artboards (estado padrão)"),
+      "",
+      table(variants, "Estados alternativos"),
+    ].join("\n") + "\n"
+  );
 }

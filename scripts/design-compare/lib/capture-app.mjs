@@ -44,12 +44,19 @@ export async function captureApp(captures, { only } = {}) {
   }
 
   try {
+    const jobs = [];
     for (const capture of captures) {
       if (only && !only.includes(capture.id)) continue;
       if (!capture.app) continue;
+      const { variants = [], ...base } = capture.app;
+      jobs.push({ capture, key: capture.id, app: base });
+      for (const v of variants) {
+        jobs.push({ capture, key: `${capture.id}__${v.name}`, app: { ...base, ...v, steps: v.steps ?? [] } });
+      }
+    }
+    for (const { capture, key, app } of jobs) {
       const board = canvas.boards[`${capture.id}.dc.html`];
-      const { app } = capture;
-      const file = path.join(APP_OUT, `${capture.id}.png`);
+      const file = path.join(APP_OUT, `${key}.png`);
       try {
         const context = await contextFor(app.role);
         const page = await context.newPage();
@@ -70,7 +77,7 @@ export async function captureApp(captures, { only } = {}) {
         } catch (error) {
           // Segue com a captura do estado em que ficou: o relatório registra o passo que falhou.
           stepError = error.message.split("\n")[0];
-          console.warn(`[app] ${capture.id}: passo falhou (${stepError})`);
+          console.warn(`[app] ${key}: passo falhou (${stepError})`);
         }
         if (app.steps?.length) await settle(page, 300);
         const full = await page.evaluate(() => ({
@@ -78,12 +85,12 @@ export async function captureApp(captures, { only } = {}) {
           height: document.documentElement.scrollHeight,
         }));
         await page.screenshot({ path: file, clip: { x: 0, y: 0, width: board.w, height: board.h } });
-        results.push({ id: capture.id, ok: true, file, route, fullHeight: full.height, fullWidth: full.width, errors, stepError });
-        console.log(`[app] ${capture.id} ${route} (${board.w}x${board.h}, página ${full.width}x${full.height})`);
+        results.push({ id: key, ok: true, file, route, fullHeight: full.height, fullWidth: full.width, errors, stepError });
+        console.log(`[app] ${key} ${route} (${board.w}x${board.h}, página ${full.width}x${full.height})`);
         await page.close();
       } catch (error) {
-        results.push({ id: capture.id, ok: false, error: error.message });
-        console.warn(`[app] ${capture.id} FALHOU: ${error.message.split("\n")[0]}`);
+        results.push({ id: key, ok: false, error: error.message });
+        console.warn(`[app] ${key} FALHOU: ${error.message.split("\n")[0]}`);
       }
     }
   } finally {
@@ -101,11 +108,15 @@ async function runAppStep(page, step) {
   if (step.click) {
     await page.getByRole("button", { name: step.click }).or(page.getByText(step.click, { exact: true })).first().click();
   } else if (step.openClass) {
-    const card = page
-      .locator(".fb-client-cell--today .fb-client-chip:visible, .fb-class-card:visible")
-      .filter({ hasText: step.openClass })
-      .first();
-    await card.click();
+    // Grade da semana (desktop): chips; lista do dia (mobile): cartões. A reserva aparece como "Reservada".
+    let cards = page
+      .locator(".fb-client-chip:visible, .fb-class-card:visible")
+      .filter({ hasText: step.openClass });
+    if (step.unreserved) cards = cards.filter({ hasNotText: /reservada/i });
+    if (step.reserved) cards = cards.filter({ hasText: /reservada/i });
+    await (step.unreserved ? cards.last() : cards.first()).click();
+  } else if (step.fill) {
+    await page.locator(step.fill[0]).first().fill(step.fill[1]);
   } else if (step.clickSelector) {
     await page.locator(step.clickSelector).first().click();
   } else if (step.wait) {

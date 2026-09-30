@@ -18,12 +18,23 @@ const RESERVA_CENARIOS = [
 ];
 const reservaVariants = RESERVA_CENARIOS.map((cenario) => ({ name: cenario, props: { cenario } }));
 
+const LOGIN_ERROR_STEPS = [
+  { fill: ['input[type="email"]', "ninguem@exemplo.com"] },
+  { fill: ['input[type="password"]', "senha-errada-123"] },
+  { click: "Entrar" },
+  { wait: 1500 },
+];
+
 export const CAPTURES = [
   // ---- G1
   {
     id: "Login",
     group: "G1",
-    app: { role: "none", route: "/login" },
+    app: {
+      role: "none",
+      route: "/login",
+      variants: [{ name: "erro", steps: LOGIN_ERROR_STEPS }],
+    },
     design: {
       variants: [
         { name: "erro", props: { showError: true } },
@@ -34,7 +45,11 @@ export const CAPTURES = [
   {
     id: "LoginMobile",
     group: "G1",
-    app: { role: "none", route: "/login" },
+    app: {
+      role: "none",
+      route: "/login",
+      variants: [{ name: "erro", steps: LOGIN_ERROR_STEPS }],
+    },
     design: {
       variants: [
         { name: "erro", props: { showError: true } },
@@ -71,26 +86,47 @@ export const CAPTURES = [
   {
     id: "ReservaDesktop",
     group: "G2",
-    app: { role: "client", route: "/agenda", steps: [{ openClass: "Treino Funcional" }] },
+    // Padrão = aula disponível (a última "Treino Funcional" da semana sem reserva da Marina);
+    // "reservada" = o Treino Funcional de hoje, que a Marina já reservou.
+    app: {
+      role: "client",
+      route: "/agenda",
+      steps: [{ openClass: "Treino Funcional", unreserved: true }],
+      variants: [{ name: "reservada", steps: [{ openClass: "Treino Funcional", reserved: true }] }],
+    },
     design: { variants: reservaVariants },
   },
   {
     id: "ReservaMobile",
     group: "G2",
-    app: { role: "client", route: "/agenda", steps: [{ openClass: "Treino Funcional" }] },
+    app: {
+      role: "client",
+      route: "/agenda",
+      // Sexta-feira (5º chip de dia da semana) tem Treino Funcional sem reserva.
+      steps: [{ clickSelector: ".fb-daychip:nth-child(5)" }, { openClass: "Treino Funcional" }],
+      variants: [{ name: "reservada", steps: [{ openClass: "Treino Funcional", reserved: true }] }],
+    },
     design: { variants: reservaVariants },
   },
   // ---- G3
   {
     id: "GamificacaoDesktop",
     group: "G3",
-    app: { role: "client", route: "/gamificacao" },
+    app: {
+      role: "client",
+      route: "/gamificacao",
+      variants: [{ name: "ranking_mensal", steps: [{ click: "Mensal" }] }],
+    },
     design: { variants: [{ name: "ranking_mensal", steps: [{ click: "Mensal" }] }] },
   },
   {
     id: "GamificacaoMobile",
     group: "G3",
-    app: { role: "client", route: "/gamificacao" },
+    app: {
+      role: "client",
+      route: "/gamificacao",
+      variants: [{ name: "ranking_mensal", steps: [{ click: "Mensal" }] }],
+    },
     design: { variants: [{ name: "ranking_mensal", steps: [{ click: "Mensal" }] }] },
   },
   { id: "PresencaMobile", group: "G3", app: { role: "professor", resolve: "presenca" } },
@@ -100,13 +136,21 @@ export const CAPTURES = [
   {
     id: "PerfilDesktop",
     group: "G4",
-    app: { role: "client", route: "/perfil" },
+    app: {
+      role: "client",
+      route: "/perfil",
+      variants: [{ name: "edicao", steps: [{ click: "Editar" }] }],
+    },
     design: { variants: [{ name: "edicao", steps: [{ click: "Editar" }] }] },
   },
   {
     id: "PerfilMobile",
     group: "G4",
-    app: { role: "client", route: "/perfil" },
+    app: {
+      role: "client",
+      route: "/perfil",
+      variants: [{ name: "edicao", steps: [{ click: "Editar" }] }],
+    },
     design: { variants: [{ name: "edicao", steps: [{ click: "Editar" }] }] },
   },
   {
@@ -127,7 +171,11 @@ export const CAPTURES = [
   {
     id: "ClientesAdmin",
     group: "G5",
-    app: { role: "admin", route: "/clientes" },
+    app: {
+      role: "admin",
+      route: "/clientes",
+      variants: [{ name: "confirmar_exclusao", steps: [{ click: "Excluir" }] }],
+    },
     design: { variants: [{ name: "confirmar_exclusao", props: { showDeleteConfirm: true } }] },
   },
   { id: "UsuariosPerfis", group: "G5", app: { role: "admin", route: "/usuarios" } },
