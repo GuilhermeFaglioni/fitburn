@@ -17,10 +17,31 @@
   color: var(--color-ink-on-dark);
 }
 
+/*
+ * Padding do conteúdo do artboard: mobile 24px 20px 108px, desktop 40px (o título fica em y=40).
+ * A casca do cliente define o padding geral; aqui só o topo, pela tela.
+ */
+.fb-client__content:has(> .fb-gami) {
+  padding-top: 24px;
+}
+
 .fb-gami__left,
 .fb-gami__right,
 .fb-gami__row {
   display: contents;
+}
+
+/* Botão voltar do artboard: 32x32; a área de toque de 44px é invisível (não muda o layout). */
+.fb-gami .fb-gami__back {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+}
+
+.fb-gami__back::before {
+  content: "";
+  position: absolute;
+  inset: -6px;
 }
 
 .fb-gami__header {
@@ -108,7 +129,7 @@
 /* Sem artboard: o próximo marco fecha o cartão, depois dos blocos de marco. */
 .fb-gami__streak-next {
   font-size: 12px;
-  color: var(--color-text-muted-on-dark);
+  color: rgba(255, 255, 255, 0.5);
 }
 
 /* Blocos de marco de streak do cartão (GamificacaoMobile.dc.html); o pendente é o mesmo bloco, esmaecido. */
@@ -144,7 +165,7 @@
 }
 
 .fb-gami__mark--pending .fb-gami__mark-label {
-  color: var(--color-text-muted-on-dark);
+  color: rgba(255, 255, 255, 0.6);
 }
 
 .fb-gami__section {
@@ -220,9 +241,23 @@
 }
 
 /* O controle é o mesmo de "Próximas | Histórico" (.fb-client-tabs); aqui ocupa a largura toda e reparte por igual. */
-.fb-gami__rank-tab {
+.fb-gami .fb-gami__rank-tab {
+  position: relative;
   flex: 1;
+  min-height: 0;
   padding: 8px 0;
+}
+
+.fb-gami .fb-gami__rank-tab[aria-pressed="true"] {
+  background: #ed6e34;
+  color: #ffffff;
+}
+
+/* A caixa fica com a altura do artboard (33px); a área de toque de 44px é invisível. */
+.fb-gami__rank-tab::before {
+  content: "";
+  position: absolute;
+  inset: -6px 0;
 }
 
 .fb-gami__rank-list {
@@ -258,7 +293,7 @@
 
 .fb-gami__rank-info {
   font-size: 12px;
-  color: var(--color-text-muted-on-dark);
+  color: rgba(255, 255, 255, 0.45);
 }
 
 .fb-gami__rank-row--me {
@@ -267,12 +302,12 @@
 
 .fb-gami__rank-row--me .fb-gami__rank-pos,
 .fb-gami__rank-row--me .fb-gami__rank-info {
-  color: var(--color-primary-orange);
+  color: #ed6e34;
 }
 
 .fb-gami__rank-row--me .fb-gami__rank-name {
   font-weight: 700;
-  color: var(--color-primary-orange);
+  color: #ed6e34;
 }
 
 /* Metas do professor (GamificacaoMobile/Desktop.dc.html): o cartão sem a barra de progresso. */
@@ -359,7 +394,7 @@
 
 .fb-gami__entry-when {
   font-size: 12px;
-  color: var(--color-text-muted-on-dark);
+  color: rgba(255, 255, 255, 0.45);
 }
 
 .fb-gami__entry-points {
@@ -377,8 +412,12 @@
 /* Com a barra lateral do cliente (≥768px): os tamanhos do artboard desktop. */
 @media (min-width: 768px) {
   /* A barra lateral já leva de volta ao início. */
-  .fb-gami__back {
+  .fb-gami .fb-gami__back {
     display: none;
+  }
+
+  .fb-client__content:has(> .fb-gami) {
+    padding-top: 40px;
   }
 
   .fb-gami__title {

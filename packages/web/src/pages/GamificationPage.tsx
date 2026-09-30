@@ -62,6 +62,9 @@ function LockIcon() {
   );
 }
 
+/** O artboard mostra os 3 ganhos mais recentes. */
+const HISTORY_LIMIT = 3;
+
 function withSubject(label: string, subject: string | null): string {
   return subject ? `${label} · ${subject}` : label;
 }
@@ -87,7 +90,10 @@ function formatPoints(points: number): string {
   return points > 0 ? `+${points}` : String(points);
 }
 
-/** Streak atual, a linha de marcos alcançados na sequência de agora e o próximo marco a alcançar. */
+/**
+ * Streak atual, a linha de marcos alcançados na sequência de agora e, quando ainda há um marco pela
+ * frente, o próximo (o artboard só mostra o estado com todos os marcos alcançados: sem frase de fechamento).
+ */
 function StreakProgress({ streak, badges }: Pick<GamificationSummary, "streak" | "badges">) {
   return (
     <>
@@ -110,11 +116,11 @@ function StreakProgress({ streak, badges }: Pick<GamificationSummary, "streak" |
           );
         })}
       </ul>
-      <span className="fb-gami__streak-next">
-        {streak.next
-          ? `Próximo marco: ${streak.next.threshold} dias (+${streak.next.bonusPoints} pontos)`
-          : "Você atingiu todos os marcos."}
-      </span>
+      {streak.next && (
+        <span className="fb-gami__streak-next">
+          {`Próximo marco: ${streak.next.threshold} dias (+${streak.next.bonusPoints} pontos)`}
+        </span>
+      )}
     </>
   );
 }
@@ -218,7 +224,7 @@ export function GamificationPage() {
                 <EmptyState surface="dark" message="Nenhum ganho de pontos ainda." />
               ) : (
                 <ul className="fb-gami__entries">
-                  {summary.history.map((item) => (
+                  {summary.history.slice(0, HISTORY_LIMIT).map((item) => (
                     <li key={item.id} className="fb-gami__entry">
                       <div className="fb-gami__entry-info">
                         <span className="fb-gami__entry-title">{describeEntry(item)}</span>
