@@ -82,10 +82,34 @@ export function isClientUser(user: CurrentUser): boolean {
   return user.profile.name === SystemProfileName.CLIENT;
 }
 
-/** Tela inicial do perfil: Início do cliente, ou a primeira tela administrativa visível. */
+/**
+ * Prioridade da tela inicial da equipe, SEPARADA da ordem visual do menu (que segue o design): Dashboard, depois
+ * Minhas aulas (a tela do professor), depois as demais na ordem que o menu tinha antes do redesenho.
+ */
+const HOME_PRIORITY = [
+  "/dashboard",
+  "/minhas-aulas",
+  "/usuarios",
+  "/clientes",
+  "/agenda-administrativa",
+  "/reservas-administrativas",
+  "/planos",
+  "/fichas",
+  "/metas",
+  "/atribuicoes",
+  "/templates-e-modalidades",
+];
+
+function homePriority(item: AdminMenuItem): number {
+  const index = HOME_PRIORITY.indexOf(item.to);
+  return index === -1 ? HOME_PRIORITY.length : index;
+}
+
+/** Tela inicial do perfil: Início do cliente, ou a tela administrativa visível de maior prioridade (HOME_PRIORITY). */
 export function homeRouteFor(user: CurrentUser): string {
   if (isClientUser(user)) return "/";
-  return visibleAdminMenuItems(user)[0]?.to ?? "/dashboard";
+  const [first] = [...visibleAdminMenuItems(user)].sort((a, b) => homePriority(a) - homePriority(b));
+  return first?.to ?? "/dashboard";
 }
 
 /**
