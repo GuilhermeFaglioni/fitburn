@@ -4,10 +4,13 @@ import { useEffect, useId, useRef, type ReactNode } from "react";
 export function Modal({
   title,
   onClose,
+  width,
   children,
 }: {
   title: string;
   onClose: () => void;
+  /** Largura do cartão em px (padrão 460, como na maioria dos diálogos do design). */
+  width?: number;
   children: ReactNode;
 }) {
   const titleId = useId();
@@ -24,6 +27,7 @@ export function Modal({
       <div
         ref={dialogRef}
         className="fb-modal"
+        style={width ? { width } : undefined}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}

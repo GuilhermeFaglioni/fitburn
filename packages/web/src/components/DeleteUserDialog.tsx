@@ -27,13 +27,12 @@ export function DeleteUserDialog({
   const mutation = useMutation({ mutationFn: onConfirm, onSuccess: onDeleted });
 
   return (
-    <Modal title={`Excluir ${kind}?`} onClose={onClose}>
+    <Modal title={`Excluir ${kind}?`} onClose={onClose} width={440}>
       <p className="fb-modal__text">
-        <strong>{name}</strong> deixará a base ativa e perderá o acesso ao sistema. Por
-        conformidade, os dados pessoais (nome, e-mail, telefone, data de nascimento, documento e
-        endereço) serão <strong>anonimizados</strong> permanentemente. O histórico de aulas,
-        reservas, presenças, pontos e planos é mantido, de forma anônima, para fins de relatório.{" "}
-        <strong>Esta ação não pode ser desfeita.</strong>
+        {name} será removido(a) da base ativa. Por conformidade, os dados pessoais (nome, e-mail,
+        telefone, CPF, endereço) serão <strong>anonimizados</strong> permanentemente. O histórico de
+        aulas, reservas e pontuação é mantido, de forma anônima, para fins de relatório. Esta ação
+        não pode ser desfeita.
       </p>
       {mutation.isError && (
         <p role="alert" className="fb-error-box">
@@ -42,7 +41,7 @@ export function DeleteUserDialog({
             : `Não foi possível excluir o ${kind}.`}
         </p>
       )}
-      <div className="fb-modal__footer" style={{ justifyContent: "flex-end" }}>
+      <div className="fb-modal__footer fb-modal__footer--end fb-modal__footer--tight">
         <button
           type="button"
           className="fb-btn-secondary"

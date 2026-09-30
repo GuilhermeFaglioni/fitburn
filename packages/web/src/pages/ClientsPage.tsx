@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Module,
   PermissionAction,
@@ -18,16 +18,20 @@ import {
   listClients,
   setClientActive,
 } from "../lib/clients/api";
-import { formatLocalDate } from "../lib/agenda/format";
 import { ClientCreateForm } from "./ClientCreateForm";
 import { EmptyState, ErrorState, Feedback, LoadingState } from "../components/states";
+
+const NO_PLAN = "__sem_plano__";
 
 /** Clientes: busca, filtro de status, plano ativo e ações rápidas da equipe. */
 export function ClientsPage() {
   const { can } = useAuth();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [status, setStatus] = useState<ClientsQuery["status"]>(undefined);
+  // Filtro por plano ativo: a API filtra só por busca e status; o plano é filtrado na tela.
+  const [planFilter, setPlanFilter] = useState("");
   const [showCreate, setShowCreate] = useState(false);
   const [clientToDelete, setClientToDelete] = useState<ClientListItem | null>(null);
 
@@ -45,46 +49,82 @@ export function ClientsPage() {
   const canCreate = can(Module.CLIENTES, PermissionAction.CREATE);
   const canEdit = can(Module.CLIENTES, PermissionAction.EDIT);
   const canDelete = can(Module.CLIENTES, PermissionAction.DELETE);
-  const clients = clientsQuery.data;
+  const loaded = clientsQuery.data;
+  const planOptions = useMemo(() => {
+    const names = new Set<string>();
+    for (const client of loaded ?? []) if (client.activePlan) names.add(client.activePlan.name);
+    if (planFilter && planFilter !== NO_PLAN) names.add(planFilter);
+    return [...names].sort((a, b) => a.localeCompare(b, "pt-BR"));
+  }, [loaded, planFilter]);
+  const clients = useMemo(
+    () =>
+      loaded?.filter((client) => {
+        if (!planFilter) return true;
+        if (planFilter === NO_PLAN) return !client.activePlan;
+        return client.activePlan?.name === planFilter;
+      }),
+    [loaded, planFilter],
+  );
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 18, height: "100%" }}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-        <span className="fb-page-eyebrow">Clientes</span>
-        <h1 className="fb-page-title">Clientes</h1>
-      </div>
-
-      <div className="fb-toolbar">
-        <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
-          <input
-            type="search"
-            className="fb-field"
-            style={{ width: 300 }}
-            placeholder="Buscar por nome, e-mail ou documento"
-            aria-label="Buscar por nome, e-mail ou documento"
-            value={searchTerm}
-            onChange={(event) => setSearchTerm(event.target.value)}
-          />
-          <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
-            Status
-            <select
-              className="fb-field"
-              value={status ?? ""}
-              onChange={(event) =>
-                setStatus((event.target.value || undefined) as ClientsQuery["status"])
-              }
-            >
-              <option value="">Todos</option>
-              <option value="ACTIVE">Ativo</option>
-              <option value="INACTIVE">Inativo</option>
-            </select>
-          </label>
+      <div className="fb-page-header">
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          <span className="fb-page-eyebrow">Clientes</span>
+          <h1 className="fb-page-title">Clientes</h1>
         </div>
         <BlockedAction allowed={canCreate} reason="Você não tem permissão para cadastrar clientes.">
-          <button type="button" className="fb-btn-primary" onClick={() => setShowCreate(true)}>
+          <button
+            type="button"
+            className="fb-btn-primary fb-btn-primary--sans"
+            onClick={() => setShowCreate(true)}
+          >
             + Novo cliente
           </button>
         </BlockedAction>
+      </div>
+
+      <div className="fb-toolbar fb-toolbar--filters">
+        <input
+          type="search"
+          className="fb-field"
+          style={{ width: 280 }}
+          placeholder="Buscar por nome, e-mail ou documento"
+          aria-label="Buscar por nome, e-mail ou documento"
+          value={searchTerm}
+          onChange={(event) => setSearchTerm(event.target.value)}
+        />
+        <select
+          className="fb-field"
+          aria-label="Status"
+          value={status ?? ""}
+          onChange={(event) =>
+            setStatus((event.target.value || undefined) as ClientsQuery["status"])
+          }
+        >
+          <option value="">Status: todos</option>
+          <option value="ACTIVE">Ativo</option>
+          <option value="INACTIVE">Inativo</option>
+        </select>
+        <select
+          className="fb-field"
+          aria-label="Plano"
+          value={planFilter}
+          onChange={(event) => setPlanFilter(event.target.value)}
+        >
+          <option value="">Plano: todos</option>
+          {planOptions.map((name) => (
+            <option key={name} value={name}>
+              {name}
+            </option>
+          ))}
+          <option value={NO_PLAN}>Sem plano ativo</option>
+        </select>
+        {clients && (
+          <span className="fb-count">
+            {clients.length} {clients.length === 1 ? "cliente" : "clientes"}
+          </span>
+        )}
       </div>
 
       {showCreate && (
@@ -130,8 +170,9 @@ export function ClientsPage() {
             <thead>
               <tr>
                 <th className="fb-th">Nome</th>
-                <th className="fb-th">Contato</th>
-                <th className="fb-th">Plano ativo</th>
+                <th className="fb-th">E-mail</th>
+                <th className="fb-th">Telefone</th>
+                <th className="fb-th">Plano</th>
                 <th className="fb-th">Status</th>
                 <th className="fb-th" style={{ textAlign: "right" }}>
                   Ações
@@ -139,62 +180,71 @@ export function ClientsPage() {
               </tr>
             </thead>
             <tbody>
-              {clients.map((client) => (
-                <tr key={client.id}>
-                  <td className="fb-td" style={{ fontWeight: 500 }}>
-                    <Link to={`/clientes/${client.id}`}>{client.fullName}</Link>
-                  </td>
-                  <td className="fb-td" style={{ color: "#5a5a5a" }}>
-                    {client.email}
-                    {client.phone && <div>{client.phone}</div>}
-                  </td>
-                  <td className="fb-td">
-                    {client.activePlan
-                      ? `${client.activePlan.name} · até ${formatLocalDate(client.activePlan.endDate)}`
-                      : "Sem plano"}
-                  </td>
-                  <td className="fb-td">
-                    <span
-                      className={`fb-badge ${client.status === "ACTIVE" ? "fb-badge--active" : "fb-badge--inactive"}`}
-                    >
-                      {client.status === "ACTIVE" ? "ATIVO" : "INATIVO"}
-                    </span>
-                  </td>
-                  <td className="fb-td" style={{ textAlign: "right" }}>
-                    <BlockedAction
-                      allowed={canEdit}
-                      reason="Você não tem permissão para alterar clientes."
-                    >
+              {clients.map((client) => {
+                const inactive = client.status !== "ACTIVE";
+                return (
+                  <tr key={client.id} className={inactive ? "fb-row--inactive" : undefined}>
+                    <td className="fb-td fb-td--name">
+                      <Link to={`/clientes/${client.id}`} className="fb-name-link">
+                        {client.fullName}
+                      </Link>
+                    </td>
+                    <td className="fb-td fb-td--soft">{client.email}</td>
+                    <td className="fb-td fb-td--soft">{client.phone ?? "—"}</td>
+                    <td className="fb-td">
+                      {client.activePlan ? client.activePlan.name : "Sem plano ativo"}
+                    </td>
+                    <td className="fb-td">
+                      <span
+                        className={`fb-badge fb-badge--spaced ${inactive ? "fb-badge--inactive" : "fb-badge--active"}`}
+                      >
+                        {inactive ? "INATIVO" : "ATIVO"}
+                      </span>
+                    </td>
+                    <td className="fb-td" style={{ textAlign: "right" }}>
                       <button
                         type="button"
                         className="fb-row-btn"
-                        aria-label={`${client.status === "ACTIVE" ? "Desativar" : "Reativar"} ${client.fullName}`}
-                        onClick={() =>
-                          toggleMutation.mutate({
-                            id: client.id,
-                            active: client.status !== "ACTIVE",
-                          })
-                        }
+                        aria-label={`Editar ${client.fullName}`}
+                        onClick={() => navigate(`/clientes/${client.id}`)}
                       >
-                        {client.status === "ACTIVE" ? "Desativar" : "Reativar"}
-                      </button>
-                    </BlockedAction>
-                    <BlockedAction
-                      allowed={canDelete}
-                      reason="Você não tem permissão para excluir clientes."
-                    >
-                      <button
-                        type="button"
-                        className="fb-row-btn fb-row-btn--danger"
-                        aria-label={`Excluir ${client.fullName}`}
-                        onClick={() => setClientToDelete(client)}
+                        Editar
+                      </button>{" "}
+                      <BlockedAction
+                        allowed={canEdit}
+                        reason="Você não tem permissão para alterar clientes."
                       >
-                        Excluir
-                      </button>
-                    </BlockedAction>
-                  </td>
-                </tr>
-              ))}
+                        <button
+                          type="button"
+                          className="fb-row-btn"
+                          aria-label={`${inactive ? "Reativar" : "Desativar"} ${client.fullName}`}
+                          onClick={() =>
+                            toggleMutation.mutate({
+                              id: client.id,
+                              active: inactive,
+                            })
+                          }
+                        >
+                          {inactive ? "Reativar" : "Desativar"}
+                        </button>
+                      </BlockedAction>{" "}
+                      <BlockedAction
+                        allowed={canDelete}
+                        reason="Você não tem permissão para excluir clientes."
+                      >
+                        <button
+                          type="button"
+                          className="fb-row-btn fb-row-btn--danger"
+                          aria-label={`Excluir ${client.fullName}`}
+                          onClick={() => setClientToDelete(client)}
+                        >
+                          Excluir
+                        </button>
+                      </BlockedAction>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
