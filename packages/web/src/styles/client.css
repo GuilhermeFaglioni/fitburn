@@ -17,7 +17,7 @@
   padding: 28px 20px;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  gap: 24px;
 }
 
 .fb-client__brand {
@@ -30,7 +30,6 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  margin-top: 24px;
 }
 
 .fb-client__nav-item {
@@ -50,23 +49,26 @@
   font-weight: 500;
 }
 
-.fb-client__logout {
-  align-self: flex-start;
-  background: none;
-  border: none;
-  padding: 6px 12px;
-  font-family: var(--font-sans);
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.55);
-  cursor: pointer;
-}
-
 .fb-client__content {
   flex-grow: 1;
   min-width: 0;
   box-sizing: border-box;
-  padding: 32px 40px;
+  /* Padding por tela (o design usa um para cada): Perfil, Plano e Ficha 40px 48px; Home 48px; Agenda 32px 40px;
+     Gamificação 40px. A casca marca a tela em data-screen. */
+  padding: 40px 48px;
   overflow: auto;
+}
+
+.fb-client__content[data-screen="home"] {
+  padding: 48px;
+}
+
+.fb-client__content[data-screen="agenda"] {
+  padding: 32px 40px;
+}
+
+.fb-client__content[data-screen="gamificacao"] {
+  padding: 40px;
 }
 
 .fb-client__tabbar {
@@ -717,6 +719,11 @@
   }
 
   .fb-client__content {
+    padding: 24px 20px 108px;
+  }
+
+  .fb-client__content[data-screen="home"],
+  .fb-client__content[data-screen="agenda"] {
     padding: 28px 20px 108px;
   }
 
@@ -741,6 +748,8 @@
     justify-content: center;
     gap: 4px;
     padding: 10px 4px 8px;
+    /* Como no design: o botão da barra inferior não define font-family e o rótulo cai em Arial. */
+    font-family: Arial, "Liberation Sans", Helvetica, sans-serif;
     font-size: 11px;
     font-weight: 500;
     color: rgba(255, 255, 255, 0.55);

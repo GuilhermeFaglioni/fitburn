@@ -1,26 +1,24 @@
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { gymToday, RankingPeriod, type GamificationSummary } from "@fitburn/contracts";
-import { formatDayMonth, formatLocalDate } from "../lib/agenda/format";
+import { formatDayMonth } from "../lib/agenda/format";
 import { useAuth } from "../lib/auth/AuthContext";
 import { getMyGamification, getRanking } from "../lib/gamification/api";
 import { getMyPlan } from "../lib/plans/api";
 import { HomeReservations } from "./home/HomeReservations";
+import { formatPlanEnd } from "./home/format";
 import { EmptyState, ErrorState, LoadingState } from "../components/states";
 
-const SHORTCUTS = [
-  { to: "/agenda", label: "Agenda" },
-  { to: "/plano", label: "Plano" },
-  { to: "/ficha-treino", label: "Ficha de treino" },
-  { to: "/perfil", label: "Perfil" },
-];
+/** Quantos badges recentes cabem na fileira da evolução (HomeDesktop.dc.html mostra três). */
+const MAX_BADGES = 3;
 
-/** O badge conquistado mais recentemente, ou null se ainda não há nenhum. */
-function latestBadge(badges: GamificationSummary["badges"]): number | null {
-  const earned = badges
+/** Os badges conquistados mais recentemente (marcos de streak), do mais novo para o mais antigo. */
+function latestBadges(badges: GamificationSummary["badges"]): number[] {
+  return badges
     .filter((badge) => badge.earned && badge.awardedAt)
-    .sort((a, b) => b.awardedAt!.localeCompare(a.awardedAt!));
-  return earned.length > 0 ? earned[0].milestone : null;
+    .sort((a, b) => b.awardedAt!.localeCompare(a.awardedAt!))
+    .slice(0, MAX_BADGES)
+    .map((badge) => badge.milestone);
 }
 
 function CheckIcon() {
@@ -38,10 +36,10 @@ function CheckIcon() {
 }
 
 /**
- * Home do cliente (HomeMobile.dc.html / HomeDesktop.dc.html): saudação, plano
- * ativo, próximas aulas, resumo da evolução e atalhos. Empilhada no mobile;
- * no desktop, coluna de 400px (saudação, plano, evolução) ao lado das aulas
- * (ver home.css). Cada bloco carrega e falha sozinho.
+ * Home do cliente (HomeMobile.dc.html / HomeDesktop.dc.html): saudação e plano
+ * ativo, próximas aulas e resumo da evolução, nessa ordem no mobile; no desktop,
+ * coluna de 400px (saudação, plano, evolução) ao lado das aulas (grade em
+ * home.css). Cada bloco carrega e falha sozinho.
  */
 export function ClientHomePage() {
   const { user } = useAuth();
@@ -53,59 +51,40 @@ export function ClientHomePage() {
 
   return (
     <div className="fb-home">
-      <div className="fb-home__main">
-        <div className="fb-home__block">
-          <h1 className="fb-home__greeting">{firstName ? `Olá, ${firstName}` : "Olá"}</h1>
+      <div className="fb-home__intro">
+        <h1 className="fb-home__greeting">{firstName ? `Olá, ${firstName}` : "Olá"}</h1>
 
-          {planQuery.isLoading && <LoadingState surface="dark" />}
-          {planQuery.isError && (
-            <ErrorState
-              surface="dark"
-              message="Não foi possível carregar o seu plano."
-              onRetry={() => void planQuery.refetch()}
-            />
-          )}
-          {activePlan && (
-            <section className="fb-home__plan" aria-label="Plano ativo">
-              <div className="fb-home__plan-info">
-                <span className="fb-home__plan-name">{activePlan.plan.name}</span>
-                <span className="fb-home__plan-until">
-                  {startsLater
-                    ? `Começa em ${formatDayMonth(activePlan.startDate)}`
-                    : `Ativo até ${formatLocalDate(activePlan.endDate)}`}
-                </span>
-                <span className="fb-home__plan-until">
-                  {formatLocalDate(activePlan.startDate)} – {formatLocalDate(activePlan.endDate)}
-                </span>
-              </div>
-              {!startsLater && <span className="fb-home__badge">ATIVO</span>}
-            </section>
-          )}
-          {planQuery.data && !activePlan && (
-            <div className="fb-home__plan fb-home__plan--empty">
-              Você ainda não tem um plano ativo. Fale com a recepção para começar.
+        {planQuery.isLoading && <LoadingState surface="dark" />}
+        {planQuery.isError && (
+          <ErrorState
+            surface="dark"
+            message="Não foi possível carregar o seu plano."
+            onRetry={() => void planQuery.refetch()}
+          />
+        )}
+        {activePlan && (
+          <section className="fb-home__plan" aria-label="Plano ativo">
+            <div className="fb-home__plan-info">
+              <span className="fb-home__plan-name">{activePlan.plan.name}</span>
+              <span className="fb-home__plan-until">
+                {startsLater
+                  ? `Começa em ${formatDayMonth(activePlan.startDate)}`
+                  : `Ativo até ${formatPlanEnd(activePlan.endDate)}`}
+              </span>
             </div>
-          )}
-        </div>
-
-        <Evolution />
+            {!startsLater && <span className="fb-home__badge">ATIVO</span>}
+          </section>
+        )}
+        {planQuery.data && !activePlan && (
+          <div className="fb-home__plan fb-home__plan--empty">
+            Você ainda não tem um plano ativo. Fale com a recepção para começar.
+          </div>
+        )}
       </div>
 
-      <div className="fb-home__side">
-        <HomeReservations />
-        <nav className="fb-home__block" aria-label="Atalhos">
-          <h2 className="fb-home__title">Atalhos</h2>
-          <ul className="fb-home__shortcuts">
-            {SHORTCUTS.map((shortcut) => (
-              <li key={shortcut.to}>
-                <Link to={shortcut.to} className="fb-home__shortcut">
-                  {shortcut.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
-      </div>
+      <HomeReservations />
+
+      <Evolution />
     </div>
   );
 }
@@ -122,7 +101,7 @@ function Evolution() {
     enabled: hasPoints,
   });
   const myEntry = rankingQuery.data?.entries.find((entry) => entry.isMe);
-  const badge = summary ? latestBadge(summary.badges) : null;
+  const badges = summary ? latestBadges(summary.badges) : [];
 
   return (
     <section className="fb-home__block" aria-label="Sua evolução">
@@ -165,16 +144,23 @@ function Evolution() {
           </div>
 
           <div className="fb-home__recent-badge">
-            <span className="fb-home__points-label">Badge recente</span>
-            {badge === null ? (
+            <span className="fb-home__points-label">Badges recentes</span>
+            {badges.length === 0 ? (
               <span className="fb-home__note">Nenhum badge conquistado ainda.</span>
             ) : (
-              <span className="fb-home__badge-chip">
-                <span className="fb-home__badge-disc">
-                  <CheckIcon />
-                </span>
-                Streak de {badge} dias
-              </span>
+              <ul className="fb-home__badges">
+                {badges.map((milestone) => (
+                  <li key={milestone}>
+                    <span
+                      className="fb-home__badge-disc"
+                      role="img"
+                      aria-label={`Streak de ${milestone} dias`}
+                    >
+                      <CheckIcon />
+                    </span>
+                  </li>
+                ))}
+              </ul>
             )}
           </div>
 

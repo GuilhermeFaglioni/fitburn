@@ -78,8 +78,6 @@
   .fb-weekday-toggle,
   .fb-profile__link-btn,
   .fb-profile__logout,
-  .fb-home__link,
-  .fb-home__ghost-btn,
   .fb-client-tab-btn,
   .fb-filter-chip,
   .fb-back-link,
@@ -91,8 +89,6 @@
     min-height: 44px;
   }
 
-  .fb-home__link,
-  .fb-home__ghost-btn,
   .fb-workout__back,
   .fb-sheet__close {
     display: inline-flex;
@@ -114,6 +110,20 @@
   .fb-back-btn {
     min-width: 44px;
     min-height: 44px;
+  }
+
+  /* Links e botões da Home: o design tem 13px de texto sem caixa maior (a linha das aulas mede 34px). A área de
+     toque de 44px vem de um ::before invisível, como no checkbox, sem mexer no layout visível. */
+  .fb-home__link,
+  .fb-home__ghost-btn {
+    position: relative;
+  }
+
+  .fb-home__link::before,
+  .fb-home__ghost-btn::before {
+    content: "";
+    position: absolute;
+    inset: -13px -8px;
   }
 
   .fb-checkbox {
