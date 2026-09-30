@@ -56,6 +56,7 @@ export function PlanPage() {
       {plan && !plan.active && (
         <EmptyState
           surface="dark"
+          className="fb-plan__empty"
           message="Você não tem um plano ativo no momento. Fale com a recepção do Fitburn para contratar um plano."
         />
       )}

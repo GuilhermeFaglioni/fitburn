@@ -90,16 +90,23 @@
   font-size: 13px;
 }
 
-.fb-plan__empty {
-  box-sizing: border-box;
+/* Mais específico que .fb-state--dark.fb-state--empty (states.css, carregado depois). */
+.fb-plan .fb-state--empty.fb-plan__empty {
+  display: block;
   padding: 24px 18px;
   background: #1a1a1a;
   border: 1px dashed rgba(255, 255, 255, 0.2);
   border-radius: 5px;
   text-align: center;
+  /* Como no artboard: o contêiner tem a fonte padrão e só o texto (span) tem 13px/19px. */
+  font-size: 16px;
+  line-height: normal;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.fb-plan .fb-state--empty.fb-plan__empty > span {
   font-size: 13px;
   line-height: 19px;
-  color: rgba(255, 255, 255, 0.6);
 }
 
 .fb-plan__history {
@@ -198,7 +205,7 @@
   }
 
   .fb-plan__card,
-  .fb-plan__empty,
+  .fb-plan .fb-state--empty.fb-plan__empty,
   .fb-plan__history {
     max-width: 640px;
   }
@@ -220,7 +227,7 @@
     font-size: 14px;
   }
 
-  .fb-plan__empty {
+  .fb-plan .fb-state--empty.fb-plan__empty {
     padding: 24px;
     text-align: left;
   }
