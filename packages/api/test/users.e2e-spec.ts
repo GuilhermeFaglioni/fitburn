@@ -302,12 +302,9 @@ describe("Gestão de usuários (HTTP)", () => {
     });
   });
 
-  // Achado A1 da auditoria (docs/test-matrix.md): as rotas de escrita de Usuários só checam a ação
-  // (EDIT/DELETE) e ignoram o escopo OWN, que GET /api/users e GET /api/users/:id respeitam. Os
-  // testes `it.fails` descrevem o comportamento CORRETO e falham hoje, de propósito: enquanto o bug
-  // existir a suíte fica verde; quando ele for corrigido o `it.fails` passa a FALHAR, e aí basta
-  // trocar `it.fails` por `it`.
-  describe("Escopo OWN nas rotas de escrita (achado A1: bug conhecido)", () => {
+  // Achado A1 da auditoria (docs/test-matrix.md), corrigido: as rotas de escrita de Usuários aplicam o
+  // escopo do perfil como GET /api/users e GET /api/users/:id (quem não tem escopo total só age sobre si mesmo).
+  describe("Escopo OWN nas rotas de escrita (achado A1, corrigido)", () => {
     async function seedOwnScopeActor() {
       const ownProfile = await createAccessProfile({ name: "Só os próprios" });
       await grantModuleAccess({
@@ -338,7 +335,7 @@ describe("Gestão de usuários (HTTP)", () => {
       expect(editSelf.status).toBe(200);
     });
 
-    it.fails("EDIT com escopo OWN não edita outro usuário: 403 OUT_OF_SCOPE e nada muda", async () => {
+    it("EDIT com escopo OWN não edita outro usuário: 403 OUT_OF_SCOPE e nada muda", async () => {
       const { other, token } = await seedOwnScopeActor();
 
       const response = await request(app.getHttpServer())
@@ -351,7 +348,7 @@ describe("Gestão de usuários (HTTP)", () => {
       expect(await testPrisma.user.findUniqueOrThrow({ where: { id: other.id } })).toEqual(other);
     });
 
-    it.fails("EDIT com escopo OWN não desativa outro usuário: 403 OUT_OF_SCOPE e ele continua ATIVO", async () => {
+    it("EDIT com escopo OWN não desativa outro usuário: 403 OUT_OF_SCOPE e ele continua ATIVO", async () => {
       const { other, token } = await seedOwnScopeActor();
 
       const response = await request(app.getHttpServer())
@@ -363,7 +360,7 @@ describe("Gestão de usuários (HTTP)", () => {
       expect(await testPrisma.user.findUniqueOrThrow({ where: { id: other.id } })).toEqual(other);
     });
 
-    it.fails("DELETE com escopo OWN não anonimiza outro usuário: 403 OUT_OF_SCOPE e os dados ficam intactos", async () => {
+    it("DELETE com escopo OWN não anonimiza outro usuário: 403 OUT_OF_SCOPE e os dados ficam intactos", async () => {
       const { other, token } = await seedOwnScopeActor();
 
       const response = await request(app.getHttpServer())
@@ -373,6 +370,61 @@ describe("Gestão de usuários (HTTP)", () => {
       expect(response.status).toBe(403);
       expect(response.body.code).toBe("OUT_OF_SCOPE");
       expect(await testPrisma.user.findUniqueOrThrow({ where: { id: other.id } })).toEqual(other);
+    });
+
+    it("EDIT com escopo OWN não reativa outro usuário: 403 OUT_OF_SCOPE e ele continua INATIVO", async () => {
+      const { other, token } = await seedOwnScopeActor();
+      await testPrisma.user.update({ where: { id: other.id }, data: { status: "INACTIVE" } });
+      const inactive = await testPrisma.user.findUniqueOrThrow({ where: { id: other.id } });
+
+      const response = await request(app.getHttpServer())
+        .post(`/api/users/${other.id}/reactivate`)
+        .set("Authorization", `Bearer ${token}`);
+
+      expect(response.status).toBe(403);
+      expect(response.body.code).toBe("OUT_OF_SCOPE");
+      expect(await testPrisma.user.findUniqueOrThrow({ where: { id: other.id } })).toEqual(inactive);
+    });
+
+    it("EDIT com escopo OWN não redefine a senha de outro usuário: 403 OUT_OF_SCOPE e a senha antiga continua valendo", async () => {
+      const { other, token } = await seedOwnScopeActor();
+
+      const response = await request(app.getHttpServer())
+        .post(`/api/users/${other.id}/reset-password`)
+        .set("Authorization", `Bearer ${token}`)
+        .send({ newPassword: "SenhaNova#123" });
+
+      expect(response.status).toBe(403);
+      expect(response.body.code).toBe("OUT_OF_SCOPE");
+      expect(await testPrisma.user.findUniqueOrThrow({ where: { id: other.id } })).toEqual(other);
+      await loginAndGetAccessToken(app, other.email, PASSWORD);
+    });
+
+    it("com escopo OWN as rotas de escrita seguem valendo para si mesmo (redefinir a própria senha e desativar-se não dá 403)", async () => {
+      const { actor, token } = await seedOwnScopeActor();
+
+      const reset = await request(app.getHttpServer())
+        .post(`/api/users/${actor.id}/reset-password`)
+        .set("Authorization", `Bearer ${token}`)
+        .send({ newPassword: "SenhaNova#123" });
+
+      expect(reset.status).toBe(204);
+    });
+
+    it("o administrador (escopo ALL) edita, desativa, reativa e redefine a senha de outro usuário", async () => {
+      const { token } = await loginAsAdmin();
+      const profile = await createAccessProfile({ name: "Qualquer" });
+      const target = await createUser({ email: "alvo@fitburn.local", password: PASSWORD, profileId: profile.id });
+      const call = (method: "patch" | "post", path: string, body?: object) =>
+        request(app.getHttpServer())
+          [method](`/api/users/${target.id}${path}`)
+          .set("Authorization", `Bearer ${token}`)
+          .send(body);
+
+      expect((await call("patch", "", { fullName: "Editado" })).status).toBe(200);
+      expect((await call("post", "/deactivate")).status).toBe(201);
+      expect((await call("post", "/reactivate")).status).toBe(201);
+      expect((await call("post", "/reset-password", { newPassword: "SenhaNova#123" })).status).toBe(204);
     });
   });
 

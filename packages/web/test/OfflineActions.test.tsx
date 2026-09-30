@@ -7,6 +7,9 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import {
   gymDateTimeToUtc,
   gymToday,
+  Module,
+  PermissionAction,
+  PermissionScope,
   type AttendanceRoster,
   type ClientAgendaItem,
 } from "@fitburn/contracts";
@@ -142,8 +145,33 @@ describe("Sem conexão: ações que exigem rede ficam desabilitadas", () => {
       ],
     };
 
+    const EXECUTE_ATTENDANCE = [
+      { module: Module.PRESENCA, actions: [PermissionAction.VIEW, PermissionAction.EXECUTE], scope: PermissionScope.ASSIGNED_CLASSES },
+    ];
+
+    it("sem a ação EXECUTE, Presente e Faltou continuam desabilitados com ou sem conexão (um motivo não reabilita o outro)", async () => {
+      mockSuccessfulLogin("Professor", [
+        { module: Module.PRESENCA, actions: [PermissionAction.VIEW], scope: PermissionScope.ASSIGNED_CLASSES },
+      ]);
+      server.use(http.get("/api/attendance/classes/occ-1", () => HttpResponse.json(roster)));
+      renderLoggedIn(<AttendancePage />, "/presenca/occ-1", "/presenca/:occurrenceId");
+      const row = (await screen.findByText("Marina Souza")).closest("li")!;
+      const presente = within(row).getByRole("button", { name: "Presente" });
+      expect(presente).toBeDisabled();
+      expect(presente).toHaveAttribute("title", "Você não tem permissão para registrar presença.");
+
+      act(() => setBrowserOnline(false));
+      expect(within(row).getByRole("button", { name: "Presente" })).toBeDisabled();
+      expect(within(row).getByRole("button", { name: "Faltou" })).toBeDisabled();
+
+      act(() => setBrowserOnline(true));
+      await waitFor(() => expect(screen.queryByRole("alert")).not.toBeInTheDocument());
+      expect(within(row).getByRole("button", { name: "Presente" })).toBeDisabled();
+      expect(within(row).getByRole("button", { name: "Faltou" })).toBeDisabled();
+    });
+
     it("Presente e Faltou ficam desabilitados sem conexão e nenhuma requisição é enviada", async () => {
-      mockSuccessfulLogin("Professor");
+      mockSuccessfulLogin("Professor", EXECUTE_ATTENDANCE);
       let marks = 0;
       server.use(
         http.get("/api/attendance/classes/occ-1", () => HttpResponse.json(roster)),

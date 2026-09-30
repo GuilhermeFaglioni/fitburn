@@ -183,11 +183,9 @@ describe("ProfilesPage", () => {
     expect(deactivate).toHaveAttribute("title", "Você não tem permissão para alterar perfis.");
   });
 
-  // Achado A2 da auditoria (docs/test-matrix.md): ProfileMatrix só trava a matriz para o perfil
-  // Administrador e não consulta a ação EDIT de Perfis de acesso. O teste descreve o comportamento
-  // CORRETO e falha hoje, de propósito: com `it.fails` a suíte fica verde enquanto o bug existir e,
-  // quando ele for corrigido, passa a FALHAR; aí troque `it.fails` por `it`.
-  it.fails("sem a ação EDIT em Perfis de acesso, os checkboxes, o escopo e o Salvar da matriz ficam desabilitados", async () => {
+  // Achado A2 da auditoria (docs/test-matrix.md), corrigido: a matriz só é editável com a ação EDIT em
+  // Perfis de acesso.
+  it("sem a ação EDIT em Perfis de acesso, os checkboxes, o escopo e o Salvar da matriz ficam desabilitados", async () => {
     mockSuccessfulLogin("Professor", [
       { module: Module.PERFIS_DE_ACESSO, actions: [PermissionAction.VIEW], scope: PermissionScope.ALL },
     ]);

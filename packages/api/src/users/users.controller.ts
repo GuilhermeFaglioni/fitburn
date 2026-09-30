@@ -19,7 +19,6 @@ import {
   ErrorStatus,
   Module,
   PermissionAction,
-  PermissionScope,
   resetPasswordRequestSchema,
   updateUserRequestSchema,
   type CreateClientRequest,
@@ -34,6 +33,7 @@ import { DomainError } from "../common/errors/domain-error.js";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe.js";
 import { PermissionsGuard } from "../permissions/permissions.guard.js";
 import { RequirePermission } from "../permissions/require-permission.decorator.js";
+import { assertUserInScope, requesterOf } from "../permissions/scoped-requester.js";
 import { UsersService } from "./users.service.js";
 
 @Controller("users")
@@ -63,13 +63,7 @@ export class UsersController {
   @RequirePermission(Module.USUARIOS, PermissionAction.VIEW)
   @Get(":id")
   async findOne(@Param("id") id: string, @Req() req: AuthenticatedRequest): Promise<UserDetail> {
-    if (req.authScope === PermissionScope.OWN && id !== req.authUser.sub) {
-      throw new DomainError(
-        ErrorCode.OUT_OF_SCOPE,
-        "Você só pode acessar os próprios dados.",
-        ErrorStatus.FORBIDDEN,
-      );
-    }
+    assertUserInScope(requesterOf(req), id);
 
     const user = await this.usersService.findById(id);
     if (!user) {
@@ -101,14 +95,17 @@ export class UsersController {
   async update(
     @Param("id") id: string,
     @Body(new ZodValidationPipe(updateUserRequestSchema)) body: UpdateUserRequest,
+    @Req() req: AuthenticatedRequest,
   ): Promise<UserDetail> {
+    assertUserInScope(requesterOf(req), id);
     const user = await this.usersService.update(id, body);
     return this.usersService.toUserDetail(user);
   }
 
   @RequirePermission(Module.USUARIOS, PermissionAction.EDIT)
   @Post(":id/deactivate")
-  async deactivate(@Param("id") id: string): Promise<UserDetail> {
+  async deactivate(@Param("id") id: string, @Req() req: AuthenticatedRequest): Promise<UserDetail> {
+    assertUserInScope(requesterOf(req), id);
     const user = await this.usersService.deactivate(id);
     return this.usersService.toUserDetail(user);
   }
@@ -120,6 +117,7 @@ export class UsersController {
   @RequirePermission(Module.USUARIOS, PermissionAction.DELETE)
   @Delete(":id")
   async remove(@Param("id") id: string, @Req() req: AuthenticatedRequest): Promise<UserDetail> {
+    assertUserInScope(requesterOf(req), id);
     if (id === req.authUser.sub) {
       throw new DomainError(
         ErrorCode.VALIDATION_ERROR,
@@ -133,7 +131,8 @@ export class UsersController {
 
   @RequirePermission(Module.USUARIOS, PermissionAction.EDIT)
   @Post(":id/reactivate")
-  async reactivate(@Param("id") id: string): Promise<UserDetail> {
+  async reactivate(@Param("id") id: string, @Req() req: AuthenticatedRequest): Promise<UserDetail> {
+    assertUserInScope(requesterOf(req), id);
     const user = await this.usersService.reactivate(id);
     return this.usersService.toUserDetail(user);
   }
@@ -144,7 +143,9 @@ export class UsersController {
   async resetPassword(
     @Param("id") id: string,
     @Body(new ZodValidationPipe(resetPasswordRequestSchema)) body: ResetPasswordRequest,
+    @Req() req: AuthenticatedRequest,
   ): Promise<void> {
+    assertUserInScope(requesterOf(req), id);
     await this.usersService.resetPassword(id, body.newPassword);
   }
 }

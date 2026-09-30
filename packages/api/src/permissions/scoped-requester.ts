@@ -24,3 +24,19 @@ export function assertFullScope(requester: ScopedRequester, message: string): vo
     throw new DomainError(ErrorCode.OUT_OF_SCOPE, message, ErrorStatus.FORBIDDEN);
   }
 }
+
+/**
+ * Escopo do módulo Usuários (o registro alvo é outro usuário, sem relação de
+ * atribuição): só o escopo total age sobre qualquer usuário; qualquer outro
+ * escopo age apenas sobre si mesmo (a mesma leitura restritiva da listagem).
+ * Outro usuário: 403 OUT_OF_SCOPE, antes de tocar em qualquer dado.
+ */
+export function assertUserInScope(requester: ScopedRequester, targetUserId: string): void {
+  if (requester.scope !== PermissionScope.ALL && targetUserId !== requester.userId) {
+    throw new DomainError(
+      ErrorCode.OUT_OF_SCOPE,
+      "Você só pode acessar os próprios dados.",
+      ErrorStatus.FORBIDDEN,
+    );
+  }
+}

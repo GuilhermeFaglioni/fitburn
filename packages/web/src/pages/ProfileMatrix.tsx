@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import {
+  Module,
+  PermissionAction,
   PermissionScope,
   type ModuleCatalog,
   type ModuleName,
@@ -10,9 +12,12 @@ import {
 } from "@fitburn/contracts";
 import { ACTION_LABELS, MODULE_LABELS, SCOPE_LABELS } from "../lib/profiles/labels";
 import { setModuleAccess } from "../lib/profiles/api";
+import { BlockedAction } from "../components/BlockedAction";
+import { useAuth } from "../lib/auth/AuthContext";
 
 const SYSTEM_ADMIN_NAME = "Administrador";
 const SYSTEM_CLIENT_NAME = "Cliente";
+const NO_EDIT_REASON = "Você não tem permissão para alterar perfis.";
 
 function ModuleRow({
   profile,
@@ -31,6 +36,9 @@ function ModuleRow({
 }) {
   const [actions, setActions] = useState<PermissionActionName[]>(initialActions);
   const [scope, setScope] = useState<PermissionScopeName>(initialScope);
+  // Sem a ação EDIT em Perfis de acesso a matriz é só leitura (a API recusaria o Salvar com 403).
+  const { can } = useAuth();
+  const canEdit = can(Module.PERFIS_DE_ACESSO, PermissionAction.EDIT);
 
   const isAdminLocked = profile.isSystem && profile.name === SYSTEM_ADMIN_NAME;
   const isClientScopeLocked = profile.isSystem && profile.name === SYSTEM_CLIENT_NAME;
@@ -53,14 +61,16 @@ function ModuleRow({
       </th>
       {catalog.actions.map((action) => (
         <td key={action} className="fb-mtd">
-          <input
-            type="checkbox"
-            className="fb-checkbox"
-            aria-label={`${ACTION_LABELS[action]} em ${MODULE_LABELS[module]}`}
-            checked={actions.includes(action)}
-            disabled={isAdminLocked}
-            onChange={() => toggleAction(action)}
-          />
+          <BlockedAction allowed={canEdit} reason={NO_EDIT_REASON}>
+            <input
+              type="checkbox"
+              className="fb-checkbox"
+              aria-label={`${ACTION_LABELS[action]} em ${MODULE_LABELS[module]}`}
+              checked={actions.includes(action)}
+              disabled={isAdminLocked}
+              onChange={() => toggleAction(action)}
+            />
+          </BlockedAction>
         </td>
       ))}
       <td className="fb-td fb-scope">
@@ -69,30 +79,34 @@ function ModuleRow({
             {SCOPE_LABELS.OWN} (fixo)
           </span>
         ) : (
-          <select
-            className="fb-field"
-            aria-label={`Escopo de ${MODULE_LABELS[module]}`}
-            value={scope}
-            disabled={isAdminLocked}
-            onChange={(event) => setScope(event.target.value as PermissionScopeName)}
-          >
-            {catalog.scopes.map((s) => (
-              <option key={s} value={s}>
-                {SCOPE_LABELS[s]}
-              </option>
-            ))}
-          </select>
+          <BlockedAction allowed={canEdit} reason={NO_EDIT_REASON}>
+            <select
+              className="fb-field"
+              aria-label={`Escopo de ${MODULE_LABELS[module]}`}
+              value={scope}
+              disabled={isAdminLocked}
+              onChange={(event) => setScope(event.target.value as PermissionScopeName)}
+            >
+              {catalog.scopes.map((s) => (
+                <option key={s} value={s}>
+                  {SCOPE_LABELS[s]}
+                </option>
+              ))}
+            </select>
+          </BlockedAction>
         )}
       </td>
       <td className="fb-td">
-        <button
-          type="button"
-          className="fb-row-btn"
-          disabled={isAdminLocked || mutation.isPending}
-          onClick={() => mutation.mutate()}
-        >
-          Salvar
-        </button>
+        <BlockedAction allowed={canEdit} reason={NO_EDIT_REASON}>
+          <button
+            type="button"
+            className="fb-row-btn"
+            disabled={isAdminLocked || mutation.isPending}
+            onClick={() => mutation.mutate()}
+          >
+            Salvar
+          </button>
+        </BlockedAction>
       </td>
     </tr>
   );
