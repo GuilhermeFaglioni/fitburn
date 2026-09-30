@@ -204,6 +204,10 @@
   color: #b0b0b0;
 }
 
+.fb-td--actions {
+  white-space: nowrap;
+}
+
 .fb-row--inactive .fb-td--actions {
   color: #c8c8c8;
   font-size: 12px;
@@ -271,6 +275,7 @@
 
 .fb-badge {
   display: inline-block;
+  white-space: nowrap;
   font-size: 11px;
   font-weight: 700;
   padding: 4px 9px;
@@ -323,6 +328,24 @@
   font-size: 13px;
   line-height: 19px;
   color: #6b4a1e;
+}
+
+/* Aviso menor da aba "Atribuir a cliente" (12px/18px no artboard). */
+.fb-lock-banner--sm {
+  font-size: 12px;
+  line-height: 18px;
+}
+
+/* Na aba "Atribuir a cliente" os rótulos são de 13px. */
+.fb-assign .fb-modal__field label {
+  font-size: 13px;
+}
+
+/* Linha com a ação principal à direita, acima da tabela. */
+.fb-toolbar-end {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
 }
 
 .fb-matrix-layout {
@@ -659,6 +682,16 @@
   font-weight: 500;
   color: #333333;
   cursor: pointer;
+}
+
+.fb-btn-primary--lg {
+  padding: 11px 22px;
+  font-size: 15px;
+}
+
+.fb-btn-secondary--lg {
+  padding: 11px 20px;
+  font-size: 14px;
 }
 
 .fb-btn-primary--sm {
