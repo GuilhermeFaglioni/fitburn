@@ -24,6 +24,7 @@ import {
 import { ClassDetailSheet, type Rescheduling } from "./client/ClassDetailSheet";
 import { ReservationHistory } from "./client/ReservationHistory";
 import { EmptyState, ErrorState, LoadingState } from "../components/states";
+import { firstName } from "../lib/agenda/first-name";
 
 type AgendaTab = "upcoming" | "history";
 
@@ -52,7 +53,7 @@ function InfoIcon() {
       height="15"
       viewBox="0 0 16 16"
       fill="none"
-      style={{ flexShrink: 0, marginTop: 1 }}
+      className="fb-client-note__icon"
       aria-hidden="true"
     >
       <circle cx="8" cy="8" r="7" stroke="rgba(255,255,255,0.4)" strokeWidth="1.3" />
@@ -85,6 +86,46 @@ function ChevronIcon() {
         strokeLinejoin="round"
       />
     </svg>
+  );
+}
+
+/**
+ * Navegação entre semanas. O design mostra só a semana atual, sem controle de semana:
+ * os botões ficam onde o design tem espaço vazio (canto da grade no desktop, à direita
+ * do título no mobile) e sem rótulo visível, para não alterar o layout.
+ */
+function WeekNav({
+  variant,
+  weekStart,
+  onGo,
+}: {
+  variant: "corner" | "title";
+  weekStart: string;
+  onGo: (offset: number) => void;
+}) {
+  return (
+    <div
+      className={`fb-client-weeknav fb-client-weeknav--${variant}`}
+      role="group"
+      aria-label={`Semana de ${formatWeekRange(weekStart)}`}
+    >
+      <button
+        type="button"
+        className="fb-client-icon-btn"
+        aria-label="Semana anterior"
+        onClick={() => onGo(-1)}
+      >
+        ‹
+      </button>
+      <button
+        type="button"
+        className="fb-client-icon-btn"
+        aria-label="Próxima semana"
+        onClick={() => onGo(1)}
+      >
+        ›
+      </button>
+    </div>
   );
 }
 
@@ -133,31 +174,11 @@ export function ClientAgendaPage() {
   const dayItems = byDay.get(selectedDay) ?? [];
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+    <div className="fb-client-agenda">
       <div className="fb-client-header">
         <h1 className="fb-client-title">Agenda</h1>
+        {tab === "upcoming" && <WeekNav variant="title" weekStart={weekStart} onGo={goToWeek} />}
         <div className="fb-client-header__controls">
-          {tab === "upcoming" && (
-            <div className="fb-client-week">
-              <button
-                type="button"
-                className="fb-client-icon-btn"
-                aria-label="Semana anterior"
-                onClick={() => goToWeek(-1)}
-              >
-                ‹
-              </button>
-              <span>{formatWeekRange(weekStart)}</span>
-              <button
-                type="button"
-                className="fb-client-icon-btn"
-                aria-label="Próxima semana"
-                onClick={() => goToWeek(1)}
-              >
-                ›
-              </button>
-            </div>
-          )}
           <div className="fb-client-tabs">
             {AGENDA_TABS.map(({ value, label }) => (
               <button
@@ -230,7 +251,11 @@ export function ClientAgendaPage() {
               </div>
 
               {agendaQuery.data && dayItems.length === 0 && (
-                <EmptyState surface="dark" message="Nenhuma aula agendada para este dia." />
+                <EmptyState
+                  surface="dark"
+                  className="fb-client-empty-day"
+                  message="Nenhuma aula agendada para este dia."
+                />
               )}
 
               {dayItems.length > 0 && (
@@ -249,7 +274,7 @@ export function ClientAgendaPage() {
                         <span className="fb-class-card__title">{item.modality.name}</span>
                         <span className="fb-class-card__time">
                           {formatInstantHour(item.startsAt)} – {formatInstantHour(item.endsAt)}
-                          {item.instructor ? ` · Prof. ${item.instructor.fullName}` : ""}
+                          {item.instructor ? ` · Prof. ${firstName(item.instructor.fullName)}` : ""}
                         </span>
                         <span
                           className={`fb-class-card__availability fb-availability--${availabilityLevel(item.available, item.capacity)}`}
@@ -257,7 +282,7 @@ export function ClientAgendaPage() {
                           {availabilityText(item, "card")}
                         </span>
                         {item.myReservationId && (
-                          <span className="fb-sheet-badge fb-class-card__reserved">RESERVADA</span>
+                          <span className="fb-client-sr-only">RESERVADA</span>
                         )}
                       </span>
                       <ChevronIcon />
@@ -273,7 +298,9 @@ export function ClientAgendaPage() {
               <EmptyState surface="dark" message="Nenhuma aula agendada para esta semana." />
             ) : (
               <div className="fb-client-grid">
-                <div className="fb-client-cell fb-client-cell--head" />
+                <div className="fb-client-cell fb-client-cell--head fb-client-cell--corner">
+                  <WeekNav variant="corner" weekStart={weekStart} onGo={goToWeek} />
+                </div>
                 {days.map((date) => (
                   <div
                     key={date}
@@ -311,7 +338,7 @@ export function ClientAgendaPage() {
                                 {availabilityText(item, "chip")}
                               </div>
                               {item.myReservationId && (
-                                <div className="fb-client-chip__reserved">Reservada</div>
+                                <div className="fb-client-sr-only">Reservada</div>
                               )}
                             </button>
                           ))}

@@ -126,8 +126,8 @@ describe("ClientAgendaPage", () => {
     await within(day).findByText("Spinning");
     const cards = within(day).getAllByRole("button", { name: /Prof\./ });
     expect(cards.map((card) => card.textContent)).toEqual([
-      expect.stringContaining("07h00 – 08h00 · Prof. Rafael Andrade"),
-      expect.stringContaining("18h00 – 19h00 · Prof. Rafael Andrade"),
+      expect.stringContaining("07h00 – 08h00 · Prof. Rafael"),
+      expect.stringContaining("18h00 – 19h00 · Prof. Rafael"),
     ]);
     expect(within(day).queryByText("Yoga")).not.toBeInTheDocument();
 
