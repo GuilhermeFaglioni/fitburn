@@ -418,13 +418,13 @@
 }
 
 /* Matriz fixa do Administrador: no design as marcas seguem laranja. */
-.fb-checkbox--fixed:disabled:checked {
+.fb-checkbox.fb-checkbox--fixed:disabled:checked {
   background: #ed6e34;
   border-color: #ed6e34;
   cursor: default;
 }
 
-.fb-checkbox--fixed:disabled:checked::after {
+.fb-checkbox.fb-checkbox--fixed:disabled:checked::after {
   color: #ffffff;
 }
 
@@ -476,6 +476,10 @@
   text-align: center;
   padding: 6px 0;
   border-bottom: 2px solid #eeeeee;
+}
+
+/* O rótulo é um <span> dentro de um bloco de 16px, como no artboard (a cabeça fica com 35px). */
+.fb-day-head > span {
   font-size: 12px;
   font-weight: 700;
   color: #8a8a8a;
@@ -483,6 +487,9 @@
 
 .fb-day-head--today {
   border-bottom-color: #ed6e34;
+}
+
+.fb-day-head--today > span {
   color: #ed6e34;
 }
 
@@ -602,6 +609,11 @@
 
 .fb-modal__field .fb-field {
   width: 100%;
+}
+
+.fb-modal__hint {
+  font-size: 11px;
+  color: #8a8a8a;
 }
 
 .fb-modal__form {
