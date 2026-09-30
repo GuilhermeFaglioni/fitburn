@@ -1,7 +1,6 @@
 import { z } from "zod";
 import {
   userDetailSchema,
-  type CreateClientRequest,
   type CreateStaffRequest,
   type UpdateUserRequest,
   type UserDetail,
@@ -19,15 +18,6 @@ export async function listUsers(
 
   const response = await authFetch(`/api/users${query ? `?${query}` : ""}`);
   return z.array(userDetailSchema).parse(await parseOrThrow(response));
-}
-
-export async function createClient(input: CreateClientRequest): Promise<UserDetail> {
-  const response = await authFetch("/api/users/clients", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(input),
-  });
-  return userDetailSchema.parse(await parseOrThrow(response));
 }
 
 export async function deactivateUser(id: string): Promise<UserDetail> {

@@ -191,9 +191,6 @@ export function OccurrenceFormModal({
                 </option>
               ))}
             </select>
-            <span className="fb-modal__hint">
-              Ao trocar o professor, os clientes inscritos serão notificados da substituição.
-            </span>
           </div>
 
           <div className="fb-modal__grid">

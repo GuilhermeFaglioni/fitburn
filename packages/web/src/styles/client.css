@@ -198,6 +198,15 @@
   align-items: center;
 }
 
+/* Duas ou mais aulas no mesmo dia e horário: empilham (uma por linha, na largura da célula) em vez de ficarem
+   espremidas lado a lado. Com uma aula só, vale o design (chip encolhido ao conteúdo). */
+.fb-client-cell:has(> .fb-client-chip + .fb-client-chip) {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: 4px;
+}
+
 .fb-client-cell--head {
   border-top: none;
   flex-direction: column;
@@ -831,6 +840,11 @@
   .fb-client__content[data-screen="home"],
   .fb-client__content[data-screen="agenda"] {
     padding: 28px 20px 108px;
+  }
+
+  /* Gamificação: 24px 20px 108px no mobile (a tab bar fixa de 76px não cobre o fim do conteúdo). */
+  .fb-client__content[data-screen="gamificacao"] {
+    padding: 24px 20px 108px;
   }
 
   .fb-client__tabbar {

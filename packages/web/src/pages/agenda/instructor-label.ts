@@ -1,5 +1,9 @@
-/** "Prof. Rafael (titular)" para o professor padrão do template; os demais só com o primeiro nome. */
+/**
+ * Opção de professor nos selects administrativos: sempre o nome COMPLETO (quem ensina escolhe entre pessoas, e dois
+ * professores com o mesmo primeiro nome não podem ficar idênticos). O primeiro nome só aparece nos textos voltados
+ * ao cliente e nos chips do design ("Prof. Rafael"), ver `lib/names.ts`.
+ */
 export function instructorOptionLabel(fullName: string, isTitular: boolean): string {
-  const first = fullName.split(" ")[0];
-  return isTitular ? `Prof. ${first} (titular)` : `Prof. ${first}`;
+  const label = `Prof. ${fullName.trim()}`;
+  return isTitular ? `${label} (titular)` : label;
 }

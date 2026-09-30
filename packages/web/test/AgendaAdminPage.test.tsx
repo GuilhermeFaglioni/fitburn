@@ -134,6 +134,40 @@ describe("AgendaAdminPage", () => {
     });
   });
 
+  it("usa o nome completo nos chips quando dois professores da semana têm o mesmo primeiro nome", async () => {
+    const outroRafael = { id: "user-rafael-s", fullName: "Rafael Souza" };
+    server.use(
+      http.get("/api/occurrences", () =>
+        HttpResponse.json([
+          occurrenceAt(WEDNESDAY, "18:00"),
+          occurrenceAt(WEDNESDAY, "19:00", { instructor: outroRafael }),
+        ]),
+      ),
+    );
+
+    renderPage();
+
+    expect(await screen.findByRole("button", { name: /18h00.*Treino Funcional/ })).toHaveTextContent(
+      "Prof. Rafael Andrade · 0/10",
+    );
+    expect(screen.getByRole("button", { name: /19h00.*Treino Funcional/ })).toHaveTextContent(
+      "Prof. Rafael Souza · 0/10",
+    );
+  });
+
+  it("mostra o nome completo dos professores nas opções do modal", async () => {
+    server.use(http.get("/api/occurrences", () => HttpResponse.json([])));
+    renderPage();
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole("button", { name: "+ Nova aula" }));
+    const dialog = screen.getByRole("dialog", { name: "Nova aula" });
+    expect(
+      await within(dialog).findByRole("option", { name: "Prof. Camila Rocha" }),
+    ).toBeInTheDocument();
+    expect(within(dialog).queryByText(/serão notificados/)).not.toBeInTheDocument();
+  });
+
   it("mostra os horários em conflito quando a aula se sobrepõe a outra", async () => {
     const existing = occurrenceAt(WEDNESDAY, "18:00");
     server.use(
@@ -273,6 +307,21 @@ describe("AgendaAdminPage", () => {
   });
 
   describe("manutenção", () => {
+    it("o modal de edição lista o professor pelo nome completo e não promete notificação", async () => {
+      server.use(
+        http.get("/api/occurrences", () => HttpResponse.json([occurrenceAt(WEDNESDAY, "18:00")])),
+      );
+      renderPage();
+      const user = userEvent.setup();
+
+      await user.click(await screen.findByRole("button", { name: /18h00.*Treino Funcional/ }));
+      const dialog = screen.getByRole("dialog", { name: "Editar aula" });
+      expect(
+        await within(dialog).findByRole("option", { name: "Prof. Rafael Andrade (titular)" }),
+      ).toBeInTheDocument();
+      expect(within(dialog).queryByText(/notificados/)).not.toBeInTheDocument();
+    });
+
     it("cancela uma aula depois de confirmar", async () => {
       const occurrence = occurrenceAt(WEDNESDAY, "18:00");
       let cancelledId: string | null = null;

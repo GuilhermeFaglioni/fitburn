@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
 import { GoalStatus, type GoalDetail, type GoalStatusName } from "@fitburn/contracts";
 import { formatInstantDate, formatLocalDate } from "../../lib/agenda/format";
 
@@ -38,8 +38,13 @@ function KebabIcon() {
 }
 
 /**
- * As ações de uma meta ativa (Concluir, Editar, Cancelar meta) num menu de "⋯": o cartão do artboard
- * (MetasAdmin.dc.html) não mostra botões, então as ações ficam recolhidas até o professor abrir o menu.
+ * As ações de uma meta ativa (Concluir, Editar, Cancelar meta) recolhidas sob um botão "⋯": o cartão do artboard
+ * (MetasAdmin.dc.html) não mostra botões, então ficam escondidas até o professor abrir.
+ *
+ * Padrão de disclosure (não é um menu ARIA): o botão tem `aria-expanded`/`aria-controls` e abre um grupo de
+ * botões comuns. Aberto pelo teclado, o foco vai ao primeiro item; Esc fecha e devolve o foco ao botão; Tab para
+ * fora do grupo fecha. Sem permissão (ou com outra ação em andamento), os itens ficam `aria-disabled` (continuam
+ * focáveis) e o motivo aparece em texto, ligado a eles por `aria-describedby`.
  */
 function GoalActions({
   title,
@@ -56,14 +61,25 @@ function GoalActions({
 }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const focusFirstRef = useRef(false);
+  const panelId = useId();
+  const reasonId = useId();
 
   useEffect(() => {
     if (!open) return;
+    if (focusFirstRef.current) {
+      focusFirstRef.current = false;
+      panelRef.current?.querySelector<HTMLButtonElement>("button")?.focus();
+    }
     function onPointerDown(event: MouseEvent) {
       if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
     }
     function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") setOpen(false);
+      if (event.key !== "Escape") return;
+      setOpen(false);
+      triggerRef.current?.focus();
     }
     document.addEventListener("mousedown", onPointerDown);
     document.addEventListener("keydown", onKeyDown);
@@ -73,58 +89,82 @@ function GoalActions({
     };
   }, [open]);
 
+  function toggle(event: ReactMouseEvent<HTMLButtonElement>) {
+    // detail 0: o clique veio do teclado (Enter/Espaço), então o foco entra no grupo.
+    focusFirstRef.current = !open && event.detail === 0;
+    setOpen(!open);
+  }
+
   function choose(run: () => void) {
+    if (!allowed) return;
     setOpen(false);
+    triggerRef.current?.focus();
     run();
   }
 
+  function itemProps(run: () => void) {
+    return {
+      type: "button" as const,
+      "aria-disabled": !allowed ? true : undefined,
+      "aria-describedby": !allowed && reason ? reasonId : undefined,
+      onClick: () => choose(run),
+    };
+  }
+
   return (
-    <div className="fb-goals__menu" ref={rootRef}>
+    <div
+      className="fb-goals__menu"
+      ref={rootRef}
+      onBlur={(event) => {
+        // O foco foi para outro elemento fora do botão e do grupo: fecha, sem roubar o foco de onde ele foi.
+        // (Sem relatedTarget, como o clique em botão no Safari, não fecha: o clique fora já fecha.)
+        const next = event.relatedTarget as Node | null;
+        if (next && !rootRef.current?.contains(next)) setOpen(false);
+      }}
+      onKeyDown={(event) => {
+        // Tab para fora do grupo (sem elemento seguinte focável, o foco vai para a barra do navegador).
+        if (event.key !== "Tab") return;
+        const buttons = rootRef.current?.querySelectorAll("button") ?? [];
+        const edge = event.shiftKey ? buttons[0] : buttons[buttons.length - 1];
+        if (event.target === edge) setOpen(false);
+      }}
+    >
       <button
+        ref={triggerRef}
         type="button"
         className="fb-goals__kebab"
         aria-label={`Ações da meta ${title}`}
-        aria-haspopup="menu"
         aria-expanded={open}
-        onClick={() => setOpen((current) => !current)}
+        aria-controls={open ? panelId : undefined}
+        onClick={toggle}
       >
         <KebabIcon />
       </button>
       {open && (
-        <div className="fb-goals__menu-list" role="menu" aria-label={`Ações da meta ${title}`}>
-          <button
-            type="button"
-            role="menuitem"
-            className="fb-goals__menu-item"
-            disabled={!allowed}
-            aria-disabled={!allowed ? true : undefined}
-            title={reason}
-            onClick={() => choose(() => onAsk("complete"))}
-          >
+        <div
+          id={panelId}
+          ref={panelRef}
+          className="fb-goals__menu-list"
+          role="group"
+          aria-label={`Ações da meta ${title}`}
+        >
+          <button className="fb-goals__menu-item" {...itemProps(() => onAsk("complete"))}>
             Concluir
           </button>
-          <button
-            type="button"
-            role="menuitem"
-            className="fb-goals__menu-item"
-            disabled={!allowed}
-            aria-disabled={!allowed ? true : undefined}
-            title={reason}
-            onClick={() => choose(onEdit)}
-          >
+          <button className="fb-goals__menu-item" {...itemProps(onEdit)}>
             Editar
           </button>
           <button
-            type="button"
-            role="menuitem"
             className="fb-goals__menu-item fb-goals__menu-item--danger"
-            disabled={!allowed}
-            aria-disabled={!allowed ? true : undefined}
-            title={reason}
-            onClick={() => choose(() => onAsk("cancel"))}
+            {...itemProps(() => onAsk("cancel"))}
           >
             Cancelar meta
           </button>
+          {!allowed && reason && (
+            <span id={reasonId} className="fb-goals__menu-reason">
+              {reason}
+            </span>
+          )}
         </div>
       )}
     </div>
@@ -169,7 +209,7 @@ export function GoalCard({ goal, canEdit, busy, onEdit, onComplete, onCancel }: 
             <GoalActions
               title={goal.title}
               allowed={canEdit && !busy}
-              reason={canEdit ? undefined : denied}
+              reason={canEdit ? (busy ? "Aguarde: há uma ação em andamento." : undefined) : denied}
               onEdit={onEdit}
               onAsk={setAsking}
             />

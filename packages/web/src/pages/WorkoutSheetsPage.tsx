@@ -168,10 +168,10 @@ export function WorkoutSheetsPage() {
                   onRetry={() => void sheetsQuery.refetch()}
                 />
               )}
-              {sheetsQuery.isSuccess &&
-                sheets.filter((sheet) => sheet.id !== editing?.id).length === 0 && (
-                  <EmptyState message="Este aluno ainda não tem fichas." />
-                )}
+              {/* O vazio depende do total de fichas do aluno, não das exibidas: a ficha em edição sai da lista. */}
+              {sheetsQuery.isSuccess && sheets.length === 0 && (
+                <EmptyState message="Este aluno ainda não tem fichas." />
+              )}
               <ul className="fb-sheets__list" aria-label={`Fichas de ${selected.fullName}`}>
                 {sheets
                   .filter((sheet) => sheet.id !== editing?.id)

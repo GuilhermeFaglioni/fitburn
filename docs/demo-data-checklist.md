@@ -22,7 +22,7 @@ Regras desta massa:
 
 O que decide a linha do tempo: reservas só existem antes de a aula começar, e pontos de ranking só nascem quando o professor marca presença numa aula que já começou. Não há como cadastrar reservas e presenças "passadas" pela interface; a seção 14 explica o caminho (aulas curtas em tempo real).
 
-Evite marcar a demo numa **segunda-feira** (o ranking semanal recomeça na segunda e ficaria vazio) e no **dia 1º do mês** (o mensal também). Se não der, o roteiro usa a aba **Mensal** (Ato 5) e o dashboard **Mês** (Ato 6), e as aulas-relâmpago precisam cair no mesmo mês.
+Evite marcar a demo numa **segunda-feira** (o ranking semanal recomeça na segunda e ficaria vazio) e no **dia 1º do mês** (o mensal também). Se não der, o roteiro usa a aba **Mensal** do ranking (Ato 5); o Dashboard (Ato 6) já mostra o mês atual, e as aulas-relâmpago precisam cair no mesmo mês.
 
 ## 2. Ordem de cadastro
 
@@ -91,7 +91,7 @@ Menu **Usuários e perfis**, aba **Perfis de acesso**, **+ Novo perfil** (Nome, 
 | Gamificação | Visualizar, Criar, Editar | Clientes atribuídos |
 | Demais módulos | nenhuma | n/a |
 
-Menu esperado do Professor: Dashboard, Clientes, Agenda, Minhas aulas, Fichas de treino, Metas.
+Menu esperado do Professor: Dashboard, Clientes, Agenda, Fichas de treino, Metas, Minhas aulas.
 
 **Funcionário administrativo** (descrição: "Recepção: reservas, clientes e planos.")
 
@@ -106,11 +106,11 @@ Menu esperado do Professor: Dashboard, Clientes, Agenda, Minhas aulas, Fichas de
 | Gamificação | Visualizar | Todos os registros |
 | Demais módulos (Usuários, Perfis de acesso, Presença, Fichas) | nenhuma | n/a |
 
-Sem **Excluir** em Clientes e sem **Criar/Editar** em Ocorrências de propósito: são os botões bloqueados do cenário de falta de permissão (roteiro 3.4). Como Clientes tem **Criar** com escopo total, o menu da Bianca também mostra "Atribuições"; é esperado. Menu esperado: Dashboard, Clientes, Agenda, Reservas, Planos, Metas, Atribuições, Templates & modalidades.
+Sem **Excluir** em Clientes e sem **Criar/Editar** em Ocorrências de propósito: são os botões bloqueados do cenário de falta de permissão (roteiro 3.4). Como Clientes tem **Criar** com escopo total, o menu da Bianca também mostra "Atribuições"; é esperado. Menu esperado: Dashboard, Clientes, Agenda, Reservas, Planos, Templates & modalidades, Metas, Atribuições.
 
 ## 7. Usuários da equipe (via API, não há tela)
 
-A interface só cadastra **clientes** (**+ Novo cliente**). Professores e funcionários se criam pela API (`POST /api/users/staff`, permissão Usuários: Criar), e não há tela para trocar o perfil de um usuário nem para redefinir senha (`PATCH /api/users/:id` com `profileId` e `POST /api/users/:id/reset-password` existem só na API). Registre isso como pendência de produto no ensaio (spec #10, item 17).
+A interface só cadastra **clientes** (**+ Novo cliente**, página "Novo cliente"). Professores e funcionários se criam pela API (`POST /api/users/staff`, permissão Usuários: Criar), e não há tela para trocar o perfil de um usuário nem para redefinir senha (`PATCH /api/users/:id` com `profileId` e `POST /api/users/:id/reset-password` existem só na API). Registre isso como pendência de produto no ensaio (spec #10, item 17).
 
 Numa máquina com bash, `curl` e `jq`, digitando as credenciais sem gravá-las no histórico do shell:
 
@@ -162,7 +162,7 @@ Menu **Templates & modalidades**, aba **Templates de aula**, **+ Novo template**
 
 ## 9. Clientes simulados
 
-Menu **Clientes**, **+ Novo cliente** (modal "Novo cliente"). Todos os campos são obrigatórios: Nome completo, E-mail, Telefone, Data de nascimento, Documento, Endereço e **Senha inicial** (`<definir fora do repositório>`, mínimo de 8 caracteres). O documento é único por cliente.
+Menu **Clientes**, **+ Novo cliente** (página "Novo cliente", rota `/clientes/novo`; ao salvar volta para a lista de clientes). Todos os campos são obrigatórios: Nome completo, E-mail, Telefone, Data de nascimento, CPF, Endereço e **Senha inicial** (`<definir fora do repositório>`, mínimo de 8 caracteres). O documento é único por cliente.
 
 | Nome | E-mail | Telefone | Nascimento | Documento | Endereço | Contexto |
 |---|---|---|---|---|---|---|
@@ -312,11 +312,11 @@ Prazo das metas ativas: último dia do mês da demo.
 | Conta | Deve ver |
 |---|---|
 | Administrador | Menu completo (11 itens) |
-| Camila (Professor) | Dashboard, Clientes, Agenda, Minhas aulas, Fichas de treino, Metas; em Clientes só Marina, Thiago, Beatriz e Larissa |
-| Bianca (Funcionário administrativo) | Dashboard, Clientes, Agenda, Reservas, Planos, Metas, Atribuições, Templates & modalidades; "+ Nova aula" desabilitado |
-| Marina, Thiago (Cliente) | Home, Agenda, Plano, Treino, Perfil |
+| Camila (Professor) | Dashboard, Clientes, Agenda, Fichas de treino, Metas, Minhas aulas; em Clientes só Marina, Thiago, Beatriz e Larissa |
+| Bianca (Funcionário administrativo) | Dashboard, Clientes, Agenda, Reservas, Planos, Templates & modalidades, Metas, Atribuições; "+ Nova aula" desabilitado |
+| Marina, Thiago (Cliente) | Barra lateral: Home, Agenda, Plano, Ficha de treino, Perfil (sem "Sair": a saída é "Sair da conta" no Perfil); no celular, barra inferior com Treino no lugar de Ficha de treino |
 
-**Aulas de cena** (Agenda do cliente, dia D+1): R1 "1/1 vagas", R2 "1/1 vagas", F "0/2 · lotada", X "Reservada" para a Marina; P com 3 reservas (Minhas aulas da Camila, "0 de 3 registrados"); LR e LR2 com vagas e sem reserva da Marina; S com 1 reserva (Thiago).
+**Aulas de cena** (Agenda do cliente, dia D+1): R1 "1/1 vagas", R2 "1/1 vagas", F "0/2 · lotada", X com reserva da Marina (a grade não a marca: abra a aula e veja o selo RESERVA CONFIRMADA; a Home a lista em Próximas aulas); P com 3 reservas (Minhas aulas da Camila, "0 de 3 registrados"); LR e LR2 com vagas e sem reserva da Marina; S com 1 reserva (Thiago).
 
 **Gamificação antes do Ato 4** (todas as aulas-relâmpago na mesma semana da demo):
 
@@ -330,11 +330,11 @@ Prazo das metas ativas: último dia do mês da demo.
 | Gustavo Farias | 10 | 1 | 1 |
 | Thiago Bastos, Beatriz Nakamura | 0 (fora do ranking) | 0 | 0 |
 
-Ranking semanal (tela Sua evolução de qualquer cliente): 1º Larissa M.; 2º Otávio R.; 3º Juliana P. e Marina A. (empate); 5º Fernando C. e Gustavo F. (empate). Dashboard (aba Semana): pontos distribuídos **155**, presenças **12**, clientes com streak ativo **4**, clientes ativos **8**.
+Ranking semanal (tela Sua evolução de qualquer cliente): 1º Larissa M.; 2º Otávio R.; 3º Juliana P. e Marina A. (empate); 5º Fernando C. e Gustavo F. (empate). Dashboard: Pontos distribuídos no mês **155**, Streaks ativos **4**, Clientes ativos **8** (o painel de ranking mostra os 3 primeiros com "N presenças").
 
-**Depois do Ato 4** (Marina e Thiago presentes, Beatriz faltou; sem concluir a meta da Marina): Marina 35 pontos e 3 presenças (badge "Streak de 3", empate em 2º com Otávio), Thiago 10; Dashboard: pontos distribuídos **180**, presenças **14**, streak ativo **5**, clientes ativos **9** (com a Renata). Se a meta da Marina for concluída ao vivo: Marina 60 pontos, empate em 1º com a Larissa.
+**Depois do Ato 4** (Marina e Thiago presentes, Beatriz faltou; sem concluir a meta da Marina): Marina 35 pontos e 3 presenças (badge "Streak de 3", empate em 2º com Otávio), Thiago 10; Dashboard: Pontos distribuídos no mês **180**, Streaks ativos **5**, Clientes ativos **9** (com a Renata). Se a meta da Marina for concluída ao vivo: Marina 60 pontos, empate em 1º com a Larissa.
 
-Se a semana virou entre as aulas-relâmpago e a demo, os números da aba **Semana** serão menores; os da aba **Mês** seguem valendo enquanto o mês for o mesmo.
+O Dashboard conta o mês atual: os números acima valem enquanto as aulas-relâmpago e a demo caírem no mesmo mês. Se a semana virou, só o ranking **Semanal** dos clientes (tela Sua evolução) ficará menor.
 
 ## 17. Armadilhas
 
