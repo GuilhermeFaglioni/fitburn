@@ -53,7 +53,7 @@ const FIELDS: Array<{
   { key: "email", label: "E-mail", type: "email", autoComplete: "email" },
   { key: "phone", label: "Telefone", type: "tel", autoComplete: "tel" },
   { key: "birthDate", label: "Data de nascimento", type: "date", autoComplete: "bday" },
-  { key: "document", label: "Documento", type: "text" },
+  { key: "document", label: "CPF", type: "text" },
   { key: "address", label: "Endereço", type: "text", wide: true, autoComplete: "street-address" },
 ];
 
@@ -175,13 +175,11 @@ export function ProfilePage() {
               <form className="fb-profile__form" onSubmit={submit} noValidate>
                 <div className="fb-profile__grid">
                   {FIELDS.map(({ key, label, type, wide, autoComplete }) => (
-                    <div
+                    <label
                       key={key}
                       className={`fb-profile__field${wide ? " fb-profile__wide" : ""}`}
                     >
-                      <label htmlFor={`fb-profile-${key}`} className="fb-profile__field-label">
-                        {label}
-                      </label>
+                      <span className="fb-profile__field-label">{label}</span>
                       <input
                         id={`fb-profile-${key}`}
                         className="fb-profile__input"
@@ -190,7 +188,7 @@ export function ProfilePage() {
                         value={form[key]}
                         onChange={(event) => setForm({ ...form, [key]: event.target.value })}
                       />
-                    </div>
+                    </label>
                   ))}
                 </div>
 
@@ -221,6 +219,8 @@ export function ProfilePage() {
           </section>
         </>
       )}
+
+      <div className="fb-profile__divider" aria-hidden="true" />
 
       <RequiresNetwork>
         <button type="button" className="fb-profile__logout" onClick={() => void logout()}>

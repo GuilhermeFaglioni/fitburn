@@ -219,7 +219,7 @@
   }
 }
 
-/* ---------- Cliente: lista e detalhe (casca escura) ---------- */
+/* ---------- Cliente: ficha ativa e fichas anteriores (casca escura) ---------- */
 
 .fb-workout {
   display: flex;
@@ -235,27 +235,6 @@
   font-weight: 700;
 }
 
-.fb-workout__alert {
-  margin: 0;
-  box-sizing: border-box;
-  padding: 10px 14px;
-  background: var(--color-danger-bg);
-  border: 1px solid var(--color-danger-border);
-  border-radius: 5px;
-  font-size: 13px;
-  color: var(--color-danger);
-}
-
-.fb-workout__empty {
-  box-sizing: border-box;
-  padding: 16px 18px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 5px;
-  font-size: 13px;
-  line-height: 20px;
-  color: rgba(255, 255, 255, 0.6);
-}
-
 .fb-workout__section {
   display: flex;
   flex-direction: column;
@@ -268,7 +247,6 @@
   font-weight: 700;
 }
 
-.fb-workout__cards,
 .fb-workout__previous,
 .fb-workout__exercises {
   margin: 0;
@@ -276,38 +254,31 @@
   list-style: none;
 }
 
-.fb-workout__cards {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 10px;
-}
-
-.fb-workout__card {
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 16px 18px;
-  background: var(--color-surface-raised);
-  border-radius: 5px;
-  color: inherit;
-  text-decoration: none;
-}
-
-.fb-workout__card:focus-visible,
 .fb-workout__row:focus-visible {
   outline: 2px solid var(--color-primary-orange);
   outline-offset: 2px;
 }
 
-.fb-workout__card-head,
+/* Título da tela + nome da ficha + "Montada por": um bloco só, como no artboard. */
+.fb-workout__header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 .fb-workout__title-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
-.fb-workout__card-title {
+/* No celular o artboard separa o título da tela do bloco da ficha por 22px (o gap da página). */
+.fb-workout__title + .fb-workout__title-row {
+  margin-top: 18px;
+}
+
+.fb-workout__sheet-title {
+  margin: 0;
   font-size: 17px;
   font-weight: 700;
   min-width: 0;
@@ -332,57 +303,7 @@
 
 .fb-workout__meta {
   font-size: 12px;
-  color: var(--color-text-muted-on-dark);
-}
-
-.fb-workout__count {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
-}
-
-.fb-workout__previous {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 10px;
-}
-
-.fb-workout__row {
-  box-sizing: border-box;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 14px 16px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 5px;
-  color: inherit;
-  text-decoration: none;
-}
-
-.fb-workout__row--archived {
-  border-color: rgba(255, 255, 255, 0.06);
-  opacity: 0.6;
-}
-
-.fb-workout__row-text {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-
-.fb-workout__row-title {
-  font-size: 14px;
-  font-weight: 500;
-  overflow-wrap: anywhere;
-}
-
-.fb-workout__row-status {
-  flex-shrink: 0;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  color: rgba(255, 255, 255, 0.55);
+  color: rgba(255, 255, 255, 0.45);
 }
 
 .fb-workout__back {
@@ -392,27 +313,11 @@
   text-decoration: none;
 }
 
-.fb-workout__header {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.fb-workout__sheet-title {
-  margin: 0;
-  font-size: 17px;
-  font-weight: 700;
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-
 .fb-workout__notes {
   margin: 0;
-  padding: 12px 14px;
-  border-left: 2px solid var(--color-primary-orange);
   font-size: 13px;
   line-height: 20px;
-  color: rgba(255, 255, 255, 0.75);
+  color: rgba(255, 255, 255, 0.6);
   white-space: pre-line;
   overflow-wrap: anywhere;
 }
@@ -429,7 +334,7 @@
   flex-direction: column;
   gap: 10px;
   padding: 14px 16px;
-  background: var(--color-surface-raised);
+  background: #1a1a1a;
   border-radius: 5px;
 }
 
@@ -459,7 +364,7 @@
 
 .fb-workout__chip-label {
   font-size: 10px;
-  color: var(--color-text-muted-on-dark);
+  color: rgba(255, 255, 255, 0.45);
 }
 
 .fb-workout__chip-value {
@@ -477,16 +382,82 @@
   overflow-wrap: anywhere;
 }
 
+.fb-workout__previous {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+}
+
+.fb-workout__row {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 5px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.fb-workout__row-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.fb-workout__row-title {
+  font-size: 14px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.fb-workout__row-date {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.fb-workout__row-status {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.fb-workout__row--archived {
+  border-color: rgba(255, 255, 255, 0.06);
+  opacity: 0.6;
+}
+
+.fb-workout__row--archived .fb-workout__row-date,
+.fb-workout__row--archived .fb-workout__row-status {
+  color: rgba(255, 255, 255, 0.4);
+}
+
 @media (min-width: 768px) {
+  .fb-workout {
+    gap: 24px;
+  }
+
   .fb-workout__title {
     font-size: 24px;
+  }
+
+  .fb-workout__title-row {
+    gap: 10px;
+  }
+
+  .fb-workout__title + .fb-workout__title-row {
+    margin-top: 6px;
   }
 
   .fb-workout__sheet-title {
     font-size: 18px;
   }
 
-  .fb-workout__cards,
   .fb-workout__previous,
   .fb-workout__exercises {
     grid-template-columns: repeat(2, minmax(0, 1fr));
