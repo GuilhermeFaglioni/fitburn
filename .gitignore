@@ -16,3 +16,6 @@ coverage/
 .maestri/
 .claude/*.lock
 .claude/settings.local.json
+
+# Saídas locais (comparação com o design)
+tmp/
