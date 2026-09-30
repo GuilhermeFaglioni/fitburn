@@ -25,6 +25,18 @@ const LOGIN_ERROR_STEPS = [
   { wait: 1500 },
 ];
 
+/** Preenche o formulário de Cadastro (o CPF e o e-mail do estado de sucesso são únicos a cada rodada). */
+const STAMP = Date.now();
+const cadastroFill = (email) => [
+  { fill: ['input[placeholder="Nome e sobrenome"]', "Carla Nova"] },
+  { fill: ['input[placeholder="email@exemplo.com"]', email] },
+  { fill: ['input[placeholder="(00) 00000-0000"]', "11911112222"] },
+  { fill: ['input[type="date"]', "1995-05-20"] },
+  { fill: ['input[placeholder="000.000.000-00"]', String(STAMP).slice(-11)] },
+  { fill: ['input[placeholder="Rua, número, bairro, cidade"]', "Rua A, 1"] },
+  { fill: ['input[type="password"]', "SenhaForte123!"] },
+];
+
 export const CAPTURES = [
   // ---- G1
   {
@@ -60,7 +72,29 @@ export const CAPTURES = [
   {
     id: "Cadastro",
     group: "G1",
-    app: { role: "admin", route: "/clientes", steps: [{ click: "+ Novo cliente" }] },
+    app: {
+      role: "admin",
+      route: "/clientes/novo",
+      variants: [
+        // marina.souza@email.com já existe no seed: a API responde EMAIL_ALREADY_IN_USE.
+        {
+          name: "erro_email",
+          steps: [
+            ...cadastroFill("marina.souza@email.com"),
+            { click: "Salvar cliente" },
+            { wait: 800 },
+          ],
+        },
+        {
+          name: "sucesso",
+          steps: [
+            ...cadastroFill(`cadastro.${STAMP}@example.com`),
+            { click: "Salvar cliente" },
+            { wait: 500 },
+          ],
+        },
+      ],
+    },
     design: {
       variants: [
         { name: "erro_email", props: { showEmailError: true } },

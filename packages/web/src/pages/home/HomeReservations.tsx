@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ReservationStatus, type ReservationDetail } from "@fitburn/contracts";
 import { getClientAgendaItem } from "../../lib/agenda/client-api";
-import { formatClassDay, formatInstantHour } from "../../lib/agenda/format";
+import { firstNameOf, formatUpcomingMoment } from "./format";
 import { errorMessage } from "../../lib/auth/api";
 import { cancelReservation, listMyReservations } from "../../lib/reservations/api";
 import { ErrorState, Feedback, LoadingState } from "../../components/states";
@@ -30,7 +30,7 @@ export function HomeReservations() {
       <div className="fb-home__row">
         <h2 className="fb-home__title">Próximas aulas</h2>
         <Link to="/agenda" className="fb-home__link">
-          Ver agenda
+          Ver agenda<span className="fb-home__link-more"> completa</span>
         </Link>
       </div>
 
@@ -99,8 +99,8 @@ function HomeReservation({ reservation }: { reservation: ReservationDetail }) {
       <div className="fb-home__reservation-info">
         <span className="fb-home__reservation-title">{occurrence.name}</span>
         <span className="fb-home__reservation-when">
-          {formatClassDay(occurrence.startsAt)}, {formatInstantHour(occurrence.startsAt)}
-          {occurrence.instructor ? ` · Prof. ${occurrence.instructor.fullName}` : ""}
+          {formatUpcomingMoment(occurrence.startsAt)}
+          {occurrence.instructor ? ` · Prof. ${firstNameOf(occurrence.instructor.fullName)}` : ""}
         </span>
       </div>
 

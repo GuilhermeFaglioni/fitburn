@@ -1,0 +1,155 @@
+/**
+ * Cadastro de cliente em tela cheia — Cadastro.dc.html no canvas de design.
+ * Os botões do rodapé não definem font-family no design (o navegador usa Arial neles): copiado como está.
+ */
+.fb-cadastro {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.fb-cadastro__success {
+  box-sizing: border-box;
+  padding: 12px 16px;
+  background: #eaf7ee;
+  border: 1px solid #bfe6c9;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  color: #1e6b34;
+}
+
+.fb-cadastro__heading {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fb-cadastro__crumb {
+  font-size: 13px;
+  color: var(--color-text-muted-on-light);
+}
+
+.fb-cadastro__title {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 24px;
+  color: var(--color-ink-on-light);
+}
+
+.fb-cadastro__card {
+  max-width: 760px;
+  box-sizing: border-box;
+  background: #ffffff;
+  border: 1px solid #e6e6e6;
+  border-radius: var(--radius-sm);
+  padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.fb-cadastro__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: 18px;
+}
+
+.fb-cadastro__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fb-cadastro__field label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #333333;
+}
+
+.fb-cadastro .fb-field {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 14px;
+}
+
+.fb-cadastro .fb-field:focus {
+  border-color: var(--color-primary-orange);
+}
+
+.fb-cadastro .fb-field.fb-field-error {
+  border-color: #d64545;
+}
+
+.fb-cadastro__error {
+  font-size: 12px;
+  color: #d64545;
+}
+
+.fb-cadastro__hint {
+  font-size: 12px;
+  color: var(--color-text-muted-on-light);
+}
+
+.fb-cadastro__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 8px;
+  padding-top: 20px;
+  border-top: 1px solid #eeeeee;
+}
+
+.fb-cadastro__cancel {
+  padding: 11px 20px;
+  background: #ffffff;
+  border: 1px solid #d6d6d6;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 500;
+  color: #333333;
+  cursor: pointer;
+}
+
+.fb-cadastro__submit {
+  padding: 11px 22px;
+  background: var(--color-primary-orange);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-on-orange);
+  cursor: pointer;
+}
+
+.fb-cadastro__submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 767px), (pointer: coarse) {
+  .fb-cadastro__cancel,
+  .fb-cadastro__submit {
+    min-height: 44px;
+  }
+}
+
+@media (min-width: 768px) {
+  /* 32px 48px no design: o conteúdo administrativo já dá 32px 40px. */
+  .fb-cadastro {
+    padding: 0 8px;
+  }
+
+  .fb-cadastro__card {
+    padding: 32px;
+  }
+
+  .fb-cadastro__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 20px;
+  }
+
+  .fb-cadastro__field--wide {
+    grid-column: span 2;
+  }
+}

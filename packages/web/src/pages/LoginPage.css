@@ -31,7 +31,7 @@
 
 .login-page__logo-reg {
   font-size: 10px;
-  color: var(--color-text-muted-on-dark);
+  color: var(--color-on-dark-40);
   align-self: flex-start;
 }
 
@@ -114,7 +114,7 @@
 }
 
 .login-form__input::placeholder {
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.32);
 }
 
 .login-form__input:focus {
@@ -192,11 +192,15 @@
 .login-page__footer {
   margin: 0;
   font-size: 12px;
-  color: var(--color-text-muted-on-dark);
+  color: var(--color-on-dark-40);
   text-align: center;
 }
 
 @media (min-width: 640px) {
+  .login-form__submit {
+    margin-top: 8px;
+  }
+
   .login-page__container {
     gap: 32px;
   }
