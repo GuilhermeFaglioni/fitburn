@@ -8,6 +8,7 @@ import {
   getOccurrenceFormOptions,
 } from "../../lib/agenda/api";
 import { formatShortDate } from "../../lib/agenda/format";
+import { instructorOptionLabel } from "./instructor-label";
 import { OccurrenceErrorBox } from "./OccurrenceErrorBox";
 
 /** Ordem de exibição (segunda primeiro), com o índice do Date (0 = domingo). */
@@ -60,6 +61,9 @@ export function OccurrenceFormModal({
   const [endDate, setEndDate] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<unknown>(null);
+
+  const titularId = templates.find((candidate) => candidate.id === templateId)?.defaultInstructor
+    ?.id;
 
   function selectTemplate(id: string) {
     setTemplateId(id);
@@ -183,7 +187,7 @@ export function OccurrenceFormModal({
               <option value="">Sem professor</option>
               {instructors.map((instructor) => (
                 <option key={instructor.id} value={instructor.id}>
-                  {instructor.fullName}
+                  {instructorOptionLabel(instructor.fullName, instructor.id === titularId)}
                 </option>
               ))}
             </select>

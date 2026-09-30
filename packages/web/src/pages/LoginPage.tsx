@@ -124,7 +124,8 @@ export function LoginPage() {
                 aria-label={passwordVisible ? "Ocultar senha" : "Mostrar senha"}
                 onClick={() => setPasswordVisible((visible) => !visible)}
               >
-                {passwordVisible ? <EyeOffIcon /> : <EyeIcon />}
+                {/* Como no design: o ícone mostra o estado atual (olho aberto = senha visível). */}
+                {passwordVisible ? <EyeIcon /> : <EyeOffIcon />}
               </button>
             </div>
           </div>

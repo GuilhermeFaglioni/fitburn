@@ -208,19 +208,12 @@ describe("Reservas administrativas (equipe)", () => {
       expect(within(cancelled).queryByRole("button", { name: /Remarcar/ })).not.toBeInTheDocument();
     });
 
-    it("filtra por cliente, estado e período na API (hoje por padrão)", async () => {
+    it("filtra por estado e período na API (hoje por padrão)", async () => {
       const user = userEvent.setup();
       renderPage();
       await screen.findByText("CANCELADA");
       expect(listRequests[0]).toBe(`?from=${TODAY}&to=${TODAY}`);
 
-      await user.selectOptions(screen.getByLabelText("Cliente"), "c-rafael");
-      await waitFor(() => expect(screen.queryByText("CANCELADA")).not.toBeInTheDocument());
-      expect(listRequests[listRequests.length - 1]).toBe(
-        `?clientId=c-rafael&from=${TODAY}&to=${TODAY}`,
-      );
-
-      await user.selectOptions(screen.getByLabelText("Cliente"), "");
       await user.selectOptions(screen.getByLabelText("Status"), "CANCELLED");
       await waitFor(() => expect(screen.queryByText("CONFIRMADA")).not.toBeInTheDocument());
       expect(listRequests[listRequests.length - 1]).toBe(
@@ -238,6 +231,18 @@ describe("Reservas administrativas (equipe)", () => {
 
       await user.selectOptions(screen.getByLabelText("Período"), "all");
       await waitFor(() => expect(listRequests[listRequests.length - 1]).toBe(""));
+    });
+
+    it("busca por cliente ou aula na lista carregada", async () => {
+      const user = userEvent.setup();
+      renderPage();
+      await screen.findByText("CANCELADA");
+      expect(screen.getByText("Rafael Andrade", { selector: "td" })).toBeInTheDocument();
+
+      await user.type(screen.getByLabelText("Buscar por cliente ou aula"), "rafael");
+
+      expect(screen.getByText("Rafael Andrade", { selector: "td" })).toBeInTheDocument();
+      expect(screen.queryByText("Marina Souza", { selector: "td" })).not.toBeInTheDocument();
     });
 
     it("avisa quando nenhuma reserva é encontrada", async () => {

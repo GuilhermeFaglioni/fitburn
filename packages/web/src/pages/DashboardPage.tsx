@@ -1,124 +1,155 @@
-import { useState } from "react";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import {
-  RankingPeriod,
-  utcToGymDateTime,
-  weekdayOf,
-  type Dashboard,
-  type DashboardOccupancyItem,
-  type RankingPeriodName,
-} from "@fitburn/contracts";
-import { formatDayHeading, formatInstantHour } from "../lib/agenda/format";
+import { useQuery } from "@tanstack/react-query";
+import { RankingPeriod, type Dashboard, type DashboardOccupancyItem } from "@fitburn/contracts";
 import { getDashboard } from "../lib/dashboard/api";
 import { EmptyState, ErrorState, LoadingState } from "../components/states";
 
-const PERIODS: Array<{ period: RankingPeriodName; label: string }> = [
-  { period: RankingPeriod.WEEK, label: "Semana" },
-  { period: RankingPeriod.MONTH, label: "Mês" },
-];
+/** Quantas posições do ranking o painel mostra (o artboard tem 3). */
+const RANKING_ROWS = 3;
 
 function plural(count: number, singular: string, pluralForm: string): string {
   return `${count} ${count === 1 ? singular : pluralForm}`;
 }
 
-function OccupancyRow({ item }: { item: DashboardOccupancyItem }) {
-  const full = item.availableSpots === 0;
+function formatNumber(value: number): string {
+  return value.toLocaleString("pt-BR");
+}
+
+/** Reservas sobre vagas, em porcentagem inteira. */
+function percent(booked: number, capacity: number): number {
+  return capacity > 0 ? Math.round((booked / capacity) * 100) : 0;
+}
+
+interface ClassOccupancy {
+  name: string;
+  percent: number;
+}
+
+/** Ocupação por modalidade na semana atual: as reservas sobre as vagas de todas as aulas do mesmo nome. */
+function occupancyByClass(week: DashboardOccupancyItem[]): ClassOccupancy[] {
+  const totals = new Map<string, { booked: number; capacity: number }>();
+  for (const item of week) {
+    const current = totals.get(item.name) ?? { booked: 0, capacity: 0 };
+    totals.set(item.name, {
+      booked: current.booked + item.booked,
+      capacity: current.capacity + item.capacity,
+    });
+  }
+  return [...totals.entries()]
+    .map(([name, { booked, capacity }]) => ({ name, percent: percent(booked, capacity) }))
+    .sort((a, b) => b.percent - a.percent || a.name.localeCompare(b.name, "pt-BR"));
+}
+
+/** A ocupação média da semana: todas as reservas sobre todas as vagas das aulas da semana. */
+function weekOccupancy(week: DashboardOccupancyItem[]): string {
+  const capacity = week.reduce((sum, item) => sum + item.capacity, 0);
+  if (capacity === 0) return "—";
+  const booked = week.reduce((sum, item) => sum + item.booked, 0);
+  return `${percent(booked, capacity)}%`;
+}
+
+function Kpi({ label, value }: { label: string; value: string }) {
   return (
-    <li className="fb-dash__class">
-      <span className="fb-dash__class-hour">{formatInstantHour(item.startsAt)}</span>
-      <span className="fb-dash__class-name">{item.name}</span>
-      <span className="fb-dash__class-count">
-        {item.booked}/{item.capacity}
-      </span>
-      <span className={`fb-badge fb-badge--${full ? "accent" : "neutral"}`}>
-        {full ? "Lotada" : plural(item.availableSpots, "vaga", "vagas")}
-      </span>
-    </li>
+    <div className="fb-dash__kpi">
+      <span className="fb-dash__kpi-label">{label}</span>
+      <span className="fb-dash__kpi-value">{value}</span>
+    </div>
   );
 }
 
-function OccupancyBlock({
-  occupancy,
-  today,
-}: {
-  occupancy: NonNullable<Dashboard["occupancy"]>;
-  today: string;
-}) {
-  const byDay = new Map<string, DashboardOccupancyItem[]>();
-  for (const item of occupancy.week) {
-    const { date } = utcToGymDateTime(item.startsAt);
-    byDay.set(date, [...(byDay.get(date) ?? []), item]);
-  }
-
+function OccupancyPanel({ week }: { week: DashboardOccupancyItem[] }) {
+  const classes = occupancyByClass(week);
   return (
-    <section className="fb-dash__block" aria-labelledby="fb-dash-occupancy">
-      <h2 id="fb-dash-occupancy" className="fb-dash__block-title">
-        Ocupação das aulas
+    <section className="fb-dash__panel" aria-labelledby="fb-dash-occupancy">
+      <h2 id="fb-dash-occupancy" className="fb-dash__panel-title">
+        Ocupação por aula · semana atual
       </h2>
-      <div className="fb-dash__columns">
-        <div>
-          <h3 className="fb-dash__sub-title">Hoje</h3>
-          {occupancy.today.length === 0 ? (
-            <EmptyState message="Nenhuma aula hoje." />
-          ) : (
-            <ul className="fb-dash__list" aria-label="Aulas de hoje">
-              {occupancy.today.map((item) => (
-                <OccupancyRow key={item.id} item={item} />
-              ))}
-            </ul>
-          )}
-        </div>
-        <div>
-          <h3 className="fb-dash__sub-title">Semana</h3>
-          {byDay.size === 0 ? (
-            <EmptyState message="Nenhuma aula nesta semana." />
-          ) : (
-            [...byDay.entries()].map(([date, items]) => (
-              <div key={date} className="fb-dash__day">
-                <h4 className="fb-dash__day-title">
-                  {formatDayHeading(date, weekdayOf(date), today)}
-                </h4>
-                <ul className="fb-dash__list" aria-label={`Aulas de ${date}`}>
-                  {items.map((item) => (
-                    <OccupancyRow key={item.id} item={item} />
-                  ))}
-                </ul>
+      {classes.length === 0 ? (
+        <EmptyState message="Nenhuma aula nesta semana." />
+      ) : (
+        <ul className="fb-dash__bars" aria-label="Ocupação por aula">
+          {classes.map((item) => (
+            <li key={item.name} className="fb-dash__bar-row">
+              <div className="fb-dash__bar-head">
+                <span className="fb-dash__bar-name">{item.name}</span>
+                <span className="fb-dash__bar-value">{item.percent}%</span>
               </div>
-            ))
-          )}
+              <div className="fb-dash__meter-track" aria-hidden="true">
+                <div className="fb-dash__meter-fill" style={{ width: `${item.percent}%` }} />
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+function GamificationPanel({
+  gamification,
+}: {
+  gamification: NonNullable<Dashboard["gamification"]>;
+}) {
+  return (
+    <section className="fb-dash__panel" aria-labelledby="fb-dash-gamification">
+      <h2 id="fb-dash-gamification" className="fb-dash__panel-title">
+        Gamificação
+      </h2>
+      <div className="fb-dash__figures">
+        <div className="fb-dash__figure">
+          <span className="fb-dash__figure-value">
+            {formatNumber(gamification.pointsDistributed)}
+          </span>
+          <span className="fb-dash__figure-label">pontos distribuídos</span>
         </div>
+        <div className="fb-dash__figure">
+          <span className="fb-dash__figure-value">
+            {formatNumber(gamification.clientsWithActiveStreak)}
+          </span>
+          <span className="fb-dash__figure-label">streaks ativos</span>
+        </div>
+      </div>
+      <div className="fb-dash__divider" role="presentation" />
+      <div className="fb-dash__ranking">
+        <h3 className="fb-dash__ranking-title">Ranking do período</h3>
+        {gamification.top.length === 0 ? (
+          <EmptyState message="Ninguém pontuou neste período." />
+        ) : (
+          <ol className="fb-dash__ranking-list" aria-label="Topo do ranking">
+            {gamification.top.slice(0, RANKING_ROWS).map((entry) => (
+              <li key={entry.clientId} className="fb-dash__ranking-row">
+                <span className="fb-dash__ranking-pos">{entry.position}º</span>
+                <span className="fb-dash__ranking-name">{entry.fullName}</span>
+                <span className="fb-dash__ranking-count">
+                  {plural(entry.attendances, "presença", "presenças")}
+                </span>
+              </li>
+            ))}
+          </ol>
+        )}
       </div>
     </section>
   );
 }
 
-function Metric({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="fb-dash__metric">
-      <span className="fb-dash__metric-value">{value}</span>
-      <span className="fb-dash__metric-label">{label}</span>
-    </div>
-  );
-}
-
 /**
- * Dashboard administrativo: ocupação e vagas das aulas de hoje e da semana,
- * clientes ativos e os indicadores de gamificação do período (semana ou mês
- * atuais). Cada bloco só chega quando a pessoa enxerga o módulo que o
- * alimenta, já limitado ao escopo dela.
+ * Dashboard administrativo (DashboardAdmin.dc.html): quatro cartões de KPI (clientes ativos, ocupação
+ * média da semana, pontos distribuídos e streaks ativos no mês), o painel "Ocupação por aula" com uma
+ * barra por modalidade na semana atual e o painel "Gamificação" com o ranking do mês. Cada bloco só
+ * chega quando a pessoa enxerga o módulo que o alimenta, já limitado ao escopo dela.
  */
 export function DashboardPage() {
-  const [period, setPeriod] = useState<RankingPeriodName>(RankingPeriod.WEEK);
   const dashboardQuery = useQuery({
-    queryKey: ["dashboard", period],
-    queryFn: () => getDashboard(period),
-    placeholderData: keepPreviousData,
+    queryKey: ["dashboard", RankingPeriod.MONTH],
+    queryFn: () => getDashboard(RankingPeriod.MONTH),
   });
   const dashboard = dashboardQuery.data;
 
   return (
     <div className="fb-dash">
-      <h1 className="fb-page-title">Dashboard</h1>
+      <div className="fb-dash__heading">
+        <h1 className="fb-page-title">Dashboard</h1>
+        <span className="fb-dash__subtitle">Visão geral do Fitburn</span>
+      </div>
 
       {dashboardQuery.isLoading && <LoadingState />}
       {dashboardQuery.isError && (
@@ -130,69 +161,35 @@ export function DashboardPage() {
 
       {dashboard && (
         <>
-          {dashboard.occupancy && (
-            <OccupancyBlock occupancy={dashboard.occupancy} today={dashboard.today} />
-          )}
-
-          {dashboard.activeClients && (
-            <section className="fb-dash__block" aria-labelledby="fb-dash-clients">
-              <h2 id="fb-dash-clients" className="fb-dash__block-title">
-                Clientes ativos
-              </h2>
-              <Metric label="clientes ativos" value={dashboard.activeClients.total} />
-            </section>
-          )}
-
-          {dashboard.gamification && (
-            <section className="fb-dash__block" aria-labelledby="fb-dash-gamification">
-              <div className="fb-dash__block-head">
-                <h2 id="fb-dash-gamification" className="fb-dash__block-title">
-                  Gamificação
-                </h2>
-                <div className="fb-tabs" role="group" aria-label="Período dos indicadores">
-                  {PERIODS.map((option) => (
-                    <button
-                      key={option.period}
-                      type="button"
-                      className={`fb-tab-btn${period === option.period ? " active" : ""}`}
-                      aria-pressed={period === option.period}
-                      onClick={() => setPeriod(option.period)}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="fb-dash__metrics">
-                <Metric
-                  label="pontos distribuídos"
-                  value={dashboard.gamification.pointsDistributed}
+          <div className="fb-dash__kpis">
+            {dashboard.activeClients && (
+              <Kpi label="Clientes ativos" value={formatNumber(dashboard.activeClients.total)} />
+            )}
+            {dashboard.occupancy && (
+              <Kpi
+                label="Ocupação média da semana"
+                value={weekOccupancy(dashboard.occupancy.week)}
+              />
+            )}
+            {dashboard.gamification && (
+              <>
+                <Kpi
+                  label="Pontos distribuídos no mês"
+                  value={formatNumber(dashboard.gamification.pointsDistributed)}
                 />
-                <Metric label="presenças" value={dashboard.gamification.attendances} />
-                <Metric
-                  label="clientes com streak ativo"
-                  value={dashboard.gamification.clientsWithActiveStreak}
+                <Kpi
+                  label="Streaks ativos"
+                  value={formatNumber(dashboard.gamification.clientsWithActiveStreak)}
                 />
-              </div>
-              <h3 className="fb-dash__sub-title">Topo do ranking</h3>
-              {dashboard.gamification.top.length === 0 ? (
-                <EmptyState message="Ninguém pontuou neste período." />
-              ) : (
-                <ol className="fb-dash__list" aria-label="Topo do ranking">
-                  {dashboard.gamification.top.map((entry) => (
-                    <li key={entry.clientId} className="fb-dash__class">
-                      <span className="fb-dash__class-hour">{entry.position}º</span>
-                      <span className="fb-dash__class-name">{entry.fullName}</span>
-                      <span className="fb-dash__class-count">
-                        {plural(entry.attendances, "presença", "presenças")}
-                        {entry.tied ? " · empate" : ""}
-                      </span>
-                      <span className="fb-badge fb-badge--accent">{entry.points} pts</span>
-                    </li>
-                  ))}
-                </ol>
-              )}
-            </section>
+              </>
+            )}
+          </div>
+
+          {(dashboard.occupancy || dashboard.gamification) && (
+            <div className="fb-dash__panels">
+              {dashboard.occupancy && <OccupancyPanel week={dashboard.occupancy.week} />}
+              {dashboard.gamification && <GamificationPanel gamification={dashboard.gamification} />}
+            </div>
           )}
         </>
       )}

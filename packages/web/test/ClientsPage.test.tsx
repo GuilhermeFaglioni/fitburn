@@ -12,6 +12,7 @@ import {
   type ClientOverview,
 } from "@fitburn/contracts";
 import { AuthProvider, useAuth } from "../src/lib/auth/AuthContext";
+import { ClientCreatePage } from "../src/pages/ClientCreatePage";
 import { ClientDetailPage } from "../src/pages/ClientDetailPage";
 import { ClientsPage } from "../src/pages/ClientsPage";
 import { mockSuccessfulLogin } from "./auth-mocks";
@@ -39,6 +40,7 @@ function renderAt(
           <LoggedIn>
             <Routes>
               <Route path="/clientes" element={<ClientsPage />} />
+              <Route path="/clientes/novo" element={<ClientCreatePage />} />
               <Route path="/clientes/:id" element={<ClientDetailPage />} />
             </Routes>
           </LoggedIn>
@@ -183,7 +185,7 @@ describe("Clientes (equipe)", () => {
       expect(within(marina).getByText("marina@email.com")).toBeInTheDocument();
       expect(within(marina).getByText(/Plano Performance/)).toBeInTheDocument();
       expect(within(marina).getByText("ATIVO")).toBeInTheDocument();
-      expect(within(bruno).getByText("Sem plano")).toBeInTheDocument();
+      expect(within(bruno).getByText("Sem plano ativo")).toBeInTheDocument();
       expect(within(bruno).getByText("INATIVO")).toBeInTheDocument();
     });
 
@@ -306,33 +308,14 @@ describe("Clientes (equipe)", () => {
       });
     });
 
-    it("cadastra um cliente pelo modal", async () => {
+    it("o botão + Novo cliente abre o cadastro em tela cheia (/clientes/novo)", async () => {
       const user = userEvent.setup();
-      let body: unknown;
-      server.use(
-        http.post("/api/clients", async ({ request }) => {
-          body = await request.json();
-          return HttpResponse.json(OVERVIEW.client, { status: 201 });
-        }),
-      );
       renderAt("/clientes");
       await user.click(await screen.findByRole("button", { name: "+ Novo cliente" }));
 
-      await user.type(screen.getByLabelText("Nome completo"), "Carla Nova");
-      await user.type(screen.getByLabelText("E-mail"), "carla@email.com");
-      await user.type(screen.getByLabelText("Telefone"), "11911112222");
-      await user.type(screen.getByLabelText("Data de nascimento"), "1995-05-20");
-      await user.type(screen.getByLabelText("Documento"), "111.222.333-44");
-      await user.type(screen.getByLabelText("Endereço"), "Rua A, 1");
-      await user.type(screen.getByLabelText("Senha inicial"), "SenhaForte123!");
-      await user.click(screen.getByRole("button", { name: "Cadastrar cliente" }));
-
-      await waitFor(() =>
-        expect(body).toMatchObject({ fullName: "Carla Nova", email: "carla@email.com" }),
-      );
-      await waitFor(() =>
-        expect(screen.queryByRole("dialog", { name: "Novo cliente" })).not.toBeInTheDocument(),
-      );
+      expect(await screen.findByRole("heading", { name: "Novo cliente" })).toBeInTheDocument();
+      expect(screen.getByRole("form", { name: "Cadastro de cliente" })).toBeInTheDocument();
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     });
   });
 

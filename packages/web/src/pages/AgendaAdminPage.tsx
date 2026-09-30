@@ -13,6 +13,7 @@ import {
 } from "@fitburn/contracts";
 import { BlockedAction } from "../components/BlockedAction";
 import { useAuth } from "../lib/auth/AuthContext";
+import { professorLabel } from "../lib/names";
 import { listOccurrences } from "../lib/agenda/api";
 import { formatDayLabel, formatInstantHour, formatWeekRange } from "../lib/agenda/format";
 import { OccurrenceEditModal } from "./agenda/OccurrenceEditModal";
@@ -50,6 +51,11 @@ export function AgendaAdminPage() {
     const { date } = utcToGymDateTime(occurrence.startsAt);
     occurrencesByDay.set(date, [...(occurrencesByDay.get(date) ?? []), occurrence]);
   }
+
+  // Se dois professores da semana compartilham o primeiro nome, os chips mostram o nome completo.
+  const instructorNames = (occurrencesQuery.data ?? []).flatMap((occurrence) =>
+    occurrence.instructor ? [occurrence.instructor.fullName] : [],
+  );
 
   function refresh() {
     return queryClient.invalidateQueries({ queryKey: ["occurrences"] });
@@ -116,7 +122,9 @@ export function AgendaAdminPage() {
             : formatDayLabel(date, weekdayOf(date));
           return (
             <div key={date} className="fb-day-col">
-              <div className={`fb-day-head${isToday ? " fb-day-head--today" : ""}`}>{label}</div>
+              <div className={`fb-day-head${isToday ? " fb-day-head--today" : ""}`}>
+                <span>{label}</span>
+              </div>
               {(occurrencesByDay.get(date) ?? []).map((occurrence) => (
                 <button
                   key={occurrence.id}
@@ -131,7 +139,7 @@ export function AgendaAdminPage() {
                   <span className="fb-chip-cls__sub">
                     {occurrence.status === OccurrenceStatus.CANCELLED
                       ? "Cancelada"
-                      : `${occurrence.instructor ? `Prof. ${occurrence.instructor.fullName}` : "Sem professor"} · ${occurrence.bookedCount}/${occurrence.capacity}`}
+                      : `${occurrence.instructor ? professorLabel(occurrence.instructor.fullName, instructorNames) : "Sem professor"} · ${occurrence.bookedCount}/${occurrence.capacity}`}
                   </span>
                 </button>
               ))}

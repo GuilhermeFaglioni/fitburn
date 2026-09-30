@@ -12,8 +12,9 @@
   --color-surface-white: #ffffff;
   --color-ink-on-dark: #ffffff;
   --color-ink-on-light: #0a0a0a;
-  /* Texto sobre fundo laranja da marca: o branco dá ~3.05:1; o preto dá ~6.5:1 (WCAG AA 4.5:1). */
-  --color-on-orange: #0a0a0a;
+  /* Texto sobre fundo laranja da marca: o design usa branco em negrito (~3.05:1, abaixo de 4.5:1; o tokens.json do
+     design já registra o par como marca). Exceção conhecida do design, registrada em test/contrast.test.ts. */
+  --color-on-orange: #ffffff;
   --color-primary-orange: #ed6e34;
   --color-flame-red: #c23a1f;
 
@@ -23,13 +24,20 @@
   --color-danger-bg: rgba(255, 109, 90, 0.1);
   --color-danger-border: rgba(255, 109, 90, 0.35);
 
-  /* Texto secundário com contraste AA (>= 4.5:1) sobre a superfície de cada área:
-     #666 sobre branco/#fafafa, branco a 60% sobre preto/#1a1a1a. */
-  --color-text-muted-on-light: #666666;
+  /* Texto secundário. O design usa cinzas e transparências que ficam abaixo de 4.5:1 (exceções conhecidas do design,
+     registradas em test/contrast.test.ts): #8a8a8a e #b0b0b0 sobre branco; branco a 40% a 55% sobre preto. */
+  --color-text-muted-on-light: #8a8a8a;
+  --color-text-faint-on-light: #b0b0b0;
   --color-text-muted-on-dark: rgba(255, 255, 255, 0.6);
+  /* Um alpha para cada nível de texto secundário das telas escuras (o design escolhe por elemento). */
+  --color-on-dark-40: rgba(255, 255, 255, 0.4);
+  --color-on-dark-45: rgba(255, 255, 255, 0.45);
+  --color-on-dark-50: rgba(255, 255, 255, 0.5);
+  --color-on-dark-55: rgba(255, 255, 255, 0.55);
+  --color-on-dark-65: rgba(255, 255, 255, 0.65);
   --color-error-text-on-light: #7a2413;
-  /* O laranja da marca sobre superfície clara não chega a 4.5:1; este é o mesmo tom, escurecido, para TEXTO laranja em telas claras. */
-  --color-accent-on-light: #b44a14;
+  /* Texto e traço laranja sobre superfície clara: o design usa o laranja da marca (~3:1), exceção registrada no teste de contraste. */
+  --color-accent-on-light: #ed6e34;
 
   /* Tipografia */
   --font-serif: "Cormorant", Georgia, "Times New Roman", serif;

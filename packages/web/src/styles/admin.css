@@ -30,7 +30,7 @@
 
 .fb-page-eyebrow {
   font-size: 13px;
-  color: var(--color-text-muted-on-light);
+  color: #8a8a8a;
 }
 
 .fb-page-title {
@@ -54,15 +54,23 @@
   border-bottom: 2px solid transparent;
   font-size: 14px;
   font-family: var(--font-sans);
-  color: var(--color-text-muted-on-light);
+  color: #8a8a8a;
   font-weight: 400;
   cursor: pointer;
 }
 
 .fb-tab-btn.active {
   color: var(--color-ink-on-light);
-  border-bottom-color: var(--color-accent-on-light);
+  border-bottom-color: #ed6e34;
   font-weight: 700;
+}
+
+/* Título à esquerda e a ação principal à direita, na mesma linha (design: Clientes, Reservas...). */
+.fb-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .fb-toolbar {
@@ -71,6 +79,18 @@
   justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
+}
+
+/* Filtros à esquerda e a contagem de resultados empurrada para a direita. */
+.fb-toolbar--filters {
+  justify-content: flex-start;
+  gap: 10px;
+}
+
+.fb-count {
+  margin-left: auto;
+  font-size: 12px;
+  color: #8a8a8a;
 }
 
 .fb-field {
@@ -91,13 +111,40 @@
   border-radius: var(--radius-sm);
   font-size: 14px;
   font-weight: 700;
-  color: var(--color-on-orange);
+  color: #ffffff;
   cursor: pointer;
+}
+
+/* No design, "+ Novo cliente" é um <a> (DM Sans); os demais primários são <button> sem família (Arial). */
+.fb-btn-primary--sans {
+  font-family: var(--font-sans);
 }
 
 .fb-btn-primary:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.fb-role-list .fb-btn-dashed {
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.fb-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.fb-td--module {
+  font-weight: 500;
+  text-align: left;
 }
 
 .fb-btn-dashed {
@@ -106,7 +153,7 @@
   border: 1px dashed #d6d6d6;
   border-radius: var(--radius-sm);
   font-size: 13px;
-  color: var(--color-text-muted-on-light);
+  color: #8a8a8a;
   cursor: pointer;
   text-align: left;
 }
@@ -129,7 +176,7 @@
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.04em;
-  color: var(--color-text-muted-on-light);
+  color: #8a8a8a;
   text-transform: uppercase;
   border-bottom: 1px solid #e6e6e6;
 }
@@ -140,6 +187,37 @@
   color: #1a1a1a;
   border-bottom: 1px solid #f0f0f0;
   vertical-align: middle;
+}
+
+.fb-td--name {
+  font-weight: 500;
+}
+
+.fb-td--soft {
+  color: #5a5a5a;
+}
+
+.fb-name-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Linha de registro inativo, esmaecida (design: nome #8a8a8a, demais #b0b0b0). */
+.fb-row--inactive .fb-td {
+  color: #b0b0b0;
+}
+
+.fb-td--actions {
+  white-space: nowrap;
+}
+
+.fb-row--inactive .fb-td--actions {
+  color: #c8c8c8;
+  font-size: 12px;
+}
+
+.fb-row--inactive .fb-td--name {
+  color: #8a8a8a;
 }
 
 .fb-row-btn {
@@ -195,15 +273,20 @@
 
 .fb-note {
   font-size: 12px;
-  color: var(--color-text-muted-on-light);
+  color: #8a8a8a;
 }
 
 .fb-badge {
   display: inline-block;
+  white-space: nowrap;
   font-size: 11px;
   font-weight: 700;
   padding: 4px 9px;
   border-radius: var(--radius-sm);
+}
+
+.fb-badge--spaced {
+  letter-spacing: 0.03em;
 }
 
 .fb-badge--active {
@@ -212,18 +295,28 @@
 }
 
 .fb-badge--inactive {
-  color: var(--color-text-muted-on-light);
+  color: #8a8a8a;
   background: #f0f0f0;
 }
 
 .fb-badge--accent {
-  color: var(--color-accent-on-light);
+  color: #ed6e34;
   background: rgba(237, 110, 52, 0.14);
+}
+
+.fb-badge--blue {
+  color: #2a5fb0;
+  background: #eaf1fb;
+}
+
+.fb-badge--brown {
+  color: #8a5a2a;
+  background: #faf1e6;
 }
 
 .fb-badge--neutral {
   color: #4a4a4a;
-  background: #f2f2f2;
+  background: #f0f0f0;
 }
 
 .fb-lock-banner {
@@ -238,6 +331,24 @@
   font-size: 13px;
   line-height: 19px;
   color: #6b4a1e;
+}
+
+/* Aviso menor da aba "Atribuir a cliente" (12px/18px no artboard). */
+.fb-lock-banner--sm {
+  font-size: 12px;
+  line-height: 18px;
+}
+
+/* Na aba "Atribuir a cliente" os rótulos são de 13px. */
+.fb-assign .fb-modal__field label {
+  font-size: 13px;
+}
+
+/* Linha com a ação principal à direita, acima da tabela. */
+.fb-toolbar-end {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
 }
 
 .fb-matrix-layout {
@@ -272,7 +383,7 @@
 
 .fb-role-item.active {
   background: rgba(237, 110, 52, 0.14);
-  color: var(--color-accent-on-light);
+  color: #ed6e34;
   font-weight: 700;
 }
 
@@ -293,7 +404,7 @@
 
 .fb-scope {
   font-size: 11px;
-  color: var(--color-text-muted-on-light);
+  color: #8a8a8a;
 }
 
 .fb-checkbox {
@@ -312,7 +423,7 @@
 
 .fb-checkbox:checked {
   background: var(--color-primary-orange);
-  border-color: var(--color-accent-on-light);
+  border-color: #ed6e34;
 }
 
 .fb-checkbox:checked::after {
@@ -337,8 +448,19 @@
   background: #f2f2f2;
 }
 
+/* Matriz fixa do Administrador: no design as marcas seguem laranja. */
+.fb-checkbox.fb-checkbox--fixed:disabled:checked {
+  background: #ed6e34;
+  border-color: #ed6e34;
+  cursor: default;
+}
+
+.fb-checkbox.fb-checkbox--fixed:disabled:checked::after {
+  color: #ffffff;
+}
+
 .fb-checkbox:disabled:checked::after {
-  color: var(--color-text-muted-on-light);
+  color: #8a8a8a;
 }
 
 .fb-form {
@@ -385,14 +507,21 @@
   text-align: center;
   padding: 6px 0;
   border-bottom: 2px solid #eeeeee;
+}
+
+/* O rótulo é um <span> dentro de um bloco de 16px, como no artboard (a cabeça fica com 35px). */
+.fb-day-head > span {
   font-size: 12px;
   font-weight: 700;
-  color: var(--color-text-muted-on-light);
+  color: #8a8a8a;
 }
 
 .fb-day-head--today {
-  border-bottom-color: var(--color-accent-on-light);
-  color: var(--color-accent-on-light);
+  border-bottom-color: #ed6e34;
+}
+
+.fb-day-head--today > span {
+  color: #ed6e34;
 }
 
 .fb-chip-cls {
@@ -408,7 +537,7 @@
   text-align: left;
   font-family: var(--font-sans);
   background: rgba(237, 110, 52, 0.12);
-  color: var(--color-accent-on-light);
+  color: #ed6e34;
 }
 
 .fb-chip-cls--full {
@@ -418,7 +547,7 @@
 
 .fb-chip-cls--cancelled {
   background: #f2f2f2;
-  color: var(--color-text-muted-on-light);
+  color: #8a8a8a;
   text-decoration: line-through;
 }
 
@@ -513,6 +642,17 @@
   width: 100%;
 }
 
+.fb-modal__hint {
+  font-size: 11px;
+  color: #8a8a8a;
+}
+
+.fb-modal__form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
 .fb-modal__grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -528,6 +668,14 @@
   border-top: 1px solid #eeeeee;
 }
 
+.fb-modal__footer--end {
+  justify-content: flex-end;
+}
+
+.fb-modal__footer--tight {
+  padding-top: 8px;
+}
+
 .fb-btn-secondary {
   padding: 10px 18px;
   background: #ffffff;
@@ -537,6 +685,16 @@
   font-weight: 500;
   color: #333333;
   cursor: pointer;
+}
+
+.fb-btn-primary--lg {
+  padding: 11px 22px;
+  font-size: 15px;
+}
+
+.fb-btn-secondary--lg {
+  padding: 11px 20px;
+  font-size: 14px;
 }
 
 .fb-btn-primary--sm {
@@ -549,11 +707,11 @@
   box-sizing: border-box;
   padding: 12px 14px;
   background: rgba(194, 58, 31, 0.08);
-  border: 1px solid rgba(194, 58, 31, 0.35);
+  border: 1px solid #c23a1f;
   border-radius: var(--radius-sm);
-  font-size: 13px;
-  line-height: 19px;
-  color: #7a2413;
+  font-size: 12px;
+  line-height: 18px;
+  color: #7a2515;
 }
 
 .fb-error-box ul {
@@ -582,8 +740,8 @@
 
 .fb-weekday-toggle[aria-pressed="true"] {
   background: var(--color-primary-orange);
-  border-color: var(--color-accent-on-light);
-  color: var(--color-on-orange);
+  border-color: #ed6e34;
+  color: #ffffff;
 }
 
 .fb-recurrence-summary {
@@ -645,8 +803,8 @@
   background: #eaf7ee;
   border: 1px solid #bfe6c9;
   border-radius: var(--radius-sm);
-  font-size: 13px;
-  line-height: 19px;
+  font-size: 12px;
+  line-height: 18px;
   color: #1e6b34;
 }
 
@@ -667,7 +825,7 @@
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--color-accent-on-light);
+  color: #ed6e34;
 }
 
 .fb-client-highlight__name {
@@ -678,4 +836,15 @@
 .fb-client-highlight__email {
   font-size: 12px;
   color: #5a5a5a;
+}
+
+/* Mobile: as tabelas mantêm as colunas legíveis e rolam na horizontal dentro da moldura. */
+@media (max-width: 767px) {
+  .fb-admin-content .fb-table-wrap table {
+    min-width: 720px;
+  }
+
+  .fb-page-header {
+    flex-wrap: wrap;
+  }
 }

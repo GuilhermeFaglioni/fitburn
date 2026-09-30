@@ -1,8 +1,8 @@
 /**
  * Home do cliente — HomeMobile.dc.html e HomeDesktop.dc.html no canvas de
- * design (Claude Design). Mobile: blocos empilhados com 28px de intervalo;
- * desktop (≥768px): coluna de 400px (saudação, plano, evolução) ao lado das
- * próximas aulas e dos atalhos.
+ * design (Claude Design). Mobile: blocos empilhados com 28px de intervalo
+ * (saudação e plano, próximas aulas, evolução); desktop largo (≥1100px):
+ * coluna de 400px (saudação, plano, evolução) ao lado das próximas aulas.
  */
 .fb-home {
   display: flex;
@@ -12,12 +12,14 @@
   color: var(--color-ink-on-dark);
 }
 
-.fb-home__main,
-.fb-home__side {
+.fb-home > * {
+  min-width: 0;
+}
+
+.fb-home__intro {
   display: flex;
   flex-direction: column;
-  gap: 28px;
-  min-width: 0;
+  gap: 14px;
 }
 
 .fb-home__block {
@@ -56,6 +58,11 @@
   text-decoration: underline;
 }
 
+/* "Ver agenda" no mobile, "Ver agenda completa" no desktop. */
+.fb-home__link-more {
+  display: none;
+}
+
 .fb-home__alert {
   margin: 0;
   box-sizing: border-box;
@@ -69,7 +76,7 @@
 
 .fb-home__note {
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.65);
+  color: var(--color-on-dark-65);
 }
 
 /* Plano ativo. */
@@ -89,7 +96,7 @@
   border: 1px dashed rgba(255, 255, 255, 0.2);
   font-size: 13px;
   line-height: 19px;
-  color: rgba(255, 255, 255, 0.65);
+  color: var(--color-on-dark-65);
 }
 
 .fb-home__plan-info {
@@ -106,7 +113,7 @@
 
 .fb-home__plan-until {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--color-on-dark-50);
 }
 
 .fb-home__badge {
@@ -153,7 +160,7 @@
 
 .fb-home__reservation-when {
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.55);
+  color: var(--color-on-dark-55);
 }
 
 .fb-home__reservation-actions {
@@ -220,7 +227,7 @@
 .fb-home__points-label {
   margin-top: 4px;
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--color-on-dark-50);
 }
 
 .fb-home__streak {
@@ -245,7 +252,7 @@
 
 .fb-home__streak-label {
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.65);
+  color: var(--color-on-dark-65);
 }
 
 .fb-home__recent-badge {
@@ -259,12 +266,12 @@
   font-weight: 500;
 }
 
-.fb-home__badge-chip {
+.fb-home__badges {
+  margin: 0;
+  padding: 0;
+  list-style: none;
   display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.85);
+  gap: 8px;
 }
 
 .fb-home__badge-disc {
@@ -278,48 +285,32 @@
   justify-content: center;
 }
 
-/* Atalhos. */
-.fb-home__shortcuts {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.fb-home__shortcut {
-  box-sizing: border-box;
-  display: block;
-  padding: 14px 16px;
-  background: #1a1a1a;
-  border-radius: 5px;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--color-ink-on-dark);
-  text-decoration: none;
-}
-
-.fb-home__shortcut:hover {
-  background: #232323;
-}
-
 /* Duas colunas só quando cabem ao lado da barra lateral (232px + 400px + 40px + a coluna das aulas);
    entre 768px e 1099px os blocos continuam empilhados. */
 @media (min-width: 1100px) {
   .fb-home {
-    flex-direction: row;
-    align-items: flex-start;
-    gap: 40px;
+    display: grid;
+    grid-template-columns: 400px minmax(0, 1fr);
+    grid-template-rows: auto 1fr;
+    column-gap: 40px;
+    row-gap: 28px;
   }
 
-  .fb-home__main {
-    width: 400px;
-    flex-shrink: 0;
+  .fb-home__intro {
+    grid-column: 1;
+    grid-row: 1;
   }
 
-  .fb-home__side {
-    flex: 1;
+  .fb-home > [aria-label="Próximas aulas"] {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    align-self: start;
+  }
+
+  .fb-home > [aria-label="Sua evolução"] {
+    grid-column: 1;
+    grid-row: 2;
+    align-self: start;
   }
 }
 
@@ -332,6 +323,10 @@
     font-size: 18px;
   }
 
+  .fb-home__link-more {
+    display: inline;
+  }
+
   .fb-home__plan {
     padding: 16px 18px;
   }
@@ -340,8 +335,52 @@
     font-size: 16px;
   }
 
+  .fb-home__plan-until {
+    font-size: 13px;
+  }
+
+  /* Cada aula em uma linha: título e quando à esquerda, "Remarcar" e "Cancelar" à direita, sem filete. */
+  .fb-home__reservation {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: 16px;
+    row-gap: 10px;
+    padding: 16px 18px;
+  }
+
+  .fb-home__reservation-info {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .fb-home__reservation-actions {
+    grid-column: 2;
+    grid-row: 1;
+    gap: 20px;
+    padding-top: 0;
+    border-top: none;
+  }
+
+  .fb-home__reservation > :not(.fb-home__reservation-info, .fb-home__reservation-actions) {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
   .fb-home__evolution {
     gap: 20px;
     padding: 22px 20px;
+  }
+
+  .fb-home__points-row {
+    gap: 24px;
+  }
+
+  .fb-home__points-total {
+    font-size: 56px;
+  }
+
+  .fb-home__streak {
+    padding-bottom: 8px;
   }
 }

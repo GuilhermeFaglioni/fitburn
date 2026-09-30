@@ -299,7 +299,7 @@ describe("Planos (administração)", () => {
       expect(warning).toHaveTextContent("mantém o término atual");
       expect(warning).not.toHaveTextContent("imediatamente");
       expect(
-        screen.getByRole("button", { name: "Atribuir e substituir o atual" }),
+        screen.getByRole("button", { name: "Encerrar atual e atribuir" }),
       ).toBeInTheDocument();
     });
 

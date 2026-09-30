@@ -59,7 +59,10 @@ export function AssignTab() {
   }
 
   return (
-    <div style={{ maxWidth: 620, display: "flex", flexDirection: "column", gap: 16 }}>
+    <div
+      className="fb-assign"
+      style={{ maxWidth: 620, display: "flex", flexDirection: "column", gap: 16 }}
+    >
       {optionsQuery.isLoading && <LoadingState />}
       {optionsQuery.isError && (
         <ErrorState
@@ -130,7 +133,7 @@ export function AssignTab() {
       </div>
 
       {client?.activePlan && (
-        <div className="fb-lock-banner" role="note">
+        <div className="fb-lock-banner fb-lock-banner--sm" role="note">
           <span>
             <strong>{client.fullName} já possui um plano ativo</strong> ({client.activePlan.name},
             até {formatLocalDate(client.activePlan.endDate)}). Um cliente só pode ter um plano ativo
@@ -148,18 +151,18 @@ export function AssignTab() {
       )}
       {assignedTo && <p className="fb-note">Plano atribuído a {assignedTo}.</p>}
 
-      <div className="fb-modal__footer" style={{ justifyContent: "flex-end" }}>
-        <button type="button" className="fb-btn-secondary" onClick={reset}>
+      <div className="fb-modal__footer fb-modal__footer--end">
+        <button type="button" className="fb-btn-secondary fb-btn-secondary--lg" onClick={reset}>
           Cancelar
         </button>
         <BlockedAction allowed={canAssign} reason="Você não tem permissão para atribuir planos.">
           <button
             type="button"
-            className="fb-btn-primary"
+            className="fb-btn-primary fb-btn-primary--lg"
             disabled={!complete || !parsed.success || assignMutation.isPending}
             onClick={() => assignMutation.mutate({ clientId, planId, startDate, endDate })}
           >
-            {client?.activePlan ? "Atribuir e substituir o atual" : "Atribuir plano"}
+            {client?.activePlan ? "Encerrar atual e atribuir" : "Atribuir plano"}
           </button>
         </BlockedAction>
       </div>

@@ -48,30 +48,69 @@ const CLIENT_ATIVO = {
   document: "12345678900",
   address: "Rua Um, 123",
   status: "ACTIVE" as const,
-  profile: { id: "profile-cliente", name: "Cliente" },
+  profile: { id: "profile-professor", name: "Professor" },
 };
+
+const PROFILES = [
+  {
+    id: "profile-admin",
+    name: "Administrador",
+    description: null,
+    isSystem: true,
+    isActive: true,
+    moduleAccess: [],
+  },
+  {
+    id: "profile-professor",
+    name: "Professor",
+    description: null,
+    isSystem: false,
+    isActive: true,
+    moduleAccess: [],
+  },
+  {
+    id: "profile-cliente",
+    name: "Cliente",
+    description: null,
+    isSystem: true,
+    isActive: true,
+    moduleAccess: [],
+  },
+];
 
 describe("UsersPage", () => {
   beforeEach(() => {
     mockSuccessfulLogin("Administrador");
   });
 
-  it("cadastra um cliente com sucesso e atualiza a lista", async () => {
+  it("lista só a equipe, sem os clientes", async () => {
+    const cliente = {
+      ...CLIENT_ATIVO,
+      id: "user-cli",
+      fullName: "Marina Cliente",
+      profile: { id: "profile-cliente", name: "Cliente" },
+    };
+    server.use(http.get("/api/users", () => HttpResponse.json([CLIENT_ATIVO, cliente])));
+
+    renderUsersPage();
+
+    expect(await screen.findByText("Cliente Ativo")).toBeInTheDocument();
+    expect(screen.queryByText("Marina Cliente")).not.toBeInTheDocument();
+  });
+
+  it("cadastra um usuário da equipe com um perfil de acesso e atualiza a lista", async () => {
     let usersInDb = [CLIENT_ATIVO];
     server.use(
       http.get("/api/users", () => HttpResponse.json(usersInDb)),
-      http.post("/api/users/clients", async ({ request }) => {
+      http.get("/api/profiles", () => HttpResponse.json(PROFILES)),
+      http.post("/api/users/staff", async ({ request }) => {
         const body = (await request.json()) as Record<string, string>;
         const created = {
+          ...CLIENT_ATIVO,
           id: "user-2",
           email: body.email,
           fullName: body.fullName,
-          phone: body.phone,
-          birthDate: body.birthDate,
-          document: body.document,
-          address: body.address,
-          status: "ACTIVE" as const,
-          profile: { id: "profile-cliente", name: "Cliente" },
+          profile: { id: body.profileId, name: "Professor" },
         };
         usersInDb = [...usersInDb, created];
         return HttpResponse.json(created, { status: 201 });
@@ -83,23 +122,30 @@ describe("UsersPage", () => {
 
     expect(await screen.findByText("Cliente Ativo")).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "+ Novo cliente" }));
-    await user.type(screen.getByLabelText("Nome completo"), "Novo Cliente");
-    await user.type(screen.getByLabelText("E-mail"), "novo@fitburn.local");
-    await user.type(screen.getByLabelText("Telefone"), "31988887777");
-    await user.type(screen.getByLabelText("Data de nascimento"), "1995-01-10");
-    await user.type(screen.getByLabelText("Documento"), "99988877766");
-    await user.type(screen.getByLabelText("Endereço"), "Rua Dois, 456");
-    await user.type(screen.getByLabelText("Senha inicial"), "SenhaForte123!");
-    await user.click(screen.getByRole("button", { name: "Cadastrar cliente" }));
+    await user.click(screen.getByRole("button", { name: "+ Novo usuário" }));
+    const dialog = screen.getByRole("dialog", { name: "Novo usuário" });
+    await user.type(within(dialog).getByLabelText("Nome completo"), "Novo Professor");
+    await user.type(within(dialog).getByLabelText("E-mail"), "novo@fitburn.local");
+    await waitFor(() =>
+      expect(within(dialog).getByRole("option", { name: "Professor" })).toBeInTheDocument(),
+    );
+    expect(within(dialog).queryByRole("option", { name: "Cliente" })).not.toBeInTheDocument();
+    await user.selectOptions(
+      within(dialog).getByLabelText("Perfil de acesso"),
+      "profile-professor",
+    );
+    await user.type(within(dialog).getByLabelText("Senha inicial"), "SenhaForte123!");
+    await user.click(within(dialog).getByRole("button", { name: "Criar usuário" }));
 
-    expect(await screen.findByText("Novo Cliente")).toBeInTheDocument();
+    expect(await screen.findByText("Novo Professor")).toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
   it("mostra a mensagem específica quando o e-mail já está em uso", async () => {
     server.use(
       http.get("/api/users", () => HttpResponse.json([])),
-      http.post("/api/users/clients", () =>
+      http.get("/api/profiles", () => HttpResponse.json(PROFILES)),
+      http.post("/api/users/staff", () =>
         HttpResponse.json(
           { code: "EMAIL_ALREADY_IN_USE", message: "Este e-mail já está em uso." },
           { status: 409 },
@@ -110,25 +156,56 @@ describe("UsersPage", () => {
     renderUsersPage();
     const user = userEvent.setup();
 
-    await user.click(await screen.findByRole("button", { name: "+ Novo cliente" }));
-    await user.type(screen.getByLabelText("Nome completo"), "Cliente Repetido");
-    await user.type(screen.getByLabelText("E-mail"), "existente@fitburn.local");
-    await user.type(screen.getByLabelText("Telefone"), "31988887777");
-    await user.type(screen.getByLabelText("Data de nascimento"), "1995-01-10");
-    await user.type(screen.getByLabelText("Documento"), "99988877766");
-    await user.type(screen.getByLabelText("Endereço"), "Rua Dois, 456");
-    await user.type(screen.getByLabelText("Senha inicial"), "SenhaForte123!");
-    await user.click(screen.getByRole("button", { name: "Cadastrar cliente" }));
+    await user.click(await screen.findByRole("button", { name: "+ Novo usuário" }));
+    const dialog = screen.getByRole("dialog", { name: "Novo usuário" });
+    await user.type(within(dialog).getByLabelText("Nome completo"), "Repetido");
+    await user.type(within(dialog).getByLabelText("E-mail"), "existente@fitburn.local");
+    await waitFor(() =>
+      expect(within(dialog).getByRole("option", { name: "Professor" })).toBeInTheDocument(),
+    );
+    await user.selectOptions(
+      within(dialog).getByLabelText("Perfil de acesso"),
+      "profile-professor",
+    );
+    await user.type(within(dialog).getByLabelText("Senha inicial"), "SenhaForte123!");
+    await user.click(within(dialog).getByRole("button", { name: "Criar usuário" }));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(/este e-mail já está em uso/i);
+    expect(await within(dialog).findByRole("alert")).toHaveTextContent(
+      /este e-mail já está em uso/i,
+    );
+  });
+
+  it("edita o nome e o perfil de acesso de um usuário", async () => {
+    let usersInDb = [CLIENT_ATIVO];
+    let patched: Record<string, string> | null = null;
+    server.use(
+      http.get("/api/users", () => HttpResponse.json(usersInDb)),
+      http.get("/api/profiles", () => HttpResponse.json(PROFILES)),
+      http.patch("/api/users/:id", async ({ request }) => {
+        patched = (await request.json()) as Record<string, string>;
+        usersInDb = [{ ...CLIENT_ATIVO, fullName: patched.fullName }];
+        return HttpResponse.json(usersInDb[0]);
+      }),
+    );
+
+    renderUsersPage();
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole("button", { name: "Editar Cliente Ativo" }));
+    const dialog = screen.getByRole("dialog", { name: "Editar usuário" });
+    const name = within(dialog).getByLabelText("Nome completo");
+    await user.clear(name);
+    await user.type(name, "Nome Novo");
+    await user.click(within(dialog).getByRole("button", { name: "Salvar" }));
+
+    expect(await screen.findByText("Nome Novo")).toBeInTheDocument();
+    expect(patched).toMatchObject({ fullName: "Nome Novo", profileId: "profile-professor" });
   });
 
   it("desativa e reativa um usuário a partir da lista", async () => {
     let status: "ACTIVE" | "INACTIVE" = "ACTIVE";
     server.use(
-      http.get("/api/users", () =>
-        HttpResponse.json([{ ...CLIENT_ATIVO, status }]),
-      ),
+      http.get("/api/users", () => HttpResponse.json([{ ...CLIENT_ATIVO, status }])),
       http.post("/api/users/:id/deactivate", () => {
         status = "INACTIVE";
         return HttpResponse.json({ ...CLIENT_ATIVO, status });
@@ -238,7 +315,7 @@ describe("UsersPage", () => {
       );
       renderUsersPage();
 
-      const create = await screen.findByRole("button", { name: "+ Novo cliente" });
+      const create = await screen.findByRole("button", { name: "+ Novo usuário" });
       expect(create).toBeDisabled();
       expect(create).toHaveAttribute("title", "Você não tem permissão para cadastrar usuários.");
       const row = (await screen.findByText("Cliente Ativo")).closest("tr")!;

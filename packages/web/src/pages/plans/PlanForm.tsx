@@ -62,13 +62,13 @@ export function PlanForm({ plan, onSaved, onClose }: PlanFormProps) {
             {errorMessage(saveMutation.error, "Não foi possível salvar o plano.")}
           </Feedback>
         )}
-        <div className="fb-modal__footer" style={{ justifyContent: "flex-end" }}>
+        <div className="fb-modal__footer fb-modal__footer--end">
           <button type="button" className="fb-btn-secondary" onClick={onClose}>
             Cancelar
           </button>
           <button
             type="submit"
-            className="fb-btn-primary"
+            className="fb-btn-primary fb-btn-primary--sm"
             disabled={name.trim() === "" || saveMutation.isPending}
           >
             Salvar

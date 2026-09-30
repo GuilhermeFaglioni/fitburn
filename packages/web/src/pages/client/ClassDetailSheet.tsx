@@ -11,6 +11,7 @@ import {
   rescheduleReservation,
 } from "../../lib/reservations/api";
 import { RequiresNetwork } from "../../components/RequiresNetwork";
+import { firstName } from "../../lib/names";
 
 /** Remarcação em andamento: a reserva original, enquanto o cliente escolhe a nova aula. */
 export interface Rescheduling {
@@ -379,7 +380,7 @@ export function ClassDetailSheet({
           {occurrence.instructor && (
             <span className="fb-sheet__fact">
               <PersonIcon />
-              Prof. {occurrence.instructor.fullName}
+              Prof. {firstName(occurrence.instructor.fullName)}
             </span>
           )}
           <span className="fb-sheet__fact">

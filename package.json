@@ -22,13 +22,18 @@
     "deploy:check": "node scripts/deploy-check.mjs",
     "demo:reset": "pnpm --filter @fitburn/api demo:reset",
     "db:up": "docker compose up -d postgres",
-    "db:down": "docker compose down"
+    "db:down": "docker compose down",
+    "design:compare": "node scripts/design-compare/run.mjs",
+    "design:seed": "node scripts/design-compare/seed-demo.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "eslint": "^10.11.0",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^17.12.0",
+    "pixelmatch": "^7.2.0",
+    "playwright-core": "1.56.1",
+    "pngjs": "^7.0.0",
     "prettier": "^3.9.9",
     "typescript-eslint": "^8.70.1"
   }

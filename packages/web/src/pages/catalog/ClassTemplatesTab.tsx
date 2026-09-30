@@ -4,6 +4,7 @@ import { Module, PermissionAction, type ClassTemplateDetail } from "@fitburn/con
 import { BlockedAction } from "../../components/BlockedAction";
 import { DeleteRowButton } from "../../components/DeleteRowButton";
 import { useAuth } from "../../lib/auth/AuthContext";
+import { professorLabel } from "../../lib/names";
 import {
   deleteClassTemplate,
   listClassTemplates,
@@ -43,6 +44,11 @@ export function ClassTemplatesTab() {
   const canCreate = can(Module.TEMPLATES_DE_AULA, PermissionAction.CREATE);
   const canEdit = can(Module.TEMPLATES_DE_AULA, PermissionAction.EDIT);
   const canDelete = can(Module.TEMPLATES_DE_AULA, PermissionAction.DELETE);
+
+  // Se dois templates têm professores com o mesmo primeiro nome, a tabela mostra o nome completo.
+  const instructorNames = (templatesQuery.data ?? []).flatMap((template) =>
+    template.defaultInstructor ? [template.defaultInstructor.fullName] : [],
+  );
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14, flexGrow: 1, minHeight: 0 }}>
@@ -128,7 +134,7 @@ export function ClassTemplatesTab() {
                   </td>
                   <td className="fb-td" style={{ color: "#5a5a5a" }}>
                     {template.defaultInstructor
-                      ? `Prof. ${template.defaultInstructor.fullName}`
+                      ? professorLabel(template.defaultInstructor.fullName, instructorNames)
                       : "—"}
                   </td>
                   <td

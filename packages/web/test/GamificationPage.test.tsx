@@ -234,7 +234,20 @@ describe("Gamificação do cliente", () => {
     ).toBeInTheDocument();
   });
 
-  it("com todos os marcos alcançados, diz que não há próximo", async () => {
+  it("mostra só os 3 ganhos mais recentes, como o artboard", async () => {
+    mockSummary({
+      ...NO_STREAK,
+      totalPoints: 40,
+      history: ["e1", "e2", "e3", "e4", "e5"].map((id) => entry(id, "2026-05-06", "17:30")),
+    });
+
+    renderPage();
+
+    const history = await screen.findByRole("region", { name: "Histórico recente" });
+    expect(within(history).getAllByRole("listitem")).toHaveLength(3);
+  });
+
+  it("com todos os marcos alcançados, não mostra a linha de próximo marco", async () => {
     mockSummary({
       totalPoints: 135,
       history: [],
@@ -248,8 +261,9 @@ describe("Gamificação do cliente", () => {
 
     renderPage();
 
-    expect(await screen.findByText("Você atingiu todos os marcos.")).toBeInTheDocument();
-    expect(screen.getByRole("listitem", { name: "10 dias, alcançado" })).toBeInTheDocument();
+    expect(await screen.findByRole("listitem", { name: "10 dias, alcançado" })).toBeInTheDocument();
+    expect(screen.queryByText(/Próximo marco/)).not.toBeInTheDocument();
+    expect(screen.queryByText("Você atingiu todos os marcos.")).not.toBeInTheDocument();
   });
 
   it("mostra os badges conquistados e os bloqueados, com o progresso destes", async () => {

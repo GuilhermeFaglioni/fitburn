@@ -130,48 +130,54 @@ describe("Fichas de treino (cliente)", () => {
   });
 
   describe("lista", () => {
-    it("destaca as fichas ativas e deixa as demais em fichas anteriores, com o status de cada uma", async () => {
+    it("mostra a ficha ativa com os exercícios e, abaixo, as fichas anteriores com o status de cada uma", async () => {
       renderAt("/ficha-treino");
 
-      expect(await screen.findByRole("heading", { name: "Ficha de treino" })).toBeInTheDocument();
-      const active = await screen.findByRole("region", { name: "Fichas ativas" });
-      const cards = within(active).getAllByRole("listitem");
-      expect(cards).toHaveLength(2);
-      expect(within(cards[0]!).getByText("Fase 2")).toBeInTheDocument();
-      expect(within(cards[0]!).getByText("ATIVA")).toBeInTheDocument();
-      expect(within(cards[0]!).getByText(/Montada por Rafael/)).toBeInTheDocument();
-      expect(within(cards[0]!).getByText(/10\/09\/2026/)).toBeInTheDocument();
-      expect(within(cards[0]!).getByText("4 exercícios")).toBeInTheDocument();
-      expect(within(cards[1]!).getByText("Mobilidade")).toBeInTheDocument();
+      expect(
+        await screen.findByRole("heading", { level: 1, name: "Ficha de treino" }),
+      ).toBeInTheDocument();
+      // As duas fichas ativas aparecem inline, cada uma com o seu selo e a autoria.
+      expect(await screen.findByRole("heading", { level: 2, name: "Fase 2" })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { level: 2, name: "Mobilidade" })).toBeInTheDocument();
+      expect(screen.getAllByText("ATIVA")).toHaveLength(2);
+      expect(screen.getAllByText(/Montada por Rafael/)).toHaveLength(2);
+      expect(screen.getByText(/desde 10\/09\/2026/)).toBeInTheDocument();
+      expect(
+        screen.getByRole("heading", { level: 3, name: "Agachamento livre" }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("heading", { level: 3, name: "Rotação de quadril" }),
+      ).toBeInTheDocument();
 
       const previous = screen.getByRole("region", { name: "Fichas anteriores" });
       const rows = within(previous).getAllByRole("listitem");
       expect(rows).toHaveLength(2);
       expect(within(rows[0]!).getByText("Fase 1")).toBeInTheDocument();
+      expect(within(rows[0]!).getByText("01/07/2026")).toBeInTheDocument();
       expect(within(rows[0]!).getByText("CONCLUÍDA")).toBeInTheDocument();
       expect(within(rows[1]!).getByText("Avaliação inicial")).toBeInTheDocument();
       expect(within(rows[1]!).getByText("ARQUIVADA")).toBeInTheDocument();
     });
 
-    it("cada ficha leva ao seu detalhe", async () => {
+    it("as fichas anteriores levam ao detalhe; a ficha ativa já está na página", async () => {
       renderAt("/ficha-treino");
 
-      const active = await screen.findByRole("region", { name: "Fichas ativas" });
+      const previous = await screen.findByRole("region", { name: "Fichas anteriores" });
 
-      expect(within(active).getAllByRole("link", { name: /Fase 2/ })[0]).toHaveAttribute(
+      expect(within(previous).getByRole("link", { name: /Fase 1/ })).toHaveAttribute(
         "href",
-        "/ficha-treino/s-2",
+        "/ficha-treino/s-1",
       );
-      expect(
-        within(screen.getByRole("region", { name: "Fichas anteriores" })).getByRole("link", {
-          name: /Avaliação inicial/,
-        }),
-      ).toHaveAttribute("href", "/ficha-treino/s-0");
+      expect(within(previous).getByRole("link", { name: /Avaliação inicial/ })).toHaveAttribute(
+        "href",
+        "/ficha-treino/s-0",
+      );
+      expect(screen.queryByRole("link", { name: /Fase 2/ })).not.toBeInTheDocument();
     });
 
     it("não oferece nenhuma ação de criar, editar, concluir ou arquivar", async () => {
       renderAt("/ficha-treino");
-      await screen.findByRole("region", { name: "Fichas ativas" });
+      await screen.findByRole("heading", { level: 2, name: "Fase 2" });
 
       for (const name of [
         /nova ficha/i,
@@ -222,7 +228,7 @@ describe("Fichas de treino (cliente)", () => {
     it("mostra o título, o status, quem montou, as observações e os exercícios na ordem", async () => {
       renderAt("/ficha-treino/s-2");
 
-      expect(await screen.findByRole("heading", { name: "Fase 2" })).toBeInTheDocument();
+      expect(await screen.findByRole("heading", { level: 2, name: "Fase 2" })).toBeInTheDocument();
       expect(screen.getByText("ATIVA")).toBeInTheDocument();
       expect(screen.getByText(/Montada por Rafael/)).toBeInTheDocument();
       expect(screen.getByText("Aquecer 10 minutos antes de começar.")).toBeInTheDocument();
@@ -284,14 +290,20 @@ describe("Fichas de treino (cliente)", () => {
       expect(await screen.findByText("Ficha de treino não encontrada.")).toBeInTheDocument();
     });
 
-    it("permite navegar da lista até o detalhe", async () => {
+    it("permite navegar da lista até o detalhe de uma ficha anterior", async () => {
       const user = userEvent.setup();
       renderAt("/ficha-treino");
 
-      const active = await screen.findByRole("region", { name: "Fichas ativas" });
-      await user.click(within(active).getAllByRole("link", { name: /Fase 2/ })[0]!);
+      const previous = await screen.findByRole("region", { name: "Fichas anteriores" });
+      await user.click(within(previous).getByRole("link", { name: /Avaliação inicial/ }));
 
-      expect(await screen.findByRole("heading", { name: "Agachamento livre" })).toBeInTheDocument();
+      expect(
+        await screen.findByRole("heading", { level: 1, name: "Ficha de treino" }),
+      ).toBeInTheDocument();
+      expect(
+        await screen.findByRole("heading", { level: 2, name: "Avaliação inicial" }),
+      ).toBeInTheDocument();
+      expect(screen.getByText("ARQUIVADA")).toBeInTheDocument();
     });
   });
 });

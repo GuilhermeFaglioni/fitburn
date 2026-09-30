@@ -24,30 +24,33 @@ export interface AdminMenuItem {
 // menos um dos módulos listados (ex.: "Usuários e perfis" cobre USUARIOS e
 // PERFIS_DE_ACESSO), e o escopo total quando o item o pede.
 export const ADMIN_MENU_ITEMS: AdminMenuItem[] = [
+  // Ordem e rótulos do design (project/ClientesAdmin.dc.html); "Configurações" do design
+  // ainda não tem tela nem rota, então não aparece. "Minhas aulas" e "Atribuições" não
+  // têm artboard, mas são telas reais do app: ficam no fim da lista.
   { modules: [Module.DASHBOARD], label: "Dashboard", to: "/dashboard" },
+  { modules: [Module.CLIENTES], label: "Clientes", to: "/clientes" },
   {
     modules: [Module.USUARIOS, Module.PERFIS_DE_ACESSO],
     label: "Usuários e perfis",
     to: "/usuarios",
   },
-  { modules: [Module.CLIENTES], label: "Clientes", to: "/clientes" },
   { modules: [Module.OCORRENCIAS], label: "Agenda", to: "/agenda-administrativa" },
   { modules: [Module.RESERVAS], label: "Reservas", to: "/reservas-administrativas" },
-  { modules: [Module.PRESENCA], label: "Minhas aulas", to: "/minhas-aulas" },
   { modules: [Module.PLANOS], label: "Planos", to: "/planos" },
+  {
+    modules: [Module.TEMPLATES_DE_AULA],
+    label: "Templates & modalidades",
+    to: "/templates-e-modalidades",
+  },
   { modules: [Module.FICHAS_DE_TREINO], label: "Fichas de treino", to: "/fichas" },
   { modules: [Module.GAMIFICACAO], label: "Metas", to: "/metas" },
+  { modules: [Module.PRESENCA], label: "Minhas aulas", to: "/minhas-aulas" },
   {
     modules: [Module.CLIENTES],
     label: "Atribuições",
     to: "/atribuicoes",
     action: PermissionAction.CREATE,
     fullScope: true,
-  },
-  {
-    modules: [Module.TEMPLATES_DE_AULA],
-    label: "Templates & modalidades",
-    to: "/templates-e-modalidades",
   },
 ];
 
@@ -79,10 +82,34 @@ export function isClientUser(user: CurrentUser): boolean {
   return user.profile.name === SystemProfileName.CLIENT;
 }
 
-/** Tela inicial do perfil: Início do cliente, ou a primeira tela administrativa visível. */
+/**
+ * Prioridade da tela inicial da equipe, SEPARADA da ordem visual do menu (que segue o design): Dashboard, depois
+ * Minhas aulas (a tela do professor), depois as demais na ordem que o menu tinha antes do redesenho.
+ */
+const HOME_PRIORITY = [
+  "/dashboard",
+  "/minhas-aulas",
+  "/usuarios",
+  "/clientes",
+  "/agenda-administrativa",
+  "/reservas-administrativas",
+  "/planos",
+  "/fichas",
+  "/metas",
+  "/atribuicoes",
+  "/templates-e-modalidades",
+];
+
+function homePriority(item: AdminMenuItem): number {
+  const index = HOME_PRIORITY.indexOf(item.to);
+  return index === -1 ? HOME_PRIORITY.length : index;
+}
+
+/** Tela inicial do perfil: Início do cliente, ou a tela administrativa visível de maior prioridade (HOME_PRIORITY). */
 export function homeRouteFor(user: CurrentUser): string {
   if (isClientUser(user)) return "/";
-  return visibleAdminMenuItems(user)[0]?.to ?? "/dashboard";
+  const [first] = [...visibleAdminMenuItems(user)].sort((a, b) => homePriority(a) - homePriority(b));
+  return first?.to ?? "/dashboard";
 }
 
 /**

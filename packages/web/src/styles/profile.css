@@ -7,7 +7,10 @@
  */
 .fb-profile {
   --fb-profile-card: #1a1a1a;
-  --fb-profile-muted: rgba(255, 255, 255, 0.6);
+  --fb-profile-muted: rgba(255, 255, 255, 0.5);
+  --fb-profile-label: rgba(255, 255, 255, 0.45);
+  --fb-profile-logout: rgba(255, 255, 255, 0.55);
+  --fb-profile-divider: rgba(255, 255, 255, 0.08);
   --fb-profile-accent: var(--color-primary-orange);
   --fb-profile-soft: rgba(255, 255, 255, 0.6);
   --fb-profile-line: rgba(255, 255, 255, 0.2);
@@ -23,6 +26,9 @@
 .fb-profile--light {
   --fb-profile-card: #fafafa;
   --fb-profile-muted: #666666;
+  --fb-profile-label: #666666;
+  --fb-profile-logout: #4a4a4a;
+  --fb-profile-divider: #e0e0e0;
   --fb-profile-accent: var(--color-accent-on-light);
   --fb-profile-soft: #4a4a4a;
   --fb-profile-line: #cfcfcf;
@@ -134,7 +140,7 @@
 
 .fb-profile__label {
   font-size: 11px;
-  color: var(--fb-profile-muted);
+  color: var(--fb-profile-label);
 }
 
 .fb-profile__value {
@@ -146,7 +152,11 @@
 .fb-profile__form {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
+}
+
+.fb-profile__form .fb-profile__grid {
+  gap: 12px;
 }
 
 .fb-profile__field {
@@ -182,6 +192,7 @@
 }
 
 .fb-profile__btn {
+  position: relative;
   flex: 1;
   box-sizing: border-box;
   padding: 11px;
@@ -201,7 +212,7 @@
 .fb-profile__btn--primary {
   background: var(--color-primary-orange);
   border: none;
-  color: var(--color-on-orange);
+  color: #ffffff;
 }
 
 .fb-profile__btn:disabled {
@@ -209,7 +220,13 @@
   cursor: default;
 }
 
+.fb-profile__divider {
+  height: 1px;
+  background: var(--fb-profile-divider);
+}
+
 .fb-profile__logout {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -217,10 +234,47 @@
   background: none;
   border: none;
   padding: 4px 0;
-  font-family: var(--font-sans);
+  /* Sem font-family: no artboard o botão usa a fonte padrão do navegador (não a DM Sans). */
   font-size: 14px;
-  color: var(--fb-profile-soft);
+  color: var(--fb-profile-logout);
   cursor: pointer;
+}
+
+/*
+ * Alvos de toque de 44px sem mexer no que se vê: o clique é ampliado por um pseudo-elemento
+ * invisível (o mesmo truque do .fb-checkbox), então a caixa do botão mantém as medidas do design.
+ * A especificidade maior anula o min-height genérico de responsive.css nestes controles.
+ */
+@media (max-width: 767px), (pointer: coarse) {
+  .fb-profile .fb-profile__link-btn,
+  .fb-profile .fb-profile__logout {
+    min-width: 0;
+    min-height: 0;
+  }
+
+  .fb-profile__link-btn,
+  .fb-profile__logout,
+  .fb-profile__btn {
+    position: relative;
+  }
+
+  .fb-profile__link-btn::before {
+    content: "";
+    position: absolute;
+    inset: -14px -10px;
+  }
+
+  .fb-profile__logout::before {
+    content: "";
+    position: absolute;
+    inset: -10px -8px;
+  }
+
+  .fb-profile__btn::before {
+    content: "";
+    position: absolute;
+    inset: -2px 0;
+  }
 }
 
 @media (min-width: 768px) {
@@ -248,8 +302,13 @@
     gap: 18px;
   }
 
+  .fb-profile__form,
   .fb-profile__form .fb-profile__grid {
     gap: 14px;
+  }
+
+  .fb-profile__divider {
+    display: none;
   }
 
   .fb-profile__wide {

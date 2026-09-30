@@ -17,7 +17,7 @@
   padding: 28px 20px;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  gap: 24px;
 }
 
 .fb-client__brand {
@@ -30,7 +30,6 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  margin-top: 24px;
 }
 
 .fb-client__nav-item {
@@ -50,23 +49,26 @@
   font-weight: 500;
 }
 
-.fb-client__logout {
-  align-self: flex-start;
-  background: none;
-  border: none;
-  padding: 6px 12px;
-  font-family: var(--font-sans);
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.55);
-  cursor: pointer;
-}
-
 .fb-client__content {
   flex-grow: 1;
   min-width: 0;
   box-sizing: border-box;
-  padding: 32px 40px;
+  /* Padding por tela (o design usa um para cada): Perfil, Plano e Ficha 40px 48px; Home 48px; Agenda 32px 40px;
+     Gamificação 40px. A casca marca a tela em data-screen. */
+  padding: 40px 48px;
   overflow: auto;
+}
+
+.fb-client__content[data-screen="home"] {
+  padding: 48px;
+}
+
+.fb-client__content[data-screen="agenda"] {
+  padding: 32px 40px;
+}
+
+.fb-client__content[data-screen="gamificacao"] {
+  padding: 40px;
 }
 
 .fb-client__tabbar {
@@ -95,21 +97,39 @@
   font-size: 30px;
 }
 
-.fb-client-note {
+/* Coluna da agenda: AgendaDesktop usa gap 16px, AgendaMobile 20px. */
+.fb-client-agenda {
   display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  font-size: 12px;
-  line-height: 17px;
-  color: var(--color-text-muted-on-dark);
+  flex-direction: column;
+  gap: 16px;
 }
 
-.fb-client-week {
+/* Texto só para leitores de tela (o design não mostra o selo "Reservada" na agenda). */
+.fb-client-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Desktop: ícone de 14px centralizado na linha; mobile: ícone de 15px no topo (ver @media). */
+.fb-client-note {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.6);
+  gap: 8px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.45); /* design */
+}
+
+.fb-client-note__icon {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
 }
 
 .fb-client-icon-btn {
@@ -123,6 +143,41 @@
   border-radius: var(--radius-sm);
   color: #ffffff;
   cursor: pointer;
+}
+
+/* Navegação de semana: o design não tem, então fica onde há espaço vazio e sem alterar medidas.
+   Botões de 26px (desktop) / 32px (mobile) com área de toque de 44px por ::before invisível. */
+.fb-client-weeknav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.fb-client-weeknav .fb-client-icon-btn {
+  position: relative;
+  width: 26px;
+  height: 26px;
+  min-width: 0;
+  min-height: 0;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.6);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1;
+}
+
+.fb-client-weeknav .fb-client-icon-btn:hover {
+  background: #1a1a1a;
+}
+
+.fb-client-weeknav .fb-client-icon-btn::before {
+  content: "";
+  position: absolute;
+  inset: -9px -1px;
+}
+
+.fb-client-weeknav--title {
+  display: none;
 }
 
 /* Desktop: grade horários × dias */
@@ -140,15 +195,31 @@
   border-top: 1px solid rgba(255, 255, 255, 0.06);
   min-height: 56px;
   display: flex;
+  align-items: center;
+}
+
+/* Duas ou mais aulas no mesmo dia e horário: empilham (uma por linha, na largura da célula) em vez de ficarem
+   espremidas lado a lado. Com uma aula só, vale o design (chip encolhido ao conteúdo). */
+.fb-client-cell:has(> .fb-client-chip + .fb-client-chip) {
   flex-direction: column;
+  align-items: stretch;
   justify-content: center;
   gap: 4px;
 }
 
 .fb-client-cell--head {
   border-top: none;
+  flex-direction: column;
   align-items: flex-start;
+  justify-content: flex-start;
   gap: 2px;
+}
+
+/* Canto vazio do design: só abriga a navegação de semana. */
+.fb-client-cell--corner {
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
 }
 
 .fb-client-cell--today {
@@ -164,7 +235,7 @@
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.04em;
-  color: var(--color-text-muted-on-dark);
+  color: rgba(255, 255, 255, 0.45); /* design */
 }
 
 .fb-client-cell--today .fb-client-cell__weekday {
@@ -178,12 +249,14 @@
 
 .fb-client-cell__hour {
   font-size: 12px;
-  color: var(--color-text-muted-on-dark);
+  color: rgba(255, 255, 255, 0.4); /* design */
 }
 
+/* Chip encolhe ao conteúdo (no design é um <a> display:block sem largura, dentro da célula em flex). */
 .fb-client-chip {
   display: block;
-  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   box-sizing: border-box;
   padding: 7px 9px;
   background: #1a1a1a;
@@ -203,6 +276,10 @@
 .fb-client-chip__sub {
   margin-top: 2px;
   font-size: 11px;
+}
+
+.fb-client-chip__sub.fb-availability--AVAILABLE {
+  color: rgba(255, 255, 255, 0.55); /* design */
 }
 
 /* Mobile: dias da semana + cartões */
@@ -225,25 +302,26 @@
   border: none;
   border-radius: 999px;
   background: transparent;
-  font-family: var(--font-sans);
+  /* Quirk do design: <button> sem font-family renderiza em Arial (AgendaMobile.dc.html). */
+  font-family: Arial, Helvetica, sans-serif;
   color: #ffffff;
   cursor: pointer;
 }
 
 .fb-daychip[aria-pressed="true"] {
   background: var(--color-primary-orange);
-  color: var(--color-on-orange);
+  color: #ffffff; /* design */
 }
 
 .fb-daychip__weekday {
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.04em;
-  color: var(--color-text-muted-on-dark);
+  color: rgba(255, 255, 255, 0.45); /* design */
 }
 
 .fb-daychip[aria-pressed="true"] .fb-daychip__weekday {
-  color: var(--color-on-orange);
+  color: rgba(255, 255, 255, 0.85); /* design */
 }
 
 .fb-daychip__day {
@@ -313,6 +391,11 @@
   color: rgba(255, 255, 255, 0.6);
 }
 
+/* "Sem aulas" do AgendaMobile: 13px com altura de linha normal (a padrão dos estados é 19px). */
+.fb-state.fb-client-empty-day {
+  line-height: normal;
+}
+
 .fb-client-desktop-only {
   display: block;
 }
@@ -321,21 +404,10 @@
   display: none;
 }
 
-.fb-class-card__reserved {
-  align-self: flex-start;
-  margin-top: 4px;
-}
-
-.fb-client-chip__reserved {
-  margin-top: 2px;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--color-primary-orange);
-}
-
 /* Cabeçalho da agenda: título à esquerda; semana e o controle
    "Próximas | Histórico" à direita (AgendaDesktop.dc.html). */
 .fb-client-header {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -374,7 +446,7 @@
 
 .fb-client-tab-btn[aria-pressed="true"] {
   background: var(--color-primary-orange);
-  color: var(--color-on-orange);
+  color: #ffffff; /* design */
 }
 
 /* Filtro de estado: pílulas no formato dos chips de dia da agenda. */
@@ -516,6 +588,12 @@
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
 }
 
+/* global.css zera o box-shadow de [role="dialog"]:focus (o diálogo recebe foco programático);
+   o design mantém a sombra do cartão. */
+.fb-sheet[role="dialog"]:focus {
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+}
+
 .fb-sheet__handle {
   display: none;
   width: 36px;
@@ -626,7 +704,7 @@
   padding: 13px;
   background: var(--color-primary-orange);
   border: none;
-  color: var(--color-on-orange);
+  color: #ffffff; /* design */
   font-size: 15px;
 }
 
@@ -671,7 +749,6 @@
   background: rgba(194, 58, 31, 0.14);
 }
 
-
 .fb-sheet-alert {
   display: flex;
   align-items: flex-start;
@@ -711,13 +788,63 @@
   cursor: pointer;
 }
 
+/* Alvos de toque de 44px sem alterar o layout do design (botão de 32px e "Fechar" de 17px):
+   a área clicável cresce por ::before invisível; os min-height/min-width de responsive.css
+   (mesma família de seletores, menor especificidade) ficam anulados aqui. */
+.fb-sheet .fb-sheet__x {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+}
+
+.fb-sheet .fb-sheet__x::before {
+  content: "";
+  position: absolute;
+  inset: -6px;
+}
+
+.fb-sheet .fb-sheet__close {
+  position: relative;
+  display: block;
+  min-height: 0;
+  padding: 0;
+}
+
+.fb-sheet .fb-sheet__close::before {
+  content: "";
+  position: absolute;
+  inset: -14px -20px;
+}
+
+/* Abas "Próximas | Histórico": mesma técnica (o design tem 35px de altura no mobile). */
+.fb-client-tabs .fb-client-tab-btn {
+  position: relative;
+  min-height: 0;
+}
+
+.fb-client-tabs .fb-client-tab-btn::before {
+  content: "";
+  position: absolute;
+  inset: -5px 0;
+}
+
 @media (max-width: 767px) {
   .fb-client__sidebar {
     display: none;
   }
 
   .fb-client__content {
+    padding: 24px 20px 108px;
+  }
+
+  .fb-client__content[data-screen="home"],
+  .fb-client__content[data-screen="agenda"] {
     padding: 28px 20px 108px;
+  }
+
+  /* Gamificação: 24px 20px 108px no mobile (a tab bar fixa de 76px não cobre o fim do conteúdo). */
+  .fb-client__content[data-screen="gamificacao"] {
+    padding: 24px 20px 108px;
   }
 
   .fb-client__tabbar {
@@ -741,6 +868,8 @@
     justify-content: center;
     gap: 4px;
     padding: 10px 4px 8px;
+    /* Como no design: o botão da barra inferior não define font-family e o rótulo cai em Arial. */
+    font-family: Arial, "Liberation Sans", Helvetica, sans-serif;
     font-size: 11px;
     font-weight: 500;
     color: rgba(255, 255, 255, 0.55);
@@ -753,6 +882,37 @@
 
   .fb-client-title {
     font-size: 32px;
+  }
+
+  .fb-client-agenda {
+    gap: 20px;
+  }
+
+  .fb-client-header {
+    gap: 20px;
+  }
+
+  .fb-client-note {
+    align-items: flex-start;
+    line-height: 17px;
+  }
+
+  .fb-client-note__icon {
+    width: 15px;
+    height: 15px;
+    margin-top: 2px;
+  }
+
+  .fb-client-weeknav--title {
+    display: flex;
+    position: absolute;
+    top: 4px;
+    right: 0;
+  }
+
+  .fb-client-weeknav--title .fb-client-icon-btn {
+    width: 32px;
+    height: 32px;
   }
 
   .fb-client-header__controls,
@@ -781,6 +941,10 @@
     width: 100%;
     border-radius: 16px 16px 0 0;
     padding: 12px 20px 28px;
+    box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.4);
+  }
+
+  .fb-sheet[role="dialog"]:focus {
     box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.4);
   }
 

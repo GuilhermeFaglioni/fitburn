@@ -206,15 +206,9 @@ describe("Home do cliente", () => {
       const card = await screen.findByRole("region", { name: "Plano ativo" });
       expect(within(card).getByText("Plano Performance")).toBeInTheDocument();
       expect(within(card).getByText("ATIVO")).toBeInTheDocument();
-      expect(within(card).getByText("Ativo até 15/11/2026")).toBeInTheDocument();
-    });
-
-    it("mostra as datas de início e término do plano ativo", async () => {
-      mockHome({ plan: ACTIVE_PLAN });
-      renderPage();
-
-      const card = await screen.findByRole("region", { name: "Plano ativo" });
-      expect(within(card).getByText("15/08/2026 – 15/11/2026")).toBeInTheDocument();
+      // Como no design: um texto só, com o mês por extenso (o ano só entra quando não é o corrente).
+      expect(within(card).getByText(/^Ativo até 15 de novembro/)).toBeInTheDocument();
+      expect(within(card).queryByText(/15\/08\/2026/)).not.toBeInTheDocument();
     });
 
     it("com início futuro mostra 'Começa em dd/mm' no lugar de 'Ativo até'", async () => {
@@ -228,7 +222,6 @@ describe("Home do cliente", () => {
 
       const card = await screen.findByRole("region", { name: "Plano ativo" });
       expect(within(card).getByText("Começa em 10/01")).toBeInTheDocument();
-      expect(within(card).getByText("10/01/2099 – 10/06/2099")).toBeInTheDocument();
       expect(within(card).queryByText(/Ativo até/)).not.toBeInTheDocument();
       expect(within(card).queryByText("ATIVO")).not.toBeInTheDocument();
     });
@@ -260,7 +253,8 @@ describe("Home do cliente", () => {
       const items = await within(section).findAllByRole("listitem");
       expect(items).toHaveLength(2);
       expect(items[0]).toHaveTextContent("Treino Funcional");
-      expect(items[0]).toHaveTextContent("18h00 · Prof. Rafael Andrade");
+      expect(items[0]).toHaveTextContent("18h00 · Prof. Rafael");
+      expect(items[0]).not.toHaveTextContent("Andrade");
       expect(items[1]).toHaveTextContent("Spinning");
     });
 
@@ -312,7 +306,7 @@ describe("Home do cliente", () => {
 
       const section = await screen.findByRole("region", { name: "Próximas aulas" });
       await within(section).findByRole("listitem");
-      await user.click(within(section).getByRole("link", { name: "Ver agenda" }));
+      await user.click(within(section).getByRole("link", { name: /^Ver agenda/ }));
 
       expect(await screen.findByRole("heading", { name: /Agenda \(tela\)/ })).toBeInTheDocument();
     });
@@ -420,7 +414,7 @@ describe("Home do cliente", () => {
   });
 
   describe("resumo da gamificação", () => {
-    it("mostra pontos, streak, posição semanal e o badge mais recente", async () => {
+    it("mostra pontos, streak, posição semanal e os badges mais recentes", async () => {
       mockHome({ gamification: ACTIVE_GAMIFICATION, ranking: weeklyRanking(8) });
       renderPage();
 
@@ -429,8 +423,34 @@ describe("Home do cliente", () => {
       expect(within(section).getByText("12")).toBeInTheDocument();
       expect(within(section).getByText("dias seguidos de treino")).toBeInTheDocument();
       expect(await within(section).findByText("8º lugar no ranking semanal")).toBeInTheDocument();
-      expect(within(section).getByText("Streak de 7 dias")).toBeInTheDocument();
-      expect(within(section).queryByText("Streak de 3 dias")).not.toBeInTheDocument();
+      // Uma fileira de discos (até três), do mais novo para o mais antigo.
+      const badges = within(section).getAllByRole("listitem");
+      expect(badges).toHaveLength(2);
+      expect(within(badges[0]).getByRole("img", { name: "Streak de 7 dias" })).toBeInTheDocument();
+      expect(within(badges[1]).getByRole("img", { name: "Streak de 3 dias" })).toBeInTheDocument();
+    });
+
+    it("mostra no máximo três badges recentes", async () => {
+      mockHome({
+        gamification: {
+          ...ACTIVE_GAMIFICATION,
+          badges: [3, 5, 7, 10].map((milestone, index) => ({
+            milestone,
+            earned: true,
+            awardedAt: `2026-09-${10 + index}T12:00:00.000Z`,
+          })),
+        },
+        ranking: weeklyRanking(8),
+      });
+      renderPage();
+
+      const section = await screen.findByRole("region", { name: "Sua evolução" });
+      const badges = await within(section).findAllByRole("listitem");
+      expect(badges.map((badge) => within(badge).getByRole("img").getAttribute("aria-label"))).toEqual([
+        "Streak de 10 dias",
+        "Streak de 7 dias",
+        "Streak de 5 dias",
+      ]);
     });
 
     it("o link leva à tela completa de gamificação", async () => {
@@ -483,22 +503,12 @@ describe("Home do cliente", () => {
     });
   });
 
-  describe("atalhos", () => {
-    it.each([
-      ["Agenda", /Agenda \(tela\)/],
-      ["Plano", "Plano (tela)"],
-      ["Ficha de treino", "Ficha de treino (tela)"],
-      ["Perfil", "Perfil (tela)"],
-    ])("o atalho %s abre a tela correspondente", async (label, heading) => {
-      const user = userEvent.setup();
-      mockHome();
-      renderPage();
+  it("não tem o bloco de atalhos (o design não o tem: a navegação fica na casca)", async () => {
+    mockHome();
+    renderPage();
 
-      const shortcuts = await screen.findByRole("navigation", { name: "Atalhos" });
-      await user.click(within(shortcuts).getByRole("link", { name: label }));
-
-      expect(await screen.findByRole("heading", { name: heading })).toBeInTheDocument();
-    });
+    await screen.findByRole("heading", { name: "Olá, Usuário" });
+    expect(screen.queryByRole("navigation", { name: "Atalhos" })).not.toBeInTheDocument();
   });
 
   it("mostra erro em cada bloco que não carrega, sem derrubar os outros", async () => {

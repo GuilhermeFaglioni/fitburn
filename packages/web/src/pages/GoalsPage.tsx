@@ -20,7 +20,8 @@ import { EmptyState, ErrorState, Feedback, LoadingState } from "../components/st
  * Metas individuais (MetasAdmin.dc.html): à esquerda os alunos do professor
  * (o escopo "clientes atribuídos"), à direita as metas do aluno escolhido e o
  * formulário de nova meta. O artboard tem "valor alvo" e barra de progresso,
- * que o spec não pede (a meta é concluída à mão pelo professor): ficam de fora.
+ * que dependem de dados que a API ainda não tem (a meta é concluída à mão pelo professor):
+ * ficam de fora até o backend trazer valor alvo e progresso.
  */
 export function GoalsPage() {
   const { user, can } = useAuth();
@@ -117,7 +118,7 @@ export function GoalsPage() {
 
         {selected && (
           <>
-            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <div className="fb-goals__heading">
               <span className="fb-page-eyebrow">Metas / {selected.fullName}</span>
               <h1 className="fb-goals__title">Metas individuais</h1>
             </div>
@@ -125,9 +126,9 @@ export function GoalsPage() {
             <div className="fb-lock-banner fb-goals__banner" role="note">
               <span>
                 A pontuação de gamificação é calculada automaticamente pelo sistema com base na
-                frequência do cliente. Os pontos <strong>não podem ser editados</strong> nesta tela
-                — aqui você define as metas e marca quando forem cumpridas; concluir uma meta dá os
-                pontos definidos na configuração.
+                frequência e no progresso do cliente. Os pontos{" "}
+                <strong>não podem ser editados</strong> nesta tela — aqui você define apenas as
+                metas e marca quando são concluídas.
               </span>
             </div>
 

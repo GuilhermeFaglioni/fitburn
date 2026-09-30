@@ -27,7 +27,7 @@ export function CatalogTab() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14, flexGrow: 1, minHeight: 0 }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end" }}>
+      <div className="fb-toolbar-end">
         <BlockedAction allowed={canCreate} reason="Você não tem permissão para criar planos.">
           <button
             type="button"
@@ -71,13 +71,9 @@ export function CatalogTab() {
             </thead>
             <tbody>
               {plansQuery.data.map((plan) => (
-                <tr key={plan.id}>
-                  <td className="fb-td" style={{ fontWeight: 500 }}>
-                    {plan.name}
-                  </td>
-                  <td className="fb-td" style={{ color: "#5a5a5a" }}>
-                    {plan.description}
-                  </td>
+                <tr key={plan.id} className={plan.isActive ? undefined : "fb-row--inactive"}>
+                  <td className="fb-td fb-td--name">{plan.name}</td>
+                  <td className="fb-td fb-td--soft">{plan.description}</td>
                   <td className="fb-td">
                     <span
                       className={`fb-badge ${plan.isActive ? "fb-badge--active" : "fb-badge--inactive"}`}
@@ -85,10 +81,8 @@ export function CatalogTab() {
                       {plan.isActive ? "ATIVO" : "INATIVO"}
                     </span>
                   </td>
-                  <td className="fb-td" style={{ color: "#5a5a5a" }}>
-                    {plan.activeClientCount}
-                  </td>
-                  <td className="fb-td" style={{ textAlign: "right" }}>
+                  <td className="fb-td fb-td--soft">{plan.activeClientCount}</td>
+                  <td className="fb-td fb-td--actions" style={{ textAlign: "right" }}>
                     <BlockedAction
                       allowed={canEdit}
                       reason="Você não tem permissão para alterar planos."

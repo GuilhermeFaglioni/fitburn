@@ -20,6 +20,7 @@ import {
   updateOccurrence,
 } from "../../lib/agenda/api";
 import { formatInstantHour, formatShortDate } from "../../lib/agenda/format";
+import { instructorOptionLabel } from "./instructor-label";
 import { OccurrenceErrorBox } from "./OccurrenceErrorBox";
 
 type View = "form" | "confirm-cancel" | "confirm-delete";
@@ -59,6 +60,10 @@ export function OccurrenceEditModal({
     current && !instructors.some((instructor) => instructor.id === current.id)
       ? [...instructors, current]
       : instructors;
+
+  const titularId = optionsQuery.data?.templates.find(
+    (template) => template.id === occurrence.templateId,
+  )?.defaultInstructor?.id;
 
   const canEdit = can(Module.OCORRENCIAS, PermissionAction.EDIT);
   const canDelete = can(Module.OCORRENCIAS, PermissionAction.DELETE);
@@ -116,7 +121,7 @@ export function OccurrenceEditModal({
             ? "sai da agenda dos clientes e continua no histórico. O horário fica livre para outra aula."
             : "será removida definitivamente, inclusive do histórico. Use só para aulas criadas por engano."}
         </p>
-        <div className="fb-modal__footer" style={{ justifyContent: "flex-end" }}>
+        <div className="fb-modal__footer fb-modal__footer--end fb-modal__footer--tight">
           <button
             type="button"
             className="fb-btn-secondary"
@@ -195,7 +200,7 @@ export function OccurrenceEditModal({
                 <option value="">Sem professor</option>
                 {instructorOptions.map((instructor) => (
                   <option key={instructor.id} value={instructor.id}>
-                    {instructor.fullName}
+                    {instructorOptionLabel(instructor.fullName, instructor.id === titularId)}
                   </option>
                 ))}
               </select>
