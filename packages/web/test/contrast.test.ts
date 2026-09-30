@@ -13,9 +13,15 @@ import workoutCss from "../src/styles/workout.css?raw";
 
 /**
  * Contraste WCAG (2.x) dos pares de cor do design system e das folhas de estilo.
- * Não há navegador na suíte, então o teste lê o CSS: garante que o texto não
- * volte a usar os cinzas que ficam abaixo de 4.5:1 (o #8a8a8a sobre branco,
- * o branco a 40-45% sobre o preto), o principal risco de regressão.
+ * Não há navegador na suíte, então o teste lê o CSS.
+ *
+ * O design (Claude Design) vence: alguns pares que ele usa ficam abaixo de 4.5:1 e estão registrados aqui como
+ * EXCEÇÕES CONHECIDAS DO DESIGN, cada uma com o valor de contraste medido. Todo o resto continua exigindo 4.5:1
+ * (ou o mínimo da própria exceção), para o texto não deslizar para cinzas ainda mais claros:
+ * - branco sobre o laranja da marca (botões, chips, abas): 3.05:1 (o preto daria 6.5:1); o design usa 700 e 13-15px;
+ * - laranja da marca como texto/traço sobre branco: 3.05:1;
+ * - #8a8a8a sobre branco: 3.45:1 (eyebrows, cabeçalhos de tabela, legendas); #b0b0b0 sobre branco: 2.17:1 (só linhas inativas);
+ * - branco a 45% sobre o cartão elevado: 4.47:1; a 40%: 3.83:1 (datas, rótulos, rodapé); placeholder a 32%: 2.90:1.
  */
 type Rgb = [number, number, number];
 
@@ -57,17 +63,21 @@ describe("contraste dos tokens de texto", () => {
     expect(contrast(hex(token("color-primary-orange")), BLACK)).toBeGreaterThanOrEqual(4.5);
   });
 
-  it("o texto secundário das telas claras passa de 4.5:1 sobre branco e sobre o cinza #f0f0f0", () => {
+  it("exceção do design: o texto secundário das telas claras (#8a8a8a) dá 3.45:1 sobre branco", () => {
     const muted = hex(token("color-text-muted-on-light"));
-    expect(contrast(muted, WHITE)).toBeGreaterThanOrEqual(4.5);
-    expect(contrast(muted, hex("#f0f0f0"))).toBeGreaterThanOrEqual(4.5);
+    expect(token("color-text-muted-on-light")).toBe("#8a8a8a");
+    expect(contrast(muted, WHITE)).toBeCloseTo(3.45, 1);
   });
 
-  it("o texto laranja das telas claras passa de 4.5:1 sobre branco e sobre o fundo do destaque", () => {
+  it("exceção do design: o cinza das linhas inativas (#b0b0b0) dá 2.17:1 sobre branco e só serve para linhas esmaecidas", () => {
+    expect(token("color-text-faint-on-light")).toBe("#b0b0b0");
+    expect(contrast(hex(token("color-text-faint-on-light")), WHITE)).toBeCloseTo(2.17, 1);
+  });
+
+  it("exceção do design: o laranja da marca como texto das telas claras dá 3.05:1 sobre branco", () => {
     const accent = hex(token("color-accent-on-light"));
-    const tint = over(hex(token("color-primary-orange")), 0.14, WHITE);
-    expect(contrast(accent, WHITE)).toBeGreaterThanOrEqual(4.5);
-    expect(contrast(accent, tint)).toBeGreaterThanOrEqual(4.5);
+    expect(token("color-accent-on-light")).toBe(token("color-primary-orange"));
+    expect(contrast(accent, WHITE)).toBeCloseTo(3.05, 1);
   });
 
   it("o texto de erro das telas claras passa de 4.5:1 sobre o fundo do aviso", () => {
@@ -85,6 +95,16 @@ describe("contraste dos tokens de texto", () => {
     expect(muted).not.toBeNull();
     const alpha = Number(muted?.[1]);
     expect(contrast(over(WHITE, alpha, RAISED), RAISED)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("níveis de texto translúcido do design: 50, 55 e 65% passam de 4.5:1; 40 e 45% são exceção do design (3.83:1 e 4.47:1)", () => {
+    const alphaOf = (name: string) => Number(token(name).match(/rgba\(255, 255, 255, ([\d.]+)\)/)?.[1]);
+    const onRaised = (name: string) => contrast(over(WHITE, alphaOf(name), RAISED), RAISED);
+    for (const name of ["color-on-dark-50", "color-on-dark-55", "color-on-dark-65"]) {
+      expect(onRaised(name), name).toBeGreaterThanOrEqual(4.5);
+    }
+    expect(onRaised("color-on-dark-45")).toBeCloseTo(4.47, 1);
+    expect(onRaised("color-on-dark-40")).toBeCloseTo(3.83, 1);
   });
 });
 
@@ -122,6 +142,8 @@ describe("cores de texto das folhas de estilo", () => {
       .filter(({ value }) => /^#[0-9a-f]{3,6}$/i.test(value))
       // Branco só aparece sobre fundo de marca (botão laranja/vermelho), nunca sobre branco.
       .filter(({ value }) => value.toLowerCase() !== "#ffffff")
+      // Cinzas do design (exceção conhecida, ver o topo do arquivo): #8a8a8a (3.45:1) e #b0b0b0 (2.17:1, linhas inativas).
+      .filter(({ value }) => !["#8a8a8a", "#b0b0b0"].includes(value.toLowerCase()))
       // Controles desabilitados são isentos.
       .filter(({ selector }) => !selector.includes(":disabled"))
       .filter(({ value }) => contrast(hex(value), WHITE) < 4.5)
@@ -131,7 +153,7 @@ describe("cores de texto das folhas de estilo", () => {
   });
 
   it.each(DARK_SHEETS)(
-    "%s: texto branco translúcido passa de 4.5:1 sobre o cartão elevado",
+    "%s: texto branco translúcido passa de 4.5:1 sobre o cartão elevado (exceto os níveis do design)",
     (_name, css) => {
       const colors = textColors(css);
       // Guarda contra o css vazio (o vitest só devolve o texto das folhas de src/styles, ver vite.config.ts).
@@ -145,6 +167,10 @@ describe("cores de texto das folhas de estilo", () => {
         .filter((entry) => entry.alpha !== undefined)
         // Marco de progresso ainda não alcançado: elemento gráfico (mínimo de 3:1), não texto.
         .filter(({ selector }) => !selector.endsWith(".fb-gami__mark--pending"))
+        // Exceção do design: branco a 40% e 45% (datas, rótulos de campo, rodapé): 3.83:1 e 4.47:1. Abaixo disso não.
+        .filter(({ alpha }) => !["0.4", "0.40", "0.45"].includes(alpha ?? ""))
+        // O placeholder a 32% (2.90:1) também é do design; não é o texto digitado.
+        .filter(({ selector }) => !selector.includes("::placeholder"))
         .filter(({ alpha }) => contrast(over(WHITE, Number(alpha), RAISED), RAISED) < 4.5)
         .map(({ selector, value }) => `${selector} → ${value}`);
 
@@ -183,46 +209,51 @@ function orangeBackgrounds(css: string): { selector: string; color: string | und
 
 describe("botões primários (texto sobre o laranja da marca)", () => {
   const ORANGE = hex(token("color-primary-orange"));
+  /** Exceção do design: branco em negrito sobre o laranja, 3.05:1 (o preto daria 6.5:1). Piso da exceção: 3:1. */
+  const DESIGN_PAIR_MIN = 3;
 
-  it("o texto sobre o laranja (token color-on-orange) passa de 4.5:1", () => {
-    expect(contrast(resolveColor("var(--color-on-orange)"), ORANGE)).toBeGreaterThanOrEqual(4.5);
+  it("exceção do design: o texto sobre o laranja (token color-on-orange) é branco e dá 3.05:1", () => {
+    expect(token("color-on-orange").toLowerCase()).toBe("#ffffff");
+    const ratio = contrast(resolveColor("var(--color-on-orange)"), ORANGE);
+    expect(ratio).toBeCloseTo(3.05, 1);
+    expect(ratio).toBeGreaterThanOrEqual(DESIGN_PAIR_MIN);
   });
 
-  it("o branco sobre o laranja não passa de 4.5:1 (motivo do token)", () => {
-    expect(contrast(WHITE, ORANGE)).toBeLessThan(4.5);
+  it("o preto sobre o laranja passaria de 4.5:1 (o trade-off que o design decidiu não seguir)", () => {
+    expect(contrast(BLACK, ORANGE)).toBeGreaterThanOrEqual(4.5);
   });
 
-  it.each(allSheets())("%s: todo fundo laranja usa texto com 4.5:1 ou mais", (_name, css) => {
+  it.each(allSheets())("%s: todo fundo laranja usa o par do design (3:1 ou mais)", (_name, css) => {
     const failures = orangeBackgrounds(css)
       // O visto do checkbox marcado é um gráfico (mínimo de 3:1), não texto.
       .filter(({ selector }) => !selector.startsWith(".fb-checkbox:checked"))
-      .filter(({ color }) => color === undefined || contrast(resolveColor(color), ORANGE) < 4.5)
+      .filter(({ color }) => color === undefined || contrast(resolveColor(color), ORANGE) < DESIGN_PAIR_MIN)
       .map(({ selector, color }) => `${selector} → ${color ?? "sem color explícito"}`);
 
     expect(failures).toEqual([]);
   });
 
-  it("o botão primário do painel e o dia da recorrência marcado usam o par testado", () => {
+  it("o botão primário do painel e o dia da recorrência marcado usam o par do design", () => {
     const rules = orangeBackgrounds(adminCss);
     for (const selector of [".fb-btn-primary", '.fb-weekday-toggle[aria-pressed="true"]']) {
       const rule = rules.find((r) => r.selector === selector);
       expect(rule, selector).toBeDefined();
-      expect(contrast(resolveColor(rule?.color ?? "#ffffff"), ORANGE)).toBeGreaterThanOrEqual(4.5);
+      expect(contrast(resolveColor(rule?.color ?? "#ffffff"), ORANGE)).toBeGreaterThanOrEqual(DESIGN_PAIR_MIN);
     }
   });
 
-  it("o texto secundário do chip de dia marcado (sobre o laranja) também passa de 4.5:1", () => {
+  it("o texto secundário do chip de dia marcado (sobre o laranja) usa o par do design ou mais", () => {
     const rule = textColors(clientCss).find(
       ({ selector }) => selector === '.fb-daychip[aria-pressed="true"] .fb-daychip__weekday',
     );
     expect(rule).toBeDefined();
-    expect(contrast(resolveColor(rule?.value ?? "#ffffff"), ORANGE)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(resolveColor(rule?.value ?? "#ffffff"), ORANGE)).toBeGreaterThanOrEqual(DESIGN_PAIR_MIN);
   });
 
   it("o rótulo do botão de entrar do login usa o texto sobre o laranja", () => {
     const login = allSheets().find(([name]) => name === "pages/LoginPage.css")?.[1] ?? "";
     const label = textColors(login).find(({ selector }) => selector === ".login-form__submit-label");
     expect(label).toBeDefined();
-    expect(contrast(resolveColor(label?.value ?? "#ffffff"), ORANGE)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(resolveColor(label?.value ?? "#ffffff"), ORANGE)).toBeGreaterThanOrEqual(DESIGN_PAIR_MIN);
   });
 });
