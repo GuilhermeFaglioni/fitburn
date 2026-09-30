@@ -241,23 +241,27 @@ export function SheetEditor({ editing, allowed, pending, onCancel, onSubmit }: S
             <div className="fb-sheets__row-actions">
               <button
                 type="button"
-                className="fb-row-btn"
+                className="fb-row-btn fb-sheets__move"
+                aria-label="Subir"
+                title="Subir"
                 disabled={index === 0}
                 onClick={() => moveRow(index, -1)}
               >
-                Subir
+                <span aria-hidden="true">↑</span>
               </button>
               <button
                 type="button"
-                className="fb-row-btn"
+                className="fb-row-btn fb-sheets__move"
+                aria-label="Descer"
+                title="Descer"
                 disabled={index === rows.length - 1}
                 onClick={() => moveRow(index, 1)}
               >
-                Descer
+                <span aria-hidden="true">↓</span>
               </button>
               <button
                 type="button"
-                className="fb-row-btn fb-row-btn--danger"
+                className="fb-sheets__remove"
                 onClick={() => removeRow(row.key)}
               >
                 Remover
@@ -268,13 +272,13 @@ export function SheetEditor({ editing, allowed, pending, onCancel, onSubmit }: S
       </div>
 
       <div className="fb-sheets__form-footer">
-        <button type="button" className="fb-btn-secondary" onClick={onCancel}>
+        <button type="button" className="fb-btn-secondary fb-btn-secondary--lg" onClick={onCancel}>
           Cancelar
         </button>
         <BlockedAction allowed={allowed} reason="Você não tem permissão para esta ação.">
           <button
             type="submit"
-            className="fb-btn-primary"
+            className="fb-btn-primary fb-btn-primary--lg"
             disabled={title.trim() === "" || pending}
           >
             Salvar ficha

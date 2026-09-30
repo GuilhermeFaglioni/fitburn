@@ -125,6 +125,11 @@
   cursor: not-allowed;
 }
 
+.fb-role-list .fb-btn-dashed {
+  box-sizing: border-box;
+  width: 100%;
+}
+
 .fb-visually-hidden {
   position: absolute;
   width: 1px;
@@ -143,8 +148,6 @@
 }
 
 .fb-btn-dashed {
-  box-sizing: border-box;
-  width: 100%;
   padding: 10px 12px;
   background: none;
   border: 1px dashed #d6d6d6;
