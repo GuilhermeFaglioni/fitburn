@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { render, screen, within } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { http, HttpResponse } from "msw";
 import { MemoryRouter } from "react-router-dom";
@@ -136,42 +135,70 @@ describe("Dashboard administrativo", () => {
     );
   }
 
-  it("mostra ocupação e vagas, clientes ativos e os indicadores da semana", async () => {
+  it("mostra os quatro cartões de KPI, a ocupação por aula e o ranking do mês", async () => {
     serve((period) => dashboardOf(period));
     renderPage();
 
-    const today = await screen.findByRole("list", { name: "Aulas de hoje" });
-    const funcional = within(today).getByText("Treino Funcional").closest("li")!;
-    expect(within(funcional).getByText("9/12")).toBeInTheDocument();
-    expect(within(funcional).getByText("3 vagas")).toBeInTheDocument();
-    const yoga = within(today).getByText("Yoga").closest("li")!;
-    expect(within(yoga).getByText("Lotada")).toBeInTheDocument();
+    const clients = (await screen.findByText("Clientes ativos")).closest("div")!;
+    expect(within(clients).getByText("42")).toBeInTheDocument();
+    // 10 reservas em 20 vagas na semana (Treino Funcional 9/12 e Pilates 1/8).
+    const occupancy = screen.getByText("Ocupação média da semana").closest("div")!;
+    expect(within(occupancy).getByText("50%")).toBeInTheDocument();
+    const points = screen.getByText("Pontos distribuídos no mês").closest("div")!;
+    expect(within(points).getByText("240")).toBeInTheDocument();
+    const streaks = screen.getByText("Streaks ativos").closest("div")!;
+    expect(within(streaks).getByText("3")).toBeInTheDocument();
 
-    expect(screen.getByText("Pilates")).toBeInTheDocument();
-    expect(screen.getByText("clientes ativos").previousSibling).toHaveTextContent("42");
-    expect(screen.getByText("pontos distribuídos").previousSibling).toHaveTextContent("65");
-    expect(screen.getByText("presenças").previousSibling).toHaveTextContent("4");
-    expect(screen.getByText("clientes com streak ativo").previousSibling).toHaveTextContent("1");
+    // Uma barra por modalidade, da mais para a menos cheia: 9/12 = 75% e 1/8 = 13%.
+    const bars = screen.getByRole("list", { name: "Ocupação por aula" });
+    const rows = within(bars).getAllByRole("listitem");
+    expect(rows.map((row) => row.textContent)).toEqual(["Treino Funcional75%", "Pilates13%"]);
 
     const top = screen.getByRole("list", { name: "Topo do ranking" });
-    expect(within(top).getAllByRole("listitem")).toHaveLength(2);
-    expect(within(top).getByText("Bruno Alves")).toBeInTheDocument();
-    expect(periods).toEqual(["week"]);
+    expect(within(top).getAllByRole("listitem")).toHaveLength(1);
+    expect(within(top).getByText("Ana Paula Souza")).toBeInTheDocument();
+    expect(within(top).getByText("9 presenças")).toBeInTheDocument();
+    // O painel de gamificação mostra o período do mês (o artboard não tem seletor).
+    expect(periods).toEqual(["month"]);
   });
 
-  it("alterna os indicadores entre semana e mês", async () => {
-    serve((period) => dashboardOf(period));
-    const user = userEvent.setup();
+  it("agrupa as aulas de mesmo nome e limita o ranking a três posições", async () => {
+    serve((period) =>
+      dashboardOf(period, {
+        occupancy: {
+          today: [],
+          week: [
+            { id: "a", name: "Yoga", startsAt: "2026-09-29T12:00:00.000Z", capacity: 10, booked: 10, availableSpots: 0 },
+            { id: "b", name: "Yoga", startsAt: "2026-10-01T12:00:00.000Z", capacity: 10, booked: 8, availableSpots: 2 },
+            { id: "c", name: "Muay Thai", startsAt: "2026-10-02T12:00:00.000Z", capacity: 10, booked: 4, availableSpots: 6 },
+          ],
+        },
+        gamification: {
+          pointsDistributed: 48200,
+          attendances: 30,
+          clientsWithActiveStreak: 0,
+          top: [1, 2, 3, 4].map((position) => ({
+            clientId: `c-${position}`,
+            position,
+            fullName: `Cliente ${position}`,
+            points: 100 - position,
+            attendances: position === 1 ? 1 : 2,
+            tied: false,
+          })),
+        },
+      }),
+    );
     renderPage();
 
-    await screen.findByText("pontos distribuídos");
-    await user.click(screen.getByRole("button", { name: "Mês" }));
-
-    expect(await screen.findByText("240")).toBeInTheDocument();
-    expect(screen.getByText("pontos distribuídos").previousSibling).toHaveTextContent("240");
-    expect(screen.getByText("clientes com streak ativo").previousSibling).toHaveTextContent("3");
-    expect(screen.getByRole("button", { name: "Mês" })).toHaveAttribute("aria-pressed", "true");
-    expect(periods).toEqual(["week", "month"]);
+    const bars = await screen.findByRole("list", { name: "Ocupação por aula" });
+    expect(within(bars).getAllByRole("listitem").map((row) => row.textContent)).toEqual([
+      "Yoga90%",
+      "Muay Thai40%",
+    ]);
+    expect(screen.getByText("48.200", { selector: ".fb-dash__figure-value" })).toBeInTheDocument();
+    const top = screen.getByRole("list", { name: "Topo do ranking" });
+    expect(within(top).getAllByRole("listitem")).toHaveLength(3);
+    expect(within(top).getByText("1 presença")).toBeInTheDocument();
   });
 
   it("dois clientes empatados com o mesmo nome aparecem os dois, sem chave de lista repetida", async () => {
@@ -204,8 +231,10 @@ describe("Dashboard administrativo", () => {
     );
     renderPage();
 
-    expect(await screen.findByText("clientes ativos")).toBeInTheDocument();
-    expect(screen.queryByText("Ocupação das aulas")).not.toBeInTheDocument();
+    expect(await screen.findByText("Clientes ativos")).toBeInTheDocument();
+    expect(screen.queryByText("Ocupação média da semana")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Ocupação por aula/)).not.toBeInTheDocument();
     expect(screen.queryByText("Gamificação")).not.toBeInTheDocument();
+    expect(screen.queryByText("Streaks ativos")).not.toBeInTheDocument();
   });
 });

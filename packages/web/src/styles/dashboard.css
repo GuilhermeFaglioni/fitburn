@@ -1,53 +1,174 @@
-/* Dashboard administrativo (casca clara). */
+/*
+ * Dashboard administrativo — DashboardAdmin.dc.html no canvas de design (Claude Design),
+ * https://claude.ai/artifact/VncuMf9CffiWGUEQYywLVX. Cores literais do artboard.
+ */
 .fb-dash {
   display: flex;
   flex-direction: column;
-  gap: 22px;
+  gap: 24px;
+  /* Os painéis crescem até o fim da área de conteúdo, como no artboard. */
+  min-height: 100%;
 }
 
-.fb-dash__block {
+.fb-dash__heading {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 16px 18px;
-  background: #f7f7f7;
-  border: 1px solid #ececec;
-  border-radius: var(--radius-sm);
+  gap: 2px;
 }
 
-.fb-dash__block-head {
+.fb-dash__subtitle {
+  font-size: 13px;
+  color: #8a8a8a;
+}
+
+/* Cartões de KPI: quatro colunas iguais (266x110 no artboard). */
+.fb-dash__kpis {
+  display: flex;
+  gap: 16px;
+}
+
+.fb-dash__kpi {
+  box-sizing: border-box;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 20px 22px;
+  background: #ffffff;
+  border: 1px solid #e6e6e6;
+  border-radius: 5px;
+}
+
+.fb-dash__kpi-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #8a8a8a;
+}
+
+.fb-dash__kpi-value {
+  font-size: 32px;
+  font-weight: 700;
+  color: #0a0a0a;
+}
+
+.fb-dash__panels {
+  display: flex;
+  gap: 16px;
+  flex-grow: 1;
+  min-height: 0;
+}
+
+.fb-dash__panel {
+  box-sizing: border-box;
+  flex: 1;
+  min-width: 0;
+  padding: 22px 24px;
+  background: #ffffff;
+  border: 1px solid #e6e6e6;
+  border-radius: 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.fb-dash__panel-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #0a0a0a;
+}
+
+/* Ocupação por aula: nome, percentual e a barra de 8px. */
+.fb-dash__bars {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.fb-dash__bar-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fb-dash__bar-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
 }
 
-.fb-dash__block-title {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 700;
+.fb-dash__bar-name {
+  font-size: 13px;
+  color: #333333;
 }
 
-.fb-dash__sub-title,
-.fb-dash__day-title {
-  margin: 0 0 8px;
+.fb-dash__bar-value {
   font-size: 13px;
   font-weight: 700;
-  color: #4a4a4a;
+  color: #0a0a0a;
 }
 
-.fb-dash__columns {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 20px;
+.fb-dash__meter-track {
+  height: 8px;
+  border-radius: 999px;
+  background: #eeeeee;
+  overflow: hidden;
 }
 
-.fb-dash__day {
-  margin-bottom: 12px;
+.fb-dash__meter-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: #ed6e34;
 }
 
-.fb-dash__list {
+/* Gamificação: dois números em laranja, um filete e o ranking do período. */
+.fb-dash__figures {
+  display: flex;
+  gap: 16px;
+}
+
+.fb-dash__figure {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.fb-dash__figure-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: #ed6e34;
+}
+
+.fb-dash__figure-label {
+  font-size: 12px;
+  color: #8a8a8a;
+}
+
+.fb-dash__divider {
+  height: 1px;
+  background: #eeeeee;
+}
+
+.fb-dash__ranking {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fb-dash__ranking-title {
   margin: 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: #8a8a8a;
+}
+
+.fb-dash__ranking-list {
+  margin: 4px 0 0;
   padding: 0;
   list-style: none;
   display: flex;
@@ -55,51 +176,54 @@
   gap: 6px;
 }
 
-.fb-dash__class {
+.fb-dash__ranking-row {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
-  background: var(--color-surface-white);
-  border: 1px solid #ececec;
-  border-radius: var(--radius-sm);
-  font-size: 14px;
+  gap: 10px;
 }
 
-.fb-dash__class-hour {
-  flex-shrink: 0;
-  width: 48px;
+.fb-dash__ranking-pos {
+  width: 22px;
+  font-size: 13px;
   font-weight: 700;
+  color: #8a8a8a;
 }
 
-.fb-dash__class-name {
+.fb-dash__ranking-name {
   flex-grow: 1;
   min-width: 0;
-}
-
-.fb-dash__class-count {
-  color: #5a5a5a;
   font-size: 13px;
+  color: #0a0a0a;
 }
 
-.fb-dash__metrics {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 12px;
+.fb-dash__ranking-count {
+  font-size: 12px;
+  color: #8a8a8a;
 }
 
-.fb-dash__metric {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+/* Padding do conteúdo do artboard (32px 48px); no mobile vale o da casca. */
+@media (min-width: 768px) {
+  .fb-admin-content:has(> .fb-dash) {
+    --fb-admin-pad-x: 48px;
+  }
 }
 
-.fb-dash__metric-value {
-  font-size: 28px;
-  font-weight: 700;
-}
+/* Mobile: KPIs em duas colunas e os painéis empilhados. */
+@media (max-width: 767px) {
+  .fb-dash__kpis {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 
-.fb-dash__metric-label {
-  font-size: 13px;
-  color: #5a5a5a;
+  .fb-dash__kpi {
+    padding: 16px;
+  }
+
+  .fb-dash__kpi-value {
+    font-size: 28px;
+  }
+
+  .fb-dash__panels {
+    flex-direction: column;
+  }
 }
