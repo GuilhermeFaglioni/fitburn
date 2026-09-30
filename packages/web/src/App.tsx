@@ -10,6 +10,7 @@ import { LoginPage } from "./pages/LoginPage";
 import { ClientHomePage } from "./pages/ClientHomePage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { ClientsPage } from "./pages/ClientsPage";
+import { ClientCreatePage } from "./pages/ClientCreatePage";
 import { ReservasAdminPage } from "./pages/ReservasAdminPage";
 import { ClientDetailPage } from "./pages/ClientDetailPage";
 import { UsuariosPerfisPage } from "./pages/UsuariosPerfisPage";
@@ -74,6 +75,7 @@ export function AppRoutes() {
       >
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/clientes" element={<ClientsPage />} />
+        <Route path="/clientes/novo" element={<ClientCreatePage />} />
         <Route path="/reservas-administrativas" element={<ReservasAdminPage />} />
         <Route path="/clientes/:id" element={<ClientDetailPage />} />
         <Route path="/usuarios" element={<UsuariosPerfisPage />} />

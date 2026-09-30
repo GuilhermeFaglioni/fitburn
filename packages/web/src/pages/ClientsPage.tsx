@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Module,
   PermissionAction,
@@ -9,26 +9,19 @@ import {
 } from "@fitburn/contracts";
 import { BlockedAction } from "../components/BlockedAction";
 import { DeleteUserDialog } from "../components/DeleteUserDialog";
-import { Modal } from "../components/Modal";
 import { useAuth } from "../lib/auth/AuthContext";
 import { invalidateAfterDeletion } from "../lib/invalidate-after-deletion";
-import {
-  createClientRecord,
-  deleteClientRecord,
-  listClients,
-  setClientActive,
-} from "../lib/clients/api";
+import { deleteClientRecord, listClients, setClientActive } from "../lib/clients/api";
 import { formatLocalDate } from "../lib/agenda/format";
-import { ClientCreateForm } from "./ClientCreateForm";
 import { EmptyState, ErrorState, Feedback, LoadingState } from "../components/states";
 
 /** Clientes: busca, filtro de status, plano ativo e ações rápidas da equipe. */
 export function ClientsPage() {
   const { can } = useAuth();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [status, setStatus] = useState<ClientsQuery["status"]>(undefined);
-  const [showCreate, setShowCreate] = useState(false);
   const [clientToDelete, setClientToDelete] = useState<ClientListItem | null>(null);
 
   const search = searchTerm.trim();
@@ -81,23 +74,15 @@ export function ClientsPage() {
           </label>
         </div>
         <BlockedAction allowed={canCreate} reason="Você não tem permissão para cadastrar clientes.">
-          <button type="button" className="fb-btn-primary" onClick={() => setShowCreate(true)}>
+          <button
+            type="button"
+            className="fb-btn-primary"
+            onClick={() => navigate("/clientes/novo")}
+          >
             + Novo cliente
           </button>
         </BlockedAction>
       </div>
-
-      {showCreate && (
-        <Modal title="Novo cliente" onClose={() => setShowCreate(false)}>
-          <ClientCreateForm
-            submit={createClientRecord}
-            onCreated={() => {
-              setShowCreate(false);
-              void queryClient.invalidateQueries({ queryKey: ["clients"] });
-            }}
-          />
-        </Modal>
-      )}
 
       {clientToDelete && (
         <DeleteUserDialog

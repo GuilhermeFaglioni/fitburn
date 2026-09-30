@@ -98,7 +98,8 @@ describe("contraste dos tokens de texto", () => {
   });
 
   it("níveis de texto translúcido do design: 50, 55 e 65% passam de 4.5:1; 40 e 45% são exceção do design (3.83:1 e 4.47:1)", () => {
-    const alphaOf = (name: string) => Number(token(name).match(/rgba\(255, 255, 255, ([\d.]+)\)/)?.[1]);
+    const alphaOf = (name: string) =>
+      Number(token(name).match(/rgba\(255, 255, 255, ([\d.]+)\)/)?.[1]);
     const onRaised = (name: string) => contrast(over(WHITE, alphaOf(name), RAISED), RAISED);
     for (const name of ["color-on-dark-50", "color-on-dark-55", "color-on-dark-65"]) {
       expect(onRaised(name), name).toBeGreaterThanOrEqual(4.5);
@@ -185,7 +186,7 @@ function allSheets(): [string, string][] {
   const sheets = readdirSync(resolve(root, "styles"))
     .filter((name) => name.endsWith(".css"))
     .map((name) => `styles/${name}`)
-    .concat(["pages/LoginPage.css", "components/AppMenu.css"]);
+    .concat(["pages/LoginPage.css", "pages/ClientCreatePage.css", "components/AppMenu.css"]);
   return sheets.map((path) => [path, readFileSync(resolve(root, path), "utf8")]);
 }
 
@@ -227,7 +228,10 @@ describe("botões primários (texto sobre o laranja da marca)", () => {
     const failures = orangeBackgrounds(css)
       // O visto do checkbox marcado é um gráfico (mínimo de 3:1), não texto.
       .filter(({ selector }) => !selector.startsWith(".fb-checkbox:checked"))
-      .filter(({ color }) => color === undefined || contrast(resolveColor(color), ORANGE) < DESIGN_PAIR_MIN)
+      .filter(
+        ({ color }) =>
+          color === undefined || contrast(resolveColor(color), ORANGE) < DESIGN_PAIR_MIN,
+      )
       .map(({ selector, color }) => `${selector} → ${color ?? "sem color explícito"}`);
 
     expect(failures).toEqual([]);
@@ -238,7 +242,9 @@ describe("botões primários (texto sobre o laranja da marca)", () => {
     for (const selector of [".fb-btn-primary", '.fb-weekday-toggle[aria-pressed="true"]']) {
       const rule = rules.find((r) => r.selector === selector);
       expect(rule, selector).toBeDefined();
-      expect(contrast(resolveColor(rule?.color ?? "#ffffff"), ORANGE)).toBeGreaterThanOrEqual(DESIGN_PAIR_MIN);
+      expect(contrast(resolveColor(rule?.color ?? "#ffffff"), ORANGE)).toBeGreaterThanOrEqual(
+        DESIGN_PAIR_MIN,
+      );
     }
   });
 
@@ -247,13 +253,19 @@ describe("botões primários (texto sobre o laranja da marca)", () => {
       ({ selector }) => selector === '.fb-daychip[aria-pressed="true"] .fb-daychip__weekday',
     );
     expect(rule).toBeDefined();
-    expect(contrast(resolveColor(rule?.value ?? "#ffffff"), ORANGE)).toBeGreaterThanOrEqual(DESIGN_PAIR_MIN);
+    expect(contrast(resolveColor(rule?.value ?? "#ffffff"), ORANGE)).toBeGreaterThanOrEqual(
+      DESIGN_PAIR_MIN,
+    );
   });
 
   it("o rótulo do botão de entrar do login usa o texto sobre o laranja", () => {
     const login = allSheets().find(([name]) => name === "pages/LoginPage.css")?.[1] ?? "";
-    const label = textColors(login).find(({ selector }) => selector === ".login-form__submit-label");
+    const label = textColors(login).find(
+      ({ selector }) => selector === ".login-form__submit-label",
+    );
     expect(label).toBeDefined();
-    expect(contrast(resolveColor(label?.value ?? "#ffffff"), ORANGE)).toBeGreaterThanOrEqual(DESIGN_PAIR_MIN);
+    expect(contrast(resolveColor(label?.value ?? "#ffffff"), ORANGE)).toBeGreaterThanOrEqual(
+      DESIGN_PAIR_MIN,
+    );
   });
 });
