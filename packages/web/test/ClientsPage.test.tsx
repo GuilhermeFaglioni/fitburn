@@ -185,7 +185,7 @@ describe("Clientes (equipe)", () => {
       expect(within(marina).getByText("marina@email.com")).toBeInTheDocument();
       expect(within(marina).getByText(/Plano Performance/)).toBeInTheDocument();
       expect(within(marina).getByText("ATIVO")).toBeInTheDocument();
-      expect(within(bruno).getByText("Sem plano")).toBeInTheDocument();
+      expect(within(bruno).getByText("Sem plano ativo")).toBeInTheDocument();
       expect(within(bruno).getByText("INATIVO")).toBeInTheDocument();
     });
 

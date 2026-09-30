@@ -249,9 +249,9 @@ export function ReservationFormModal({
 
         {renderOutcome()}
 
-        <div className="fb-modal__footer" style={{ justifyContent: "flex-end" }}>
+        <div className="fb-modal__footer fb-modal__footer--end fb-modal__footer--tight">
           <button type="button" className="fb-btn-secondary" onClick={onClose}>
-            Voltar
+            Cancelar
           </button>
           <RequiresNetwork>
             <button

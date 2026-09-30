@@ -116,7 +116,9 @@ export function AgendaAdminPage() {
             : formatDayLabel(date, weekdayOf(date));
           return (
             <div key={date} className="fb-day-col">
-              <div className={`fb-day-head${isToday ? " fb-day-head--today" : ""}`}>{label}</div>
+              <div className={`fb-day-head${isToday ? " fb-day-head--today" : ""}`}>
+                <span>{label}</span>
+              </div>
               {(occurrencesByDay.get(date) ?? []).map((occurrence) => (
                 <button
                   key={occurrence.id}
@@ -131,7 +133,7 @@ export function AgendaAdminPage() {
                   <span className="fb-chip-cls__sub">
                     {occurrence.status === OccurrenceStatus.CANCELLED
                       ? "Cancelada"
-                      : `${occurrence.instructor ? `Prof. ${occurrence.instructor.fullName}` : "Sem professor"} · ${occurrence.bookedCount}/${occurrence.capacity}`}
+                      : `${occurrence.instructor ? `Prof. ${occurrence.instructor.fullName.split(" ")[0]}` : "Sem professor"} · ${occurrence.bookedCount}/${occurrence.capacity}`}
                   </span>
                 </button>
               ))}

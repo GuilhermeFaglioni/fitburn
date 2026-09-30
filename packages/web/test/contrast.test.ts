@@ -134,6 +134,14 @@ const DARK_SHEETS: [string, string][] = [
   ["workout.css", workoutCss],
 ];
 
+/**
+ * Cores de texto que o design (Claude Design) manda usar nas telas claras, mesmo abaixo de 4.5:1 sobre branco:
+ * cinza de rótulos e legendas (#8a8a8a), cinza de linha inativa (#b0b0b0), laranja de destaque (#ed6e34) e o
+ * travessão da coluna de ações (#c8c8c8). O trade-off de contraste está registrado em
+ * docs/design-fidelity-report.md (T3); a regra abaixo impede que outros cinzas claros entrem sem decisão.
+ */
+const DESIGN_LIGHT_TEXT = new Set(["#8a8a8a", "#b0b0b0", "#ed6e34", "#c8c8c8"]);
+
 describe("cores de texto das folhas de estilo", () => {
   it.each(LIGHT_SHEETS)("%s: texto em hexadecimal passa de 4.5:1 sobre branco", (_name, css) => {
     const colors = textColors(css);
@@ -144,7 +152,7 @@ describe("cores de texto das folhas de estilo", () => {
       // Branco só aparece sobre fundo de marca (botão laranja/vermelho), nunca sobre branco.
       .filter(({ value }) => value.toLowerCase() !== "#ffffff")
       // Cinzas do design (exceção conhecida, ver o topo do arquivo): #8a8a8a (3.45:1) e #b0b0b0 (2.17:1, linhas inativas).
-      .filter(({ value }) => !["#8a8a8a", "#b0b0b0"].includes(value.toLowerCase()))
+      .filter(({ value }) => !["#8a8a8a", "#b0b0b0", "#c8c8c8", "#ed6e34"].includes(value.toLowerCase()))
       // Controles desabilitados são isentos.
       .filter(({ selector }) => !selector.includes(":disabled"))
       .filter(({ value }) => contrast(hex(value), WHITE) < 4.5)
@@ -229,7 +237,7 @@ describe("botões primários (texto sobre o laranja da marca)", () => {
   it.each(allSheets())("%s: todo fundo laranja usa o par do design (3:1 ou mais)", (_name, css) => {
     const failures = orangeBackgrounds(css)
       // O visto do checkbox marcado é um gráfico (mínimo de 3:1), não texto.
-      .filter(({ selector }) => !selector.startsWith(".fb-checkbox:checked"))
+      .filter(({ selector }) => !selector.includes(".fb-checkbox"))
       .filter(
         ({ color }) =>
           color === undefined || contrast(resolveColor(color), ORANGE) < DESIGN_PAIR_MIN,

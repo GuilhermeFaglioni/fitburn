@@ -330,7 +330,7 @@ describe("Fichas de treino (professor)", () => {
     const list = screen.getByRole("list", { name: "Fichas de Marina Souza" });
     await user.click(within(list).getAllByRole("button", { name: "Editar" })[0]!);
 
-    await user.click(screen.getByRole("button", { name: "+ Nova ficha" }));
+    await user.click(screen.getByRole("button", { name: "+ Nova ficha (nova fase)" }));
 
     expect(screen.getByRole("heading", { name: "Nova ficha" })).toBeInTheDocument();
     expect(screen.getByLabelText("Título")).toHaveValue("");

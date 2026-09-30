@@ -107,7 +107,7 @@ describe("TemplatesModalidadesPage", () => {
     const row = (await screen.findByText("Spinning 45min")).closest("tr")!;
     expect(within(row).getByText("45 min")).toBeInTheDocument();
     expect(within(row).getByText("15 vagas")).toBeInTheDocument();
-    expect(within(row).getByText("Prof. Camila Rocha")).toBeInTheDocument();
+    expect(within(row).getByText("Prof. Camila")).toBeInTheDocument();
     expect(sentBody).toMatchObject({
       name: "Spinning 45min",
       modalityId: SPINNING.id,

@@ -139,7 +139,7 @@ export function WorkoutSheetsPage() {
               </div>
               {editing && (
                 <button type="button" className="fb-btn-secondary" onClick={() => edit(null)}>
-                  + Nova ficha
+                  + Nova ficha (nova fase)
                 </button>
               )}
             </div>
@@ -159,7 +159,7 @@ export function WorkoutSheetsPage() {
 
             <section className="fb-sheets__previous" aria-labelledby="fb-sheets-list">
               <h2 id="fb-sheets-list" className="fb-sheets__section-title">
-                Fichas de {selected.fullName}
+                {editing ? "Fichas anteriores de" : "Fichas de"} {selected.fullName}
               </h2>
               {sheetsQuery.isLoading && <LoadingState />}
               {sheetsQuery.isError && (
@@ -168,35 +168,40 @@ export function WorkoutSheetsPage() {
                   onRetry={() => void sheetsQuery.refetch()}
                 />
               )}
-              {sheetsQuery.isSuccess && sheets.length === 0 && (
-                <EmptyState message="Este aluno ainda não tem fichas." />
-              )}
+              {sheetsQuery.isSuccess &&
+                sheets.filter((sheet) => sheet.id !== editing?.id).length === 0 && (
+                  <EmptyState message="Este aluno ainda não tem fichas." />
+                )}
               <ul className="fb-sheets__list" aria-label={`Fichas de ${selected.fullName}`}>
-                {sheets.map((sheet) => (
-                  <li
-                    key={sheet.id}
-                    className={`fb-sheets__item${
-                      sheet.status === WorkoutSheetStatus.ARCHIVED ? " fb-sheets__item--closed" : ""
-                    }`}
-                  >
-                    <div className="fb-sheets__item-text">
-                      <span className="fb-sheets__item-title">{sheet.title}</span>
-                      <span className="fb-sheets__item-meta">
-                        {sheet.exercises.length}{" "}
-                        {sheet.exercises.length === 1 ? "exercício" : "exercícios"} · criada em{" "}
-                        {formatInstantDate(sheet.createdAt)}
-                      </span>
-                    </div>
-                    <div className="fb-sheets__item-actions">
-                      <span className={`fb-badge ${BADGE_CLASS[sheet.status]}`}>
-                        {statusBadge(sheet.status)}
-                      </span>
-                      <button type="button" className="fb-row-btn" onClick={() => edit(sheet)}>
-                        Editar
-                      </button>
-                    </div>
-                  </li>
-                ))}
+                {sheets
+                  .filter((sheet) => sheet.id !== editing?.id)
+                  .map((sheet) => (
+                    <li
+                      key={sheet.id}
+                      className={`fb-sheets__item${
+                        sheet.status === WorkoutSheetStatus.ARCHIVED
+                          ? " fb-sheets__item--closed"
+                          : ""
+                      }`}
+                    >
+                      <div className="fb-sheets__item-text">
+                        <span className="fb-sheets__item-title">{sheet.title}</span>
+                        <span className="fb-sheets__item-meta">
+                          {sheet.exercises.length}{" "}
+                          {sheet.exercises.length === 1 ? "exercício" : "exercícios"} · criada em{" "}
+                          {formatInstantDate(sheet.createdAt)}
+                        </span>
+                      </div>
+                      <div className="fb-sheets__item-actions">
+                        <span className={`fb-badge fb-badge--spaced ${BADGE_CLASS[sheet.status]}`}>
+                          {statusBadge(sheet.status)}
+                        </span>
+                        <button type="button" className="fb-row-btn" onClick={() => edit(sheet)}>
+                          Editar
+                        </button>
+                      </div>
+                    </li>
+                  ))}
               </ul>
             </section>
           </>

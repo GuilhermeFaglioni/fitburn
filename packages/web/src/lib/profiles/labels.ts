@@ -5,17 +5,17 @@ export const MODULE_LABELS: Record<ModuleName, string> = {
   PERFIS_DE_ACESSO: "Perfis de acesso",
   DASHBOARD: "Dashboard",
   TEMPLATES_DE_AULA: "Templates de aula",
-  OCORRENCIAS: "Ocorrências/Agendamento",
+  OCORRENCIAS: "Agenda",
   RESERVAS: "Reservas",
   CLIENTES: "Clientes",
   PLANOS: "Planos",
   PRESENCA: "Presença",
   FICHAS_DE_TREINO: "Fichas de treino",
-  GAMIFICACAO: "Gamificação",
+  GAMIFICACAO: "Metas",
 };
 
 export const ACTION_LABELS: Record<PermissionActionName, string> = {
-  VIEW: "Visualizar",
+  VIEW: "Ver",
   CREATE: "Criar",
   EDIT: "Editar",
   DELETE: "Excluir",

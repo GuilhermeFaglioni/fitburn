@@ -24,30 +24,33 @@ export interface AdminMenuItem {
 // menos um dos módulos listados (ex.: "Usuários e perfis" cobre USUARIOS e
 // PERFIS_DE_ACESSO), e o escopo total quando o item o pede.
 export const ADMIN_MENU_ITEMS: AdminMenuItem[] = [
+  // Ordem e rótulos do design (project/ClientesAdmin.dc.html); "Configurações" do design
+  // ainda não tem tela nem rota, então não aparece. "Minhas aulas" e "Atribuições" não
+  // têm artboard, mas são telas reais do app: ficam no fim da lista.
   { modules: [Module.DASHBOARD], label: "Dashboard", to: "/dashboard" },
+  { modules: [Module.CLIENTES], label: "Clientes", to: "/clientes" },
   {
     modules: [Module.USUARIOS, Module.PERFIS_DE_ACESSO],
     label: "Usuários e perfis",
     to: "/usuarios",
   },
-  { modules: [Module.CLIENTES], label: "Clientes", to: "/clientes" },
   { modules: [Module.OCORRENCIAS], label: "Agenda", to: "/agenda-administrativa" },
   { modules: [Module.RESERVAS], label: "Reservas", to: "/reservas-administrativas" },
-  { modules: [Module.PRESENCA], label: "Minhas aulas", to: "/minhas-aulas" },
   { modules: [Module.PLANOS], label: "Planos", to: "/planos" },
+  {
+    modules: [Module.TEMPLATES_DE_AULA],
+    label: "Templates & modalidades",
+    to: "/templates-e-modalidades",
+  },
   { modules: [Module.FICHAS_DE_TREINO], label: "Fichas de treino", to: "/fichas" },
   { modules: [Module.GAMIFICACAO], label: "Metas", to: "/metas" },
+  { modules: [Module.PRESENCA], label: "Minhas aulas", to: "/minhas-aulas" },
   {
     modules: [Module.CLIENTES],
     label: "Atribuições",
     to: "/atribuicoes",
     action: PermissionAction.CREATE,
     fullScope: true,
-  },
-  {
-    modules: [Module.TEMPLATES_DE_AULA],
-    label: "Templates & modalidades",
-    to: "/templates-e-modalidades",
   },
 ];
 

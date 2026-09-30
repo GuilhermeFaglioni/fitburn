@@ -98,7 +98,7 @@ describe("ProfilesPage", () => {
     await screen.findByText("Matriz de permissões — Recepção");
 
     const clientesRow = screen.getByRole("row", { name: /Clientes/ });
-    await user.click(within(clientesRow).getByRole("checkbox", { name: /Visualizar em Clientes/ }));
+    await user.click(within(clientesRow).getByRole("checkbox", { name: /Ver em Clientes/ }));
     await user.selectOptions(
       within(clientesRow).getByRole("combobox", { name: "Escopo de Clientes" }),
       "ALL",
@@ -126,7 +126,7 @@ describe("ProfilesPage", () => {
 
     const usuariosRow = screen.getByRole("row", { name: /Usuários/ });
     expect(
-      within(usuariosRow).getByRole("checkbox", { name: "Visualizar em Usuários" }),
+      within(usuariosRow).getByRole("checkbox", { name: "Ver em Usuários" }),
     ).toBeChecked();
   });
 
@@ -136,7 +136,7 @@ describe("ProfilesPage", () => {
 
     await user.click(await screen.findByRole("button", { name: "Cliente" }));
 
-    expect(await screen.findByText(/isolamento do cliente/i)).toBeInTheDocument();
+    expect(await screen.findByText(/acesso restrito aos próprios dados/i)).toBeInTheDocument();
     expect(screen.getAllByText(/registros próprios \(fixo\)/i)).toHaveLength(CATALOG.modules.length);
     expect(screen.queryByRole("combobox", { name: "Escopo de Usuários" })).not.toBeInTheDocument();
   });

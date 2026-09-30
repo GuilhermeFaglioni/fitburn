@@ -128,7 +128,7 @@ export function ClassTemplatesTab() {
                   </td>
                   <td className="fb-td" style={{ color: "#5a5a5a" }}>
                     {template.defaultInstructor
-                      ? `Prof. ${template.defaultInstructor.fullName}`
+                      ? `Prof. ${template.defaultInstructor.fullName.split(" ")[0]}`
                       : "—"}
                   </td>
                   <td
