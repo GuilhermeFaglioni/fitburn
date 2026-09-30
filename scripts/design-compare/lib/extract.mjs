@@ -1,3 +1,4 @@
+/* global document, getComputedStyle, scrollX, scrollY, SVGElement */
 /**
  * Extrai da página (design ou app) o que dá para comparar por medidas, sem
  * depender de pixels: cada texto visível com posição, tipografia e cor, e a
@@ -9,11 +10,13 @@ export async function extractPage(page) {
     const visible = (el) => {
       for (let node = el; node && node !== document.documentElement; node = node.parentElement) {
         const s = getComputedStyle(node);
-        if (s.display === "none" || s.visibility === "hidden" || Number(s.opacity) === 0) return false;
+        if (s.display === "none" || s.visibility === "hidden" || Number(s.opacity) === 0)
+          return false;
       }
       return true;
     };
-    const transparent = (c) => !c || c === "transparent" || /rgba\(\s*\d+,\s*\d+,\s*\d+,\s*0\s*\)/.test(c);
+    const transparent = (c) =>
+      !c || c === "transparent" || /rgba\(\s*\d+,\s*\d+,\s*\d+,\s*0\s*\)/.test(c);
     const boxOf = (el) => {
       for (let node = el; node && node !== document.documentElement; node = node.parentElement) {
         const s = getComputedStyle(node);
@@ -24,7 +27,11 @@ export async function extractPage(page) {
           const r = node.getBoundingClientRect();
           return {
             tag: node.tagName.toLowerCase(),
-            cls: (node.getAttribute("class") || "").split(/\s+/).filter(Boolean).slice(0, 3).join("."),
+            cls: (node.getAttribute("class") || "")
+              .split(/\s+/)
+              .filter(Boolean)
+              .slice(0, 3)
+              .join("."),
             x: round(r.left + scrollX),
             y: round(r.top + scrollY),
             w: round(r.width),
@@ -62,7 +69,8 @@ export async function extractPage(page) {
 
     const texts = [];
     const SKIP = ["SCRIPT", "STYLE", "NOSCRIPT", "X-DC", "HELMET", "SVG", "OPTION"];
-    const hasDirectText = (el) => [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim());
+    const hasDirectText = (el) =>
+      [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim());
     const inlineOnly = (el) =>
       [...el.children].every((c) => {
         const d = getComputedStyle(c).display;
@@ -120,6 +128,13 @@ export async function extractPage(page) {
         shapes: svg.querySelectorAll("path, circle, rect, line, polyline").length,
       });
     }
-    return { texts, icons, page: { width: document.documentElement.scrollWidth, height: document.documentElement.scrollHeight } };
+    return {
+      texts,
+      icons,
+      page: {
+        width: document.documentElement.scrollWidth,
+        height: document.documentElement.scrollHeight,
+      },
+    };
   });
 }

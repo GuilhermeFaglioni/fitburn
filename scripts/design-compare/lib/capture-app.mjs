@@ -1,3 +1,4 @@
+/* global document */
 import fs from "node:fs";
 import path from "node:path";
 import { launchBrowser, settle } from "./browser.mjs";
@@ -52,7 +53,11 @@ export async function captureApp(captures, { only } = {}) {
       const { variants = [], ...base } = capture.app;
       jobs.push({ capture, key: capture.id, app: base });
       for (const v of variants) {
-        jobs.push({ capture, key: `${capture.id}__${v.name}`, app: { ...base, ...v, steps: v.steps ?? [] } });
+        jobs.push({
+          capture,
+          key: `${capture.id}__${v.name}`,
+          app: { ...base, ...v, steps: v.steps ?? [] },
+        });
       }
     }
     for (const { capture, key, app } of jobs) {
@@ -86,9 +91,23 @@ export async function captureApp(captures, { only } = {}) {
           height: document.documentElement.scrollHeight,
         }));
         fs.writeFileSync(file.replace(/\.png$/, ".json"), JSON.stringify(await extractPage(page)));
-        await page.screenshot({ path: file, clip: { x: 0, y: 0, width: board.w, height: board.h } });
-        results.push({ id: key, ok: true, file, route, fullHeight: full.height, fullWidth: full.width, errors, stepError });
-        console.log(`[app] ${key} ${route} (${board.w}x${board.h}, página ${full.width}x${full.height})`);
+        await page.screenshot({
+          path: file,
+          clip: { x: 0, y: 0, width: board.w, height: board.h },
+        });
+        results.push({
+          id: key,
+          ok: true,
+          file,
+          route,
+          fullHeight: full.height,
+          fullWidth: full.width,
+          errors,
+          stepError,
+        });
+        console.log(
+          `[app] ${key} ${route} (${board.w}x${board.h}, página ${full.width}x${full.height})`,
+        );
         await page.close();
       } catch (error) {
         results.push({ id: key, ok: false, error: error.message });
@@ -108,7 +127,11 @@ export async function captureApp(captures, { only } = {}) {
 
 async function runAppStep(page, step) {
   if (step.click) {
-    await page.getByRole("button", { name: step.click }).or(page.getByText(step.click, { exact: true })).first().click();
+    await page
+      .getByRole("button", { name: step.click })
+      .or(page.getByText(step.click, { exact: true }))
+      .first()
+      .click();
   } else if (step.openClass) {
     // Grade da semana (desktop): chips; lista do dia (mobile): cartões. A reserva aparece como "Reservada".
     let cards = page
@@ -134,7 +157,8 @@ const RESOLVERS = {
    * sem ela, cai na aula de hoje com mais alunos.
    */
   async presenca(api) {
-    const fmt = (d) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(d);
+    const fmt = (d) =>
+      new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(d);
     const to = fmt(new Date());
     const from = fmt(new Date(Date.now() - 14 * 86400000));
     const list = (await api(`/attendance/classes?from=${from}&to=${to}`)).sort((a, b) =>

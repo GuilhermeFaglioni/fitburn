@@ -22,7 +22,8 @@ export async function apiLogin(role) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(ACCOUNTS[role]),
   });
-  if (!res.ok) throw new Error(`login ${role} falhou (${res.status}); rode o seed (pnpm design:seed)`);
+  if (!res.ok)
+    throw new Error(`login ${role} falhou (${res.status}); rode o seed (pnpm design:seed)`);
   return (await res.json()).accessToken;
 }
 

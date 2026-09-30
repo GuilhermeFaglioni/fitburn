@@ -1,3 +1,4 @@
+/* global document */
 import fs from "node:fs";
 import { chromium } from "playwright-core";
 
@@ -16,7 +17,8 @@ export async function settle(page, ms = 400) {
   // A casca do app mantém requisições em segundo plano: não espere a rede "ficar quieta" por muito tempo.
   await page.waitForLoadState("networkidle", { timeout: 4000 }).catch(() => {});
   await page.addStyleTag({
-    content: "*,*::before,*::after{animation:none!important;transition:none!important;caret-color:transparent!important}",
+    content:
+      "*,*::before,*::after{animation:none!important;transition:none!important;caret-color:transparent!important}",
   });
   await page.waitForTimeout(ms);
 }

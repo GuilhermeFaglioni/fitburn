@@ -1,3 +1,4 @@
+/* global document */
 import { execFileSync } from "node:child_process";
 import crypto from "node:crypto";
 import fs from "node:fs";
@@ -48,7 +49,9 @@ export async function routeGoogleFonts(context) {
     } catch (error) {
       if (!warned) {
         warned = true;
-        console.warn(`[fonts] não foi possível baixar as fontes (${error.message}); usando as do sistema.`);
+        console.warn(
+          `[fonts] não foi possível baixar as fontes (${error.message}); usando as do sistema.`,
+        );
       }
       await route.abort();
     }

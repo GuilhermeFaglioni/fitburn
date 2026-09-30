@@ -25,7 +25,8 @@ if (!["all", "design", "app", "compare"].includes(command)) {
 
 let designResults = [];
 let appResults = [];
-if (command === "all" || command === "design") designResults = await renderDesign(CAPTURES, { only });
+if (command === "all" || command === "design")
+  designResults = await renderDesign(CAPTURES, { only });
 if (command === "all" || command === "app") appResults = await captureApp(CAPTURES, { only });
 if (command === "all" || command === "compare") {
   const summary = await compareAll(CAPTURES, { only });

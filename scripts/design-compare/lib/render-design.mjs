@@ -41,12 +41,24 @@ export async function renderDesign(captures, { only } = {}) {
           await settle(page, 700);
           for (const step of variant.steps ?? []) await runStep(page, step);
           if (variant.steps?.length) await settle(page, 200);
-          fs.writeFileSync(file.replace(/\.png$/, ".json"), JSON.stringify(await extractPage(page)));
-          await page.screenshot({ path: file, clip: { x: 0, y: 0, width: board.w, height: board.h } });
+          fs.writeFileSync(
+            file.replace(/\.png$/, ".json"),
+            JSON.stringify(await extractPage(page)),
+          );
+          await page.screenshot({
+            path: file,
+            clip: { x: 0, y: 0, width: board.w, height: board.h },
+          });
           results.push({ id: capture.id, variant: variant.name, file, ok: true, errors });
           console.log(`[design] ${capture.id}${suffix} ${board.w}x${board.h}`);
         } catch (error) {
-          results.push({ id: capture.id, variant: variant.name, ok: false, error: error.message, errors });
+          results.push({
+            id: capture.id,
+            variant: variant.name,
+            ok: false,
+            error: error.message,
+            errors,
+          });
           console.warn(`[design] ${capture.id}${suffix} FALHOU: ${error.message.split("\n")[0]}`);
         } finally {
           await context.close();

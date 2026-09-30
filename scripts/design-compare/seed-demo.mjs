@@ -80,14 +80,18 @@ async function ensureProfile(name, description, access) {
   return p;
 }
 const V = ["VIEW"];
-const professor = await ensureProfile("Professor", "Conduz aulas, registra presença e acompanha os próprios alunos.", [
-  ["DASHBOARD", V, "ALL"],
-  ["OCORRENCIAS", V, "ASSIGNED_CLASSES"],
-  ["PRESENCA", ["VIEW", "EXECUTE"], "ASSIGNED_CLASSES"],
-  ["CLIENTES", V, "ASSIGNED_CLIENTS"],
-  ["FICHAS_DE_TREINO", ["VIEW", "CREATE", "EDIT"], "ASSIGNED_CLIENTS"],
-  ["GAMIFICACAO", ["VIEW", "CREATE", "EDIT"], "ASSIGNED_CLIENTS"],
-]);
+const professor = await ensureProfile(
+  "Professor",
+  "Conduz aulas, registra presença e acompanha os próprios alunos.",
+  [
+    ["DASHBOARD", V, "ALL"],
+    ["OCORRENCIAS", V, "ASSIGNED_CLASSES"],
+    ["PRESENCA", ["VIEW", "EXECUTE"], "ASSIGNED_CLASSES"],
+    ["CLIENTES", V, "ASSIGNED_CLIENTS"],
+    ["FICHAS_DE_TREINO", ["VIEW", "CREATE", "EDIT"], "ASSIGNED_CLIENTS"],
+    ["GAMIFICACAO", ["VIEW", "CREATE", "EDIT"], "ASSIGNED_CLIENTS"],
+  ],
+);
 const recepcao = await ensureProfile("Recepção", "Reservas, clientes e planos.", [
   ["DASHBOARD", V, "ALL"],
   ["TEMPLATES_DE_AULA", V, "ALL"],
@@ -103,14 +107,20 @@ async function ensureStaff(fullName, email, profileId) {
   const list = await admin("GET", "/users");
   let u = list.find((x) => x.email === email);
   if (!u) {
-    u = await admin("POST", "/users/staff", { body: { fullName, email, password: PASSWORD, profileId } });
+    u = await admin("POST", "/users/staff", {
+      body: { fullName, email, password: PASSWORD, profileId },
+    });
     log("equipe", fullName);
   }
   return u;
 }
 const staff = {};
 for (const s of DEMO.staff) {
-  staff[s.key] = await ensureStaff(s.name, s.email, s.role === "recepcao" ? recepcao.id : professor.id);
+  staff[s.key] = await ensureStaff(
+    s.name,
+    s.email,
+    s.role === "recepcao" ? recepcao.id : professor.id,
+  );
 }
 if (staff.thiago.status !== "INACTIVE") {
   await admin("POST", `/users/${staff.thiago.id}/deactivate`).catch(() => {});
@@ -121,7 +131,10 @@ const mods = await admin("GET", "/modalities");
 const modality = {};
 for (const m of DEMO.modalities) {
   let found = mods.find((x) => x.name === m.name);
-  if (!found) found = await admin("POST", "/modalities", { body: { name: m.name, description: m.description } });
+  if (!found)
+    found = await admin("POST", "/modalities", {
+      body: { name: m.name, description: m.description },
+    });
   modality[m.name] = found;
 }
 const tpls = await admin("GET", "/class-templates");
@@ -171,18 +184,26 @@ const plans = await admin("GET", "/plans");
 const plan = {};
 for (const p of DEMO.plans) {
   let found = plans.find((x) => x.name === p.name);
-  if (!found) found = await admin("POST", "/plans", { body: { name: p.name, description: p.description } });
+  if (!found)
+    found = await admin("POST", "/plans", { body: { name: p.name, description: p.description } });
   plan[p.name] = found;
 }
 for (const a of DEMO.planAssignments) {
-  const history = await admin("GET", `/plan-assignments?clientId=${client[a.client].id}`).catch(() => null);
+  const history = await admin("GET", `/plan-assignments?clientId=${client[a.client].id}`).catch(
+    () => null,
+  );
   const already = Array.isArray(history)
     ? history.some((h) => h.plan?.name === a.plan && h.startDate === a.start)
     : false;
   if (already) continue;
   try {
     await admin("POST", "/plan-assignments", {
-      body: { clientId: client[a.client].id, planId: plan[a.plan].id, startDate: a.start, endDate: a.end },
+      body: {
+        clientId: client[a.client].id,
+        planId: plan[a.plan].id,
+        startDate: a.start,
+        endDate: a.end,
+      },
     });
     log("plano", a.client, a.plan);
   } catch (e) {
@@ -198,9 +219,9 @@ for (const key of DEMO.inactiveClients) {
 // ---------------------------------------------------------------- atribuições
 for (const [teacher, clients] of Object.entries(DEMO.assignments)) {
   for (const k of clients) {
-    await admin("POST", "/assignments", { body: { teacherId: staff[teacher].id, clientId: client[k].id } }).catch(
-      () => {},
-    );
+    await admin("POST", "/assignments", {
+      body: { teacherId: staff[teacher].id, clientId: client[k].id },
+    }).catch(() => {});
   }
 }
 
@@ -306,11 +327,13 @@ if (muayToday) {
 const tfToday = findOcc("Treino Funcional", today, "18:00");
 if (tfToday) {
   await admin("PATCH", `/occurrences/${tfToday.id}`, { body: { capacity: 12 } }).catch(() => {});
-  for (const k of ["camilaF", "rafaelA", "juliana", "anaPaula", "brunoA"]) await adminReserve(client[k].id, tfToday.id);
+  for (const k of ["camilaF", "rafaelA", "juliana", "anaPaula", "brunoA"])
+    await adminReserve(client[k].id, tfToday.id);
 }
 // Spinning de amanhã / Yoga: figurantes.
 const spinTomorrow = findOcc("Spinning 45min", addDays(today, 1), "12:00");
-if (spinTomorrow) for (const k of ["camilaF", "anaPaula"]) await adminReserve(client[k].id, spinTomorrow.id);
+if (spinTomorrow)
+  for (const k of ["camilaF", "anaPaula"]) await adminReserve(client[k].id, spinTomorrow.id);
 
 // ---------------------------------------------------------------- histórico (presenças e pontos)
 const require = createRequire(path.join(ROOT, "packages/api/package.json"));
@@ -323,13 +346,20 @@ async function shiftOccurrence(id, date, time, durationMinutes) {
     const startsAt = new Date(`${date}T00:00:00Z`);
     startsAt.setUTCHours(h + 3, m); // America/Sao_Paulo = UTC-3
     const endsAt = new Date(startsAt.getTime() + durationMinutes * 60_000);
-    await db.query('UPDATE class_occurrences SET "startsAt" = $2, "endsAt" = $3 WHERE id = $1', [id, startsAt, endsAt]);
+    await db.query('UPDATE class_occurrences SET "startsAt" = $2, "endsAt" = $3 WHERE id = $1', [
+      id,
+      startsAt,
+      endsAt,
+    ]);
   } finally {
     await db.end();
   }
 }
 // Cria a aula no futuro (dá para reservar), reserva, move para o passado e marca a presença.
-const historyState = await admin("GET", `/occurrences?from=${addDays(today, -30)}&to=${addDays(today, -1)}`);
+const historyState = await admin(
+  "GET",
+  `/occurrences?from=${addDays(today, -30)}&to=${addDays(today, -1)}`,
+);
 const alreadyHistory = historyState.filter((o) => o.name === "Treino Funcional").length >= 10;
 if (!alreadyHistory) {
   // 13 aulas diárias às 06:00 (dias -13 a -1) + 3 extras às 05:00 nos 3 dias mais recentes.
@@ -385,20 +415,28 @@ const goals = await teacher("GET", `/goals?clientId=${client.marina.id}`).catch(
 if (Array.isArray(goals) && goals.length === 0) {
   for (const g of DEMO.goals) {
     const created = await teacher("POST", "/goals", {
-      body: { clientId: client.marina.id, title: g.title, description: g.description, dueDate: g.dueDate },
+      body: {
+        clientId: client.marina.id,
+        title: g.title,
+        description: g.description,
+        dueDate: g.dueDate,
+      },
     }).catch((e) => {
       log("meta falhou", e.message);
       return null;
     });
-    if (created && g.completed) await teacher("POST", `/goals/${created.id}/complete`).catch((e) => log("concluir meta", e.message));
+    if (created && g.completed)
+      await teacher("POST", `/goals/${created.id}/complete`).catch((e) =>
+        log("concluir meta", e.message),
+      );
   }
 }
 
 const sheets = await teacher("GET", `/workout-sheets?clientId=${client.marina.id}`).catch(() => []);
 if (Array.isArray(sheets) && sheets.length === 0) {
   for (const s of DEMO.sheets) {
-    await teacher("POST", "/workout-sheets", { body: { clientId: client.marina.id, ...s } }).catch((e) =>
-      log("ficha falhou", e.message),
+    await teacher("POST", "/workout-sheets", { body: { clientId: client.marina.id, ...s } }).catch(
+      (e) => log("ficha falhou", e.message),
     );
   }
 }

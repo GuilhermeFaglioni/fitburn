@@ -49,13 +49,19 @@ export function startDesignServer() {
       res.setHeader("content-type", "text/html; charset=utf-8");
       return res.end(html);
     }
-    res.setHeader("content-type", name.endsWith(".json") ? "application/json" : "application/octet-stream");
+    res.setHeader(
+      "content-type",
+      name.endsWith(".json") ? "application/json" : "application/octet-stream",
+    );
     res.end(fs.readFileSync(file));
   });
   return new Promise((resolve) => {
     server.listen(0, "127.0.0.1", () => {
       const { port } = server.address();
-      resolve({ origin: `http://127.0.0.1:${port}`, close: () => new Promise((r) => server.close(r)) });
+      resolve({
+        origin: `http://127.0.0.1:${port}`,
+        close: () => new Promise((r) => server.close(r)),
+      });
     });
   });
 }

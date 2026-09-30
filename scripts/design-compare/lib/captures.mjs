@@ -130,7 +130,11 @@ export const CAPTURES = [
     design: { variants: [{ name: "ranking_mensal", steps: [{ click: "Mensal" }] }] },
   },
   { id: "PresencaMobile", group: "G3", app: { role: "professor", resolve: "presenca" } },
-  { id: "MetasAdmin", group: "G3", app: { role: "professor", route: "/metas", steps: [{ click: "Marina Souza" }] } },
+  {
+    id: "MetasAdmin",
+    group: "G3",
+    app: { role: "professor", route: "/metas", steps: [{ click: "Marina Souza" }] },
+  },
   { id: "DashboardAdmin", group: "G3", app: { role: "admin", route: "/dashboard" } },
   // ---- G4
   {
@@ -183,7 +187,11 @@ export const CAPTURES = [
   {
     id: "UsuariosPerfis",
     group: "G5",
-    app: { role: "admin", route: "/usuarios", variants: [{ name: "perfis", steps: [{ click: "Perfis de acesso" }] }] },
+    app: {
+      role: "admin",
+      route: "/usuarios",
+      variants: [{ name: "perfis", steps: [{ click: "Perfis de acesso" }] }],
+    },
     design: { variants: [{ name: "perfis", steps: [{ click: "Perfis de acesso" }] }] },
   },
   {
@@ -217,8 +225,16 @@ export const CAPTURES = [
     design: {
       variants: [
         { name: "nova_reserva", steps: [{ click: "+ Nova reserva" }] },
-        { name: "erro_lotada", props: { cenario: "erro_lotada" }, steps: [{ click: "+ Nova reserva" }] },
-        { name: "erro_duplicada", props: { cenario: "erro_duplicada" }, steps: [{ click: "+ Nova reserva" }] },
+        {
+          name: "erro_lotada",
+          props: { cenario: "erro_lotada" },
+          steps: [{ click: "+ Nova reserva" }],
+        },
+        {
+          name: "erro_duplicada",
+          props: { cenario: "erro_duplicada" },
+          steps: [{ click: "+ Nova reserva" }],
+        },
       ],
     },
   },

@@ -91,10 +91,16 @@ export async function compareAll(captures, { only } = {}) {
     const dj = path.join(DESIGN_OUT, `${key}.json`);
     const aj = path.join(APP_OUT, `${key}.json`);
     if (fs.existsSync(dj) && fs.existsSync(aj)) {
-      const result = diffPages(JSON.parse(fs.readFileSync(dj, "utf8")), JSON.parse(fs.readFileSync(aj, "utf8")));
+      const result = diffPages(
+        JSON.parse(fs.readFileSync(dj, "utf8")),
+        JSON.parse(fs.readFileSync(aj, "utf8")),
+      );
       fs.mkdirSync(path.join(OUT_DIR, "divergences"), { recursive: true });
       const note = describeMeta(meta[key]);
-      fs.writeFileSync(path.join(OUT_DIR, "divergences", `${key}.md`), renderDiff(key, result, note));
+      fs.writeFileSync(
+        path.join(OUT_DIR, "divergences", `${key}.md`),
+        renderDiff(key, result, note),
+      );
       divergences = {
         pairs: result.pairs,
         style: result.style.length,
@@ -167,11 +173,15 @@ function table(rows, title) {
   ];
   rows.forEach((row, i) => {
     if (row.status !== "ok") {
-      lines.push(`| ${i + 1} | ${row.id} | ${row.group} | \`${row.route}\` | ${row.status} | | | |`);
+      lines.push(
+        `| ${i + 1} | ${row.id} | ${row.group} | \`${row.route}\` | ${row.status} | | | |`,
+      );
       return;
     }
     const overflow =
-      row.appFullHeight && row.appFullHeight !== row.height ? `${row.appFullHeight}px (${row.height}px)` : `${row.height}px`;
+      row.appFullHeight && row.appFullHeight !== row.height
+        ? `${row.appFullHeight}px (${row.height}px)`
+        : `${row.height}px`;
     const note = row.stepError ? " (passo falhou)" : "";
     lines.push(
       `| ${i + 1} | ${row.id}${note} | ${row.group} | \`${row.route}\` | ${row.percent.toFixed(2)}% | ${row.contentPercent.toFixed(1)}% | ${counts(row.divergences)} | ${overflow} |`,
