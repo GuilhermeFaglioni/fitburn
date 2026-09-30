@@ -217,6 +217,19 @@ describe("Fichas de treino (professor)", () => {
     expect(screen.getByText("Este aluno ainda não tem fichas.")).toBeInTheDocument();
   });
 
+  it("editando a única ficha do aluno, ela sai da lista mas não aparece 'ainda não tem fichas'", async () => {
+    sheets = [sheets[0]!];
+    const user = await openMarina();
+    const list = screen.getByRole("list", { name: "Fichas de Marina Souza" });
+
+    await user.click(within(list).getByRole("button", { name: "Editar" }));
+
+    expect(screen.getByRole("heading", { name: "Editar ficha — Fase 2" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /Fichas anteriores de Marina Souza/ })).toBeInTheDocument();
+    expect(screen.queryByText("Este aluno ainda não tem fichas.")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Editar" })).not.toBeInTheDocument();
+  });
+
   it("cria uma ficha com exercícios em linhas repetíveis, na ordem em que foram adicionados", async () => {
     const user = await openMarina();
 
