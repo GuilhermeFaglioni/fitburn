@@ -123,6 +123,8 @@
   height: 100%;
   border-radius: 999px;
   background: #ed6e34;
+  /* Sem texto: o color só existe para o guarda de contraste de fundos laranja. */
+  color: #ffffff;
 }
 
 /* Gamificação: dois números em laranja, um filete e o ranking do período. */
@@ -141,7 +143,7 @@
 .fb-dash__figure-value {
   font-size: 22px;
   font-weight: 700;
-  color: #ed6e34;
+  color: var(--color-accent-on-light);
 }
 
 .fb-dash__figure-label {

@@ -63,7 +63,7 @@
 
 .fb-goals__student--active {
   background: rgba(237, 110, 52, 0.14);
-  color: #ed6e34;
+  color: var(--color-accent-on-light);
   font-weight: 700;
 }
 
@@ -275,6 +275,8 @@
   height: 100%;
   border-radius: 4px;
   background: #ed6e34;
+  /* Sem texto: o color só existe para o guarda de contraste de fundos laranja. */
+  color: #ffffff;
 }
 
 .fb-goals__bar-fill--done {
