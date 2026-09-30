@@ -488,6 +488,10 @@ Não existe no app (ou não existe no backend):
 - Período de uma ficha (início–fim; só há `createdAt`), no "Fichas anteriores".
 - Regra "plano não dá acesso à modalidade" (estado `erro_permissao` da Reserva).
 - Perfil de acesso no cadastro de cliente (o design cria qualquer usuário) e "+ Novo usuário" na tela de Usuários.
+- Papel do autor da ficha (precisa de backend): o contrato só traz `authorName`, então "Montada por Rafael" aparece sem o
+  prefixo "Prof." (o design mostra "Montada por Prof. Rafael"); o prefixo só deve voltar quando o contrato informar que o autor é professor.
+- Notificação de substituição de professor (precisa de backend): a dica "os clientes inscritos serão notificados" saiu dos modais da
+  agenda administrativa porque o backend não notifica ninguém.
 
 Existe no app e não está no design (decidir manter ou remover):
 - "Minhas aulas" (`MyClassesPage`), "Atribuições" (`AssignmentsPage`), detalhe do cliente (`ClientDetailPage`), bloco de conta e
