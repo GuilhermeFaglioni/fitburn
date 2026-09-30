@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { http, HttpResponse } from "msw";
 import { MemoryRouter } from "react-router-dom";
-import type { ProfileDetail } from "@fitburn/contracts";
+import { Module, PermissionAction, PermissionScope, type ProfileDetail } from "@fitburn/contracts";
 import { AuthProvider, useAuth } from "../src/lib/auth/AuthContext";
 import { ProfilesPage } from "../src/pages/ProfilesPage";
 import { mockSuccessfulLogin } from "./auth-mocks";
@@ -162,5 +162,46 @@ describe("ProfilesPage", () => {
 
     const customListItem = screen.getByRole("button", { name: "Recepção" }).closest("li")!;
     expect(within(customListItem).getByRole("button", { name: "Desativar" })).toBeInTheDocument();
+  });
+
+  it("sem permissão de criar e editar perfis, Novo perfil e Desativar ficam bloqueados, com o motivo", async () => {
+    mockSuccessfulLogin("Professor", [
+      {
+        module: Module.PERFIS_DE_ACESSO,
+        actions: [PermissionAction.VIEW],
+        scope: PermissionScope.ALL,
+      },
+    ]);
+    renderProfilesPage();
+
+    const create = await screen.findByRole("button", { name: "+ Novo perfil" });
+    expect(create).toBeDisabled();
+    expect(create).toHaveAttribute("title", "Você não tem permissão para criar perfis.");
+    const customItem = (await screen.findByRole("button", { name: "Recepção" })).closest("li")!;
+    const deactivate = within(customItem).getByRole("button", { name: "Desativar" });
+    expect(deactivate).toBeDisabled();
+    expect(deactivate).toHaveAttribute("title", "Você não tem permissão para alterar perfis.");
+  });
+
+  // Achado A2 da auditoria (docs/test-matrix.md): ProfileMatrix só trava a matriz para o perfil
+  // Administrador e não consulta a ação EDIT de Perfis de acesso. O teste descreve o comportamento
+  // CORRETO e falha hoje, de propósito: com `it.fails` a suíte fica verde enquanto o bug existir e,
+  // quando ele for corrigido, passa a FALHAR; aí troque `it.fails` por `it`.
+  it.fails("sem a ação EDIT em Perfis de acesso, os checkboxes, o escopo e o Salvar da matriz ficam desabilitados", async () => {
+    mockSuccessfulLogin("Professor", [
+      { module: Module.PERFIS_DE_ACESSO, actions: [PermissionAction.VIEW], scope: PermissionScope.ALL },
+    ]);
+    renderProfilesPage();
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole("button", { name: "Recepção" }));
+    await screen.findByText("Matriz de permissões — Recepção");
+
+    const clientesRow = screen.getByRole("row", { name: /Clientes/ });
+    for (const checkbox of within(clientesRow).getAllByRole("checkbox")) {
+      expect(checkbox).toBeDisabled();
+    }
+    expect(within(clientesRow).getByRole("combobox", { name: "Escopo de Clientes" })).toBeDisabled();
+    expect(within(clientesRow).getByRole("button", { name: "Salvar" })).toBeDisabled();
   });
 });

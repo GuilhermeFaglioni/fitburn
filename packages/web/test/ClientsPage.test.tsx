@@ -4,7 +4,13 @@ import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { http, HttpResponse } from "msw";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import type { ClientListItem, ClientOverview } from "@fitburn/contracts";
+import {
+  Module,
+  PermissionAction,
+  PermissionScope,
+  type ClientListItem,
+  type ClientOverview,
+} from "@fitburn/contracts";
 import { AuthProvider, useAuth } from "../src/lib/auth/AuthContext";
 import { ClientDetailPage } from "../src/pages/ClientDetailPage";
 import { ClientsPage } from "../src/pages/ClientsPage";
@@ -327,6 +333,58 @@ describe("Clientes (equipe)", () => {
       await waitFor(() =>
         expect(screen.queryByRole("dialog", { name: "Novo cliente" })).not.toBeInTheDocument(),
       );
+    });
+  });
+
+  describe("Sem permissão", () => {
+    const VIEW_ONLY = [
+      {
+        module: Module.CLIENTES,
+        actions: [PermissionAction.VIEW],
+        scope: PermissionScope.ASSIGNED_CLIENTS,
+      },
+    ];
+
+    it("na lista, cadastrar, desativar e excluir ficam bloqueados, com o motivo", async () => {
+      mockSuccessfulLogin("Professor", VIEW_ONLY);
+      renderAt("/clientes");
+      await screen.findByText("Marina Souza");
+
+      const create = screen.getByRole("button", { name: "+ Novo cliente" });
+      expect(create).toBeDisabled();
+      expect(create).toHaveAttribute("title", "Você não tem permissão para cadastrar clientes.");
+      const toggle = screen.getByRole("button", { name: "Desativar Marina Souza" });
+      expect(toggle).toBeDisabled();
+      expect(toggle).toHaveAttribute("title", "Você não tem permissão para alterar clientes.");
+      const remove = screen.getByRole("button", { name: "Excluir Marina Souza" });
+      expect(remove).toBeDisabled();
+      expect(remove).toHaveAttribute("title", "Você não tem permissão para excluir clientes.");
+    });
+
+    it("no detalhe, editar, desativar e excluir ficam bloqueados; ver continua liberado", async () => {
+      mockSuccessfulLogin("Professor", VIEW_ONLY);
+      renderAt("/clientes/c-marina");
+
+      expect(await screen.findByRole("heading", { name: "Marina Souza" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Editar dados" })).toBeDisabled();
+      expect(screen.getByRole("button", { name: "Desativar cliente" })).toBeDisabled();
+      expect(screen.getByRole("button", { name: "Excluir cliente" })).toBeDisabled();
+      expect(screen.getByText("Rua das Flores, 10")).toBeInTheDocument();
+    });
+
+    it("com editar mas sem excluir, só a exclusão fica bloqueada", async () => {
+      mockSuccessfulLogin("Professor", [
+        {
+          module: Module.CLIENTES,
+          actions: [PermissionAction.VIEW, PermissionAction.EDIT],
+          scope: PermissionScope.ASSIGNED_CLIENTS,
+        },
+      ]);
+      renderAt("/clientes");
+      await screen.findByText("Marina Souza");
+
+      expect(screen.getByRole("button", { name: "Desativar Marina Souza" })).toBeEnabled();
+      expect(screen.getByRole("button", { name: "Excluir Marina Souza" })).toBeDisabled();
     });
   });
 

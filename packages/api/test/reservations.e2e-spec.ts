@@ -757,6 +757,298 @@ describe("Reservas (HTTP)", () => {
     });
   });
 
+  describe("concorrência entre remarcações e reservas", () => {
+    it("clientes remarcando ao mesmo tempo para a última vaga: só um consegue e os demais mantêm a original", async () => {
+      const names = ["ana", "bruno", "carla", "davi"];
+      const clients = await Promise.all(names.map((name) => createClient(name)));
+      const origin = await createOccurrence(new Date(Date.now() + 3 * HOUR), { name: "Spinning" });
+      const target = await createOccurrence(new Date(Date.now() + 6 * HOUR), {
+        name: "Yoga",
+        capacity: 1,
+      });
+      const originals = await Promise.all(
+        clients.map((client) => reserve(client.token, origin.id)),
+      );
+
+      const responses = await Promise.all(
+        clients.map((client, index) =>
+          reschedule(client.token, originals[index].body.id, target.id),
+        ),
+      );
+
+      expect(responses.map((response) => response.status).sort()).toEqual([201, 409, 409, 409]);
+      expect(
+        responses.filter((response) => response.status === 409).map((r) => r.body.code),
+      ).toEqual(Array(3).fill("CLASS_FULL"));
+      const statuses = await Promise.all(originals.map((original) => statusOf(original.body.id)));
+      expect(statuses.filter((status) => status === "CANCELLED")).toHaveLength(1);
+      expect(statuses.filter((status) => status === "CONFIRMED")).toHaveLength(3);
+      // Quem venceu é exatamente o cliente cuja original foi cancelada.
+      const winner = responses.findIndex((response) => response.status === 201);
+      expect(statuses[winner]).toBe("CANCELLED");
+      expect(
+        await testPrisma.reservation.count({
+          where: { occurrenceId: target.id, status: "CONFIRMED" },
+        }),
+      ).toBe(1);
+    });
+
+    it("remarcações cruzadas ao mesmo tempo (A para a aula de B e B para a de A): repetidas várias vezes, todas terminam, sem impasse", async () => {
+      // As duas requisições saem juntas (Promise.all), mas o entrelaçamento real é decidido pelo
+      // servidor e pelo banco: por isso a corrida se repete. O resultado é o mesmo em qualquer
+      // ordem (as duas aulas têm vaga de sobra), então a asserção é única. Um impasse (deadlock)
+      // apareceria como erro 5xx em alguma rodada.
+      const ana = await createClient("ana");
+      const bruno = await createClient("bruno");
+      const base = Date.now() + 3 * HOUR;
+      const rounds = 8;
+
+      for (let round = 0; round < rounds; round += 1) {
+        // Rodadas espaçadas de 4h e aulas de 1h: nenhuma reserva sobrepõe outra do mesmo cliente.
+        const spinning = await createOccurrence(new Date(base + round * 4 * HOUR), {
+          name: "Spinning",
+        });
+        const yoga = await createOccurrence(new Date(base + (round * 4 + 2) * HOUR), {
+          name: "Yoga",
+        });
+        const anaOriginal = await reserve(ana.token, spinning.id);
+        const brunoOriginal = await reserve(bruno.token, yoga.id);
+        expect([anaOriginal.status, brunoOriginal.status]).toEqual([201, 201]);
+
+        const [anaMove, brunoMove] = await Promise.all([
+          reschedule(ana.token, anaOriginal.body.id, yoga.id),
+          reschedule(bruno.token, brunoOriginal.body.id, spinning.id),
+        ]);
+
+        expect([anaMove.status, brunoMove.status], `rodada ${round}`).toEqual([201, 201]);
+        expect(await statusOf(anaOriginal.body.id)).toBe("CANCELLED");
+        expect(await statusOf(brunoOriginal.body.id)).toBe("CANCELLED");
+        expect(anaMove.body.occurrence.id).toBe(yoga.id);
+        expect(brunoMove.body.occurrence.id).toBe(spinning.id);
+      }
+
+      expect(await testPrisma.reservation.count({ where: { status: "CONFIRMED" } })).toBe(
+        2 * rounds,
+      );
+    });
+
+    it("duas remarcações simultâneas da mesma reserva para aulas diferentes: só uma vale", async () => {
+      const ana = await createClient("ana");
+      const spinning = await createOccurrence(new Date(Date.now() + 3 * HOUR), {
+        name: "Spinning",
+      });
+      const yoga = await createOccurrence(new Date(Date.now() + 6 * HOUR), { name: "Yoga" });
+      const pilates = await createOccurrence(new Date(Date.now() + 9 * HOUR), { name: "Pilates" });
+      const original = await reserve(ana.token, spinning.id);
+
+      const responses = await Promise.all([
+        reschedule(ana.token, original.body.id, yoga.id),
+        reschedule(ana.token, original.body.id, pilates.id),
+      ]);
+
+      expect(responses.map((response) => response.status).sort()).toEqual([201, 409]);
+      expect(responses.find((response) => response.status === 409)?.body.code).toBe(
+        "RESERVATION_NOT_ACTIVE",
+      );
+      expect(await statusOf(original.body.id)).toBe("CANCELLED");
+      expect(
+        await testPrisma.reservation.count({
+          where: { clientId: ana.user.id, status: "CONFIRMED" },
+        }),
+      ).toBe(1);
+    });
+
+    it("cancelar e remarcar a mesma reserva: em qualquer ordem, nunca sobra reserva ativa a mais", async () => {
+      const ana = await createClient("ana");
+      const base = Date.now() + 3 * HOUR;
+
+      // Cada rodada usa um par novo de aulas (espaçadas de 4h, sem sobreposição).
+      async function seedRound(round: number) {
+        const spinning = await createOccurrence(new Date(base + round * 4 * HOUR), {
+          name: "Spinning",
+        });
+        const yoga = await createOccurrence(new Date(base + (round * 4 + 2) * HOUR), {
+          name: "Yoga",
+        });
+        const original = await reserve(ana.token, spinning.id);
+        expect(original.status).toBe(201);
+        return { yoga, originalId: original.body.id as string };
+      }
+
+      async function confirmedIn(occurrenceId: string) {
+        const rows = await testPrisma.reservation.findMany({
+          where: { clientId: ana.user.id, status: "CONFIRMED", occurrenceId },
+        });
+        return rows.map((row) => row.occurrenceId);
+      }
+
+      // Ordem 1, determinística: cancelou primeiro, a remarcação vê a original inativa.
+      const first = await seedRound(0);
+      const cancelFirst = await cancel(ana.token, first.originalId);
+      const rescheduleAfterCancel = await reschedule(ana.token, first.originalId, first.yoga.id);
+      expect(cancelFirst.status).toBe(200);
+      expect(rescheduleAfterCancel.status).toBe(409);
+      expect(rescheduleAfterCancel.body.code).toBe("RESERVATION_NOT_ACTIVE");
+      expect(await confirmedIn(first.yoga.id)).toEqual([]);
+
+      // Ordem 2, determinística: remarcou primeiro, o cancelamento encontra a original cancelada.
+      const second = await seedRound(1);
+      const moveFirst = await reschedule(ana.token, second.originalId, second.yoga.id);
+      const cancelAfterMove = await cancel(ana.token, second.originalId);
+      expect(moveFirst.status).toBe(201);
+      expect(cancelAfterMove.status).toBe(409);
+      expect(cancelAfterMove.body.code).toBe("RESERVATION_NOT_ACTIVE");
+      expect(await confirmedIn(second.yoga.id)).toEqual([second.yoga.id]);
+
+      // Corrida: as duas requisições saem juntas (Promise.all) e o servidor decide a ordem. Tabela
+      // de desfechos válidos, conferida em cada rodada (o teste não controla qual acontece; as duas
+      // ordens já foram provadas acima):
+      //   cancelar/remarcar = 200/409 -> original cancelada, nada novo confirmado
+      //   cancelar/remarcar = 409/201 -> original cancelada, exatamente uma reserva na aula nova
+      // Qualquer outro par (por exemplo 200/201, que deixaria uma reserva ativa a mais) reprova.
+      const validOutcomes: Record<
+        string,
+        { cancelCode: string | undefined; rescheduleCode: string | undefined; moved: boolean }
+      > = {
+        "200/409": {
+          cancelCode: undefined,
+          rescheduleCode: "RESERVATION_NOT_ACTIVE",
+          moved: false,
+        },
+        "409/201": { cancelCode: "RESERVATION_NOT_ACTIVE", rescheduleCode: undefined, moved: true },
+      };
+      const rounds = 8;
+      for (let round = 2; round < 2 + rounds; round += 1) {
+        const { yoga, originalId } = await seedRound(round);
+
+        const [cancelling, rescheduling] = await Promise.all([
+          cancel(ana.token, originalId),
+          reschedule(ana.token, originalId, yoga.id),
+        ]);
+
+        const key = `${cancelling.status}/${rescheduling.status}`;
+        const expected = validOutcomes[key];
+        expect(expected, `rodada ${round}: desfecho inválido ${key}`).toBeDefined();
+        expect(cancelling.body.code).toBe(expected.cancelCode);
+        expect(rescheduling.body.code).toBe(expected.rescheduleCode);
+        expect(await statusOf(originalId)).toBe("CANCELLED");
+        expect(await confirmedIn(yoga.id)).toEqual(expected.moved ? [yoga.id] : []);
+      }
+    });
+
+    it("o mesmo cliente reservando a mesma aula várias vezes ao mesmo tempo (chaves diferentes): uma reserva, o resto é duplicidade", async () => {
+      const ana = await createClient("ana");
+      const occurrence = await createOccurrence(new Date(Date.now() + 3 * HOUR));
+
+      const responses = await Promise.all(
+        Array.from({ length: 5 }, () => reserve(ana.token, occurrence.id)),
+      );
+
+      expect(responses.map((response) => response.status).sort()).toEqual([
+        201, 409, 409, 409, 409,
+      ]);
+      expect(
+        responses.filter((response) => response.status === 409).map((r) => r.body.code),
+      ).toEqual(Array(4).fill("DUPLICATE_RESERVATION"));
+      expect(await testPrisma.reservation.count({ where: { occurrenceId: occurrence.id } })).toBe(
+        1,
+      );
+    });
+
+    it("cancelar libera a vaga na hora: quem foi recusado por lotação consegue depois, e a vaga liberada vai para exatamente um dos que disputam", async () => {
+      const ana = await createClient("ana");
+      const bruno = await createClient("bruno");
+      const carla = await createClient("carla");
+      const occurrence = await createOccurrence(new Date(Date.now() + 3 * HOUR), { capacity: 1 });
+      const anaReservation = await reserve(ana.token, occurrence.id);
+      expect(anaReservation.status).toBe(201);
+
+      // Com a aula cheia, os dois são recusados: sem cancelamento não há vaga para ninguém.
+      const fullForBruno = await reserve(bruno.token, occurrence.id);
+      const fullForCarla = await reserve(carla.token, occurrence.id);
+      expect([fullForBruno.status, fullForCarla.status]).toEqual([409, 409]);
+      expect([fullForBruno.body.code, fullForCarla.body.code]).toEqual([
+        "CLASS_FULL",
+        "CLASS_FULL",
+      ]);
+
+      // O cancelamento termina antes da disputa: a vaga liberada já aparece na agenda...
+      const cancelled = await cancel(ana.token, anaReservation.body.id);
+      expect(cancelled.status).toBe(200);
+      expect((await agendaItem(bruno.token, occurrence.id)).body.available).toBe(1);
+
+      // ...e os dois candidatos disputam essa vaga ao mesmo tempo: exatamente um vence.
+      const [brunoTry, carlaTry] = await Promise.all([
+        reserve(bruno.token, occurrence.id),
+        reserve(carla.token, occurrence.id),
+      ]);
+
+      expect([brunoTry.status, carlaTry.status].sort()).toEqual([201, 409]);
+      const loser = brunoTry.status === 409 ? brunoTry : carlaTry;
+      expect(loser.body.code).toBe("CLASS_FULL");
+      expect(
+        await testPrisma.reservation.count({
+          where: { occurrenceId: occurrence.id, status: "CONFIRMED" },
+        }),
+      ).toBe(1);
+    });
+
+    it("cancelamento disparado junto com tentativas de reserva: nunca passa da capacidade e a vaga nunca se perde", async () => {
+      const ana = await createClient("ana");
+      const bruno = await createClient("bruno");
+      const carla = await createClient("carla");
+      const davi = await createClient("davi");
+      const base = Date.now() + 3 * HOUR;
+      const rounds = 8;
+
+      // Corrida: o cancelamento da Ana e as tentativas de Bruno e Carla saem juntos (Promise.all);
+      // o servidor decide a ordem, e o teste não controla qual acontece. Tabela de desfechos
+      // válidos (Bruno/Carla) em aula de 1 vaga, com o cancelamento sempre 200:
+      //   201/409 e 409/201 -> o candidato que entrou depois da liberação leva a vaga
+      //   409/409           -> os dois tentaram antes da liberação; a vaga fica livre
+      // 201/201 (capacidade excedida) e qualquer recusa diferente de CLASS_FULL reprovam.
+      // Prova da liberação em todos os casos: depois da corrida, Davi tenta a mesma aula e só é
+      // recusado (CLASS_FULL) se alguém já tinha levado a vaga; senão a vaga livre tem que ser dele.
+      const validOutcomes = new Set(["201/409", "409/201", "409/409"]);
+      for (let round = 0; round < rounds; round += 1) {
+        const occurrence = await createOccurrence(new Date(base + round * 2 * HOUR), {
+          capacity: 1,
+        });
+        const anaReservation = await reserve(ana.token, occurrence.id);
+        expect(anaReservation.status).toBe(201);
+
+        const [cancelled, brunoTry, carlaTry] = await Promise.all([
+          cancel(ana.token, anaReservation.body.id),
+          reserve(bruno.token, occurrence.id),
+          reserve(carla.token, occurrence.id),
+        ]);
+
+        const outcome = `${brunoTry.status}/${carlaTry.status}`;
+        expect(cancelled.status, `rodada ${round}`).toBe(200);
+        expect(validOutcomes.has(outcome), `rodada ${round}: desfecho inválido ${outcome}`).toBe(
+          true,
+        );
+        for (const attempt of [brunoTry, carlaTry]) {
+          if (attempt.status === 409) expect(attempt.body.code).toBe("CLASS_FULL");
+        }
+        const taken = [brunoTry, carlaTry].filter((attempt) => attempt.status === 201).length;
+        expect(
+          await testPrisma.reservation.count({
+            where: { occurrenceId: occurrence.id, status: "CONFIRMED" },
+          }),
+        ).toBe(taken);
+
+        const followUp = await reserve(davi.token, occurrence.id);
+        if (taken === 1) {
+          expect(followUp.status).toBe(409);
+          expect(followUp.body.code).toBe("CLASS_FULL");
+        } else {
+          expect(followUp.status).toBe(201);
+        }
+      }
+    });
+  });
+
   describe("minhas reservas", () => {
     async function seedHistory() {
       const ana = await createClient("ana");
