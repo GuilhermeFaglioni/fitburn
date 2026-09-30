@@ -40,8 +40,3 @@ export function formatUpcomingMoment(startsAt: string): string {
   const [, month, day] = date.split("-");
   return `${weekday} ${day}/${month}, ${time}`;
 }
-
-/** "Rafael Andrade" → "Rafael" (o design mostra o professor só pelo primeiro nome). */
-export function firstNameOf(fullName: string): string {
-  return fullName.trim().split(/\s+/)[0] ?? fullName;
-}

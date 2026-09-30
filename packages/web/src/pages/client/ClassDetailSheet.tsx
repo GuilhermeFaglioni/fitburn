@@ -11,7 +11,7 @@ import {
   rescheduleReservation,
 } from "../../lib/reservations/api";
 import { RequiresNetwork } from "../../components/RequiresNetwork";
-import { firstName } from "../../lib/agenda/first-name";
+import { firstName } from "../../lib/names";
 
 /** Remarcação em andamento: a reserva original, enquanto o cliente escolhe a nova aula. */
 export interface Rescheduling {

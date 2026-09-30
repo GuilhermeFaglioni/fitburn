@@ -1,5 +1,6 @@
 import { WorkoutSheetStatus, type WorkoutExercise, type WorkoutSheet } from "@fitburn/contracts";
 import { formatInstantDate } from "../../lib/agenda/format";
+import { firstName } from "../../lib/names";
 import { statusBadge } from "./status";
 import { EmptyState } from "../../components/states";
 
@@ -11,12 +12,6 @@ const CHIPS: Array<{ field: "sets" | "reps" | "load" | "duration" | "distance"; 
   { field: "duration", label: "Tempo" },
   { field: "distance", label: "Distância" },
 ];
-
-/** "Rafael Andrade" -> "Prof. Rafael" (o artboard cita só o primeiro nome do professor). */
-function professorLabel(authorName: string): string {
-  const first = authorName.trim().split(/\s+/)[0] ?? "";
-  return first ? `Prof. ${first}` : "";
-}
 
 function ExerciseCard({ exercise }: { exercise: WorkoutExercise }) {
   const chips = CHIPS.filter(({ field }) => exercise[field]);
@@ -68,7 +63,7 @@ export function ClientSheetView({
           </span>
         </div>
         <span className="fb-workout__meta">
-          Montada por {professorLabel(sheet.authorName)} · desde{" "}
+          Montada por {firstName(sheet.authorName)} · desde{" "}
           {formatInstantDate(sheet.createdAt)}
         </span>
       </header>

@@ -140,7 +140,7 @@ describe("Fichas de treino (cliente)", () => {
       expect(await screen.findByRole("heading", { level: 2, name: "Fase 2" })).toBeInTheDocument();
       expect(screen.getByRole("heading", { level: 2, name: "Mobilidade" })).toBeInTheDocument();
       expect(screen.getAllByText("ATIVA")).toHaveLength(2);
-      expect(screen.getAllByText(/Montada por Prof\. Rafael/)).toHaveLength(2);
+      expect(screen.getAllByText(/Montada por Rafael/)).toHaveLength(2);
       expect(screen.getByText(/desde 10\/09\/2026/)).toBeInTheDocument();
       expect(
         screen.getByRole("heading", { level: 3, name: "Agachamento livre" }),
@@ -230,7 +230,7 @@ describe("Fichas de treino (cliente)", () => {
 
       expect(await screen.findByRole("heading", { level: 2, name: "Fase 2" })).toBeInTheDocument();
       expect(screen.getByText("ATIVA")).toBeInTheDocument();
-      expect(screen.getByText(/Montada por Prof\. Rafael/)).toBeInTheDocument();
+      expect(screen.getByText(/Montada por Rafael/)).toBeInTheDocument();
       expect(screen.getByText("Aquecer 10 minutos antes de começar.")).toBeInTheDocument();
 
       const items = within(screen.getByRole("list", { name: "Exercícios" })).getAllByRole(

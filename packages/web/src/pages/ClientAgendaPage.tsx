@@ -24,7 +24,7 @@ import {
 import { ClassDetailSheet, type Rescheduling } from "./client/ClassDetailSheet";
 import { ReservationHistory } from "./client/ReservationHistory";
 import { EmptyState, ErrorState, LoadingState } from "../components/states";
-import { firstName } from "../lib/agenda/first-name";
+import { firstName } from "../lib/names";
 
 type AgendaTab = "upcoming" | "history";
 

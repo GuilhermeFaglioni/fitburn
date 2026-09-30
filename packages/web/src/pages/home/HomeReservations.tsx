@@ -3,7 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ReservationStatus, type ReservationDetail } from "@fitburn/contracts";
 import { getClientAgendaItem } from "../../lib/agenda/client-api";
-import { firstNameOf, formatUpcomingMoment } from "./format";
+import { firstName } from "../../lib/names";
+import { formatUpcomingMoment } from "./format";
 import { errorMessage } from "../../lib/auth/api";
 import { cancelReservation, listMyReservations } from "../../lib/reservations/api";
 import { ErrorState, Feedback, LoadingState } from "../../components/states";
@@ -100,7 +101,7 @@ function HomeReservation({ reservation }: { reservation: ReservationDetail }) {
         <span className="fb-home__reservation-title">{occurrence.name}</span>
         <span className="fb-home__reservation-when">
           {formatUpcomingMoment(occurrence.startsAt)}
-          {occurrence.instructor ? ` · Prof. ${firstNameOf(occurrence.instructor.fullName)}` : ""}
+          {occurrence.instructor ? ` · Prof. ${firstName(occurrence.instructor.fullName)}` : ""}
         </span>
       </div>
 
