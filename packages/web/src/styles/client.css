@@ -833,6 +833,11 @@
     padding: 28px 20px 108px;
   }
 
+  /* Gamificação: 24px 20px 108px no mobile (a tab bar fixa de 76px não cobre o fim do conteúdo). */
+  .fb-client__content[data-screen="gamificacao"] {
+    padding: 24px 20px 108px;
+  }
+
   .fb-client__tabbar {
     position: fixed;
     left: 0;
