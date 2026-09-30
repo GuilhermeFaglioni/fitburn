@@ -5,6 +5,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { http, HttpResponse } from "msw";
 import { MemoryRouter } from "react-router-dom";
 import {
+  Module,
+  PermissionAction,
+  PermissionScope,
   addDays,
   gymDateTimeToUtc,
   gymToday,
@@ -355,6 +358,48 @@ describe("AgendaAdminPage", () => {
         date: WEDNESDAY,
         startTime: "18:00",
       });
+    });
+  });
+
+  describe("sem permissão", () => {
+    const VIEW_ONLY = [
+      {
+        module: Module.OCORRENCIAS,
+        actions: [PermissionAction.VIEW],
+        scope: PermissionScope.ALL,
+      },
+    ];
+
+    it("nova aula fica bloqueada, com o motivo, e os espaços vazios do dia não abrem o formulário", async () => {
+      mockSuccessfulLogin("Professor", VIEW_ONLY);
+      server.use(http.get("/api/occurrences", () => HttpResponse.json([])));
+      renderPage();
+
+      const create = await screen.findByRole("button", { name: "+ Nova aula" });
+      expect(create).toBeDisabled();
+      expect(create).toHaveAttribute("title", "Você não tem permissão para criar aulas.");
+      expect(screen.queryByRole("button", { name: /^Nova aula em/ })).not.toBeInTheDocument();
+    });
+
+    it("na aula existente, salvar, cancelar e excluir ficam bloqueados, mas os dados continuam visíveis", async () => {
+      mockSuccessfulLogin("Professor", VIEW_ONLY);
+      const occurrence = occurrenceAt(WEDNESDAY, "18:00");
+      server.use(http.get("/api/occurrences", () => HttpResponse.json([occurrence])));
+      renderPage();
+      const user = userEvent.setup();
+
+      await user.click(await screen.findByRole("button", { name: /18h00.*Treino Funcional/ }));
+      const dialog = screen.getByRole("dialog", { name: "Editar aula" });
+
+      const save = within(dialog).getByRole("button", { name: "Salvar" });
+      expect(save).toBeDisabled();
+      expect(save).toHaveAttribute("title", "Você não tem permissão para editar aulas.");
+      const cancel = within(dialog).getByRole("button", { name: "Cancelar aula" });
+      expect(cancel).toBeDisabled();
+      expect(cancel).toHaveAttribute("title", "Você não tem permissão para cancelar aulas.");
+      const remove = within(dialog).getByRole("button", { name: "Excluir aula" });
+      expect(remove).toBeDisabled();
+      expect(remove).toHaveAttribute("title", "Você não tem permissão para excluir aulas.");
     });
   });
 });

@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { http, HttpResponse } from "msw";
 import { MemoryRouter } from "react-router-dom";
-import type { ProfileDetail } from "@fitburn/contracts";
+import { Module, PermissionAction, PermissionScope, type ProfileDetail } from "@fitburn/contracts";
 import { AuthProvider, useAuth } from "../src/lib/auth/AuthContext";
 import { ProfilesPage } from "../src/pages/ProfilesPage";
 import { mockSuccessfulLogin } from "./auth-mocks";
@@ -162,5 +162,24 @@ describe("ProfilesPage", () => {
 
     const customListItem = screen.getByRole("button", { name: "Recepção" }).closest("li")!;
     expect(within(customListItem).getByRole("button", { name: "Desativar" })).toBeInTheDocument();
+  });
+
+  it("sem permissão de criar e editar perfis, Novo perfil e Desativar ficam bloqueados, com o motivo", async () => {
+    mockSuccessfulLogin("Professor", [
+      {
+        module: Module.PERFIS_DE_ACESSO,
+        actions: [PermissionAction.VIEW],
+        scope: PermissionScope.ALL,
+      },
+    ]);
+    renderProfilesPage();
+
+    const create = await screen.findByRole("button", { name: "+ Novo perfil" });
+    expect(create).toBeDisabled();
+    expect(create).toHaveAttribute("title", "Você não tem permissão para criar perfis.");
+    const customItem = (await screen.findByRole("button", { name: "Recepção" })).closest("li")!;
+    const deactivate = within(customItem).getByRole("button", { name: "Desativar" });
+    expect(deactivate).toBeDisabled();
+    expect(deactivate).toHaveAttribute("title", "Você não tem permissão para alterar perfis.");
   });
 });

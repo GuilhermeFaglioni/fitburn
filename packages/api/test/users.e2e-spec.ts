@@ -211,6 +211,92 @@ describe("Gestão de usuários (HTTP)", () => {
       expect(response.body.fullName).toBe("Nome Atualizado");
       expect(response.body.profile.name).toBe("Recepção");
     });
+
+    it("edita os dados de um membro da equipe e persiste (e-mail, telefone, documento, endereço)", async () => {
+      const { token } = await loginAsAdmin();
+      const staffProfile = await createAccessProfile({ name: "Recepção" });
+      const target = await createUser({ email: "equipe@fitburn.local", password: PASSWORD, profileId: staffProfile.id });
+
+      const response = await request(app.getHttpServer())
+        .patch(`/api/users/${target.id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .send({
+          email: "equipe.nova@fitburn.local",
+          phone: "31988887777",
+          document: "98765432100",
+          address: "Rua Dois, 456",
+        });
+
+      expect(response.status).toBe(200);
+      const stored = await testPrisma.user.findUniqueOrThrow({ where: { id: target.id } });
+      expect(stored).toMatchObject({
+        email: "equipe.nova@fitburn.local",
+        phone: "31988887777",
+        document: "98765432100",
+        address: "Rua Dois, 456",
+      });
+    });
+
+    it("recusa e-mail já em uso por outro usuário com EMAIL_ALREADY_IN_USE e não altera nada", async () => {
+      const { token } = await loginAsAdmin();
+      const clientProfile = await createAccessProfile({ name: "Cliente", isSystem: true });
+      await createUser({ email: "ocupado@fitburn.local", password: PASSWORD, profileId: clientProfile.id });
+      const target = await createUser({ email: "alvo@fitburn.local", password: PASSWORD, profileId: clientProfile.id });
+
+      const response = await request(app.getHttpServer())
+        .patch(`/api/users/${target.id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .send({ fullName: "Novo Nome", email: "ocupado@fitburn.local" });
+
+      expect(response.status).toBe(409);
+      expect(response.body.code).toBe("EMAIL_ALREADY_IN_USE");
+      const stored = await testPrisma.user.findUniqueOrThrow({ where: { id: target.id } });
+      expect(stored.email).toBe("alvo@fitburn.local");
+      expect(stored.fullName).not.toBe("Novo Nome");
+    });
+
+    it("recusa perfil inexistente, usuário inexistente e corpo inválido", async () => {
+      const { token } = await loginAsAdmin();
+      const clientProfile = await createAccessProfile({ name: "Cliente", isSystem: true });
+      const target = await createUser({ email: "alvo@fitburn.local", password: PASSWORD, profileId: clientProfile.id });
+      const patch = (id: string, body: object) =>
+        request(app.getHttpServer())
+          .patch(`/api/users/${id}`)
+          .set("Authorization", `Bearer ${token}`)
+          .send(body);
+
+      const unknownProfile = await patch(target.id, { profileId: "00000000-0000-4000-8000-000000000000" });
+      const unknownUser = await patch("00000000-0000-4000-8000-000000000000", { fullName: "Fulano" });
+      const invalidEmail = await patch(target.id, { email: "isso-nao-e-email" });
+
+      expect(unknownProfile.status).toBe(400);
+      expect(unknownProfile.body.code).toBe("PROFILE_NOT_FOUND");
+      expect(unknownUser.status).toBe(404);
+      expect(invalidEmail.status).toBe(400);
+      expect(invalidEmail.body.code).toBe("VALIDATION_ERROR");
+    });
+
+    it("exige a ação de editar no módulo Usuários: só visualizar recebe 403 e não altera; sem sessão é 401", async () => {
+      const viewerProfile = await createAccessProfile({ name: "Leitor" });
+      await grantModuleAccess({ profileId: viewerProfile.id, module: "USUARIOS", actions: ["VIEW"], scope: "ALL" });
+      const viewer = await createUser({ email: "leitor@fitburn.local", password: PASSWORD, profileId: viewerProfile.id });
+      const target = await createUser({ email: "alvo@fitburn.local", password: PASSWORD, profileId: viewerProfile.id });
+      const token = await loginAndGetAccessToken(app, viewer.email, PASSWORD);
+
+      const forbidden = await request(app.getHttpServer())
+        .patch(`/api/users/${target.id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .send({ fullName: "Alterado" });
+      const anonymous = await request(app.getHttpServer())
+        .patch(`/api/users/${target.id}`)
+        .send({ fullName: "Alterado" });
+
+      expect(forbidden.status).toBe(403);
+      expect(forbidden.body.code).toBe("FORBIDDEN");
+      expect(anonymous.status).toBe(401);
+      const stored = await testPrisma.user.findUniqueOrThrow({ where: { id: target.id } });
+      expect(stored.fullName).not.toBe("Alterado");
+    });
   });
 
   describe("Requisições simultâneas com o mesmo e-mail ou documento", () => {
