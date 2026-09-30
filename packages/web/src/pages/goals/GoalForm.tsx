@@ -73,15 +73,17 @@ export function GoalForm({ editing, allowed, pending, onCancel, onSubmit }: Goal
           onChange={(event) => change("description", event.target.value)}
         />
       </div>
-      <div className="fb-modal__field">
-        <label htmlFor={`${id}-due-date`}>Prazo</label>
-        <input
-          id={`${id}-due-date`}
-          type="date"
-          className="fb-field"
-          value={values.dueDate}
-          onChange={(event) => change("dueDate", event.target.value)}
-        />
+      <div className="fb-goals__form-grid">
+        <div className="fb-modal__field">
+          <label htmlFor={`${id}-due-date`}>Prazo</label>
+          <input
+            id={`${id}-due-date`}
+            type="date"
+            className="fb-field"
+            value={values.dueDate}
+            onChange={(event) => change("dueDate", event.target.value)}
+          />
+        </div>
       </div>
       <div className="fb-goals__form-footer">
         <button
@@ -97,7 +99,7 @@ export function GoalForm({ editing, allowed, pending, onCancel, onSubmit }: Goal
         <BlockedAction allowed={allowed} reason="Você não tem permissão para esta ação.">
           <button
             type="submit"
-            className="fb-btn-primary"
+            className="fb-btn-primary fb-btn-primary--sm"
             disabled={values.title.trim() === "" || pending}
           >
             {editing ? "Salvar" : "Criar meta"}

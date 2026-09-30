@@ -149,6 +149,18 @@ describe("Metas individuais (professor)", () => {
     return user;
   }
 
+  /** As ações da meta ficam num menu de "⋯" (o cartão do artboard não tem botões). */
+  async function pickAction(
+    user: ReturnType<typeof userEvent.setup>,
+    goalTitle: string,
+    action: "Concluir" | "Editar" | "Cancelar meta",
+  ) {
+    await user.click(
+      within(card(goalTitle)).getByRole("button", { name: `Ações da meta ${goalTitle}` }),
+    );
+    await user.click(within(card(goalTitle)).getByRole("menuitem", { name: action }));
+  }
+
   function card(title: string) {
     return screen.getByText(title).closest("li")!;
   }
@@ -185,8 +197,8 @@ describe("Metas individuais (professor)", () => {
     ).toBeInTheDocument();
     const done = card("Experimentar 3 modalidades diferentes");
     expect(within(done).getByText("CONCLUÍDA")).toBeInTheDocument();
-    expect(within(done).getByText("concluída em 02/09/2026")).toBeInTheDocument();
-    expect(within(done).queryByRole("button", { name: "Concluir" })).not.toBeInTheDocument();
+    expect(within(done).getByText("Concluída em 02/09/2026")).toBeInTheDocument();
+    expect(within(done).queryByRole("button", { name: /Ações da meta/ })).not.toBeInTheDocument();
   });
 
   it("aluno sem metas mostra o estado vazio", async () => {
@@ -231,9 +243,7 @@ describe("Metas individuais (professor)", () => {
   it("edita uma meta ativa pelo mesmo formulário", async () => {
     const user = await openMarina();
 
-    await user.click(
-      within(card("Frequentar 12 aulas no mês")).getByRole("button", { name: "Editar" }),
-    );
+    await pickAction(user, "Frequentar 12 aulas no mês", "Editar");
     expect(screen.getByLabelText("Título")).toHaveValue("Frequentar 12 aulas no mês");
     await user.clear(screen.getByLabelText("Título"));
     await user.type(screen.getByLabelText("Título"), "Frequentar 10 aulas no mês");
@@ -253,9 +263,7 @@ describe("Metas individuais (professor)", () => {
   it("conclui uma meta depois de confirmar, e ela passa a concluída", async () => {
     const user = await openMarina();
 
-    await user.click(
-      within(card("Frequentar 12 aulas no mês")).getByRole("button", { name: "Concluir" }),
-    );
+    await pickAction(user, "Frequentar 12 aulas no mês", "Concluir");
     expect(calls).toEqual([]);
     expect(screen.getByText("Concluir a meta e dar os pontos ao aluno?")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Confirmar" }));
@@ -269,9 +277,7 @@ describe("Metas individuais (professor)", () => {
   it("voltar na confirmação não conclui a meta", async () => {
     const user = await openMarina();
 
-    await user.click(
-      within(card("Frequentar 12 aulas no mês")).getByRole("button", { name: "Concluir" }),
-    );
+    await pickAction(user, "Frequentar 12 aulas no mês", "Concluir");
     await user.click(screen.getByRole("button", { name: "Voltar" }));
 
     expect(calls).toEqual([]);
@@ -281,9 +287,7 @@ describe("Metas individuais (professor)", () => {
   it("cancela uma meta ativa depois de confirmar", async () => {
     const user = await openMarina();
 
-    await user.click(
-      within(card("Frequentar 12 aulas no mês")).getByRole("button", { name: "Cancelar meta" }),
-    );
+    await pickAction(user, "Frequentar 12 aulas no mês", "Cancelar meta");
     expect(calls).toEqual([]);
     expect(
       screen.getByText("Cancelar esta meta? Ela não poderá ser reativada."),
@@ -328,9 +332,7 @@ describe("Metas individuais (professor)", () => {
     );
     const user = await openMarina();
 
-    await user.click(
-      within(card("Frequentar 12 aulas no mês")).getByRole("button", { name: "Concluir" }),
-    );
+    await pickAction(user, "Frequentar 12 aulas no mês", "Concluir");
     await user.click(screen.getByRole("button", { name: "Confirmar" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
@@ -350,10 +352,14 @@ describe("Metas individuais (professor)", () => {
     await openMarina();
     const active = card("Frequentar 12 aulas no mês");
 
+    const user = userEvent.setup();
+    await user.click(
+      within(active).getByRole("button", { name: "Ações da meta Frequentar 12 aulas no mês" }),
+    );
     for (const name of ["Concluir", "Editar", "Cancelar meta"]) {
-      expect(within(active).getByRole("button", { name })).toBeDisabled();
+      expect(within(active).getByRole("menuitem", { name })).toBeDisabled();
     }
-    await userEvent.setup().type(screen.getByLabelText("Título"), "Meta");
+    await user.type(screen.getByLabelText("Título"), "Meta");
     expect(screen.getByRole("button", { name: "Criar meta" })).toBeDisabled();
   });
 
