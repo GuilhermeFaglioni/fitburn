@@ -4,7 +4,8 @@
  * administrativa clara: coluna "MEUS ALUNOS" de 240px e a área principal. A
  * página anula o padding do conteúdo administrativo para a coluna ficar
  * encostada na barra lateral, como no artboard. "Valor alvo" e a barra de
- * progresso do artboard ficam de fora (o spec não os pede).
+ * progresso do artboard ficam de fora até a API trazer valor alvo e progresso.
+ * Cores: os valores literais do artboard (#8a8a8a, #b0b0b0, #ed6e34, branco sobre o laranja).
  */
 .fb-goals {
   display: flex;
@@ -29,7 +30,7 @@
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.03em;
-  color: var(--color-text-muted-on-light);
+  color: #8a8a8a;
   padding: 0 8px;
 }
 
@@ -70,7 +71,7 @@
   padding: 6px 8px;
   font-size: 11px;
   line-height: 16px;
-  color: var(--color-text-muted-on-light);
+  color: #b0b0b0;
 }
 
 .fb-goals__main {
@@ -84,6 +85,16 @@
   overflow: auto;
 }
 
+.fb-goals__heading {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fb-goals .fb-page-eyebrow {
+  color: #8a8a8a;
+}
+
 .fb-goals__title {
   margin: 0;
   font-family: var(--font-sans);
@@ -92,9 +103,18 @@
   color: var(--color-ink-on-light);
 }
 
-/* O aviso amarelo é o .fb-lock-banner; aqui só o corpo de texto menor do artboard. */
+/* O aviso amarelo é o .fb-lock-banner; aqui o corpo de texto menor do artboard (cores literais). */
 .fb-goals__banner {
   display: block;
+  background: #faf1e6;
+  border-color: #f0dcb8;
+  /* O artboard põe o texto (12px/18px) num <span> dentro de um bloco de 16px: cada linha mede 21px. */
+  font-size: 16px;
+  line-height: normal;
+  color: #6b4a1e;
+}
+
+.fb-goals__banner > span {
   font-size: 12px;
   line-height: 18px;
 }
@@ -153,13 +173,117 @@
 }
 
 .fb-goals__card-meta {
+  flex-shrink: 0;
+  white-space: nowrap;
   font-size: 12px;
-  color: var(--color-text-muted-on-light);
+  color: #8a8a8a;
+}
+
+/* Prazo e o menu de ações da meta (o artboard não tem botões no cartão). */
+.fb-goals__card-side {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.fb-goals__menu {
+  position: relative;
+  display: flex;
+}
+
+.fb-goals__kebab {
+  position: relative;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  border-radius: 5px;
+  color: #8a8a8a;
+  cursor: pointer;
+}
+
+.fb-goals__kebab:hover,
+.fb-goals__kebab[aria-expanded="true"] {
+  background: #f0f0f0;
+  color: #333333;
+}
+
+/* Área de toque de 44px sem mudar o tamanho da linha. */
+.fb-goals__kebab::before {
+  content: "";
+  position: absolute;
+  inset: -13px;
+}
+
+.fb-goals__menu-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 5;
+  min-width: 140px;
+  box-sizing: border-box;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border: 1px solid #e6e6e6;
+  border-radius: 5px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.fb-goals__menu-item {
+  padding: 9px 12px;
+  background: none;
+  border: none;
+  border-radius: 5px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  text-align: left;
+  color: #333333;
+  cursor: pointer;
+}
+
+.fb-goals__menu-item:hover:not(:disabled) {
+  background: #f5f5f5;
+}
+
+.fb-goals__menu-item--danger {
+  color: #c23a1f;
+}
+
+.fb-goals__menu-item:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .fb-goals__card-text {
   font-size: 12px;
   color: #5a5a5a;
+}
+
+/* Barra de progresso do artboard: só a meta concluída tem dado para isso (100%, verde). */
+.fb-goals__bar {
+  height: 8px;
+  border-radius: 4px;
+  background: #eeeeee;
+  overflow: hidden;
+}
+
+.fb-goals__bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  background: #ed6e34;
+  /* Sem texto: o color só existe para o guarda de contraste de fundos laranja. */
+  color: #ffffff;
+}
+
+.fb-goals__bar-fill--done {
+  width: 100%;
+  background: #8fbf9b;
 }
 
 .fb-goals__card-actions {
@@ -178,6 +302,17 @@
   display: flex;
   flex-direction: column;
   gap: 14px;
+}
+
+.fb-goals__form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* Rótulo e campo do formulário sobre o cinza #fafafa; branco sobre o laranja como no artboard. */
+.fb-goals__form .fb-btn-primary {
+  color: #ffffff;
 }
 
 .fb-goals__form-title {
