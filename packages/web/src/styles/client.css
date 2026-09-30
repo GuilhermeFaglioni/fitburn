@@ -380,6 +380,11 @@
   color: rgba(255, 255, 255, 0.6);
 }
 
+/* "Sem aulas" do AgendaMobile: 13px com altura de linha normal (a padrão dos estados é 19px). */
+.fb-state.fb-client-empty-day {
+  line-height: normal;
+}
+
 .fb-client-desktop-only {
   display: block;
 }
@@ -732,7 +737,6 @@
   color: #ff9c88;
   background: rgba(194, 58, 31, 0.14);
 }
-
 
 .fb-sheet-alert {
   display: flex;

@@ -224,7 +224,9 @@ describe("botões primários (texto sobre o laranja da marca)", () => {
 
   it("o rótulo do botão de entrar do login usa o texto sobre o laranja", () => {
     const login = allSheets().find(([name]) => name === "pages/LoginPage.css")?.[1] ?? "";
-    const label = textColors(login).find(({ selector }) => selector === ".login-form__submit-label");
+    const label = textColors(login).find(
+      ({ selector }) => selector === ".login-form__submit-label",
+    );
     expect(label).toBeDefined();
     expect(contrast(resolveColor(label?.value ?? "#ffffff"), ORANGE)).toBeGreaterThanOrEqual(4.5);
   });

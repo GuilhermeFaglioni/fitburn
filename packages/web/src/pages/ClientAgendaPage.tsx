@@ -251,7 +251,11 @@ export function ClientAgendaPage() {
               </div>
 
               {agendaQuery.data && dayItems.length === 0 && (
-                <EmptyState surface="dark" message="Nenhuma aula agendada para este dia." />
+                <EmptyState
+                  surface="dark"
+                  className="fb-client-empty-day"
+                  message="Nenhuma aula agendada para este dia."
+                />
               )}
 
               {dayItems.length > 0 && (
