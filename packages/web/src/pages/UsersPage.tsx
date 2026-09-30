@@ -1,33 +1,49 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Module, PermissionAction, type UserDetail } from "@fitburn/contracts";
+import { Module, PermissionAction, SystemProfileName, type UserDetail } from "@fitburn/contracts";
 import { BlockedAction } from "../components/BlockedAction";
 import { DeleteUserDialog } from "../components/DeleteUserDialog";
 import { useAuth } from "../lib/auth/AuthContext";
 import { invalidateAfterDeletion } from "../lib/invalidate-after-deletion";
 import { deactivateUser, deleteUser, listUsers, reactivateUser } from "../lib/users/api";
-import { ClientCreateForm } from "./ClientCreateForm";
+import { StaffFormModal } from "./StaffFormModal";
 import { LoadingState, ErrorState, EmptyState } from "../components/states";
+
+/** Selo do perfil de acesso, com as cores do design (perfis criados depois usam o cinza neutro). */
+function profileBadgeClass(profileName: string): string {
+  switch (profileName) {
+    case SystemProfileName.ADMIN:
+      return "fb-badge--accent";
+    case "Professor":
+      return "fb-badge--blue";
+    case "Recepção":
+      return "fb-badge--brown";
+    default:
+      return "fb-badge--neutral";
+  }
+}
 
 export function UsersPage() {
   const { can, user: currentUser } = useAuth();
   const queryClient = useQueryClient();
-  const [statusFilter, setStatusFilter] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [userToEdit, setUserToEdit] = useState<UserDetail | null>(null);
   const [userToDelete, setUserToDelete] = useState<UserDetail | null>(null);
 
   const usersQuery = useQuery({
-    queryKey: ["users", { status: statusFilter }],
-    queryFn: () => listUsers({ status: statusFilter || undefined }),
+    queryKey: ["users", {}],
+    queryFn: () => listUsers(),
   });
 
   const normalizedSearch = searchTerm.trim().toLowerCase();
+  // Como no design, a lista é só da equipe; os clientes ficam em Clientes.
   const filteredUsers = usersQuery.data?.filter(
     (user) =>
-      normalizedSearch === "" ||
-      user.fullName.toLowerCase().includes(normalizedSearch) ||
-      user.email.toLowerCase().includes(normalizedSearch),
+      user.profile.name !== SystemProfileName.CLIENT &&
+      (normalizedSearch === "" ||
+        user.fullName.toLowerCase().includes(normalizedSearch) ||
+        user.email.toLowerCase().includes(normalizedSearch)),
   );
 
   function invalidateUsers() {
@@ -50,52 +66,38 @@ export function UsersPage() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14, flexGrow: 1, minHeight: 0 }}>
       <div className="fb-toolbar">
-        <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
-          <input
-            type="text"
-            className="fb-field"
-            style={{ width: 280 }}
-            placeholder="Buscar por nome ou e-mail"
-            aria-label="Buscar por nome ou e-mail"
-            value={searchTerm}
-            onChange={(event) => setSearchTerm(event.target.value)}
-          />
-          <label
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              fontSize: 13,
-              color: "#4a4a4a",
-            }}
-          >
-            Status
-            <select
-              className="fb-field"
-              value={statusFilter}
-              onChange={(event) => setStatusFilter(event.target.value)}
-            >
-              <option value="">Todos</option>
-              <option value="ACTIVE">Ativo</option>
-              <option value="INACTIVE">Inativo</option>
-            </select>
-          </label>
-        </div>
+        <input
+          type="text"
+          className="fb-field"
+          style={{ width: 280 }}
+          placeholder="Buscar por nome ou e-mail"
+          aria-label="Buscar por nome ou e-mail"
+          value={searchTerm}
+          onChange={(event) => setSearchTerm(event.target.value)}
+        />
         <BlockedAction allowed={canCreate} reason="Você não tem permissão para cadastrar usuários.">
-          <button
-            type="button"
-            className="fb-btn-primary"
-            onClick={() => setShowCreateForm((visible) => !visible)}
-          >
-            {showCreateForm ? "Cancelar" : "+ Novo cliente"}
+          <button type="button" className="fb-btn-primary" onClick={() => setShowCreateForm(true)}>
+            + Novo usuário
           </button>
         </BlockedAction>
       </div>
 
       {showCreateForm && (
-        <ClientCreateForm
-          onCreated={() => {
+        <StaffFormModal
+          onClose={() => setShowCreateForm(false)}
+          onSaved={() => {
             setShowCreateForm(false);
+            void invalidateUsers();
+          }}
+        />
+      )}
+
+      {userToEdit && (
+        <StaffFormModal
+          user={userToEdit}
+          onClose={() => setUserToEdit(null)}
+          onSaved={() => {
+            setUserToEdit(null);
             void invalidateUsers();
           }}
         />
@@ -141,68 +143,81 @@ export function UsersPage() {
               </tr>
             </thead>
             <tbody>
-              {filteredUsers.map((user) => (
-                <tr key={user.id}>
-                  <td className="fb-td" style={{ fontWeight: 500 }}>
-                    {user.fullName}
-                  </td>
-                  <td className="fb-td" style={{ color: "#5a5a5a" }}>
-                    {user.email}
-                  </td>
-                  <td className="fb-td">
-                    <span
-                      className={`fb-badge ${user.profile.name === "Administrador" ? "fb-badge--accent" : "fb-badge--neutral"}`}
-                    >
-                      {user.profile.name.toUpperCase()}
-                    </span>
-                  </td>
-                  <td className="fb-td">
-                    <span
-                      className={`fb-badge ${user.status === "ACTIVE" ? "fb-badge--active" : "fb-badge--inactive"}`}
-                    >
-                      {user.status === "ACTIVE" ? "ATIVO" : "INATIVO"}
-                    </span>
-                  </td>
-                  <td className="fb-td" style={{ textAlign: "right" }}>
-                    <BlockedAction
-                      allowed={canEdit}
-                      reason="Você não tem permissão para alterar usuários."
-                    >
-                      {user.status === "ACTIVE" ? (
-                        <button
-                          type="button"
-                          className="fb-row-btn"
-                          onClick={() => deactivateMutation.mutate(user.id)}
-                        >
-                          Desativar
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          className="fb-row-btn"
-                          onClick={() => reactivateMutation.mutate(user.id)}
-                        >
-                          Reativar
-                        </button>
-                      )}
-                    </BlockedAction>
-                    {user.id !== currentUser?.id && (
+              {filteredUsers.map((user) => {
+                const inactive = user.status !== "ACTIVE";
+                return (
+                  <tr key={user.id} className={inactive ? "fb-row--inactive" : undefined}>
+                    <td className="fb-td fb-td--name">{user.fullName}</td>
+                    <td className="fb-td fb-td--soft">{user.email}</td>
+                    <td className="fb-td">
+                      <span className={`fb-badge ${profileBadgeClass(user.profile.name)}`}>
+                        {user.profile.name.toUpperCase()}
+                      </span>
+                    </td>
+                    <td className="fb-td">
+                      <span
+                        className={`fb-badge ${inactive ? "fb-badge--inactive" : "fb-badge--active"}`}
+                      >
+                        {inactive ? "INATIVO" : "ATIVO"}
+                      </span>
+                    </td>
+                    <td className="fb-td" style={{ textAlign: "right" }}>
                       <BlockedAction
-                        allowed={canDelete}
-                        reason="Você não tem permissão para excluir usuários."
+                        allowed={canEdit}
+                        reason="Você não tem permissão para alterar usuários."
                       >
                         <button
                           type="button"
-                          className="fb-row-btn fb-row-btn--danger"
-                          onClick={() => setUserToDelete(user)}
+                          className="fb-row-btn"
+                          aria-label={`Editar ${user.fullName}`}
+                          onClick={() => setUserToEdit(user)}
                         >
-                          Excluir
+                          Editar
                         </button>
+                      </BlockedAction>{" "}
+                      <BlockedAction
+                        allowed={canEdit}
+                        reason="Você não tem permissão para alterar usuários."
+                      >
+                        {inactive ? (
+                          <button
+                            type="button"
+                            className="fb-row-btn"
+                            onClick={() => reactivateMutation.mutate(user.id)}
+                          >
+                            Reativar
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            className="fb-row-btn"
+                            onClick={() => deactivateMutation.mutate(user.id)}
+                          >
+                            Desativar
+                          </button>
+                        )}
                       </BlockedAction>
-                    )}
-                  </td>
-                </tr>
-              ))}
+                      {user.id !== currentUser?.id && (
+                        <>
+                          {" "}
+                          <BlockedAction
+                            allowed={canDelete}
+                            reason="Você não tem permissão para excluir usuários."
+                          >
+                            <button
+                              type="button"
+                              className="fb-row-btn fb-row-btn--danger"
+                              onClick={() => setUserToDelete(user)}
+                            >
+                              Excluir
+                            </button>
+                          </BlockedAction>
+                        </>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

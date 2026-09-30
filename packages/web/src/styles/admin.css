@@ -125,7 +125,26 @@
   cursor: not-allowed;
 }
 
+.fb-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.fb-td--module {
+  font-weight: 500;
+  text-align: left;
+}
+
 .fb-btn-dashed {
+  box-sizing: border-box;
+  width: 100%;
   padding: 10px 12px;
   background: none;
   border: 1px dashed #d6d6d6;
@@ -272,6 +291,16 @@
   background: rgba(237, 110, 52, 0.14);
 }
 
+.fb-badge--blue {
+  color: #2a5fb0;
+  background: #eaf1fb;
+}
+
+.fb-badge--brown {
+  color: #8a5a2a;
+  background: #faf1e6;
+}
+
 .fb-badge--neutral {
   color: #4a4a4a;
   background: #f2f2f2;
@@ -386,6 +415,17 @@
 
 .fb-checkbox:disabled:checked {
   background: #f2f2f2;
+}
+
+/* Matriz fixa do Administrador: no design as marcas seguem laranja. */
+.fb-checkbox--fixed:disabled:checked {
+  background: #ed6e34;
+  border-color: #ed6e34;
+  cursor: default;
+}
+
+.fb-checkbox--fixed:disabled:checked::after {
+  color: #ffffff;
 }
 
 .fb-checkbox:disabled:checked::after {
@@ -562,6 +602,12 @@
 
 .fb-modal__field .fb-field {
   width: 100%;
+}
+
+.fb-modal__form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .fb-modal__grid {

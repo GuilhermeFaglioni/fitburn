@@ -17,6 +17,26 @@ import { useAuth } from "../lib/auth/AuthContext";
 
 const SYSTEM_ADMIN_NAME = "Administrador";
 const SYSTEM_CLIENT_NAME = "Cliente";
+/** Ordem dos módulos no design; os que ele não mostra vêm depois. */
+const MODULE_ORDER: ModuleName[] = [
+  Module.CLIENTES,
+  Module.OCORRENCIAS,
+  Module.RESERVAS,
+  Module.PLANOS,
+  Module.FICHAS_DE_TREINO,
+  Module.GAMIFICACAO,
+  Module.USUARIOS,
+  Module.PERFIS_DE_ACESSO,
+];
+
+function sortModules(modules: ModuleName[]): ModuleName[] {
+  const rank = (module: ModuleName) => {
+    const index = MODULE_ORDER.indexOf(module);
+    return index === -1 ? MODULE_ORDER.length : index;
+  };
+  return [...modules].sort((a, b) => rank(a) - rank(b));
+}
+
 const NO_EDIT_REASON = "Você não tem permissão para alterar perfis.";
 
 function ModuleRow({
@@ -56,7 +76,7 @@ function ModuleRow({
 
   return (
     <tr>
-      <th scope="row" className="fb-td" style={{ fontWeight: 500, textAlign: "left" }}>
+      <th scope="row" className="fb-td fb-td--module">
         {MODULE_LABELS[module]}
       </th>
       {catalog.actions.map((action) => (
@@ -64,7 +84,7 @@ function ModuleRow({
           <BlockedAction allowed={canEdit} reason={NO_EDIT_REASON}>
             <input
               type="checkbox"
-              className="fb-checkbox"
+              className={`fb-checkbox${isAdminLocked ? " fb-checkbox--fixed" : ""}`}
               aria-label={`${ACTION_LABELS[action]} em ${MODULE_LABELS[module]}`}
               checked={actions.includes(action)}
               disabled={isAdminLocked}
@@ -74,7 +94,9 @@ function ModuleRow({
         </td>
       ))}
       <td className="fb-td fb-scope">
-        {isClientScopeLocked ? (
+        {isAdminLocked ? (
+          SCOPE_LABELS[scope]
+        ) : isClientScopeLocked ? (
           <span title="O isolamento do Cliente aos próprios registros não pode ser alterado.">
             {SCOPE_LABELS.OWN} (fixo)
           </span>
@@ -97,16 +119,18 @@ function ModuleRow({
         )}
       </td>
       <td className="fb-td">
-        <BlockedAction allowed={canEdit} reason={NO_EDIT_REASON}>
-          <button
-            type="button"
-            className="fb-row-btn"
-            disabled={isAdminLocked || mutation.isPending}
-            onClick={() => mutation.mutate()}
-          >
-            Salvar
-          </button>
-        </BlockedAction>
+        {!isAdminLocked && (
+          <BlockedAction allowed={canEdit} reason={NO_EDIT_REASON}>
+            <button
+              type="button"
+              className="fb-row-btn"
+              disabled={mutation.isPending}
+              onClick={() => mutation.mutate()}
+            >
+              Salvar
+            </button>
+          </BlockedAction>
+        )}
       </td>
     </tr>
   );
@@ -126,19 +150,24 @@ export function ProfileMatrix({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12, flexGrow: 1, minHeight: 0 }}>
-      <h2 className="fb-page-title" style={{ fontSize: 16 }}>
-        Matriz de permissões — {profile.name}
-      </h2>
+      <h2 className="fb-visually-hidden">Matriz de permissões — {profile.name}</h2>
 
       {isAdminLocked && (
-        <p role="note" className="fb-lock-banner">
+        <p role="note" className="fb-visually-hidden">
           O Administrador sempre tem acesso total a todos os módulos — a matriz não pode ser
           alterada.
         </p>
       )}
       {isClientScopeLocked && (
         <p role="note" className="fb-lock-banner">
-          O isolamento do Cliente aos próprios registros é fixo e não pode ser alterado.
+          <span aria-hidden="true" style={{ fontSize: 15 }}>
+            🔒
+          </span>
+          <span>
+            O perfil <strong>Cliente</strong> possui acesso restrito aos próprios dados por regra do
+            sistema. Esta matriz é fixa e não pode ser alterada, para garantir que um cliente nunca
+            visualize dados de outros clientes.
+          </span>
         </p>
       )}
 
@@ -161,7 +190,7 @@ export function ProfileMatrix({
             </tr>
           </thead>
           <tbody>
-            {catalog.modules.map((module) => {
+            {sortModules(catalog.modules).map((module) => {
               const existing = profile.moduleAccess.find((entry) => entry.module === module);
               return (
                 <ModuleRow
@@ -174,8 +203,11 @@ export function ProfileMatrix({
                   profile={profile}
                   module={module}
                   catalog={catalog}
-                  initialActions={existing?.actions ?? []}
-                  initialScope={existing?.scope ?? PermissionScope.OWN}
+                  // O Administrador tem acesso total implícito (a API não lista módulos para ele).
+                  initialActions={isAdminLocked ? catalog.actions : (existing?.actions ?? [])}
+                  initialScope={
+                    isAdminLocked ? PermissionScope.ALL : (existing?.scope ?? PermissionScope.OWN)
+                  }
                   onSaved={onChanged}
                 />
               );
