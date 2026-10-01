@@ -24,7 +24,8 @@
     "db:up": "docker compose up -d postgres",
     "db:down": "docker compose down",
     "design:compare": "node scripts/design-compare/run.mjs",
-    "design:seed": "node scripts/design-compare/seed-demo.mjs"
+    "design:seed": "node scripts/design-compare/seed-demo.mjs",
+    "demo:seed:guilherme": "node scripts/demo-seed/seed-demo-guilherme.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
