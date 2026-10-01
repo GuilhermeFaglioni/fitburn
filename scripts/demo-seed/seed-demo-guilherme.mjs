@@ -772,17 +772,21 @@ async function cleanupLeftovers() {
       teacherIds.has(o.instructor.id) &&
       templateNames.has(o.name),
   );
+  let removed = 0;
   for (const occ of leftovers) {
     for (const r of (await reservationsOf(occ.id)).filter((x) => x.status === "CONFIRMED")) {
       await soft("limpar reserva temporária", () =>
         admin.call("POST", `/admin/reservations/${r.id}/cancel`),
       );
     }
-    const ok = await soft("limpar aula temporária", () =>
-      admin.call("DELETE", `/occurrences/${occ.id}`),
-    );
-    if (ok !== null) note(`resíduo de execução anterior removido (${utcToGym(occ.startsAt).date})`);
+    const ok = await soft("limpar aula temporária", async () => {
+      await admin.call("DELETE", `/occurrences/${occ.id}`);
+      return true;
+    });
+    if (ok) removed++;
   }
+  if (removed > 0)
+    note(`${removed} aula(s) temporária(s) de uma execução interrompida removida(s)`);
   if (leftovers.length > 0) await reloadSchedule();
 }
 
@@ -803,11 +807,14 @@ function pickTime(date, times, template) {
 // ---- lista de aulas passadas (cronológica)
 const jobs = []; // { date, time, template, teacher, capacity, attendees: [{ client, plan }], kind }
 
-// Aulas do protagonista: as 15 últimas segundas, quartas e sextas antes de hoje.
+// Aulas do protagonista (15 antes de hoje): todos os dias de funcionamento da última semana e,
+// antes disso, só segundas, quartas e sextas.
 const gDates = [];
-for (let d = 1; d <= 40 && gDates.length < 15; d++) {
+for (let d = 1; d <= 60 && gDates.length < 15; d++) {
   const date = addDays(today, -d);
-  if (HISTORY_BY_WEEKDAY[weekdayOf(date)]) gDates.push(date);
+  const weekday = weekdayOf(date);
+  if (weekday === 0) continue;
+  if (d <= 7 || [1, 3, 5].includes(weekday)) gDates.push(date);
 }
 
 // Hoje, mais cedo: uma aula do começo do dia (conta para o ranking semanal/mensal mesmo na segunda-feira)
@@ -869,11 +876,17 @@ async function planToday() {
     (r) => r.status !== "CANCELLED" && new Date(r.occurrence.startsAt).getTime() < Date.now(),
   );
   const pending = started.find((r) => r.status === "CONFIRMED");
-  const registered = started.find((r) => r.status === "COMPLETED" || r.status === "NO_SHOW");
+  const registered = started
+    .filter((r) => r.status === "COMPLETED" || r.status === "NO_SHOW")
+    .sort((a, b) => a.occurrence.startsAt.localeCompare(b.occurrence.startsAt));
   if (pending) result.existingLive = pending.occurrence;
-  if (registered) result.early = { time: utcToGym(registered.occurrence.startsAt).time };
-  if (pending || registered) return result;
+  // A primeira aula já registrada de hoje é a do começo do dia (a mesma da execução anterior).
+  if (registered.length > 0)
+    result.early = { time: utcToGym(registered[0].occurrence.startsAt).time };
+  // Já existe uma ao vivo esperando a presença: nada a criar.
+  if (pending) return result;
 
+  // Não há (ou ela já foi usada na gravação): acha o último horário livre de hoje que já começou.
   const duration = templates["Treino Funcional"].durationMinutes;
   const free = [...TODAY_SLOTS]
     .reverse()
@@ -884,8 +897,10 @@ async function planToday() {
     });
   if (free.length > 0) {
     result.live = { time: free[0] };
-    const early = free.find((time) => toMinutes(time) + duration <= toMinutes(free[0]));
-    if (early) result.early = { time: early };
+    if (!result.early) {
+      const early = free.find((time) => toMinutes(time) + duration <= toMinutes(free[0]));
+      if (early) result.early = { time: early };
+    }
   }
   return result;
 }

@@ -324,8 +324,34 @@ export function protagonistMark(k) {
 
 // ---------------------------------------------------------------- histórico
 
-/** Aulas do histórico do protagonista: uma por segunda, quarta e sexta, para trás a partir de hoje. */
+/**
+ * Aulas do histórico do protagonista, por dia da semana. Nos 7 últimos dias ele
+ * treinou todos os dias de funcionamento (isso dá corpo aos rankings semanal e
+ * mensal, mesmo no começo da semana ou do mês); antes disso, só segunda, quarta
+ * e sexta.
+ */
 export const HISTORY_BY_WEEKDAY = {
+  2: {
+    template: "Muay Thai iniciante",
+    time: "19:00",
+    teacher: "rafael",
+    capacity: 10,
+    alt: ["20:00", "17:30"],
+  },
+  4: {
+    template: "Treino Funcional",
+    time: "18:00",
+    teacher: "camila",
+    capacity: 12,
+    alt: ["17:00", "16:00"],
+  },
+  6: {
+    template: "Yoga suave",
+    time: "10:30",
+    teacher: "aline",
+    capacity: 12,
+    alt: ["09:00", "11:30"],
+  },
   1: {
     template: "Treino Funcional",
     time: "07:00",
