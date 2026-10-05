@@ -168,7 +168,7 @@ function LoggedInPage() {
       <Route path="/plano" element={<h1>Plano (tela)</h1>} />
       <Route path="/ficha-treino" element={<h1>Ficha de treino (tela)</h1>} />
       <Route path="/perfil" element={<h1>Perfil (tela)</h1>} />
-      <Route path="/gamificacao" element={<h1>Gamificação (tela)</h1>} />
+      <Route path="/fitpoints" element={<h1>Gamificação (tela)</h1>} />
     </Routes>
   );
 }
@@ -418,7 +418,7 @@ describe("Home do cliente", () => {
       mockHome({ gamification: ACTIVE_GAMIFICATION, ranking: weeklyRanking(8) });
       renderPage();
 
-      const section = await screen.findByRole("region", { name: "Sua evolução" });
+      const section = await screen.findByRole("region", { name: "FitPoints" });
       expect(await within(section).findByText("1.240")).toBeInTheDocument();
       expect(within(section).getByText("12")).toBeInTheDocument();
       expect(within(section).getByText("dias seguidos de treino")).toBeInTheDocument();
@@ -444,7 +444,7 @@ describe("Home do cliente", () => {
       });
       renderPage();
 
-      const section = await screen.findByRole("region", { name: "Sua evolução" });
+      const section = await screen.findByRole("region", { name: "FitPoints" });
       const badges = await within(section).findAllByRole("listitem");
       expect(badges.map((badge) => within(badge).getByRole("img").getAttribute("aria-label"))).toEqual([
         "Streak de 10 dias",
@@ -458,8 +458,8 @@ describe("Home do cliente", () => {
       mockHome({ gamification: ACTIVE_GAMIFICATION, ranking: weeklyRanking(8) });
       renderPage();
 
-      const section = await screen.findByRole("region", { name: "Sua evolução" });
-      await user.click(await within(section).findByRole("link", { name: "Ver gamificação" }));
+      const section = await screen.findByRole("region", { name: "FitPoints" });
+      await user.click(await within(section).findByRole("link", { name: "Ver FitPoints" }));
 
       expect(
         await screen.findByRole("heading", { name: "Gamificação (tela)" }),
@@ -473,7 +473,7 @@ describe("Home do cliente", () => {
       });
       renderPage();
 
-      const section = await screen.findByRole("region", { name: "Sua evolução" });
+      const section = await screen.findByRole("region", { name: "FitPoints" });
       expect(
         await within(section).findByText("Nenhum badge conquistado ainda."),
       ).toBeInTheDocument();
@@ -483,7 +483,7 @@ describe("Home do cliente", () => {
       mockHome({ gamification: EMPTY_GAMIFICATION, ranking: weeklyRanking(null) });
       renderPage();
 
-      const section = await screen.findByRole("region", { name: "Sua evolução" });
+      const section = await screen.findByRole("region", { name: "FitPoints" });
       expect(
         await within(section).findByText(
           "Você ainda não tem pontos. Reserve uma aula e confirme sua presença para começar a pontuar.",
@@ -496,7 +496,7 @@ describe("Home do cliente", () => {
       mockHome({ gamification: ACTIVE_GAMIFICATION, ranking: weeklyRanking(null) });
       renderPage();
 
-      const section = await screen.findByRole("region", { name: "Sua evolução" });
+      const section = await screen.findByRole("region", { name: "FitPoints" });
       expect(
         await within(section).findByText("Você ainda não pontuou no ranking desta semana."),
       ).toBeInTheDocument();
@@ -524,7 +524,7 @@ describe("Home do cliente", () => {
     renderPage();
 
     expect(await screen.findByText("Não foi possível carregar suas reservas.")).toBeInTheDocument();
-    expect(await screen.findByText("Não foi possível carregar sua evolução.")).toBeInTheDocument();
+    expect(await screen.findByText("Não foi possível carregar seus FitPoints.")).toBeInTheDocument();
     expect(await screen.findByText("Plano Performance")).toBeInTheDocument();
   });
 });

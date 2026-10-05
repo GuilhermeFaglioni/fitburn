@@ -104,11 +104,11 @@ function Evolution() {
   const badges = summary ? latestBadges(summary.badges) : [];
 
   return (
-    <section className="fb-home__block" aria-label="Sua evolução">
+    <section className="fb-home__block" aria-label="FitPoints">
       <div className="fb-home__row">
-        <h2 className="fb-home__title">Sua evolução</h2>
-        <Link to="/gamificacao" className="fb-home__link">
-          Ver gamificação
+        <h2 className="fb-home__title">FitPoints</h2>
+        <Link to="/fitpoints" className="fb-home__link">
+          Ver FitPoints
         </Link>
       </div>
 
@@ -116,7 +116,7 @@ function Evolution() {
       {summaryQuery.isError && (
         <ErrorState
           surface="dark"
-          message="Não foi possível carregar sua evolução."
+          message="Não foi possível carregar seus FitPoints."
           onRetry={() => void summaryQuery.refetch()}
         />
       )}

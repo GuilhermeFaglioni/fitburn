@@ -34,11 +34,15 @@ function AgendaIcon({ color, size }: IconProps) {
   );
 }
 
-function PlanIcon({ color, size }: IconProps) {
+function FitPointsIcon({ color, size }: IconProps) {
   return (
     <svg width={size} height={size} viewBox="0 0 20 20" fill="none" aria-hidden="true">
-      <rect x="2.5" y="5" width="15" height="10" rx="1.5" stroke={color} strokeWidth="1.4" />
-      <path d="M2.5 8.3H17.5" stroke={color} strokeWidth="1.4" />
+      <path
+        d="M10 2.8L12.1 7.1L16.8 7.8L13.4 11.1L14.2 15.8L10 13.6L5.8 15.8L6.6 11.1L3.2 7.8L7.9 7.1L10 2.8Z"
+        stroke={color}
+        strokeWidth="1.4"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
@@ -72,7 +76,7 @@ const INACTIVE = "rgba(255,255,255,0.65)";
 const ITEMS = [
   { to: "/", label: "Home", tabLabel: "Home", Icon: HomeIcon },
   { to: "/agenda", label: "Agenda", tabLabel: "Agenda", Icon: AgendaIcon },
-  { to: "/plano", label: "Plano", tabLabel: "Plano", Icon: PlanIcon },
+  { to: "/fitpoints", label: "FitPoints", tabLabel: "FitPoints", Icon: FitPointsIcon },
   { to: "/ficha-treino", label: "Ficha de treino", tabLabel: "Treino", Icon: WorkoutIcon },
   { to: "/perfil", label: "Perfil", tabLabel: "Perfil", Icon: ProfileIcon },
 ];

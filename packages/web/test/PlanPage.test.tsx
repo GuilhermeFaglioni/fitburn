@@ -5,7 +5,7 @@ import { http, HttpResponse } from "msw";
 import { MemoryRouter } from "react-router-dom";
 import type { MyPlan, PlanAssignment } from "@fitburn/contracts";
 import { AuthProvider, useAuth } from "../src/lib/auth/AuthContext";
-import { PlanPage } from "../src/pages/PlanPage";
+import { MyPlanSection } from "../src/pages/plans/MyPlanSection";
 import { mockSuccessfulLogin } from "./auth-mocks";
 import { server } from "./msw-server";
 
@@ -29,7 +29,7 @@ function LoggedInPage() {
   }, [login]);
 
   if (!ready) return null;
-  return <PlanPage />;
+  return <MyPlanSection />;
 }
 
 function renderPage() {
@@ -45,7 +45,7 @@ function renderPage() {
   );
 }
 
-describe("Plano do cliente", () => {
+describe("Plano do cliente (seção do Perfil)", () => {
   beforeEach(() => {
     mockSuccessfulLogin("Cliente");
   });
@@ -69,7 +69,7 @@ describe("Plano do cliente", () => {
 
     renderPage();
 
-    expect(await screen.findByRole("heading", { name: "Plano" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Meu plano" })).toBeInTheDocument();
     const card = await screen.findByRole("region", { name: "Plano ativo" });
     expect(within(card).getByText("Plano Performance")).toBeInTheDocument();
     expect(within(card).getByText("ATIVO")).toBeInTheDocument();

@@ -17,7 +17,7 @@ describe("padding mobile do conteúdo do cliente", () => {
 
   it("encontra o bloco mobile e as telas com padding próprio", () => {
     expect(split).toBeGreaterThan(0);
-    expect(screens).toEqual(expect.arrayContaining(["home", "agenda", "gamificacao"]));
+    expect(screens).toEqual(expect.arrayContaining(["home", "agenda", "fitpoints"]));
   });
 
   it.each(screens)("a tela %s tem override mobile com respiro de 108px embaixo", (screen) => {

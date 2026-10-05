@@ -22,7 +22,6 @@ import { AttendancePage } from "./pages/AttendancePage";
 import { GamificationPage } from "./pages/GamificationPage";
 import { AssignmentsPage } from "./pages/AssignmentsPage";
 import { GoalsPage } from "./pages/GoalsPage";
-import { PlanPage } from "./pages/PlanPage";
 import { PlansPage } from "./pages/PlansPage";
 import { WorkoutSheetsPage } from "./pages/WorkoutSheetsPage";
 import { ClientWorkoutSheetsPage } from "./pages/ClientWorkoutSheetsPage";
@@ -59,10 +58,11 @@ export function AppRoutes() {
       >
         <Route path="/" element={<ClientHomePage />} />
         <Route path="/agenda" element={<ClientAgendaPage />} />
-        <Route path="/plano" element={<PlanPage />} />
+        <Route path="/plano" element={<Navigate to="/perfil" replace />} />
         <Route path="/ficha-treino" element={<ClientWorkoutSheetsPage />} />
         <Route path="/ficha-treino/:id" element={<ClientWorkoutSheetPage />} />
-        <Route path="/gamificacao" element={<GamificationPage />} />
+        <Route path="/fitpoints" element={<GamificationPage />} />
+        <Route path="/gamificacao" element={<Navigate to="/fitpoints" replace />} />
       </Route>
       <Route
         element={

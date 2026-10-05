@@ -232,3 +232,12 @@
     text-align: left;
   }
 }
+
+/* Dentro do Perfil: título de seção, como "Dados pessoais". */
+.fb-plan--section {
+  margin-top: 24px;
+}
+
+.fb-plan--section .fb-plan__title {
+  font-size: 16px;
+}

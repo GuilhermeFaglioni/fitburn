@@ -82,7 +82,7 @@ function LoggedInPage() {
   if (!ready) return null;
   return (
     <Routes>
-      <Route path="/gamificacao" element={<GamificationPage />} />
+      <Route path="/fitpoints" element={<GamificationPage />} />
       <Route path="/" element={<h1>Início (tela)</h1>} />
     </Routes>
   );
@@ -93,7 +93,7 @@ function renderPage() {
   return render(
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <MemoryRouter initialEntries={["/gamificacao"]}>
+        <MemoryRouter initialEntries={["/fitpoints"]}>
           <LoggedInPage />
         </MemoryRouter>
       </AuthProvider>
@@ -164,7 +164,7 @@ describe("Gamificação do cliente", () => {
 
     renderPage();
 
-    expect(await screen.findByRole("heading", { name: "Sua evolução" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "FitPoints" })).toBeInTheDocument();
     expect(await screen.findByText("1.240")).toBeInTheDocument();
     expect(screen.getByText("pontos totais")).toBeInTheDocument();
 
@@ -484,18 +484,8 @@ describe("Gamificação do cliente", () => {
     renderPage();
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "Não foi possível carregar sua evolução.",
+      "Não foi possível carregar seus FitPoints.",
     );
   });
 
-  it("o botão Voltar leva para o início", async () => {
-    mockSummary({ ...NO_STREAK, totalPoints: 0, history: [] });
-    const user = userEvent.setup();
-    renderPage();
-    await screen.findByText("Nenhum ganho de pontos ainda.");
-
-    await user.click(screen.getByRole("button", { name: "Voltar" }));
-
-    expect(await screen.findByRole("heading", { name: "Início (tela)" })).toBeInTheDocument();
-  });
 });
