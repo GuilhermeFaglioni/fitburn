@@ -45,4 +45,25 @@
 
   /* Raio */
   --radius-sm: 5px;
+
+  /* Motion: curvas e deslocamentos compartilhados (os keyframes ficam em global.css). */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --press-scale: 0.97;
+  --press-scale-soft: 0.98;
+  --enter-scale: 0.96;
+  --enter-shift: 6px;
+  --sheet-offset: 100%;
+}
+
+/* Reduced motion: o movimento some, o fade de opacidade fica. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --press-scale: 1;
+    --press-scale-soft: 1;
+    --enter-scale: 1;
+    --enter-shift: 0px;
+    --sheet-offset: 0%;
+  }
 }

@@ -231,8 +231,10 @@
   cursor: pointer;
 }
 
-.fb-row-btn:hover {
-  background: #f2f2f2;
+@media (hover: hover) and (pointer: fine) {
+  .fb-row-btn:hover {
+    background: #f2f2f2;
+  }
 }
 
 .fb-row-btn:disabled {
@@ -249,8 +251,10 @@
   cursor: not-allowed;
 }
 
-.fb-row-btn--danger[aria-disabled="true"]:hover {
-  background: none;
+@media (hover: hover) and (pointer: fine) {
+  .fb-row-btn--danger[aria-disabled="true"]:hover {
+    background: none;
+  }
 }
 
 .fb-blocked-popover {
@@ -575,8 +579,10 @@
   cursor: pointer;
 }
 
-.fb-day-empty:hover {
-  background: #fafafa;
+@media (hover: hover) and (pointer: fine) {
+  .fb-day-empty:hover {
+    background: #fafafa;
+  }
 }
 
 .fb-icon-btn {
@@ -593,6 +599,7 @@
 }
 
 .fb-modal-backdrop {
+  animation: fb-fade 180ms var(--ease-out) both;
   position: fixed;
   inset: 0;
   z-index: 10;
@@ -604,6 +611,8 @@
 }
 
 .fb-modal {
+  animation: fb-enter 200ms var(--ease-out) both;
+  transform-origin: center;
   width: 460px;
   max-width: 100%;
   max-height: 100%;
@@ -847,4 +856,14 @@
   .fb-page-header {
     flex-wrap: wrap;
   }
+}
+
+.fb-btn-primary,
+.fb-btn-secondary {
+  transition: transform 160ms var(--ease-out);
+}
+
+.fb-btn-primary:active:not(:disabled),
+.fb-btn-secondary:active:not(:disabled) {
+  transform: scale(var(--press-scale));
 }

@@ -86,6 +86,14 @@
   cursor: pointer;
 }
 
-.fb-state__retry:hover {
-  background: rgba(127, 127, 127, 0.15);
+@media (hover: hover) and (pointer: fine) {
+  .fb-state__retry:hover {
+    background: rgba(127, 127, 127, 0.15);
+  }
+}
+
+/* Retorno de uma ação entra suave; carregando e vazio ficam estáticos (vistos o tempo todo). */
+.fb-state--error,
+.fb-state--success {
+  animation: fb-enter 180ms var(--ease-out) both;
 }

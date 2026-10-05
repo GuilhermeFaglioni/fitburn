@@ -35,8 +35,10 @@
   font-size: 14px;
 }
 
-.app-menu__link:hover {
-  color: var(--color-ink-on-dark);
+@media (hover: hover) and (pointer: fine) {
+  .app-menu__link:hover {
+    color: var(--color-ink-on-dark);
+  }
 }
 
 .app-menu__link.active {
@@ -83,8 +85,10 @@
   text-decoration: none;
 }
 
-.app-menu__account-link:hover {
-  color: var(--color-ink-on-dark);
+@media (hover: hover) and (pointer: fine) {
+  .app-menu__account-link:hover {
+    color: var(--color-ink-on-dark);
+  }
 }
 
 .app-menu__account-link.active {
@@ -104,9 +108,11 @@
   cursor: pointer;
 }
 
-.app-menu__logout:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--color-ink-on-dark);
+@media (hover: hover) and (pointer: fine) {
+  .app-menu__logout:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--color-ink-on-dark);
+  }
 }
 
 /* Barra superior e gaveta: só existem no mobile (o canvas de design tem apenas o desktop). */
@@ -164,15 +170,15 @@
     transform: translateX(-100%);
     visibility: hidden;
     transition:
-      transform 0.2s ease,
-      visibility 0s linear 0.2s;
+      transform 200ms var(--ease-drawer),
+      visibility 0s linear 200ms;
   }
 
   .app-menu--open {
     transform: translateX(0);
     visibility: visible;
     transition:
-      transform 0.2s ease,
+      transform 280ms var(--ease-drawer),
       visibility 0s;
   }
 
@@ -182,6 +188,38 @@
     inset: 0;
     z-index: 20;
     background: rgba(10, 10, 10, 0.55);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition:
+      opacity 200ms var(--ease-out),
+      visibility 0s linear 200ms;
+  }
+
+  .app-menu__scrim--open {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transition:
+      opacity 200ms var(--ease-out),
+      visibility 0s;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .app-menu {
+      transform: none;
+      opacity: 0;
+      transition:
+        opacity 200ms var(--ease-out),
+        visibility 0s linear 200ms;
+    }
+
+    .app-menu--open {
+      opacity: 1;
+      transition:
+        opacity 200ms var(--ease-out),
+        visibility 0s;
+    }
   }
 
   .app-menu__link,

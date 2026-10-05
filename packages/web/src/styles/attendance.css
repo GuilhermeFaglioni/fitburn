@@ -258,8 +258,10 @@
   text-decoration: none;
 }
 
-.fb-myclass:hover {
-  background: #f2f2f2;
+@media (hover: hover) and (pointer: fine) {
+  .fb-myclass:hover {
+    background: #f2f2f2;
+  }
 }
 
 .fb-myclass__hour {
@@ -285,4 +287,17 @@
 .fb-myclass__sub {
   font-size: 13px;
   color: #5a5a5a;
+}
+
+/* Marcação de presença: press e troca de cor sem piscar. */
+.fb-seg-btn {
+  transition:
+    transform 160ms var(--ease-out),
+    background-color 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
+}
+
+.fb-seg-btn:active:not(:disabled) {
+  transform: scale(var(--press-scale-soft));
 }
