@@ -1,11 +1,9 @@
-import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
   PointsEntryType,
   type GamificationSummary,
   type PointsHistoryItem,
 } from "@fitburn/contracts";
-import { BackIcon } from "../components/icons/BackIcon";
 import { getMyGamification } from "../lib/gamification/api";
 import { formatHistoryWhen } from "../lib/gamification/format";
 import { GoalsSection } from "./gamification/GoalsSection";
@@ -154,14 +152,13 @@ function Achievements({ streak, badges }: Pick<GamificationSummary, "streak" | "
 }
 
 /**
- * Sua evolução (GamificacaoMobile.dc.html / GamificacaoDesktop.dc.html): o
+ * FitPoints (GamificacaoMobile.dc.html / GamificacaoDesktop.dc.html): o
  * total de pontos em laranja com o streak e os marcos, o histórico dos ganhos
  * e as conquistas. No mobile as seções empilham na ordem do artboard; no
  * desktop, coluna de 420px com título, pontos e conquistas, e o histórico ao
  * lado (com as metas do professor), e o ranking embaixo (ver gamification.css).
  */
 export function GamificationPage() {
-  const navigate = useNavigate();
   const summaryQuery = useQuery({
     queryKey: ["gamification", "me"],
     queryFn: getMyGamification,
@@ -173,22 +170,14 @@ export function GamificationPage() {
     <div className="fb-gami">
       <div className="fb-gami__left">
         <div className="fb-gami__header">
-          <button
-            type="button"
-            className="fb-back-btn fb-gami__back"
-            aria-label="Voltar"
-            onClick={() => navigate("/")}
-          >
-            <BackIcon />
-          </button>
-          <h1 className="fb-gami__title">Sua evolução</h1>
+          <h1 className="fb-gami__title">FitPoints</h1>
         </div>
 
         {summaryQuery.isLoading && <LoadingState surface="dark" />}
         {summaryQuery.isError && (
           <ErrorState
             surface="dark"
-            message="Não foi possível carregar sua evolução."
+            message="Não foi possível carregar seus FitPoints."
             onRetry={() => void summaryQuery.refetch()}
           />
         )}

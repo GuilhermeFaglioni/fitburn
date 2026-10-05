@@ -7,6 +7,7 @@ import { isClientUser } from "../lib/auth/areas";
 import { formatLocalDate } from "../lib/agenda/format";
 import { getMyProfile, updateMyProfile } from "../lib/profile/api";
 import { ErrorState, Feedback, LoadingState } from "../components/states";
+import { MyPlanSection } from "./plans/MyPlanSection";
 import { RequiresNetwork } from "../components/RequiresNetwork";
 
 interface FormState {
@@ -219,6 +220,8 @@ export function ProfilePage() {
           </section>
         </>
       )}
+
+      {!light && <MyPlanSection />}
 
       <div className="fb-profile__divider" aria-hidden="true" />
 

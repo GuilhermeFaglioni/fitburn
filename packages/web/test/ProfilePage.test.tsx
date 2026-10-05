@@ -91,6 +91,7 @@ describe("Perfil / Minha conta", () => {
         return new HttpResponse(null, { status: 204 });
       }),
       http.get("/api/me", () => HttpResponse.json(me)),
+      http.get("/api/plans/mine", () => HttpResponse.json({ active: null, history: [] })),
       http.patch("/api/me", async ({ request }) => {
         const body = (await request.json()) as Partial<UserDetail>;
         patches.push(body);

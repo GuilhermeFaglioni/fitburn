@@ -27,7 +27,7 @@ const TABS: Array<{ id: Tab; label: string }> = [
   { id: "dados", label: "Dados pessoais" },
   { id: "plano", label: "Plano e histórico" },
   { id: "reservas", label: "Reservas" },
-  { id: "gamificacao", label: "Gamificação" },
+  { id: "gamificacao", label: "FitPoints" },
   { id: "fichas", label: "Fichas" },
 ];
 

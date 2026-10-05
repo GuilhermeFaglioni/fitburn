@@ -12,7 +12,7 @@ import { DashboardPage } from "../src/pages/DashboardPage";
 import { GamificationPage } from "../src/pages/GamificationPage";
 import { AgendaAdminPage } from "../src/pages/AgendaAdminPage";
 import { MyClassesPage } from "../src/pages/MyClassesPage";
-import { PlanPage } from "../src/pages/PlanPage";
+import { MyPlanSection } from "../src/pages/plans/MyPlanSection";
 import { UsersPage } from "../src/pages/UsersPage";
 import { mockSuccessfulLogin } from "./auth-mocks";
 import { server } from "./msw-server";
@@ -95,7 +95,7 @@ const SCREENS: Screen[] = [
   },
   {
     name: "Plano",
-    page: <PlanPage />,
+    page: <MyPlanSection />,
     url: "/api/plans/mine",
     errorMessage: "Não foi possível carregar o seu plano.",
     empty: { active: null, history: [] },
@@ -119,10 +119,10 @@ const SCREENS: Screen[] = [
     emptyMessage: "",
   },
   {
-    name: "Gamificação",
+    name: "FitPoints",
     page: <GamificationPage />,
     url: "/api/gamification/me",
-    errorMessage: "Não foi possível carregar sua evolução.",
+    errorMessage: "Não foi possível carregar seus FitPoints.",
     empty: null,
     emptyMessage: "",
   },

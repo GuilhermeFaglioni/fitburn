@@ -67,7 +67,7 @@
   padding: 32px 40px;
 }
 
-.fb-client__content[data-screen="gamificacao"] {
+.fb-client__content[data-screen="fitpoints"] {
   padding: 40px;
 }
 
@@ -848,7 +848,7 @@
   }
 
   /* Gamificação: 24px 20px 108px no mobile (a tab bar fixa de 76px não cobre o fim do conteúdo). */
-  .fb-client__content[data-screen="gamificacao"] {
+  .fb-client__content[data-screen="fitpoints"] {
     padding: 24px 20px 108px;
   }
 

@@ -46,6 +46,21 @@ function availabilityText(item: ClientAgendaItem, style: "card" | "chip"): strin
   }
 }
 
+function CheckIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <circle cx="8" cy="8" r="7" fill="currentColor" />
+      <path
+        d="M5 8.2L7.1 10.2L11 6"
+        stroke="#0a0a0a"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 function InfoIcon() {
   return (
     <svg
@@ -267,7 +282,7 @@ export function ClientAgendaPage() {
                     <button
                       key={item.id}
                       type="button"
-                      className="fb-class-card"
+                      className={`fb-class-card${item.myReservationId ? " fb-class-card--booked" : ""}`}
                       onClick={() => setOpenItem(item)}
                     >
                       <span className="fb-class-card__body">
@@ -282,7 +297,11 @@ export function ClientAgendaPage() {
                           {availabilityText(item, "card")}
                         </span>
                         {item.myReservationId && (
-                          <span className="fb-client-sr-only">RESERVADA</span>
+                          <span className="fb-booked-badge">
+                            <CheckIcon />
+                            Você estará presente
+                            <span className="fb-client-sr-only">RESERVADA</span>
+                          </span>
                         )}
                       </span>
                       <ChevronIcon />
@@ -328,7 +347,7 @@ export function ClientAgendaPage() {
                             <button
                               key={item.id}
                               type="button"
-                              className="fb-client-chip"
+                              className={`fb-client-chip${item.myReservationId ? " fb-client-chip--booked" : ""}`}
                               onClick={() => setOpenItem(item)}
                             >
                               <div className="fb-client-chip__title">{item.modality.name}</div>
@@ -338,7 +357,10 @@ export function ClientAgendaPage() {
                                 {availabilityText(item, "chip")}
                               </div>
                               {item.myReservationId && (
-                                <div className="fb-client-sr-only">Reservada</div>
+                                <div className="fb-booked-badge fb-booked-badge--chip">
+                                  <CheckIcon />
+                                  <span>Reservada</span>
+                                </div>
                               )}
                             </button>
                           ))}
