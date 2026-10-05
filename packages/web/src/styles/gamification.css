@@ -31,19 +31,6 @@
   display: contents;
 }
 
-/* Botão voltar do artboard: 32x32; a área de toque de 44px é invisível (não muda o layout). */
-.fb-gami .fb-gami__back {
-  position: relative;
-  min-width: 0;
-  min-height: 0;
-}
-
-.fb-gami__back::before {
-  content: "";
-  position: absolute;
-  inset: -6px;
-}
-
 .fb-gami__header {
   order: 1;
   display: flex;
@@ -411,11 +398,6 @@
 
 /* Com a barra lateral do cliente (≥768px): os tamanhos do artboard desktop. */
 @media (min-width: 768px) {
-  /* A barra lateral já leva de volta ao início. */
-  .fb-gami .fb-gami__back {
-    display: none;
-  }
-
   .fb-client__content:has(> .fb-gami) {
     padding-top: 40px;
   }

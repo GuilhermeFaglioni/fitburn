@@ -387,7 +387,7 @@ describe("Clientes (equipe)", () => {
       expect(screen.getByText("Yoga Flow")).toBeInTheDocument();
       expect(screen.getByText("Nenhuma reserva anterior.")).toBeInTheDocument();
 
-      await user.click(screen.getByRole("tab", { name: "Gamificação" }));
+      await user.click(screen.getByRole("tab", { name: "FitPoints" }));
       expect(screen.getByText("120 pontos")).toBeInTheDocument();
 
       await user.click(screen.getByRole("tab", { name: "Fichas" }));

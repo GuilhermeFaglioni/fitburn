@@ -54,8 +54,10 @@
   text-decoration: none;
 }
 
-.fb-home__link:hover {
-  text-decoration: underline;
+@media (hover: hover) and (pointer: fine) {
+  .fb-home__link:hover {
+    text-decoration: underline;
+  }
 }
 
 /* "Ver agenda" no mobile, "Ver agenda completa" no desktop. */

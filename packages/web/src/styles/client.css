@@ -67,7 +67,7 @@
   padding: 32px 40px;
 }
 
-.fb-client__content[data-screen="gamificacao"] {
+.fb-client__content[data-screen="fitpoints"] {
   padding: 40px;
 }
 
@@ -166,8 +166,10 @@
   line-height: 1;
 }
 
-.fb-client-weeknav .fb-client-icon-btn:hover {
-  background: #1a1a1a;
+@media (hover: hover) and (pointer: fine) {
+  .fb-client-weeknav .fb-client-icon-btn:hover {
+    background: #1a1a1a;
+  }
 }
 
 .fb-client-weeknav .fb-client-icon-btn::before {
@@ -565,6 +567,7 @@
 /* Detalhe da aula (ReservaDesktop/ReservaMobile.dc.html): cartão de 460px
    centralizado no desktop, bottom sheet no mobile. */
 .fb-sheet-backdrop {
+  animation: fb-fade 200ms var(--ease-out) both;
   position: fixed;
   inset: 0;
   z-index: 20;
@@ -575,6 +578,8 @@
 }
 
 .fb-sheet {
+  animation: fb-enter 200ms var(--ease-out) both;
+  transform-origin: center;
   width: 460px;
   max-width: 100%;
   box-sizing: border-box;
@@ -843,7 +848,7 @@
   }
 
   /* Gamificação: 24px 20px 108px no mobile (a tab bar fixa de 76px não cobre o fim do conteúdo). */
-  .fb-client__content[data-screen="gamificacao"] {
+  .fb-client__content[data-screen="fitpoints"] {
     padding: 24px 20px 108px;
   }
 
@@ -959,5 +964,79 @@
 
   .fb-sheet-btn--ghost {
     padding: 13px;
+  }
+}
+
+/* Aula em que o cliente já está reservado */
+.fb-class-card--booked,
+.fb-client-chip--booked {
+  box-shadow: inset 0 0 0 1px var(--color-primary-orange);
+}
+
+.fb-booked-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-primary-orange);
+}
+
+.fb-booked-badge--chip {
+  margin-top: 4px;
+  font-size: 11px;
+}
+
+/* Entrada do sheet no mobile: sobe da borda inferior (translateY em % da própria altura). */
+@media (max-width: 767px) {
+  .fb-sheet {
+    animation: fb-sheet-in 320ms var(--ease-drawer) both;
+  }
+}
+
+/* Feedback de toque nos controles do cliente. */
+.fb-sheet-btn,
+.fb-daychip,
+.fb-client-tab-btn,
+.fb-class-card,
+.fb-client__tab {
+  transition: transform 160ms var(--ease-out);
+}
+
+.fb-sheet-btn:active:not(:disabled),
+.fb-daychip:active,
+.fb-client-tab-btn:active,
+.fb-client__tab:active {
+  transform: scale(var(--press-scale));
+}
+
+.fb-class-card:active {
+  transform: scale(var(--press-scale-soft));
+}
+
+/* Resultado da ação no detalhe da aula: o bloco entra e o check pousa logo depois. */
+.fb-sheet-alert {
+  animation: fb-enter 220ms var(--ease-out) both;
+}
+
+.fb-sheet-alert--success svg {
+  animation: fb-check-pop 240ms var(--ease-out) 80ms both;
+}
+
+@keyframes fb-check-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fb-sheet-alert--success svg {
+    animation: fb-fade 200ms var(--ease-out) both;
   }
 }

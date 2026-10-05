@@ -206,10 +206,16 @@
   cursor: pointer;
 }
 
-.fb-goals__kebab:hover,
 .fb-goals__kebab[aria-expanded="true"] {
   background: #f0f0f0;
   color: #333333;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .fb-goals__kebab:hover {
+    background: #f0f0f0;
+    color: #333333;
+  }
 }
 
 /* Área de toque de 44px sem mudar o tamanho da linha. */
@@ -220,6 +226,8 @@
 }
 
 .fb-goals__menu-list {
+  transform-origin: top right;
+  animation: fb-enter 150ms var(--ease-out) both;
   position: absolute;
   top: calc(100% + 4px);
   right: 0;
@@ -247,8 +255,10 @@
   cursor: pointer;
 }
 
-.fb-goals__menu-item:hover:not([aria-disabled="true"]) {
-  background: #f5f5f5;
+@media (hover: hover) and (pointer: fine) {
+  .fb-goals__menu-item:hover:not([aria-disabled="true"]) {
+    background: #f5f5f5;
+  }
 }
 
 .fb-goals__menu-item--danger {

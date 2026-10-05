@@ -1,22 +1,24 @@
 import { useQuery } from "@tanstack/react-query";
 import { gymToday } from "@fitburn/contracts";
-import { formatDayMonth, formatLocalDate } from "../lib/agenda/format";
-import { getMyPlan } from "../lib/plans/api";
-import { PlanHistoryList } from "./plans/PlanHistoryList";
-import { EmptyState, ErrorState, LoadingState } from "../components/states";
+import { formatDayMonth, formatLocalDate } from "../../lib/agenda/format";
+import { getMyPlan } from "../../lib/plans/api";
+import { PlanHistoryList } from "./PlanHistoryList";
+import { EmptyState, ErrorState, LoadingState } from "../../components/states";
 
 /**
- * Plano (PlanoDesktop.dc.html / PlanoMobile.dc.html): o plano ativo do
+ * Plano dentro do Perfil (PlanoDesktop.dc.html / PlanoMobile.dc.html): o plano ativo do
  * cliente com as datas, e o histórico. Informativo: sem oferta, preço nem
  * checkout — quem quer um plano fala com a recepção.
  */
-export function PlanPage() {
+export function MyPlanSection() {
   const planQuery = useQuery({ queryKey: ["plans", "mine"], queryFn: getMyPlan });
   const plan = planQuery.data;
 
   return (
-    <div className="fb-plan">
-      <h1 className="fb-plan__title">Plano</h1>
+    <section className="fb-plan fb-plan--section" aria-labelledby="fb-plan-title">
+      <h2 id="fb-plan-title" className="fb-plan__title">
+        Meu plano
+      </h2>
 
       {planQuery.isLoading && <LoadingState surface="dark" />}
       {planQuery.isError && (
@@ -73,6 +75,6 @@ export function PlanPage() {
           )}
         </section>
       )}
-    </div>
+    </section>
   );
 }

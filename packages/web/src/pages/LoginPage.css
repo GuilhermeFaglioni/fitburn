@@ -231,3 +231,15 @@
     font-size: 13px;
   }
 }
+
+.login-form__submit {
+  transition: transform 160ms var(--ease-out);
+}
+
+.login-form__submit:active:not(:disabled) {
+  transform: scale(var(--press-scale));
+}
+
+.login-form__error {
+  animation: fb-enter 180ms var(--ease-out) both;
+}

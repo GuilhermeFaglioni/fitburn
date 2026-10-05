@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { http, HttpResponse } from "msw";
@@ -38,6 +38,7 @@ function mockSession(profileName: string, permissions: EffectivePermission[]) {
     http.get("/api/dashboard", () => new Promise(() => {})),
     http.get("/api/clients", () => HttpResponse.json([])),
     http.get("/api/agenda", () => HttpResponse.json([])),
+    http.get("/api/me", () => new Promise(() => {})),
     http.get("/api/plans/mine", () => HttpResponse.json({ active: null, history: [] })),
     http.get("/api/attendance/classes/:id", () => new Promise(() => {})),
   );
@@ -180,18 +181,18 @@ describe("foco ao trocar de tela", () => {
 
   it("na casca do cliente, escolher uma tela na barra leva o foco ao conteúdo", async () => {
     mockSession("Cliente", []);
-    renderAt("/plano");
+    renderAt("/agenda");
     const user = userEvent.setup();
-    await screen.findByRole("heading", { name: "Plano", level: 1 });
+    await screen.findByRole("heading", { name: "Agenda", level: 1 });
 
     await user.click(
       within(screen.getByRole("navigation", { name: "Navegação inferior" })).getByRole("link", {
-        name: "Agenda",
+        name: "FitPoints",
       }),
     );
 
-    expect(await screen.findByRole("heading", { name: "Agenda", level: 1 })).toBeInTheDocument();
-    expect(screen.getByRole("main")).toHaveFocus();
+    await waitFor(() => expect(screen.getByRole("main")).toHaveFocus());
+    expect(screen.getByRole("main")).toHaveAttribute("data-screen", "fitpoints");
   });
 
   it("ao abrir a tela pela primeira vez, o foco não é roubado do início da página", async () => {
@@ -218,11 +219,18 @@ describe("landmarks e salto de navegação", () => {
     expect(screen.getByRole("main")).toHaveAttribute("id", "conteudo");
   });
 
-  it("o main do cliente também é o alvo do salto", async () => {
+  it("/plano leva ao Perfil, onde o plano agora vive", async () => {
     mockSession("Cliente", []);
     renderAt("/plano");
 
-    await screen.findByRole("heading", { name: "Plano", level: 1 });
+    await screen.findByRole("heading", { name: "Perfil", level: 1 });
+  });
+
+  it("o main do cliente também é o alvo do salto", async () => {
+    mockSession("Cliente", []);
+    renderAt("/agenda");
+
+    await screen.findByRole("heading", { name: "Agenda", level: 1 });
 
     expect(screen.getByRole("main")).toHaveAttribute("id", "conteudo");
   });

@@ -55,12 +55,38 @@ main:focus,
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+  * {
     scroll-behavior: auto !important;
+  }
+}
+
+/* Entradas de uma vez só (diálogos, popovers, resultados). Com reduced motion os tokens
+   zeram o deslocamento e a escala, e sobra só o fade de opacidade. */
+@keyframes fb-enter {
+  from {
+    opacity: 0;
+    transform: translateY(var(--enter-shift)) scale(var(--enter-scale));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes fb-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fb-sheet-in {
+  from {
+    transform: translateY(var(--sheet-offset));
+  }
+  to {
+    transform: none;
   }
 }

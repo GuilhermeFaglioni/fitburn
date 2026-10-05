@@ -92,7 +92,7 @@ function GamificationPanel({
   return (
     <section className="fb-dash__panel" aria-labelledby="fb-dash-gamification">
       <h2 id="fb-dash-gamification" className="fb-dash__panel-title">
-        Gamificação
+        FitPoints
       </h2>
       <div className="fb-dash__figures">
         <div className="fb-dash__figure">
@@ -134,7 +134,7 @@ function GamificationPanel({
 /**
  * Dashboard administrativo (DashboardAdmin.dc.html): quatro cartões de KPI (clientes ativos, ocupação
  * média da semana, pontos distribuídos e streaks ativos no mês), o painel "Ocupação por aula" com uma
- * barra por modalidade na semana atual e o painel "Gamificação" com o ranking do mês. Cada bloco só
+ * barra por modalidade na semana atual e o painel "FitPoints" com o ranking do mês. Cada bloco só
  * chega quando a pessoa enxerga o módulo que o alimenta, já limitado ao escopo dela.
  */
 export function DashboardPage() {

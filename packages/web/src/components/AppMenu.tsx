@@ -57,9 +57,11 @@ export function AppMenu() {
           Menu
         </button>
       </div>
-      {open && (
-        <div className="app-menu__scrim" aria-hidden="true" onClick={() => setOpen(false)} />
-      )}
+      <div
+        className={`app-menu__scrim${open ? " app-menu__scrim--open" : ""}`}
+        aria-hidden="true"
+        onClick={() => setOpen(false)}
+      />
       <div
         ref={panelRef}
         id={panelId}
