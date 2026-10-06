@@ -15,8 +15,3 @@ node_modules
 docs
 *.md
 .DS_Store
-
-# O frontend vai para a Vercel; só o manifesto entra, para o pnpm-lock.yaml
-# (que lista o workspace inteiro) continuar consistente com --frozen-lockfile.
-packages/web/*
-!packages/web/package.json
