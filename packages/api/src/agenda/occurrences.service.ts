@@ -96,9 +96,9 @@ export class OccurrencesService {
   ): Promise<OccurrenceDetail> {
     const settings = await this.resolveSettings(input, requester);
     const interval = intervalAt(input.date, input.startTime, settings.durationMinutes);
-    await this.assertNoOverlap([interval]);
+    await this.assertNoOverlap([interval], settings.instructorId);
 
-    const occurrence = await this.withOverlapTranslation([interval], () =>
+    const occurrence = await this.withOverlapTranslation([interval], settings.instructorId, () =>
       this.prisma.classOccurrence.create({
         data: { ...settings, ...interval },
         include: OCCURRENCE_INCLUDE,
@@ -122,11 +122,11 @@ export class OccurrencesService {
     this.assertInScope(instructorId, requester);
 
     const planned = plannedSchedule(current, input);
-    if (planned.changed) await this.assertNoOverlap([planned.interval], id);
+    if (planned.changed) await this.assertNoOverlap([planned.interval], instructorId, id);
 
     // Escrita condicional: se a aula for cancelada entre a leitura e a
     // escrita, nada é alterado (não se edita o histórico).
-    const { count } = await this.withOverlapTranslation([planned.interval], () =>
+    const { count } = await this.withOverlapTranslation([planned.interval], instructorId, () =>
       this.prisma.$transaction(async (tx) => {
         const confirmed = await this.lockAndCountConfirmed(tx, id);
         // Relida depois do lock: o que muda é decidido sobre o estado atual.
@@ -285,10 +285,10 @@ export class OccurrencesService {
     const intervals = dates.map((date) =>
       intervalAt(date, input.startTime, settings.durationMinutes),
     );
-    await this.assertNoOverlap(intervals);
+    await this.assertNoOverlap(intervals, settings.instructorId);
 
     const seriesId = randomUUID();
-    const occurrences = await this.withOverlapTranslation(intervals, () =>
+    const occurrences = await this.withOverlapTranslation(intervals, settings.instructorId, () =>
       this.prisma.$transaction(
         intervals.map((interval) =>
           this.prisma.classOccurrence.create({
@@ -357,33 +357,44 @@ export class OccurrencesService {
   }
 
   /**
-   * Verificação antecipada: devolve a lista de conflitos no erro. A garantia
+   * Verificação antecipada (por professor): devolve a lista de conflitos no erro. A garantia
    * real (inclusive contra criações concorrentes) é a exclusion constraint
    * do banco — ver withOverlapTranslation.
    */
-  async assertNoOverlap(intervals: Interval[], exceptId?: string): Promise<void> {
-    const conflicts = await this.findConflicts(intervals, exceptId);
+  async assertNoOverlap(
+    intervals: Interval[],
+    instructorId: string | null,
+    exceptId?: string,
+  ): Promise<void> {
+    const conflicts = await this.findConflicts(intervals, instructorId, exceptId);
     if (conflicts.length > 0) throw this.overlapError(conflicts);
   }
 
   /** Converte a violação da constraint de exclusão no mesmo erro da verificação antecipada. */
-  async withOverlapTranslation<T>(intervals: Interval[], write: () => Promise<T>): Promise<T> {
+  async withOverlapTranslation<T>(
+    intervals: Interval[],
+    instructorId: string | null,
+    write: () => Promise<T>,
+  ): Promise<T> {
     try {
       return await write();
     } catch (error) {
       if (!isOverlapViolation(error)) throw error;
-      throw this.overlapError(await this.findConflicts(intervals));
+      throw this.overlapError(await this.findConflicts(intervals, instructorId));
     }
   }
 
   private async findConflicts(
     intervals: Interval[],
+    instructorId: string | null,
     exceptId?: string,
   ): Promise<OccurrenceConflict[]> {
     if (intervals.length === 0) return [];
     const rows = await this.prisma.classOccurrence.findMany({
       where: {
         status: OccurrenceStatus.SCHEDULED,
+        // Só conflita com aula do mesmo professor (ou, sem professor, com outra sem professor).
+        instructorId,
         ...(exceptId ? { id: { not: exceptId } } : {}),
         OR: intervals.map((interval) => ({
           startsAt: { lt: interval.endsAt },
@@ -404,7 +415,7 @@ export class OccurrencesService {
   private overlapError(conflicts: OccurrenceConflict[]): DomainError {
     return new DomainError(
       ErrorCode.OCCURRENCE_OVERLAP,
-      "O horário se sobrepõe a outra aula — o espaço é exclusivo.",
+      "O horário se sobrepõe a outra aula do mesmo professor.",
       ErrorStatus.CONFLICT,
       { conflicts },
     );

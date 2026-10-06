@@ -15,6 +15,7 @@
     "prisma:migrate:test": "node scripts/with-env.cjs --test-db prisma migrate deploy",
     "prisma:seed": "node scripts/with-env.cjs tsx prisma/seed.ts",
     "demo:reset": "node scripts/with-env.cjs tsx src/demo-reset/cli.ts",
+    "demo:seed": "node scripts/with-env.cjs node dist/demo-seed/cli.js",
     "demo:reset:dist": "node scripts/with-env.cjs node dist/demo-reset/cli.js",
     "prisma:studio": "node scripts/with-env.cjs prisma studio"
   },

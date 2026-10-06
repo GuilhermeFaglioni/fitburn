@@ -146,7 +146,7 @@ describe("Ocorrências avulsas e agenda administrativa (HTTP)", () => {
     });
   });
 
-  describe("Sobreposição (espaço exclusivo)", () => {
+  describe("Sobreposição (exclusiva por professor)", () => {
     it("recusa ocorrência que se sobrepõe a outra e devolve o intervalo em conflito", async () => {
       const token = await loginAsAdmin();
       const template = await createTemplate(token, { durationMinutes: 60 });
@@ -201,6 +201,47 @@ describe("Ocorrências avulsas e agenda administrativa (HTTP)", () => {
           .every((r) => r.body.code === "OCCURRENCE_OVERLAP"),
       ).toBe(true);
       expect(await testPrisma.classOccurrence.count()).toBe(1);
+    });
+
+    it("aceita aulas simultâneas de professores diferentes e recusa a do mesmo professor", async () => {
+      const token = await loginAsAdmin();
+      const ana = await createStaffUser("ana@fitburn.local", "Ana");
+      const bruno = await createStaffUser("bruno@fitburn.local", "Bruno");
+      const template = await createTemplate(token, { durationMinutes: 60 });
+      const at = (instructorId: string) =>
+        api(token)
+          .post("/api/occurrences")
+          .send({ templateId: template.id, date: "2026-10-05", startTime: "18:00", instructorId });
+
+      const first = await at(ana.id);
+      const otherInstructor = await at(bruno.id);
+      const sameInstructor = await at(ana.id);
+
+      expect(first.status).toBe(201);
+      expect(otherInstructor.status).toBe(201);
+      expect(sameInstructor.status).toBe(409);
+      expect(sameInstructor.body.code).toBe("OCCURRENCE_OVERLAP");
+      expect(sameInstructor.body.details.conflicts.map((c: { id: string }) => c.id)).toEqual([
+        first.body.id,
+      ]);
+    });
+
+    it("com criações concorrentes do mesmo professor no mesmo horário, só uma é aceita (constraint do banco)", async () => {
+      const token = await loginAsAdmin();
+      const ana = await createStaffUser("ana@fitburn.local", "Ana");
+      const template = await createTemplate(token, { durationMinutes: 60 });
+      const body = {
+        templateId: template.id,
+        date: "2026-10-05",
+        startTime: "18:00",
+        instructorId: ana.id,
+      };
+
+      const responses = await Promise.all(
+        Array.from({ length: 4 }, () => api(token).post("/api/occurrences").send(body)),
+      );
+
+      expect(responses.map((r) => r.status).sort()).toEqual([201, 409, 409, 409]);
     });
 
     it("ocorrência cancelada não bloqueia o horário", async () => {

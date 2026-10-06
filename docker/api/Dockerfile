@@ -5,6 +5,7 @@
 #   - api:      node packages/api/dist/main.js        (CMD padrão)
 #   - migrate:  prisma migrate deploy                  (serviço "migrate" do Compose)
 #   - operação: pnpm demo:reset, via `docker compose exec/run` (runbook)
+#   - coolify:  sh docker/api/start.sh (migrate + seed + API; docker-compose.coolify.yml)
 # Por isso ela mantém as devDependencies (prisma CLI e tsx). É maior que uma
 # imagem só de runtime, mas evita manter duas imagens para uma demo.
 
@@ -39,6 +40,8 @@ COPY packages/api packages/api
 RUN pnpm --filter @fitburn/contracts build \
   && DATABASE_URL="postgresql://build:build@localhost:5432/build" pnpm --filter @fitburn/api prisma:generate \
   && pnpm --filter @fitburn/api build
+
+COPY docker/api/start.sh /app/docker/api/start.sh
 
 ENV NODE_ENV=production \
     PORT=3333 \

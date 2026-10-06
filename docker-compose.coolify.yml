@@ -1,0 +1,94 @@
+# Stack do Fitburn para o Coolify (Docker Compose como "Build Pack"):
+#   internet -> Traefik do Coolify (HTTPS) -> web (Nginx :80) -> api (:3333) -> postgres
+#
+# - Só o serviço "web" recebe domínio (no Coolify: serviço web -> Domains).
+# - O Nginx do "web" serve o app e faz o proxy de /api para a API: mesma origem,
+#   cookie de refresh sem CORS (CORS_ALLOWED_ORIGINS fica vazio).
+# - TLS e portas públicas são do Coolify: nada de "ports" aqui.
+# - O banco e a API ficam só na rede interna da stack e não publicam porta.
+# As variáveis são cadastradas na aba Environment Variables do Coolify
+# (as marcadas com :? são obrigatórias). Runbook: docs/deploy-coolify.md.
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-fitburn}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD (openssl rand -hex 24)}
+      POSTGRES_DB: ${POSTGRES_DB:-fitburn}
+      TZ: ${TZ:-UTC}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    logging: *default-logging
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/api/Dockerfile
+    restart: unless-stopped
+    # Aplica as migrations, o seed base e (DEMO_SEED=true) a massa de demonstração; depois sobe a API.
+    command: ["sh", "/app/docker/api/start.sh"]
+    environment:
+      NODE_ENV: production
+      PORT: "3333"
+      TZ: ${TZ:-UTC}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-fitburn}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-fitburn}?schema=public
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?defina JWT_ACCESS_SECRET (openssl rand -hex 32)}
+      JWT_ACCESS_TTL_SECONDS: ${JWT_ACCESS_TTL_SECONDS:-900}
+      REFRESH_TOKEN_TTL_DAYS: ${REFRESH_TOKEN_TTL_DAYS:-7}
+      INITIAL_ADMIN_EMAIL: ${INITIAL_ADMIN_EMAIL:?defina INITIAL_ADMIN_EMAIL}
+      INITIAL_ADMIN_PASSWORD: ${INITIAL_ADMIN_PASSWORD:?defina INITIAL_ADMIN_PASSWORD (mínimo 12 caracteres)}
+      INITIAL_ADMIN_NAME: ${INITIAL_ADMIN_NAME:-Administrador Fitburn}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-}
+      # Dois proxies entre o cliente e a API: Traefik (Coolify) + Nginx do "web".
+      TRUST_PROXY_HOPS: ${TRUST_PROXY_HOPS:-2}
+      AUTH_RATE_LIMIT_MAX: ${AUTH_RATE_LIMIT_MAX:-10}
+      AUTH_RATE_LIMIT_WINDOW_SECONDS: ${AUTH_RATE_LIMIT_WINDOW_SECONDS:-60}
+      # Massa de demonstração (professores, clientes, agenda de Personal Class...).
+      DEMO_SEED: ${DEMO_SEED:-false}
+      DEMO_USER_PASSWORD: ${DEMO_USER_PASSWORD:-}
+    expose:
+      - "3333"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      # /api/health devolve 200 mesmo com o banco fora; o que vale é status "ok" no corpo.
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3333/api/health').then(r=>r.json()).then(b=>process.exit(b.status==='ok'?0:1)).catch(()=>process.exit(1))"
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      # Migrations + seeds rodam antes de a API escutar.
+      start_period: 90s
+    logging: *default-logging
+
+  web:
+    build:
+      context: .
+      dockerfile: docker/web/Dockerfile
+    restart: unless-stopped
+    expose:
+      - "80"
+    depends_on:
+      api:
+        condition: service_healthy
+    logging: *default-logging
+
+volumes:
+  postgres_data:

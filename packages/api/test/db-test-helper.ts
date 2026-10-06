@@ -28,7 +28,7 @@ export async function cleanDatabase(): Promise<void> {
 const NO_OVERLAP_CONSTRAINT = "class_occurrences_no_overlap";
 
 /**
- * Tira do ar a exclusion constraint da agenda (espaço exclusivo), para testes
+ * Tira do ar a exclusion constraint da agenda (exclusiva por professor), para testes
  * que precisam de aulas agendadas sobrepostas. Sempre em par com
  * ensureOccurrenceNoOverlapConstraint no afterAll.
  */
@@ -53,7 +53,7 @@ export async function ensureOccurrenceNoOverlapConstraint(): Promise<void> {
   const migration = readFileSync(
     path.resolve(
       __dirname,
-      "../prisma/migrations/20260928011755_add_class_occurrences/migration.sql",
+      "../prisma/migrations/20261006120000_instructor_scoped_overlap/migration.sql",
     ),
     "utf8",
   );
