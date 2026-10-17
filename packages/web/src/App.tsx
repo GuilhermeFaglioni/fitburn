@@ -19,6 +19,7 @@ import { AgendaAdminPage } from "./pages/AgendaAdminPage";
 import { ClientAgendaPage } from "./pages/ClientAgendaPage";
 import { MyClassesPage } from "./pages/MyClassesPage";
 import { AttendancePage } from "./pages/AttendancePage";
+import { ClassStudentSheetPage } from "./pages/ClassStudentSheetPage";
 import { GamificationPage } from "./pages/GamificationPage";
 import { AssignmentsPage } from "./pages/AssignmentsPage";
 import { GoalsPage } from "./pages/GoalsPage";
@@ -94,6 +95,17 @@ export function AppRoutes() {
           <ProtectedRoute>
             <AreaRoute area="admin">
               <AttendancePage />
+            </AreaRoute>
+          </ProtectedRoute>
+        }
+      />
+      {/* Ficha de treino de um aluno da aula, aberta a partir da Presença (também tela cheia). */}
+      <Route
+        path="/presenca/:occurrenceId/alunos/:clientId"
+        element={
+          <ProtectedRoute>
+            <AreaRoute area="admin">
+              <ClassStudentSheetPage />
             </AreaRoute>
           </ProtectedRoute>
         }

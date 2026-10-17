@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AttendanceStatus,
@@ -86,9 +86,13 @@ interface MarkVariables {
 export function AttendancePage() {
   const { occurrenceId = "" } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  // De onde a pessoa veio (Agenda, Minhas aulas): o voltar devolve para lá.
+  const from = (location.state as { from?: string } | null)?.from ?? "/minhas-aulas";
   const queryClient = useQueryClient();
   const { can } = useAuth();
   const canExecute = can(Module.PRESENCA, PermissionAction.EXECUTE);
+  const canSeeSheets = can(Module.FICHAS_DE_TREINO, PermissionAction.VIEW);
   const rosterKey = ["attendance-roster", occurrenceId];
   const [failure, setFailure] = useState<string | null>(null);
 
@@ -147,7 +151,7 @@ export function AttendancePage() {
           type="button"
           className="fb-back-btn"
           aria-label="Voltar"
-          onClick={() => navigate("/minhas-aulas")}
+          onClick={() => navigate(from)}
         >
           <BackIcon />
         </button>
@@ -208,7 +212,21 @@ export function AttendancePage() {
                 return (
                   <li key={entry.reservationId} className="fb-att__row">
                     <div className="fb-att__who">
-                      <span className="fb-att__name">{entry.client.fullName}</span>
+                      {canSeeSheets ? (
+                        <Link
+                          className="fb-att__name fb-att__name--link"
+                          to={`/presenca/${occurrenceId}/alunos/${entry.client.id}`}
+                          state={{ from }}
+                          aria-label={`Ficha de treino de ${entry.client.fullName}`}
+                        >
+                          {entry.client.fullName}
+                          <span className="fb-att__chevron" aria-hidden="true">
+                            ›
+                          </span>
+                        </Link>
+                      ) : (
+                        <span className="fb-att__name">{entry.client.fullName}</span>
+                      )}
                       {pending && <span className="fb-att__pending">PENDENTE</span>}
                     </div>
                     {/* Dois bloqueios independentes: sem EXECUTE o botão já nasce desabilitado, com o

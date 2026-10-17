@@ -1,5 +1,6 @@
 import { useId, useState, type FormEvent } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import {
   ErrorCode,
   Module,
@@ -13,6 +14,7 @@ import { BlockedAction } from "../../components/BlockedAction";
 import { ApiError } from "../../lib/auth/api";
 import { Modal } from "../../components/Modal";
 import { useAuth } from "../../lib/auth/AuthContext";
+import { canSeeRoster } from "../../lib/attendance/roster-access";
 import {
   cancelOccurrence,
   deleteOccurrence,
@@ -36,13 +38,17 @@ export function OccurrenceEditModal({
   onChanged: () => void;
 }) {
   const formId = useId();
-  const { can } = useAuth();
+  const { user, can, scopeOf } = useAuth();
+  const navigate = useNavigate();
   const optionsQuery = useQuery({
     queryKey: ["occurrence-options"],
     queryFn: getOccurrenceFormOptions,
   });
   const local = utcToGymDateTime(occurrence.startsAt);
   const isCancelled = occurrence.status === OccurrenceStatus.CANCELLED;
+  const showRoster =
+    !isCancelled &&
+    canSeeRoster(occurrence.instructor?.id, { userId: user?.id, can, scopeOf });
 
   const [view, setView] = useState<View>("form");
   const [date, setDate] = useState(local.date);
@@ -291,6 +297,19 @@ export function OccurrenceEditModal({
             <button type="button" className="fb-btn-secondary" onClick={onClose}>
               Fechar
             </button>
+            {showRoster && (
+              <button
+                type="button"
+                className="fb-btn-secondary"
+                onClick={() =>
+                  navigate(`/presenca/${occurrence.id}`, {
+                    state: { from: "/agenda-administrativa" },
+                  })
+                }
+              >
+                Ver alunos
+              </button>
+            )}
             {!isCancelled && (
               <BlockedAction allowed={canEdit} reason="Você não tem permissão para editar aulas.">
                 <button

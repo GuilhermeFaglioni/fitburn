@@ -73,12 +73,12 @@ function LoggedInPage() {
   return <WorkoutSheetsPage />;
 }
 
-function renderPage() {
+function renderPage(path = "/fichas") {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <MemoryRouter initialEntries={["/fichas"]}>
+        <MemoryRouter initialEntries={[path]}>
           <LoggedInPage />
         </MemoryRouter>
       </AuthProvider>
@@ -166,6 +166,15 @@ describe("Fichas de treino (professor)", () => {
     );
   });
 
+  it("abre já no aluno quando chega com ?cliente= (vindo da aula)", async () => {
+    renderPage("/fichas?cliente=c-marina");
+
+    expect(await screen.findByRole("heading", { name: "Nova ficha" })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: /Fichas de Marina Souza/ }),
+    ).toBeInTheDocument();
+  });
+
   async function openMarina() {
     const user = userEvent.setup();
     renderPage();
@@ -225,7 +234,9 @@ describe("Fichas de treino (professor)", () => {
     await user.click(within(list).getByRole("button", { name: "Editar" }));
 
     expect(screen.getByRole("heading", { name: "Editar ficha — Fase 2" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: /Fichas anteriores de Marina Souza/ })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /Fichas anteriores de Marina Souza/ }),
+    ).toBeInTheDocument();
     expect(screen.queryByText("Este aluno ainda não tem fichas.")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Editar" })).not.toBeInTheDocument();
   });

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   addDays,
@@ -13,6 +14,7 @@ import {
 } from "@fitburn/contracts";
 import { BlockedAction } from "../components/BlockedAction";
 import { useAuth } from "../lib/auth/AuthContext";
+import { isOwnClass } from "../lib/attendance/roster-access";
 import { professorLabel } from "../lib/names";
 import { listOccurrences } from "../lib/agenda/api";
 import { formatDayLabel, formatInstantHour, formatWeekRange } from "../lib/agenda/format";
@@ -32,7 +34,8 @@ function chipClass(occurrence: OccurrenceDetail): string {
 }
 
 export function AgendaAdminPage() {
-  const { can } = useAuth();
+  const { user, can } = useAuth();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const today = gymToday();
   const [weekStart, setWeekStart] = useState(() => startOfWeek(today));
@@ -56,6 +59,23 @@ export function AgendaAdminPage() {
   const instructorNames = (occurrencesQuery.data ?? []).flatMap((occurrence) =>
     occurrence.instructor ? [occurrence.instructor.fullName] : [],
   );
+
+  /**
+   * O professor que clica na própria aula vai direto à lista de alunos; para os
+   * demais (administração, aula de outro professor) abre-se o modal de edição,
+   * que oferece "Ver alunos" quando a pessoa pode ver a presença daquela aula.
+   */
+  function open(occurrence: OccurrenceDetail) {
+    const ownClass =
+      occurrence.status === OccurrenceStatus.SCHEDULED &&
+      isOwnClass(occurrence.instructor?.id, user?.id) &&
+      can(Module.PRESENCA, PermissionAction.VIEW);
+    if (ownClass) {
+      navigate(`/presenca/${occurrence.id}`, { state: { from: "/agenda-administrativa" } });
+    } else {
+      setModal({ mode: "edit", occurrence });
+    }
+  }
 
   function refresh() {
     return queryClient.invalidateQueries({ queryKey: ["occurrences"] });
@@ -130,7 +150,7 @@ export function AgendaAdminPage() {
                   key={occurrence.id}
                   type="button"
                   className={chipClass(occurrence)}
-                  onClick={() => setModal({ mode: "edit", occurrence })}
+                  onClick={() => open(occurrence)}
                 >
                   <span className="fb-chip-cls__hour">
                     {formatInstantHour(occurrence.startsAt)}

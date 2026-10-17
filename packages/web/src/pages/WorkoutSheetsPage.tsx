@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Module,
@@ -35,7 +36,9 @@ const BADGE_CLASS = {
 export function WorkoutSheetsPage() {
   const { user, can } = useAuth();
   const queryClient = useQueryClient();
-  const [clientId, setClientId] = useState("");
+  // A ficha do aluno aberta a partir de uma aula chega com ?cliente=<id>.
+  const [searchParams] = useSearchParams();
+  const [clientId, setClientId] = useState(() => searchParams.get("cliente") ?? "");
   const [editing, setEditing] = useState<WorkoutSheet | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
   /** Sobe a cada ficha salva: o editor recomeça em branco. */
