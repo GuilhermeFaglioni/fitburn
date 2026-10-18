@@ -8,7 +8,12 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { CurrentUser, ModuleName, PermissionActionName } from "@fitburn/contracts";
+import type {
+  CurrentUser,
+  ModuleName,
+  PermissionActionName,
+  PermissionScopeName,
+} from "@fitburn/contracts";
 import { isOnline, subscribeToConnectivity } from "../connectivity/connectivity-store";
 import * as authApi from "./api";
 
@@ -22,6 +27,8 @@ interface AuthContextValue {
   /** Atualiza na sessão os dados de identidade que a pessoa editou (nome e e-mail), sem novo login. */
   updateIdentity: (identity: Pick<CurrentUser, "fullName" | "email">) => void;
   can: (module: ModuleName, action: PermissionActionName) => boolean;
+  /** Escopo de dados que o perfil tem no módulo; null se não tem acesso a ele. */
+  scopeOf: (module: ModuleName) => PermissionScopeName | null;
 }
 
 /** Quantas vezes seguidas a restauração repete de imediato quando a conexão voltou durante a requisição. */
@@ -102,6 +109,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [user],
   );
 
+  const scopeOf = useCallback(
+    (module: ModuleName): PermissionScopeName | null =>
+      user?.permissions.find((permission) => permission.module === module)?.scope ?? null,
+    [user],
+  );
+
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
@@ -111,8 +124,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       logout,
       updateIdentity,
       can,
+      scopeOf,
     }),
-    [user, isInitializing, login, logout, updateIdentity, can],
+    [user, isInitializing, login, logout, updateIdentity, can, scopeOf],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
