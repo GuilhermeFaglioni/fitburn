@@ -115,6 +115,14 @@ export function ClientLayout() {
             </NavLink>
           ))}
         </div>
+        <nav aria-label="Documentos legais" className="fb-client__legal-nav">
+          <NavLink to="/privacidade" className="fb-client__nav-item">
+            Política de privacidade
+          </NavLink>
+          <NavLink to="/termos" className="fb-client__nav-item">
+            Termos de uso
+          </NavLink>
+        </nav>
       </nav>
 
       <main
@@ -125,6 +133,10 @@ export function ClientLayout() {
         data-screen={screenOf(pathname)}
       >
         <Outlet />
+        <nav aria-label="Documentos legais" className="fb-client__legal-footer">
+          <NavLink to="/privacidade">Política de privacidade</NavLink>
+          <NavLink to="/termos">Termos de uso</NavLink>
+        </nav>
       </main>
 
       <nav className="fb-client__tabbar" aria-label="Navegação inferior">

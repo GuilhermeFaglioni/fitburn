@@ -85,6 +85,16 @@ export function AppMenu() {
                   </NavLink>
                 </li>
               ))}
+              <li>
+                <NavLink to="/privacidade" className="app-menu__link">
+                  Política de privacidade
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/termos" className="app-menu__link">
+                  Termos de uso
+                </NavLink>
+              </li>
             </ul>
           </nav>
         </div>

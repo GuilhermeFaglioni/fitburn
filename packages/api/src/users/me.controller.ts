@@ -26,7 +26,7 @@ export class MeController {
   @AllowDuringOnboarding()
   async get(@Req() req: AuthenticatedRequest): Promise<UserDetail> {
     const user = await this.currentUser(req);
-    return this.usersService.toUserDetail(user);
+    return this.usersService.toUserDetailWithOnboarding(user);
   }
 
   @Patch()

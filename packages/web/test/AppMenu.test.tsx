@@ -40,6 +40,11 @@ describe("AppMenu", () => {
     renderMenuAsAuthenticated();
 
     expect(await screen.findByRole("link", { name: "Dashboard" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Política de privacidade" })).toHaveAttribute(
+      "href",
+      "/privacidade",
+    );
+    expect(screen.getByRole("link", { name: "Termos de uso" })).toHaveAttribute("href", "/termos");
   });
 
   it("não mostra o Dashboard para quem não tem essa permissão", async () => {

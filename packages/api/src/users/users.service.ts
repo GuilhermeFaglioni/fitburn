@@ -33,6 +33,7 @@ import { recordAdminAuditEvent } from "../admin-audit/record-admin-audit-event.j
 import { lockUserRow } from "./user-row-lock.js";
 import { projectClientForScope } from "../permissions/client-projection.js";
 import { getOnboardingPending } from "../onboarding/onboarding-requirements.js";
+import { OnboardingService } from "../onboarding/onboarding.service.js";
 
 export type UserWithProfile = User & { profile: AccessProfile };
 export type UserMutationActor = Pick<ProfileRequester, "userId"> &
@@ -76,6 +77,7 @@ export class UsersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly permissionsService: PermissionsService,
+    private readonly onboardingService: OnboardingService,
   ) {}
 
   findByEmail(email: string): Promise<UserWithProfile | null> {
@@ -302,10 +304,9 @@ export class UsersService {
       if (actorId) {
         await recordAdminAuditEvent(tx, {
           actorId,
-          action:
-            changedFields.includes("profileId")
-              ? AdminAuditAction.USER_PROFILE_CHANGED
-              : AdminAuditAction.USER_UPDATED,
+          action: changedFields.includes("profileId")
+            ? AdminAuditAction.USER_PROFILE_CHANGED
+            : AdminAuditAction.USER_UPDATED,
           targetId: id,
           changedFields,
         });
@@ -491,7 +492,14 @@ export class UsersService {
       status: user.status,
       profile: { id: user.profile.id, name: user.profile.name },
       permissions,
-      onboardingPending: getOnboardingPending(user),
+      onboardingPending: await this.onboardingService.getPending(user.id, user.mustChangePassword),
+    };
+  }
+
+  async toUserDetailWithOnboarding(user: UserWithProfile): Promise<UserDetail> {
+    return {
+      ...this.toUserDetail(user),
+      onboardingPending: await this.onboardingService.getPending(user.id, user.mustChangePassword),
     };
   }
 

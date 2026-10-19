@@ -43,6 +43,45 @@
   font-weight: 700;
 }
 
+.fb-profile__legal-copy {
+  line-height: 1.65;
+  white-space: pre-line;
+}
+
+.fb-profile__legal-copy p {
+  margin: 0 0 14px;
+}
+
+.fb-profile__legal-confirmation {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+}
+
+.fb-legal-document__links,
+.fb-client__legal-nav,
+.fb-client__legal-footer,
+.login-page__legal-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.fb-client__legal-nav,
+.fb-client__legal-footer {
+  font-size: 12px;
+}
+
+.fb-client__legal-footer {
+  margin-top: 32px;
+}
+
+.fb-client__legal-footer a {
+  color: rgba(255, 255, 255, 0.65);
+  text-underline-offset: 3px;
+}
+
 .fb-profile__alert {
   margin: 0;
   box-sizing: border-box;

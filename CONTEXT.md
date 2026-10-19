@@ -17,3 +17,7 @@ Conflito de reserva ocorre quando a aula não possui mais disponibilidade ou qua
 ## Solicitação repetida
 
 Uma solicitação repetida para a mesma intenção de reserva não deve criar um novo compromisso. Deve preservar o resultado da solicitação original.
+
+## Manifestação
+
+Manifestação registra uma ação de um usuário sobre um documento ou consentimento. Cada evento é imutável e informa usuário, tipo, versão aplicável, ação concedida ou revogada e data. Ciência da política de privacidade, aceite dos termos de uso e consentimento de ranking são tipos distintos; uma nova ação acrescenta outro evento, sem substituir o anterior.

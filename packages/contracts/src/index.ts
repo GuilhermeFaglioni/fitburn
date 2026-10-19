@@ -2,6 +2,7 @@ export * from "./errors.js";
 export * from "./health.js";
 export * from "./permissions.js";
 export * from "./auth.js";
+export * from "./onboarding.js";
 export * from "./users.js";
 export * from "./profiles.js";
 export * from "./catalog.js";

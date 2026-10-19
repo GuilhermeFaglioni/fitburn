@@ -6,6 +6,7 @@ import { HealthModule } from "./health/health.module.js";
 import { AuthModule } from "./auth/auth.module.js";
 import { JwtAuthModule } from "./auth/jwt-auth.module.js";
 import { UsersModule } from "./users/users.module.js";
+import { OnboardingModule } from "./onboarding/onboarding.module.js";
 import { PermissionsModule } from "./permissions/permissions.module.js";
 import { ProfilesModule } from "./profiles/profiles.module.js";
 import { CatalogModule } from "./catalog/catalog.module.js";
@@ -25,6 +26,7 @@ import { ClientsModule } from "./clients/clients.module.js";
     ConfigModule.forRoot({ isGlobal: true, envFilePath: "../../.env" }),
     AppConfigModule,
     PrismaModule,
+    OnboardingModule,
     JwtAuthModule,
     HealthModule,
     PermissionsModule,
