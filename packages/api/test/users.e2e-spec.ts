@@ -160,6 +160,71 @@ describe("Gestão de usuários (HTTP)", () => {
       expect(response.status).toBe(400);
       expect(response.body.code).toBe("PROFILE_NOT_FOUND");
     });
+
+    it("impede conceder privilégios acima do próprio perfil e aceita subconjunto", async () => {
+      const actorProfile = await createAccessProfile({ name: "Gestor de equipe" });
+      await grantModuleAccess({
+        profileId: actorProfile.id,
+        module: "USUARIOS",
+        actions: ["VIEW", "CREATE"],
+        scope: "ALL",
+      });
+      const actor = await createUser({
+        email: "gestor@fitburn.local",
+        password: PASSWORD,
+        profileId: actorProfile.id,
+      });
+      const token = await loginAndGetAccessToken(app, actor.email, PASSWORD);
+      const adminProfile = await createAccessProfile({ name: "Administrador", isSystem: true });
+      const limitedProfile = await createAccessProfile({ name: "Consulta de equipe" });
+      await grantModuleAccess({
+        profileId: limitedProfile.id,
+        module: "USUARIOS",
+        actions: ["VIEW"],
+        scope: "OWN",
+      });
+
+      const elevated = await request(app.getHttpServer())
+        .post("/api/users/staff")
+        .set("Authorization", `Bearer ${token}`)
+        .send({
+          fullName: "Administrador criado",
+          email: "admin-criado@fitburn.local",
+          password: PASSWORD,
+          profileId: adminProfile.id,
+        });
+      const limited = await request(app.getHttpServer())
+        .post("/api/users/staff")
+        .set("Authorization", `Bearer ${token}`)
+        .send({
+          fullName: "Consulta criada",
+          email: "consulta-criada@fitburn.local",
+          password: PASSWORD,
+          profileId: limitedProfile.id,
+        });
+
+      expect(elevated.status).toBe(403);
+      expect(elevated.body.code).toBe("FORBIDDEN");
+      expect(limited.status).toBe(201);
+      expect(limited.body.profile.id).toBe(limitedProfile.id);
+    });
+
+    it("permite ao administrador atribuir o perfil Administrador", async () => {
+      const { token, profile: adminProfile } = await loginAsAdmin();
+
+      const response = await request(app.getHttpServer())
+        .post("/api/users/staff")
+        .set("Authorization", `Bearer ${token}`)
+        .send({
+          fullName: "Segundo administrador",
+          email: "segundo-admin@fitburn.local",
+          password: PASSWORD,
+          profileId: adminProfile.id,
+        });
+
+      expect(response.status).toBe(201);
+      expect(response.body.profile).toMatchObject({ id: adminProfile.id, name: "Administrador" });
+    });
   });
 
   describe("GET /api/users", () => {
@@ -210,6 +275,65 @@ describe("Gestão de usuários (HTTP)", () => {
       expect(response.status).toBe(200);
       expect(response.body.fullName).toBe("Nome Atualizado");
       expect(response.body.profile.name).toBe("Recepção");
+    });
+
+    it("impede usuário não-administrador de trocar o próprio perfil para Administrador", async () => {
+      const actorProfile = await createAccessProfile({ name: "Equipe limitada" });
+      await grantModuleAccess({
+        profileId: actorProfile.id,
+        module: "USUARIOS",
+        actions: ["EDIT"],
+        scope: "OWN",
+      });
+      const actor = await createUser({
+        email: "equipe-limitada@fitburn.local",
+        password: PASSWORD,
+        profileId: actorProfile.id,
+      });
+      const adminProfile = await createAccessProfile({ name: "Administrador", isSystem: true });
+      const token = await loginAndGetAccessToken(app, actor.email, PASSWORD);
+
+      const response = await request(app.getHttpServer())
+        .patch(`/api/users/${actor.id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .send({ profileId: adminProfile.id });
+
+      expect(response.status).toBe(403);
+      expect(response.body.code).toBe("FORBIDDEN");
+      expect(await testPrisma.user.findUniqueOrThrow({ where: { id: actor.id } })).toMatchObject({
+        profileId: actorProfile.id,
+      });
+    });
+
+    it("permite ao administrador atribuir o perfil Administrador a outro usuário", async () => {
+      const { token, profile: adminProfile } = await loginAsAdmin();
+      const staffProfile = await createAccessProfile({ name: "Equipe" });
+      const target = await createUser({
+        email: "alvo-equipe@fitburn.local",
+        password: PASSWORD,
+        profileId: staffProfile.id,
+      });
+
+      const response = await request(app.getHttpServer())
+        .patch(`/api/users/${target.id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .send({ profileId: adminProfile.id });
+
+      expect(response.status).toBe(200);
+      expect(response.body.profile).toMatchObject({ id: adminProfile.id, name: "Administrador" });
+    });
+
+    it("mantém ao administrador a exceção para alterar o próprio profileId", async () => {
+      const { token, user } = await loginAsAdmin();
+      const staffProfile = await createAccessProfile({ name: "Equipe administrativa" });
+
+      const response = await request(app.getHttpServer())
+        .patch(`/api/users/${user.id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .send({ profileId: staffProfile.id });
+
+      expect(response.status).toBe(200);
+      expect(response.body.profile.id).toBe(staffProfile.id);
     });
 
     it("edita os dados de um membro da equipe e persiste (e-mail, telefone, documento, endereço)", async () => {

@@ -9,6 +9,7 @@ import {
   Patch,
   Post,
   Put,
+  Req,
   UseGuards,
 } from "@nestjs/common";
 import {
@@ -28,11 +29,12 @@ import {
   type SetModuleAccessRequest,
   type UpdateProfileRequest,
 } from "@fitburn/contracts";
-import { JwtAuthGuard } from "../auth/jwt-auth.guard.js";
+import { JwtAuthGuard, type AuthenticatedRequest } from "../auth/jwt-auth.guard.js";
 import { DomainError } from "../common/errors/domain-error.js";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe.js";
 import { PermissionsGuard } from "../permissions/permissions.guard.js";
 import { RequirePermission } from "../permissions/require-permission.decorator.js";
+import { requesterOf } from "../permissions/scoped-requester.js";
 import { ProfilesService } from "./profiles.service.js";
 
 @Controller("profiles")
@@ -99,13 +101,14 @@ export class ProfilesController {
     @Param("id") id: string,
     @Param("module") moduleParam: string,
     @Body(new ZodValidationPipe(setModuleAccessRequestSchema)) body: SetModuleAccessRequest,
+    @Req() req: AuthenticatedRequest,
   ): Promise<ProfileDetail> {
     if (!ALL_MODULES.includes(moduleParam as ModuleName)) {
       throw new DomainError(ErrorCode.VALIDATION_ERROR, "Módulo inválido.", ErrorStatus.VALIDATION);
     }
     const module = moduleParam as ModuleName;
 
-    await this.profilesService.setModuleAccess(id, module, body.actions, body.scope);
+    await this.profilesService.setModuleAccess(id, module, body.actions, body.scope, requesterOf(req));
     const profile = await this.profilesService.findByIdOrThrow(id);
     return this.profilesService.toProfileDetail(profile);
   }

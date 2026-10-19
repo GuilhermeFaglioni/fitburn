@@ -4,6 +4,7 @@ import {
   PermissionScope,
   type PermissionScopeName,
 } from "@fitburn/contracts";
+import type { AccessProfile } from "@prisma/client";
 import { DomainError } from "../common/errors/domain-error.js";
 import type { AuthenticatedRequest } from "../auth/jwt-auth.guard.js";
 
@@ -13,9 +14,15 @@ export interface ScopedRequester {
   scope: PermissionScopeName;
 }
 
-/** Quem faz a requisição, com o escopo que o PermissionsGuard resolveu para a rota. */
-export function requesterOf(req: AuthenticatedRequest): ScopedRequester {
-  return { userId: req.authUser.sub, scope: req.authScope! };
+/** Identidade e perfil autenticados para operações de concessão de permissões. */
+export interface ProfileRequester {
+  userId: string;
+  profile: AccessProfile;
+}
+
+/** Quem faz a requisição, com perfil e escopo resolvidos pelos guards. */
+export function requesterOf(req: AuthenticatedRequest): ScopedRequester & ProfileRequester {
+  return { userId: req.authUser.sub, scope: req.authScope!, profile: req.authProfile! };
 }
 
 /** Exige acesso a todos os registros do módulo (escopo total); senão, 403 OUT_OF_SCOPE com a `message`. */
