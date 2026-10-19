@@ -43,6 +43,9 @@ export function ClientsPage() {
   const canEdit = can(Module.CLIENTES, PermissionAction.EDIT);
   const canDelete = can(Module.CLIENTES, PermissionAction.DELETE);
   const hasFullClientData = scopeOf(Module.CLIENTES) === PermissionScope.ALL;
+  const searchLabel = hasFullClientData
+    ? "Buscar por nome, e-mail ou documento"
+    : "Buscar por nome ou e-mail";
   const loaded = clientsQuery.data;
   const planOptions = useMemo(() => {
     const names = new Set<string>();
@@ -83,12 +86,8 @@ export function ClientsPage() {
           type="search"
           className="fb-field"
           style={{ width: 280 }}
-          placeholder={
-            hasFullClientData ? "Buscar por nome, e-mail ou documento" : "Buscar por nome ou e-mail"
-          }
-          aria-label={
-            hasFullClientData ? "Buscar por nome, e-mail ou documento" : "Buscar por nome ou e-mail"
-          }
+          placeholder={searchLabel}
+          aria-label={searchLabel}
           value={searchTerm}
           onChange={(event) => setSearchTerm(event.target.value)}
         />
