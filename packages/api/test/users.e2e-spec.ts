@@ -36,6 +36,61 @@ describe("Gestão de usuários (HTTP)", () => {
     return { profile, user, token };
   }
 
+  async function expectConcurrentSessionsRevoked(
+    target: { id: string; email: string },
+    changeAccount: () => Promise<request.Response>,
+    expectedChangeStatus: 201 | 204,
+  ) {
+    const initialLogin = await request(app.getHttpServer())
+      .post("/api/auth/login")
+      .send({ email: target.email, password: PASSWORD });
+    expect(initialLogin.status).toBe(201);
+    const initialRefreshCookie = extractRefreshCookie(initialLogin);
+    expect(initialRefreshCookie).toBeDefined();
+
+    const [change, racedLogin, racedRefresh] = await Promise.all([
+      changeAccount(),
+      request(app.getHttpServer())
+        .post("/api/auth/login")
+        .send({ email: target.email, password: PASSWORD }),
+      request(app.getHttpServer()).post("/api/auth/refresh").set("Cookie", initialRefreshCookie!),
+    ]);
+
+    expect(change.status).toBe(expectedChangeStatus);
+    expect([201, 401]).toContain(racedLogin.status);
+    expect([200, 401]).toContain(racedRefresh.status);
+
+    const sessions = [
+      {
+        accessToken: initialLogin.body.accessToken as string,
+        refreshCookie: initialRefreshCookie!,
+      },
+    ];
+    for (const [response, successStatus] of [
+      [racedLogin, 201],
+      [racedRefresh, 200],
+    ] as const) {
+      if (response.status !== successStatus) continue;
+      const accessToken = response.body.accessToken as string | undefined;
+      const refreshCookie = extractRefreshCookie(response);
+      expect(accessToken).toBeDefined();
+      expect(refreshCookie).toBeDefined();
+      sessions.push({ accessToken: accessToken!, refreshCookie: refreshCookie! });
+    }
+
+    for (const session of sessions) {
+      const access = await request(app.getHttpServer())
+        .get("/api/auth/me")
+        .set("Authorization", `Bearer ${session.accessToken}`);
+      expect(access.status).toBe(401);
+
+      const refresh = await request(app.getHttpServer())
+        .post("/api/auth/refresh")
+        .set("Cookie", session.refreshCookie);
+      expect(refresh.status).toBe(401);
+    }
+  }
+
   const validClientBody = {
     fullName: "Cliente Teste",
     email: "cliente@fitburn.local",
@@ -668,6 +723,37 @@ describe("Gestão de usuários (HTTP)", () => {
       expect(loginAttempt.body.code).toBe("USER_INACTIVE");
     });
 
+    it("recusa token antigo na listagem de usuários depois da desativação", async () => {
+      const { token: adminToken } = await loginAsAdmin();
+      const readerProfile = await createAccessProfile({ name: "Leitor de usuários" });
+      await grantModuleAccess({
+        profileId: readerProfile.id,
+        module: "USUARIOS",
+        actions: ["VIEW"],
+        scope: "ALL",
+      });
+      const target = await createUser({
+        email: "leitor@fitburn.local",
+        password: PASSWORD,
+        profileId: readerProfile.id,
+      });
+      const accessToken = await loginAndGetAccessToken(app, target.email, PASSWORD);
+      const beforeDeactivation = await request(app.getHttpServer())
+        .get("/api/users")
+        .set("Authorization", `Bearer ${accessToken}`);
+      expect(beforeDeactivation.status).toBe(200);
+
+      const deactivation = await request(app.getHttpServer())
+        .post(`/api/users/${target.id}/deactivate`)
+        .set("Authorization", `Bearer ${adminToken}`);
+      expect(deactivation.status).toBe(201);
+
+      const afterDeactivation = await request(app.getHttpServer())
+        .get("/api/users")
+        .set("Authorization", `Bearer ${accessToken}`);
+      expect(afterDeactivation.status).toBe(401);
+    });
+
     it("reativar restaura o acesso", async () => {
       const { token } = await loginAsAdmin();
       const clientProfile = await createAccessProfile({ name: "Cliente", isSystem: true });
@@ -716,6 +802,24 @@ describe("Gestão de usuários (HTTP)", () => {
         .set("Authorization", `Bearer ${oldAccessToken}`);
       expect(oldSession.status).toBe(401);
       expect(oldSession.body.code).toBe("UNAUTHENTICATED");
+    });
+
+    it("nenhuma sessão emitida na corrida com desativação autoriza depois da confirmação", async () => {
+      const { token: adminToken } = await loginAsAdmin();
+      const clientProfile = await createAccessProfile({ name: "Cliente", isSystem: true });
+      const target = await createUser({
+        email: "corrida@fitburn.local",
+        password: PASSWORD,
+        profileId: clientProfile.id,
+      });
+      await expectConcurrentSessionsRevoked(
+        target,
+        async () =>
+          await request(app.getHttpServer())
+            .post(`/api/users/${target.id}/deactivate`)
+            .set("Authorization", `Bearer ${adminToken}`),
+        201,
+      );
     });
   });
 
@@ -858,58 +962,15 @@ describe("Gestão de usuários (HTTP)", () => {
         password: PASSWORD,
         profileId: clientProfile.id,
       });
-      const initialLogin = await request(app.getHttpServer())
-        .post("/api/auth/login")
-        .send({ email: target.email, password: PASSWORD });
-      const initialRefreshCookie = extractRefreshCookie(initialLogin);
-      expect(initialRefreshCookie).toBeDefined();
-      const initialAccessToken = initialLogin.body.accessToken as string;
-
-      const [reset, racedLogin, racedRefresh] = await Promise.all([
-        request(app.getHttpServer())
-          .post(`/api/users/${target.id}/reset-password`)
-          .set("Authorization", `Bearer ${token}`)
-          .send({ newPassword: "NovaSenhaForte456!" }),
-        request(app.getHttpServer())
-          .post("/api/auth/login")
-          .send({ email: target.email, password: PASSWORD }),
-        request(app.getHttpServer())
-          .post("/api/auth/refresh")
-          .set("Cookie", initialRefreshCookie!),
-      ]);
-
-      expect(reset.status).toBe(204);
-      expect([201, 401]).toContain(racedLogin.status);
-      expect([200, 401]).toContain(racedRefresh.status);
-
-      const oldAccess = await request(app.getHttpServer())
-        .get("/api/auth/me")
-        .set("Authorization", `Bearer ${initialAccessToken}`);
-      expect(oldAccess.status).toBe(401);
-
-      for (const session of [
-        {
-          response: racedLogin,
-          cookie: extractRefreshCookie(racedLogin),
-          successStatus: 201,
-        },
-        {
-          response: racedRefresh,
-          cookie: extractRefreshCookie(racedRefresh),
-          successStatus: 200,
-        },
-      ]) {
-        if (session.response.status !== session.successStatus) continue;
-        const access = await request(app.getHttpServer())
-          .get("/api/auth/me")
-          .set("Authorization", `Bearer ${session.response.body.accessToken as string}`);
-        expect(access.status).toBe(401);
-        expect(session.cookie).toBeDefined();
-        const refresh = await request(app.getHttpServer())
-          .post("/api/auth/refresh")
-          .set("Cookie", session.cookie!);
-        expect(refresh.status).toBe(401);
-      }
+      await expectConcurrentSessionsRevoked(
+        target,
+        async () =>
+          await request(app.getHttpServer())
+            .post(`/api/users/${target.id}/reset-password`)
+            .set("Authorization", `Bearer ${token}`)
+            .send({ newPassword: "NovaSenhaForte456!" }),
+        204,
+      );
     });
 
     it("recusa access token quando o usuário não existe mais", async () => {
