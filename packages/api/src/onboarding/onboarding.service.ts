@@ -74,31 +74,23 @@ export class OnboardingService {
   }
 
   async getPending(userId: string, mustChangePassword: boolean) {
-    const privacySettings = this.config.legalDocuments.privacyPolicy;
-    const termsSettings = this.config.legalDocuments.termsOfUse;
-
-    const [privacyRecord, termsRecord] = await Promise.all([
-      privacySettings.requiresNewManifestation
-        ? this.latestManifestation(
-            userId,
-            UserManifestationType.PRIVACY_ACKNOWLEDGED,
-            privacySettings.version,
-          )
-        : null,
-      termsSettings.requiresNewManifestation
-        ? this.latestManifestation(
-            userId,
-            UserManifestationType.TERMS_ACCEPTED,
-            termsSettings.version,
-          )
-        : null,
+    const [mustAcknowledgePrivacy, mustAcceptTerms] = await Promise.all([
+      this.needsManifestation(
+        userId,
+        UserManifestationType.PRIVACY_ACKNOWLEDGED,
+        this.config.legalDocuments.privacyPolicy,
+      ),
+      this.needsManifestation(
+        userId,
+        UserManifestationType.TERMS_ACCEPTED,
+        this.config.legalDocuments.termsOfUse,
+      ),
     ]);
 
     return getOnboardingPending({
       mustChangePassword,
-      mustAcknowledgePrivacy:
-        privacySettings.requiresNewManifestation && !this.wasGranted(privacyRecord),
-      mustAcceptTerms: termsSettings.requiresNewManifestation && !this.wasGranted(termsRecord),
+      mustAcknowledgePrivacy,
+      mustAcceptTerms,
     });
   }
 
@@ -151,6 +143,16 @@ export class OnboardingService {
       where: { userId, type, version },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     });
+  }
+
+  private async needsManifestation(
+    userId: string,
+    type: UserManifestationTypeName,
+    settings: AppConfig["legalDocuments"]["privacyPolicy"],
+  ): Promise<boolean> {
+    if (!settings.requiresNewManifestation) return false;
+    const latest = await this.latestManifestation(userId, type, settings.version);
+    return !this.wasGranted(latest);
   }
 
   private wasGranted(record: PrismaUserManifestation | null): boolean {
