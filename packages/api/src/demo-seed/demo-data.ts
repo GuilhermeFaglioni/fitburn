@@ -56,20 +56,6 @@ export const STAFF: Array<{ key: string; fullName: string; email: string; role: 
   },
 ];
 
-export const PROFESSOR_PROFILE = {
-  name: "Professor",
-  description: "Conduz aulas, registra presença e acompanha os próprios alunos.",
-  access: [
-    ["DASHBOARD", ["VIEW"], "ALL"],
-    ["TEMPLATES_DE_AULA", ["VIEW"], "ALL"],
-    ["OCORRENCIAS", ["VIEW", "CREATE", "EDIT"], "ASSIGNED_CLASSES"],
-    ["PRESENCA", ["VIEW", "EXECUTE"], "ASSIGNED_CLASSES"],
-    ["CLIENTES", ["VIEW"], "ASSIGNED_CLIENTS"],
-    ["FICHAS_DE_TREINO", ["VIEW", "CREATE", "EDIT"], "ASSIGNED_CLIENTS"],
-    ["GAMIFICACAO", ["VIEW", "CREATE", "EDIT"], "ASSIGNED_CLIENTS"],
-  ],
-} as const;
-
 export const PLANS = [
   {
     name: "Plano Performance",

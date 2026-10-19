@@ -77,7 +77,7 @@ Menu **Templates & modalidades**, aba **Modalidades**, **+ Nova modalidade** (No
 
 ## 6. Perfis Professor e Funcionário administrativo
 
-Menu **Usuários e perfis**, aba **Perfis de acesso**, **+ Novo perfil** (Nome, Descrição, **Criar perfil**). Selecione o perfil e, na "Matriz de permissões", marque as ações e escolha o **Escopo** de cada módulo; **Salvar** é por linha (linha sem ação marcada = sem acesso; o escopo padrão de uma linha nova é "Registros próprios"). Só o perfil de sistema Cliente tem escopo fixo; o Administrador é sempre total.
+O seed base cria **Professor** e **Funcionário administrativo** quando ainda não existem. As matrizes abaixo estão documentadas em `packages/api/src/seed/default-profiles.ts`; o seed da demonstração reutiliza a mesma matriz do Professor. Rodar qualquer seed novamente não restaura permissões removidas nem altera perfil existente. Para perfis personalizados, use **Usuários e perfis**, aba **Perfis de acesso**, **+ Novo perfil** (Nome, Descrição, **Criar perfil**). Selecione o perfil e, na "Matriz de permissões", marque as ações e escolha o **Escopo** de cada módulo; **Salvar** é por linha (linha sem ação marcada = sem acesso; o escopo padrão de uma linha nova é "Registros próprios"). Só o perfil de sistema Cliente tem escopo fixo; o Administrador é sempre total.
 
 **Professor** (descrição: "Conduz aulas, registra presença e acompanha os próprios alunos.")
 
