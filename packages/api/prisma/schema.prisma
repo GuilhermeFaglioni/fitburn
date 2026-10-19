@@ -25,6 +25,17 @@ enum AdminAuditAction {
   PROFILE_PERMISSIONS_CHANGED
 }
 
+enum UserManifestationType {
+  PRIVACY_ACKNOWLEDGED
+  TERMS_ACCEPTED
+  CONSENT_RANKING
+}
+
+enum UserManifestationAction {
+  GRANTED
+  REVOKED
+}
+
 enum Module {
   USUARIOS
   PERFIS_DE_ACESSO
@@ -134,8 +145,24 @@ model User {
   workoutSheets       WorkoutSheet[]            @relation("ClientWorkoutSheets")
   /// Fichas de treino que este usuário, da equipe, montou.
   authoredWorkoutSheets WorkoutSheet[]          @relation("AuthoredWorkoutSheets")
+  manifestations       UserManifestation[]
 
   @@map("users")
+}
+
+/// Declarações e consentimentos registrados como eventos imutáveis.
+model UserManifestation {
+  id        String                   @id @default(uuid())
+  type      UserManifestationType
+  version   String?
+  action    UserManifestationAction
+  createdAt DateTime                 @default(now()) @db.Timestamptz(3)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type, createdAt])
+  @@map("user_manifestations")
 }
 
 /// Registro técnico das ações administrativas. Não armazena valores dos campos.

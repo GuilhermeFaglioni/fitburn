@@ -6,7 +6,7 @@ import type { AccessProfile } from "@prisma/client";
 import { ErrorCode, ErrorStatus, type PermissionScopeName } from "@fitburn/contracts";
 import { DomainError } from "../common/errors/domain-error.js";
 import { PrismaService } from "../prisma/prisma.service.js";
-import { getOnboardingPending } from "../onboarding/onboarding-requirements.js";
+import { OnboardingService } from "../onboarding/onboarding.service.js";
 import { ALLOW_DURING_ONBOARDING } from "../onboarding/allow-during-onboarding.decorator.js";
 
 export interface AuthTokenPayload {
@@ -30,6 +30,7 @@ export class JwtAuthGuard implements CanActivate {
     private readonly jwtService: JwtService,
     private readonly prisma: PrismaService,
     private readonly reflector: Reflector,
+    private readonly onboardingService: OnboardingService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -51,7 +52,7 @@ export class JwtAuthGuard implements CanActivate {
     // redefinida desde a emissão do access token.
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
-      select: { status: true, tokenVersion: true, mustChangePassword: true },
+      select: { id: true, status: true, tokenVersion: true, mustChangePassword: true },
     });
     if (!user) {
       throw this.unauthenticated();
@@ -65,7 +66,10 @@ export class JwtAuthGuard implements CanActivate {
     }
     if (user.tokenVersion !== payload.tokenVersion) throw this.unauthenticated();
 
-    const onboardingPending = getOnboardingPending(user);
+    const onboardingPending = await this.onboardingService.getPending(
+      user.id,
+      user.mustChangePassword,
+    );
     const isOnboardingRoute = this.reflector.getAllAndOverride<boolean>(ALLOW_DURING_ONBOARDING, [
       context.getHandler(),
       context.getClass(),

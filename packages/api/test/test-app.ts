@@ -15,7 +15,13 @@ export interface TestAppOptions {
 }
 
 export async function createTestApp(options: TestAppOptions = {}): Promise<INestApplication> {
-  const config = loadAppConfig(options.env ?? { NODE_ENV: "test" });
+  const config = loadAppConfig(
+    options.env ?? {
+      NODE_ENV: "test",
+      PRIVACY_POLICY_REQUIRES_NEW_MANIFESTATION: "false",
+      TERMS_OF_USE_REQUIRES_NEW_MANIFESTATION: "false",
+    },
+  );
 
   const moduleRef = await Test.createTestingModule({
     imports: [AppModule],

@@ -29,12 +29,17 @@ export interface AppConfig {
   trustProxyHops: number;
   /** Limite de tentativas de login que falharam (POST /auth/login), por IP. */
   authRateLimit: { enabled: boolean; max: number; windowMs: number };
+  /** Versões vigentes e controle de nova manifestação dos documentos legais. */
+  legalDocuments: {
+    privacyPolicy: { version: string; requiresNewManifestation: boolean };
+    termsOfUse: { version: string; requiresNewManifestation: boolean };
+  };
 }
 
 export class AppConfigError extends Error {
   constructor(readonly problems: string[]) {
     super(
-      `Configuração de produção inválida — a API não vai iniciar:\n${problems
+      `Configuração inválida — a API não vai iniciar:\n${problems
         .map((problem) => `  - ${problem}`)
         .join("\n")}`,
     );
@@ -76,7 +81,10 @@ function validateProductionEnv(env: NodeJS.ProcessEnv): string[] {
   }
 
   const jwtSecret = value(env, "JWT_ACCESS_SECRET");
-  if (jwtSecret && (PLACEHOLDER_SECRETS.has(jwtSecret) || jwtSecret.length < MIN_JWT_SECRET_LENGTH)) {
+  if (
+    jwtSecret &&
+    (PLACEHOLDER_SECRETS.has(jwtSecret) || jwtSecret.length < MIN_JWT_SECRET_LENGTH)
+  ) {
     problems.push(
       `JWT_ACCESS_SECRET é um valor de exemplo ou tem menos de ${MIN_JWT_SECRET_LENGTH} caracteres.`,
     );
@@ -85,7 +93,8 @@ function validateProductionEnv(env: NodeJS.ProcessEnv): string[] {
   const adminPassword = value(env, "INITIAL_ADMIN_PASSWORD");
   if (
     adminPassword &&
-    (PLACEHOLDER_ADMIN_PASSWORDS.has(adminPassword) || adminPassword.length < MIN_ADMIN_PASSWORD_LENGTH)
+    (PLACEHOLDER_ADMIN_PASSWORDS.has(adminPassword) ||
+      adminPassword.length < MIN_ADMIN_PASSWORD_LENGTH)
   ) {
     problems.push(
       `INITIAL_ADMIN_PASSWORD é a senha de exemplo ou tem menos de ${MIN_ADMIN_PASSWORD_LENGTH} caracteres.`,
@@ -112,6 +121,32 @@ function parseInteger(raw: string | undefined, minimum: number): number | undefi
   if (raw === undefined || !/^\d+$/.test(raw)) return undefined;
   const parsed = Number(raw);
   return parsed >= minimum ? parsed : undefined;
+}
+
+function parseBoolean(raw: string | undefined): boolean | undefined {
+  if (raw === "true") return true;
+  if (raw === "false") return false;
+  return undefined;
+}
+
+function validateLegalDocuments(env: NodeJS.ProcessEnv): string[] {
+  const problems: string[] = [];
+  for (const name of ["PRIVACY_POLICY_VERSION", "TERMS_OF_USE_VERSION"] as const) {
+    const configured = value(env, name);
+    if (configured && !/^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/.test(configured)) {
+      problems.push(`${name} deve identificar uma versão sem espaços ou caminhos.`);
+    }
+  }
+  for (const name of [
+    "PRIVACY_POLICY_REQUIRES_NEW_MANIFESTATION",
+    "TERMS_OF_USE_REQUIRES_NEW_MANIFESTATION",
+  ] as const) {
+    const configured = value(env, name);
+    if (configured !== undefined && parseBoolean(configured) === undefined) {
+      problems.push(`${name} deve ser "true" ou "false".`);
+    }
+  }
+  return problems;
 }
 
 function parseCorsOrigins(raw: string | undefined): string[] {
@@ -149,6 +184,8 @@ function isProductionEnvironment(env: NodeJS.ProcessEnv): boolean {
 
 export function loadAppConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   const isProduction = isProductionEnvironment(env);
+  const legalDocumentProblems = validateLegalDocuments(env);
+  if (legalDocumentProblems.length > 0) throw new AppConfigError(legalDocumentProblems);
 
   if (isProduction) {
     const problems = validateProductionEnv(env);
@@ -170,6 +207,18 @@ export function loadAppConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
       windowMs:
         (parseInteger(value(env, "AUTH_RATE_LIMIT_WINDOW_SECONDS"), 1) ??
           DEFAULT_AUTH_RATE_LIMIT_WINDOW_SECONDS) * 1000,
+    },
+    legalDocuments: {
+      privacyPolicy: {
+        version: value(env, "PRIVACY_POLICY_VERSION") ?? "v1",
+        requiresNewManifestation:
+          parseBoolean(value(env, "PRIVACY_POLICY_REQUIRES_NEW_MANIFESTATION")) ?? true,
+      },
+      termsOfUse: {
+        version: value(env, "TERMS_OF_USE_VERSION") ?? "v1",
+        requiresNewManifestation:
+          parseBoolean(value(env, "TERMS_OF_USE_REQUIRES_NEW_MANIFESTATION")) ?? true,
+      },
     },
   };
 }
