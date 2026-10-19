@@ -15,7 +15,7 @@ const image = `fitburn-backup-test-${runId}`;
 const backupVolume = `fitburn-backup-test-${runId}`;
 const testNetwork = `fitburn-backup-network-${runId}`;
 const heartbeatContainer = `fitburn-backup-heartbeat-${runId}`;
-const restoreDatabase = `fitburn_backup_restore_t93_${runId}`;
+const restoreDatabase = `fitburn_backup_restore_${runId}`;
 
 let databaseUrl: URL;
 let adminClient: Client | undefined;
@@ -162,8 +162,8 @@ describe.skipIf(!dockerAvailable)("backup diário criptografado", () => {
     if (!testDatabaseUrl)
       throw new Error("DATABASE_URL_TEST é obrigatório para o backup de integração");
     databaseUrl = new URL(testDatabaseUrl);
-    if (databaseUrl.pathname.replace(/^\//, "") !== "fitburn_test_t93") {
-      throw new Error("O teste de backup só pode usar fitburn_test_t93");
+    if (!/^fitburn_test(_[a-z0-9]+)?$/.test(databaseUrl.pathname.replace(/^\//, ""))) {
+      throw new Error("O teste de backup só pode usar um banco de teste fitburn_test*");
     }
     if (!["localhost", "127.0.0.1", "::1"].includes(databaseUrl.hostname)) {
       throw new Error("O teste de backup exige PostgreSQL local; conexão remota recusada");
@@ -402,7 +402,7 @@ describe.skipIf(!dockerAvailable)("backup diário criptografado", () => {
     await restoreClient.end();
     restoreClient = undefined;
 
-    const failedBackup = runBackup("fitburn_database_does_not_exist_t93");
+    const failedBackup = runBackup("fitburn_database_does_not_exist");
     expect(failedBackup.status).not.toBe(0);
     const failedHeartbeats = docker(["logs", heartbeatContainer]);
     expect(failedHeartbeats.stdout.trim().split("\n").filter(Boolean)).toEqual(["heartbeat"]);
