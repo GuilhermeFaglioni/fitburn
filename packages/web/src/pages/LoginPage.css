@@ -196,6 +196,17 @@
   text-align: center;
 }
 
+.login-page__legal-links {
+  justify-content: center;
+  margin-top: 12px;
+  font-size: 12px;
+}
+
+.login-page__legal-links a {
+  color: rgba(255, 255, 255, 0.7);
+  text-underline-offset: 3px;
+}
+
 @media (min-width: 640px) {
   .login-form__submit {
     margin-top: 8px;

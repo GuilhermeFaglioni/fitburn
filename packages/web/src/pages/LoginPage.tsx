@@ -1,5 +1,5 @@
 import { useId, useState, type FormEvent } from "react";
-import { Navigate, useLocation, useNavigate } from "react-router-dom";
+import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import type { CurrentUser } from "@fitburn/contracts";
 import { EyeIcon } from "../components/icons/EyeIcon";
 import { EyeOffIcon } from "../components/icons/EyeOffIcon";
@@ -160,6 +160,10 @@ export function LoginPage() {
         </form>
 
         <p className="login-page__footer">Acesso restrito a alunos e equipe Fitburn.</p>
+        <nav className="login-page__legal-links" aria-label="Documentos legais">
+          <Link to="/privacidade">Política de privacidade</Link>
+          <Link to="/termos">Termos de uso</Link>
+        </nav>
       </div>
     </main>
   );

@@ -4,6 +4,7 @@ import {
 } from "@fitburn/contracts";
 import { useAuth } from "../lib/auth/AuthContext";
 import { ProfilePage } from "./ProfilePage";
+import { LegalManifestationStep } from "./LegalDocumentPage";
 
 const REQUIREMENT_LABELS: Record<Requirement, string> = {
   PASSWORD_CHANGE: "Troque sua senha",
@@ -19,6 +20,12 @@ export function OnboardingPage() {
   const [currentRequirement] = user.onboardingPending;
   if (currentRequirement === OnboardingRequirement.PASSWORD_CHANGE) {
     return <ProfilePage requiredPasswordChange />;
+  }
+  if (currentRequirement === OnboardingRequirement.PRIVACY_ACKNOWLEDGEMENT) {
+    return <LegalManifestationStep key={currentRequirement} documentKey="privacy-policy" />;
+  }
+  if (currentRequirement === OnboardingRequirement.TERMS_ACCEPTANCE) {
+    return <LegalManifestationStep key={currentRequirement} documentKey="terms-of-use" />;
   }
 
   return (

@@ -30,6 +30,7 @@ import { ClientWorkoutSheetPage } from "./pages/ClientWorkoutSheetPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { OwnAreaLayout } from "./components/OwnAreaLayout";
 import { OnboardingPage } from "./pages/OnboardingPage";
+import { LegalDocumentPage } from "./pages/LegalDocumentPage";
 
 export default function App() {
   return (
@@ -48,6 +49,8 @@ export default function App() {
 export function AppRoutes() {
   return (
     <Routes>
+      <Route path="/privacidade" element={<LegalDocumentPage documentKey="privacy-policy" />} />
+      <Route path="/termos" element={<LegalDocumentPage documentKey="terms-of-use" />} />
       <Route path="/login" element={<LoginPage />} />
       <Route
         path="/onboarding"

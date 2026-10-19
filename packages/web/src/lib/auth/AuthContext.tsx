@@ -26,6 +26,8 @@ interface AuthContextValue {
   login: (email: string, password: string) => Promise<CurrentUser>;
   logout: () => Promise<void>;
   changeOwnPassword: (currentPassword: string, newPassword: string) => Promise<CurrentUser>;
+  acknowledgePrivacy: () => Promise<void>;
+  acceptTerms: () => Promise<void>;
   /** Atualiza na sessão os dados de identidade que a pessoa editou (nome e e-mail), sem novo login. */
   updateIdentity: (identity: Pick<CurrentUser, "fullName" | "email">) => void;
   can: (module: ModuleName, action: PermissionActionName) => boolean;
@@ -72,7 +74,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (outcome.status === "transient") {
           // Não dá para saber se a sessão vale (sem rede, 429, 5xx, erro de proxy): a casca
           // abre (login) sem encerrar nada e a restauração é retomada sozinha.
-          if (outcome.reason === "network" && reconnectedDuringRequest && attempt < MAX_RECONNECT_RETRIES) {
+          if (
+            outcome.reason === "network" &&
+            reconnectedDuringRequest &&
+            attempt < MAX_RECONNECT_RETRIES
+          ) {
             restore(attempt + 1);
             return;
           }
@@ -114,6 +120,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return updatedUser;
   }, []);
 
+  const acknowledgePrivacy = useCallback(async () => {
+    const response = await authApi.acknowledgePrivacy();
+    setUser((current) =>
+      current ? { ...current, onboardingPending: response.onboardingPending } : current,
+    );
+  }, []);
+
+  const acceptTerms = useCallback(async () => {
+    const response = await authApi.acceptTerms();
+    setUser((current) =>
+      current ? { ...current, onboardingPending: response.onboardingPending } : current,
+    );
+  }, []);
+
   const updateIdentity = useCallback((identity: Pick<CurrentUser, "fullName" | "email">) => {
     setUser((current) => (current ? { ...current, ...identity } : current));
   }, []);
@@ -140,11 +160,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login,
       logout,
       changeOwnPassword,
+      acknowledgePrivacy,
+      acceptTerms,
       updateIdentity,
       can,
       scopeOf,
     }),
-    [user, isInitializing, login, logout, changeOwnPassword, updateIdentity, can, scopeOf],
+    [
+      user,
+      isInitializing,
+      login,
+      logout,
+      changeOwnPassword,
+      acknowledgePrivacy,
+      acceptTerms,
+      updateIdentity,
+      can,
+      scopeOf,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -1,4 +1,9 @@
-import { loginResponseSchema, type CurrentUser } from "@fitburn/contracts";
+import {
+  loginResponseSchema,
+  onboardingManifestationResponseSchema,
+  type CurrentUser,
+  type OnboardingManifestationResponse,
+} from "@fitburn/contracts";
 import { trackedFetch } from "../connectivity/connectivity-store";
 import { authFetch } from "./authFetch";
 import { tokenStore } from "./token-store";
@@ -61,6 +66,16 @@ export async function changeOwnPassword(
   const data = loginResponseSchema.parse(await parseOrThrow(response));
   tokenStore.set(data.accessToken);
   return data.user;
+}
+
+export async function acknowledgePrivacy(): Promise<OnboardingManifestationResponse> {
+  const response = await authFetch("/api/onboarding/privacy-acknowledgement", { method: "POST" });
+  return onboardingManifestationResponseSchema.parse(await parseOrThrow(response));
+}
+
+export async function acceptTerms(): Promise<OnboardingManifestationResponse> {
+  const response = await authFetch("/api/onboarding/terms-acceptance", { method: "POST" });
+  return onboardingManifestationResponseSchema.parse(await parseOrThrow(response));
 }
 
 /** Resultado de uma tentativa de renovar a sessão via /auth/refresh. */
