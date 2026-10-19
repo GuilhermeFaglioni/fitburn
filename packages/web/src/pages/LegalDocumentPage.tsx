@@ -72,9 +72,6 @@ function LegalDocumentContent({
   return (
     <>
       <p>Versão {version}</p>
-      <div className="fb-profile__alert" role="note">
-        Conteúdo provisório para validação técnica. Esta ainda não é a versão jurídica aprovada.
-      </div>
       <article className="fb-profile__card" aria-label={title}>
         <LegalDocumentText content={content} />
       </article>
