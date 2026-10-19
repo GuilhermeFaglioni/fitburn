@@ -26,14 +26,22 @@ export class PermissionsGuard implements CanActivate {
     if (!required) return true;
 
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
-    const profile = await this.permissionsService.getProfileForUser(request.authUser.sub);
-    if (!profile) {
+    const authorizationContext = await this.permissionsService.getUserAuthorizationContext(request.authUser.sub);
+    if (!authorizationContext) {
       throw new DomainError(
         ErrorCode.UNAUTHENTICATED,
         "Sessão inválida ou expirada.",
         ErrorStatus.UNAUTHENTICATED,
       );
     }
+    if (authorizationContext.status === "INACTIVE") {
+      throw new DomainError(
+        ErrorCode.USER_INACTIVE,
+        "Este usuário está inativo. Fale com a administração da Fitburn.",
+        ErrorStatus.UNAUTHENTICATED,
+      );
+    }
+    const { profile } = authorizationContext;
 
     const allowed = await this.permissionsService.hasPermission(
       profile,

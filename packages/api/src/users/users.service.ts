@@ -18,6 +18,7 @@ import { PrismaService } from "../prisma/prisma.service.js";
 import { lockAdvisory } from "../prisma/advisory-lock.js";
 import { isUniqueViolation } from "../prisma/unique-violation.js";
 import { PermissionsService } from "../permissions/permissions.service.js";
+import type { ProfileRequester } from "../permissions/scoped-requester.js";
 import { DomainError } from "../common/errors/domain-error.js";
 import { hashPassword } from "../auth/password.util.js";
 
@@ -102,8 +103,9 @@ export class UsersService {
       .catch((error: unknown) => this.rethrowUniqueViolation(error, input.email, input.document));
   }
 
-  async createStaff(input: CreateStaffRequest): Promise<UserWithProfile> {
+  async createStaff(input: CreateStaffRequest, requester: ProfileRequester): Promise<UserWithProfile> {
     const profile = await this.getExistingProfile(input.profileId);
+    await this.permissionsService.assertCanAssignProfile(requester.profile, profile);
     await this.assertEmailAvailable(input.email);
     const passwordHash = await hashPassword(input.password);
 
@@ -120,9 +122,28 @@ export class UsersService {
       .catch((error: unknown) => this.rethrowUniqueViolation(error, input.email));
   }
 
-  async update(id: string, input: UpdateUserRequest): Promise<UserWithProfile> {
+  async update(
+    id: string,
+    input: UpdateUserRequest,
+    requester?: ProfileRequester,
+  ): Promise<UserWithProfile> {
     if (input.profileId !== undefined) {
-      await this.getExistingProfile(input.profileId);
+      if (!requester) {
+        throw new DomainError(
+          ErrorCode.FORBIDDEN,
+          "Não foi possível validar as permissões para alterar o perfil de acesso.",
+          ErrorStatus.FORBIDDEN,
+        );
+      }
+      if (requester.userId === id && !this.permissionsService.isSystemAdmin(requester.profile)) {
+        throw new DomainError(
+          ErrorCode.FORBIDDEN,
+          "Você não pode alterar o próprio perfil de acesso.",
+          ErrorStatus.FORBIDDEN,
+        );
+      }
+      const profile = await this.getExistingProfile(input.profileId);
+      await this.permissionsService.assertCanAssignProfile(requester.profile, profile);
     }
     if (input.email !== undefined) {
       await this.assertEmailAvailable(input.email, id);
@@ -186,6 +207,7 @@ export class UsersService {
     await this.prisma.$transaction(async (tx) => {
       await this.lockLiveUser(tx, id);
       await tx.user.update({ where: { id }, data: { passwordHash } });
+      await this.revokeSessions(tx, id);
     });
   }
 

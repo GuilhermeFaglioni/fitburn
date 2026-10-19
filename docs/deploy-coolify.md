@@ -49,7 +49,13 @@ Em **Environment Variables** do recurso (as que faltarem aparecem como obrigató
 | `DEMO_SEED` | `true` para popular a demonstração (pode ficar `true`: é idempotente) |
 | `DEMO_USER_PASSWORD` | senha de **todas** as contas de demonstração (mínimo 12 caracteres) |
 
-Opcionais, com padrão adequado: `POSTGRES_USER`, `POSTGRES_DB`, `TZ`, `TRUST_PROXY_HOPS` (`2` = Traefik + Nginx do `web`; não mude), `AUTH_RATE_LIMIT_*`, `JWT_ACCESS_TTL_SECONDS`, `REFRESH_TOKEN_TTL_DAYS`. Deixe `CORS_ALLOWED_ORIGINS` vazio.
+Opcionais, com padrão adequado: `POSTGRES_USER`, `POSTGRES_DB`, `TZ`, `TRUST_PROXY_HOPS` (`2` = Traefik + Nginx do `web`), `AUTH_RATE_LIMIT_*`, `JWT_ACCESS_TTL_SECONDS`, `REFRESH_TOKEN_TTL_DAYS`. Deixe `CORS_ALLOWED_ORIGINS` vazio.
+
+### Rate limit de login e `X-Forwarded-For`
+
+O Compose usa `TRUST_PROXY_HOPS=2` para a cadeia Traefik do Coolify → Nginx do `web` → API. Essa configuração só é segura se o Traefik não confiar no `X-Forwarded-For` enviado pelo cliente externo e substituir o header pelo IP real de origem. O comportamento esperado é o padrão do Traefik sem `forwardedHeaders.insecure` e sem `forwardedHeaders.trustedIPs` configurados. **A configuração do Traefik deste VPS não foi confirmada**; confirme no passo manual abaixo antes de confiar nela.
+
+Não publique portas dos serviços `web` ou `api` fora do Traefik: só `web` deve receber domínio no Coolify, `api` não deve receber domínio, e nenhum dos dois deve declarar `ports` no Compose.
 
 ## 5. Deploy e verificação
 
@@ -58,11 +64,29 @@ Opcionais, com padrão adequado: `POSTGRES_USER`, `POSTGRES_DB`, `TZ`, `TRUST_PR
 3. Abra `https://fitburn.seudominio.com.br/api/health` → `{"status":"ok",...}`.
 4. Abra o app e entre com uma das contas abaixo.
 
+### Verificação manual do IP usado no rate limit
+
+Antes de usar o rate limit como proteção no VPS, confirme que um `X-Forwarded-For` forjado não cria cotas novas. Execute o teste de um único endereço externo real, contra uma stack de teste, com `AUTH_RATE_LIMIT_MAX=10` e janela de 60 segundos. Aguarde uma janela inteira sem tentativas antes de começar; use um e-mail de teste inexistente e senha errada. Envie 11 falhas de login, mudando o `X-Forwarded-For` em cada requisição:
+
+```bash
+BASE_URL=https://fitburn.seudominio.com.br
+for i in $(seq 1 11); do
+  status=$(curl -sS -o /dev/null -w '%{http_code}' \
+    -X POST "$BASE_URL/api/auth/login" \
+    -H 'Content-Type: application/json' \
+    -H "X-Forwarded-For: 198.51.100.$i" \
+    --data '{"email":"xff-test@fitburn.example","password":"senha-incorreta"}')
+  printf '%02d %s\n' "$i" "$status"
+done
+```
+
+Resultado esperado: 10 respostas de falha de autenticação seguidas por `429` na 11ª tentativa, apesar do XFF diferente em cada chamada. Se as 11 tentativas não chegarem ao `429`, não considere confirmada a configuração do Traefik; revise-a e repita o teste. Não use credenciais reais.
+
 Daí em diante, ative **Auto Deploy** (webhook do GitHub) se quiser publicar a cada push em `main`.
 
 ## 6. Contas de demonstração
 
-Senha de todas: o valor de `DEMO_USER_PASSWORD`.
+As contas de professor e cliente geradas pelo seed usam `DEMO_USER_PASSWORD`; o administrador inicial usa `INITIAL_ADMIN_PASSWORD`.
 
 | Quem | E-mail | Perfil |
 |---|---|---|
@@ -77,6 +101,8 @@ Senha de todas: o valor de `DEMO_USER_PASSWORD`.
 Os e-mails usam o domínio reservado `.example` (não recebe e-mail). Para transformar um professor em administrador, troque `role` em `packages/api/src/demo-seed/demo-data.ts` (ou crie o perfil/usuário pelo próprio app).
 
 ### O que a demonstração contém
+
+Este é o cenário do **seed automático** (`DEMO_SEED=true`), separado da massa manual de [demo-data-checklist.md](demo-data-checklist.md), que é a base do [roteiro da demonstração](demo-script.md). O administrador vem das variáveis `INITIAL_ADMIN_*`; o seed cria quatro contas de professor e 14 contas de cliente, sem senhas fixas no repositório.
 
 - **Uma única modalidade e aula: Personal Class** (60 min, 3 vagas), para vários professores. No mesmo horário há várias Personal Class, desde que de professores diferentes (nos horários nobres, 07h, 12h, 18h e 19h, os quatro professores atendem ao mesmo tempo). O mesmo professor nunca tem duas aulas sobrepostas.
 - Agenda de 5 semanas para trás e 3 para frente (seg-sáb), com reservas, faltas, cancelamentos e algumas aulas **lotadas** nos próximos dias.

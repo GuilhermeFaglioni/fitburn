@@ -4,7 +4,7 @@ Roteiro para apresentar o MVP Web + PWA do Fitburn a um decisor da academia. Fon
 
 O objetivo da demo não é operar a academia: é fazer o decisor aprovar um piloto real. A história é: **a equipe opera a agenda → o cliente reserva → o sistema recusa com clareza quando deve → o professor registra a presença → a gamificação reage → o dashboard mostra o resultado**.
 
-Este roteiro assume a massa de dados de [demo-data-checklist.md](demo-data-checklist.md) já cadastrada (nomes, aulas de cena e códigos R1, R2, F, X, S, LR, LR2, P, PR estão definidos lá). Os números que aparecem nas telas dependem dela; a seção "Estado esperado" do checklist diz o que conferir antes de começar.
+Este roteiro assume a massa **manual** de [demo-data-checklist.md](demo-data-checklist.md) já cadastrada (nomes, aulas de cena e códigos R1, R2, F, X, S, LR, LR2, P, PR estão definidos lá). Não use o seed automático de Coolify para este roteiro: ele cria outro cenário, descrito em [deploy-coolify.md](deploy-coolify.md#o-que-a-demonstração-contém). Os números que aparecem nas telas dependem da massa manual; a seção "Estado esperado" do checklist diz o que conferir antes de começar.
 
 Duração: cerca de 45 minutos com dois apresentadores (apresentador e copiloto), 55 com um só.
 
@@ -77,7 +77,8 @@ Resumo (detalhes nos passos):
 | Cenário | Onde é mostrado | Mensagem | Código (HTTP) | Depende de horário? |
 |---|---|---|---|---|
 | Aula cheia | Agenda do cliente; Reservas administrativas | "Aula lotada" (botão); "Aula cheia. Todas as 2 vagas de Força & Hipertrofia já estão ocupadas. Escolha outro horário."; e na disputa "Essa aula ficou lotada enquanto você confirmava. Escolha outro horário." | `CLASS_FULL` (409) | Não (aulas futuras) |
-| Conflito de horário | Agenda administrativa | "O horário se sobrepõe a outra aula — o espaço é exclusivo." | `OCCURRENCE_OVERLAP` (409) | Não |
+| Conflito de horário do professor | Agenda administrativa | "O horário se sobrepõe a outra aula do mesmo professor." | `OCCURRENCE_OVERLAP` (409) | Não |
+| Conflito entre reservas do cliente | Agenda do cliente, com aulas simultâneas de professores diferentes | "Você já tem uma reserva em {aula} às {hh}h{mm}, no mesmo horário desta aula." | `SCHEDULE_CONFLICT` (409) | Não |
 | Reserva duplicada | Reservas administrativas; duas janelas do mesmo cliente | "Reserva duplicada. Este cliente já possui uma reserva confirmada para esta aula."; "Você já reservou esta aula. Não é possível reservar duas vezes." | `DUPLICATE_RESERVATION` (409) | Não |
 | Falta de permissão | Menu e botões da recepção; ação com permissão retirada | Botão desabilitado com dica; "Você não tem permissão para executar esta ação." | `FORBIDDEN` (403) | Não |
 | Fora do escopo | Professora abre cliente de outro professor | "Este cliente está fora do seu escopo." | `OUT_OF_SCOPE` (403) | Não |
@@ -93,10 +94,11 @@ Resumo (detalhes nos passos):
 
 ### 3.2 Conflito de horário
 
-1. **Administrador, Agenda.** **+ Nova aula**: template "Funcional Intenso", data de amanhã, horário **14:10** (a aula R1 de amanhã vai das 14h00 às 14h50). Clique **Salvar**. Quadro vermelho: "O horário se sobrepõe a outra aula — o espaço é exclusivo." com a lista das aulas em conflito ("Personal Studio 1:1 · 14h00–14h50 (qua 01/10)", no formato "dia da semana dd/mm"). Feche com **Fechar**.
-2. Fale: "o estúdio é um espaço exclusivo: duas aulas nunca se sobrepõem, garantido pelo banco de dados mesmo com duas pessoas criando ao mesmo tempo (a criação recorrente é tudo ou nada e lista todas as datas em conflito)".
-3. **Não prometa** o conflito do lado do cliente ("duas reservas do mesmo cliente em horários sobrepostos", `SCHEDULE_CONFLICT`, "Você já tem uma reserva em {aula} às {hh}h{mm}, no mesmo horário desta aula."). O motor de reserva implementa e testa a regra, mas como duas aulas agendadas nunca se sobrepõem, ela não pode ser disparada pela interface. Diga isso com naturalidade: "essa segunda barreira existe para o dia em que houver mais de um espaço".
-   - Plano B: se o horário 14:10 estiver livre por engano (R1 não foi criada), escolha qualquer horário que caia dentro de uma aula da grade (por exemplo 07:30 numa segunda, quarta ou sexta).
+1. **Administrador, Agenda.** **+ Nova aula**: template "Funcional Intenso", data de amanhã, horário **14:10** (R1 vai das 14h00 às 14h50) e professor **Rafael Nogueira**. Clique **Salvar**. A tela mostra "O horário se sobrepõe a outra aula do mesmo professor." e lista R1. Este conflito é `OCCURRENCE_OVERLAP` (409); a pré-validação da API e a constraint do banco protegem a regra.
+2. No mesmo formulário, selecione **Camila Andrade** e clique **Salvar** de novo. A aula é criada; mostre na grade as duas aulas simultâneas. Fale: "professores diferentes podem dar aula no mesmo horário; cada professor continua com uma aula por vez".
+3. **Marina, Agenda do cliente.** Reserve R1 e depois abra a nova aula das 14h10. Clique **Reservar**: a interface mostra "Você já tem uma reserva em Personal Studio 1:1 às 14h00, no mesmo horário desta aula." (`SCHEDULE_CONFLICT`, 409). Isso demonstra o conflito entre reservas do mesmo cliente agora que há aulas simultâneas de professores diferentes.
+4. Restaure a massa: cancele a reserva de R1 e exclua a aula temporária das 14h10 pela Agenda administrativa.
+   - Plano B: se R1 não estiver na agenda de amanhã, recrie-a conforme a seção 13 antes de começar.
 
 ### 3.3 Reserva duplicada
 
@@ -211,7 +213,7 @@ O que se desfaz e o que não se desfaz:
 
 Diga só o que o produto faz hoje:
 
-- **Conflito de horário do cliente não se dispara pela tela.** O estúdio tem espaço exclusivo (duas aulas agendadas nunca se sobrepõem, restrição no banco); por isso a regra `SCHEDULE_CONFLICT` do motor de reserva só é exercitada nos testes automatizados. Na demo, o conflito mostrado é o da agenda (`OCCURRENCE_OVERLAP`).
+- **Há dois conflitos de horário.** `OCCURRENCE_OVERLAP` impede o mesmo professor de conduzir aulas simultâneas; `SCHEDULE_CONFLICT` impede o mesmo cliente de reservar aulas sobrepostas, inclusive quando elas são conduzidas por professores diferentes.
 - **Contas de equipe não são criadas pela tela.** A tela cria clientes (**+ Novo cliente**, página "Novo cliente"); professores e funcionários exigem a API (`POST /api/users/staff`, ver checklist, seção 7), e não há tela para trocar o perfil de um usuário nem redefinir senha.
 - **"Aula cheia" no cliente aparece como botão desabilitado**, não como erro; a mensagem de erro só surge quando a tela está desatualizada (disputa) ou na recepção, que mostra a prévia do servidor.
 - **O ranking do cliente mostra presenças e "empate", não os pontos de cada colega.** A equipe vê o total de pontos distribuídos no Dashboard (e o ranking do mês por presenças), não a pontuação de cada aluno nessa tela.

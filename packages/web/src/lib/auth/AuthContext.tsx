@@ -16,6 +16,7 @@ import type {
 } from "@fitburn/contracts";
 import { isOnline, subscribeToConnectivity } from "../connectivity/connectivity-store";
 import * as authApi from "./api";
+import { onSessionEnded } from "./session-events";
 
 interface AuthContextValue {
   user: CurrentUser | null;
@@ -42,6 +43,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Se o usuário logar/deslogar explicitamente antes da restauração do mount
   // resolver, o resultado tardio dela não deve sobrescrever essa ação.
   const hasExplicitAuthActionRef = useRef(false);
+
+  useEffect(
+    () =>
+      onSessionEnded(() => {
+        hasExplicitAuthActionRef.current = true;
+        setUser(null);
+      }),
+    [],
+  );
 
   useEffect(() => {
     let cancelled = false;

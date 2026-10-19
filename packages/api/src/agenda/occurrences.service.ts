@@ -124,15 +124,34 @@ export class OccurrencesService {
     const planned = plannedSchedule(current, input);
     if (planned.changed) await this.assertNoOverlap([planned.interval], instructorId, id);
 
+    let lockedSchedule = planned;
+    let lockedInstructorId = instructorId;
     // Escrita condicional: se a aula for cancelada entre a leitura e a
     // escrita, nada é alterado (não se edita o histórico).
-    const { count } = await this.withOverlapTranslation([planned.interval], instructorId, () =>
-      this.prisma.$transaction(async (tx) => {
+    const { count } = await this.withOverlapTranslation(
+      () => [lockedSchedule.interval],
+      () => lockedInstructorId,
+      () => this.prisma.$transaction(async (tx) => {
         const confirmed = await this.lockAndCountConfirmed(tx, id);
         // Relida depois do lock: o que muda é decidido sobre o estado atual.
         const locked = await tx.classOccurrence.findUnique({ where: { id } });
         if (!locked) return { count: 0 };
+        this.assertInScope(locked.instructorId, requester);
+
+        if (input.instructorId !== undefined) {
+          if (input.instructorId && input.instructorId !== locked.instructorId) {
+            await this.instructors.assertIsInstructor(input.instructorId);
+          }
+          this.assertInScope(input.instructorId, requester);
+        }
+        const finalInstructorId =
+          input.instructorId === undefined ? locked.instructorId : input.instructorId;
         const schedule = plannedSchedule(locked, input);
+        lockedSchedule = schedule;
+        lockedInstructorId = finalInstructorId;
+        if (schedule.changed || finalInstructorId !== locked.instructorId) {
+          await this.assertNoOverlap([schedule.interval], finalInstructorId, id);
+        }
         if (confirmed > 0 && schedule.changed) {
           throw this.reservationsError(
             ErrorCode.CHANGE_INVALIDATES_RESERVATIONS,
@@ -153,11 +172,12 @@ export class OccurrencesService {
             ...(schedule.changed
               ? { ...schedule.interval, durationMinutes: schedule.durationMinutes }
               : {}),
-            instructorId,
+            ...(input.instructorId !== undefined ? { instructorId: finalInstructorId } : {}),
             ...(input.capacity !== undefined ? { capacity: input.capacity } : {}),
           },
         });
       }),
+      id,
     );
     if (count === 0) await this.findScheduledInScope(id, requester);
     return this.detailById(id);
@@ -168,6 +188,9 @@ export class OccurrencesService {
     await this.findScheduledInScope(id, requester);
     const { count } = await this.prisma.$transaction(async (tx) => {
       const confirmed = await this.lockAndCountConfirmed(tx, id);
+      const locked = await tx.classOccurrence.findUnique({ where: { id } });
+      if (!locked) return { count: 0 };
+      this.assertInScope(locked.instructorId, requester);
       if (confirmed > 0) {
         throw this.reservationsError(
           ErrorCode.OCCURRENCE_HAS_RESERVATIONS,
@@ -193,6 +216,9 @@ export class OccurrencesService {
     await this.findInScope(id, requester);
     const { count } = await this.prisma.$transaction(async (tx) => {
       await lockOccurrenceRows(tx, [id]);
+      const locked = await tx.classOccurrence.findUnique({ where: { id } });
+      if (!locked) return { count: 0 };
+      this.assertInScope(locked.instructorId, requester);
       const byStatus = await tx.reservation.groupBy({
         by: ["status"],
         where: { occurrenceId: id },
@@ -372,15 +398,19 @@ export class OccurrencesService {
 
   /** Converte a violação da constraint de exclusão no mesmo erro da verificação antecipada. */
   async withOverlapTranslation<T>(
-    intervals: Interval[],
-    instructorId: string | null,
+    intervals: Interval[] | (() => Interval[]),
+    instructorId: string | null | (() => string | null),
     write: () => Promise<T>,
+    exceptId?: string,
   ): Promise<T> {
     try {
       return await write();
     } catch (error) {
       if (!isOverlapViolation(error)) throw error;
-      throw this.overlapError(await this.findConflicts(intervals, instructorId));
+      const finalIntervals = typeof intervals === "function" ? intervals() : intervals;
+      const finalInstructorId =
+        typeof instructorId === "function" ? instructorId() : instructorId;
+      throw this.overlapError(await this.findConflicts(finalIntervals, finalInstructorId, exceptId));
     }
   }
 

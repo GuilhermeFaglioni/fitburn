@@ -34,7 +34,7 @@ Nada disto é automatizável por agente. Faça antes do primeiro deploy (tickets
 
 ### Checklist pré-deploy (antes de cada publicação na Vercel)
 
-> **ATENÇÃO: troque o placeholder `api.fitburn.example` do `vercel.json`.** O rewrite de `/api` no repositório aponta para esse domínio de exemplo. Se ninguém o trocar pelo `DOMAIN` real da API, a Vercel publica o frontend normalmente, **sem nenhum aviso**, e todas as chamadas `/api` ficam quebradas. Confira com `pnpm deploy:check --strict`: ele **falha** enquanto o placeholder existir (sem `--strict` só avisa).
+> **ATENÇÃO: troque o placeholder `api.fitburn.example` do `vercel.json`.** O rewrite de `/api` no repositório aponta para esse domínio de exemplo. O `buildCommand` da Vercel executa `node scripts/deploy-check.mjs --strict` antes do bundle e **falha** enquanto o placeholder existir. Localmente, `pnpm deploy:check --strict` faz a mesma verificação.
 
 - [ ] `vercel.json` aponta `/api` para o `DOMAIN` real (`pnpm deploy:check --strict` termina sem erro).
 - [ ] `.env.production` preenchido na VPS e `docker compose config --quiet` sem erro (seção 2).
@@ -156,13 +156,13 @@ curl -fsS https://DOMAIN/api/health
 
 ## 8. Frontend na Vercel
 
-1. Em `vercel.json`, troque o placeholder `api.fitburn.example` pelo `DOMAIN` real (o arquivo não lê variáveis de ambiente; **esquecer isso publica o app com `/api` quebrado, sem aviso**):
+1. Em `vercel.json`, troque o placeholder `api.fitburn.example` pelo `DOMAIN` real (o arquivo não lê variáveis de ambiente; enquanto ele existir, o build da Vercel falha):
 
    ```json
    { "source": "/api/:path*", "destination": "https://api.seudominio.com.br/api/:path*" }
    ```
 
-2. Rode `pnpm deploy:check --strict` (falha se o placeholder continuar), faça commit e push. Na Vercel, o projeto usa a raiz do repositório como *Root Directory* e Node 20 ou mais novo; instalação, build e saída já estão no `vercel.json` (`pnpm --filter @fitburn/contracts build && pnpm --filter @fitburn/web build`, saída em `packages/web/dist`). O segundo rewrite (`/(.*)` → `/index.html`) faz as rotas do app funcionarem ao recarregar a página.
+2. Rode `pnpm deploy:check --strict` (falha se o placeholder continuar), faça commit e push. A Vercel executa a mesma guarda como primeiro passo do `buildCommand`. O projeto usa a raiz do repositório como *Root Directory* e Node 20 ou mais novo; instalação e saída estão no `vercel.json` (bundle em `packages/web/dist`). O segundo rewrite (`/(.*)` → `/index.html`) faz as rotas do app funcionarem ao recarregar a página.
 3. Aguarde o deploy e abra a URL da Vercel.
 
 ## 9. Reset da demonstração

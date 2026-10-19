@@ -1,18 +1,28 @@
 import { Injectable } from "@nestjs/common";
-import type { AccessProfile } from "@prisma/client";
+import type { AccessProfile, UserStatus } from "@prisma/client";
 import {
   ALL_MODULES,
   ALL_PERMISSION_ACTIONS,
+  ErrorCode,
+  ErrorStatus,
   PermissionScope,
   type EffectivePermission,
   type ModuleName,
   type PermissionActionName,
   type PermissionScopeName,
 } from "@fitburn/contracts";
+import { DomainError } from "../common/errors/domain-error.js";
 import { PrismaService } from "../prisma/prisma.service.js";
 
 const SYSTEM_ADMIN_PROFILE_NAME = "Administrador";
 const SYSTEM_CLIENT_PROFILE_NAME = "Cliente";
+
+const SCOPE_RANK: Record<PermissionScopeName, number> = {
+  [PermissionScope.OWN]: 0,
+  [PermissionScope.ASSIGNED_CLIENTS]: 1,
+  [PermissionScope.ASSIGNED_CLASSES]: 1,
+  [PermissionScope.ALL]: 2,
+};
 
 /**
  * Motor de autorização: módulo × ação × escopo, lido do banco a cada
@@ -27,15 +37,17 @@ const SYSTEM_CLIENT_PROFILE_NAME = "Cliente";
 export class PermissionsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getProfileForUser(userId: string): Promise<AccessProfile | null> {
+  async getUserAuthorizationContext(
+    userId: string,
+  ): Promise<{ status: UserStatus; profile: AccessProfile } | null> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: { profile: true },
     });
     // Excluído (anonimizado) perde o acesso na hora, mesmo com um token ainda
     // válido (o JwtAuthGuard já barra; aqui é rede de segurança).
-    if (user?.status === "DELETED") return null;
-    return user?.profile ?? null;
+    if (!user || user.status === "DELETED") return null;
+    return { status: user.status, profile: user.profile };
   }
 
   async hasPermission(
@@ -79,7 +91,53 @@ export class PermissionsService {
     }));
   }
 
-  private isSystemAdmin(profile: AccessProfile): boolean {
+  /**
+   * Confirma que um ator só está concedendo permissões efetivas que já possui.
+   * `target` pode ser outro perfil ou a linha de matriz que será gravada.
+   */
+  async assertCanGrant(
+    actorProfile: AccessProfile,
+    target: AccessProfile | EffectivePermission,
+  ): Promise<void> {
+    if (this.isSystemAdmin(actorProfile)) return;
+
+    const grants = "id" in target ? await this.getEffectivePermissions(target) : [target];
+    const actorPermissions = await this.getEffectivePermissions(actorProfile);
+
+    for (const grant of grants) {
+      // Sem ações a linha é apagada (revogação): o escopo enviado não concede nada.
+      if (grant.actions.length === 0) continue;
+      const actorPermission = actorPermissions.find((permission) => permission.module === grant.module);
+      const actorScope = await this.getEffectiveScope(actorProfile, grant.module);
+      const actionExceedsActor = grant.actions.some(
+        (action) => !actorPermission?.actions.includes(action),
+      );
+      const scopeExceedsActor = SCOPE_RANK[grant.scope] > SCOPE_RANK[actorScope];
+
+      if (actionExceedsActor || scopeExceedsActor) {
+        throw new DomainError(
+          ErrorCode.FORBIDDEN,
+          "Você só pode conceder permissões iguais ou inferiores às que possui.",
+          ErrorStatus.FORBIDDEN,
+        );
+      }
+    }
+  }
+
+  async assertCanAssignProfile(actorProfile: AccessProfile, targetProfile: AccessProfile): Promise<void> {
+    if (this.isSystemAdmin(actorProfile)) return;
+    if (this.isSystemAdmin(targetProfile)) {
+      throw new DomainError(
+        ErrorCode.FORBIDDEN,
+        "Apenas um administrador do sistema pode atribuir o perfil Administrador.",
+        ErrorStatus.FORBIDDEN,
+      );
+    }
+
+    await this.assertCanGrant(actorProfile, targetProfile);
+  }
+
+  isSystemAdmin(profile: AccessProfile): boolean {
     return profile.isSystem && profile.name === SYSTEM_ADMIN_PROFILE_NAME;
   }
 

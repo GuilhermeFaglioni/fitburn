@@ -41,8 +41,9 @@ export class JwtAuthGuard implements CanActivate {
 
     // O token segue válido por alguns minutos depois de a pessoa ser excluída
     // (anonimizada): quem foi excluído perde o acesso na hora, em toda rota
-    // autenticada. Desativado (INACTIVE) não é barrado aqui: as rotas de
-    // domínio respondem USER_INACTIVE com a mensagem própria de cada uma.
+    // autenticada. INACTIVE não é barrado aqui para que controladores de
+    // domínio retornem USER_INACTIVE; rotas de equipe são barradas pelo
+    // PermissionsGuard.
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
       select: { status: true },

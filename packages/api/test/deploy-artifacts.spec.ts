@@ -15,7 +15,9 @@ const ROOT = path.resolve(__dirname, "../../..");
 const file = (...parts: string[]): string => path.join(ROOT, ...parts);
 
 const EXAMPLE_ENV = dotenv.parse(readFileSync(file(".env.production.example")));
+const EXAMPLE_ENV_SOURCE = readFileSync(file(".env.production.example"), "utf8");
 const PROD_COMPOSE = readFileSync(file("docker-compose.prod.yml"), "utf8");
+const COOLIFY_COMPOSE = readFileSync(file("docker-compose.coolify.yml"), "utf8");
 const LOCAL_COMPOSE = readFileSync(file("docker-compose.prod.local.yml"), "utf8");
 
 /** Nomes das variáveis do bloco `x-api-environment` (lidos do YAML, sem precisar do Docker). */
@@ -33,6 +35,49 @@ function serviceBlock(yaml: string, name: string): string {
   if (!block) throw new Error(`serviço ${name} não encontrado`);
   return block[1];
 }
+
+describe("rate limit de login atrás dos proxies", () => {
+  it("mantém dois saltos configuráveis nas topologias Vercel+Nginx e Coolify", () => {
+    for (const compose of [PROD_COMPOSE, COOLIFY_COMPOSE]) {
+      expect(compose).toMatch(/^\s+TRUST_PROXY_HOPS: \$\{TRUST_PROXY_HOPS:-2\}$/m);
+      expect(compose).not.toMatch(/^\s+TRUST_PROXY_HOPS: ["']1["']$/m);
+    }
+    expect(EXAMPLE_ENV.TRUST_PROXY_HOPS).toBe("2");
+  });
+
+  it.each([
+    "docker-compose.yml",
+    "docker-compose.prod.yml",
+    "docker-compose.prod.local.yml",
+    "docker-compose.coolify.yml",
+  ])("não publica porta da API no %s", (composeFile) => {
+    const compose = readFileSync(file(composeFile), "utf8");
+    const api = /^ {2}api:[^\n]*\n((?: {4}[^\n]*\n|[ \t]*\n)*)/m.exec(compose);
+    if (api) expect(api[1]).not.toMatch(/^ {4}ports:/m);
+  });
+
+  it("preserva o risco aceito de XFF forjado no backend direto Vercel+Nginx", () => {
+    const runbook = readFileSync(file("docs/deploy-runbook.md"), "utf8");
+    expect(EXAMPLE_ENV_SOURCE).toContain("RISCO ACEITO para a demo");
+    expect(EXAMPLE_ENV_SOURCE).toContain("Mitigação futura, antes de dados reais");
+    expect(runbook).toContain("`TRUST_PROXY_HOPS=2` e IP forjável (X-Forwarded-For).");
+    expect(runbook).toContain("Risco **aceito** para a demonstração");
+    expect(runbook).toContain("**Mitigação futura**");
+  });
+
+  it("documenta a pré-condição do Traefik e o teste manual de XFF no VPS", () => {
+    const coolify = readFileSync(file("docs/deploy-coolify.md"), "utf8");
+    for (const term of [
+      "forwardedHeaders.insecure",
+      "forwardedHeaders.trustedIPs",
+      "não foi confirmada",
+      "forjado não cria cotas",
+      "429",
+    ]) {
+      expect(coolify).toContain(term);
+    }
+  });
+});
 
 /** Lê a lista REQUIRED_IN_PRODUCTION direto do código da API, a fonte da verdade. */
 function requiredInProduction(): string[] {
@@ -239,8 +284,21 @@ describe.skipIf(!composeAvailable)("nginx no Compose resolvido", () => {
 
 describe("vercel.json", () => {
   const vercel = JSON.parse(readFileSync(file("vercel.json"), "utf8")) as {
+    buildCommand: string;
     rewrites: { source: string; destination: string }[];
   };
+
+  it("falha o build antes do bundle enquanto o destino da API for placeholder", () => {
+    expect(vercel.buildCommand).toMatch(
+      /^node scripts\/deploy-check\.mjs --strict && pnpm --filter @fitburn\/contracts build && pnpm --filter @fitburn\/web build$/,
+    );
+    const result = spawnSync("sh", ["-c", vercel.buildCommand], {
+      cwd: ROOT,
+      encoding: "utf8",
+    });
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("placeholder");
+  });
 
   it("reescreve /api para o backend antes do fallback do SPA", () => {
     const [api, ...rest] = vercel.rewrites;

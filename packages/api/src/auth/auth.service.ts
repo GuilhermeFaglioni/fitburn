@@ -71,7 +71,7 @@ export class AuthService {
       throw this.sessionExpired();
     }
 
-    if (existing.expiresAt.getTime() < Date.now()) {
+    if (existing.expiresAt.getTime() <= Date.now()) {
       throw this.sessionExpired();
     }
 
@@ -81,19 +81,38 @@ export class AuthService {
     }
 
     const newRefreshToken = generateOpaqueToken();
-    await this.prisma.$transaction([
-      this.prisma.refreshToken.update({
-        where: { id: existing.id },
-        data: { revokedAt: new Date() },
-      }),
-      this.prisma.refreshToken.create({
+    const now = new Date();
+    const consumed = await this.prisma.$transaction(async (tx) => {
+      const result = await tx.refreshToken.updateMany({
+        where: { id: existing.id, revokedAt: null, expiresAt: { gt: now } },
+        data: { revokedAt: now },
+      });
+
+      if (result.count !== 1) {
+        const current = await tx.refreshToken.findUnique({
+          where: { id: existing.id },
+          select: { revokedAt: true },
+        });
+        if (current?.revokedAt) {
+          // Uma corrida entre abas também conta como reuso: apenas um refresh vence e as sessões são revogadas.
+          await tx.refreshToken.updateMany({
+            where: { userId: existing.userId, revokedAt: null },
+            data: { revokedAt: now },
+          });
+        }
+        return false;
+      }
+
+      await tx.refreshToken.create({
         data: {
           userId: user.id,
           tokenHash: hashToken(newRefreshToken),
-          expiresAt: new Date(Date.now() + refreshTokenTtlMs()),
+          expiresAt: new Date(now.getTime() + refreshTokenTtlMs()),
         },
-      }),
-    ]);
+      });
+      return true;
+    });
+    if (!consumed) throw this.sessionExpired();
 
     const accessToken = await this.jwtService.signAsync({ sub: user.id });
     return {

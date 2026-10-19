@@ -202,4 +202,128 @@ describe("ProfilesPage", () => {
     expect(within(clientesRow).getByRole("combobox", { name: "Escopo de Clientes" })).toBeDisabled();
     expect(within(clientesRow).getByRole("button", { name: "Salvar" })).toBeDisabled();
   });
+
+  it("mostra erro ao carregar perfis e tenta a consulta novamente", async () => {
+    let calls = 0;
+    server.use(
+      http.get("/api/profiles", () => {
+        calls += 1;
+        return calls === 1
+          ? HttpResponse.json({ code: "TEMPORARY", message: "Indisponível." }, { status: 503 })
+          : HttpResponse.json([ADMIN_PROFILE, CLIENT_PROFILE, CUSTOM_PROFILE]);
+      }),
+    );
+    renderProfilesPage();
+    const user = userEvent.setup();
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Não foi possível carregar os perfis.",
+    );
+    await user.click(screen.getByRole("button", { name: "Tentar novamente" }));
+
+    expect(await screen.findByRole("button", { name: "Recepção" })).toBeInTheDocument();
+    expect(calls).toBe(2);
+  });
+
+  it("mostra erro ao carregar catálogo e tenta a consulta novamente", async () => {
+    let calls = 0;
+    server.use(
+      http.get("/api/profiles/catalog", () => {
+        calls += 1;
+        return calls === 1
+          ? HttpResponse.json({ code: "TEMPORARY", message: "Indisponível." }, { status: 503 })
+          : HttpResponse.json(CATALOG);
+      }),
+    );
+    renderProfilesPage();
+    const user = userEvent.setup();
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Não foi possível carregar o catálogo de perfis.",
+    );
+    await user.click(screen.getByRole("button", { name: "Tentar novamente" }));
+
+    expect(await screen.findByText("Matriz de permissões — Administrador")).toBeInTheDocument();
+    expect(calls).toBe(2);
+  });
+
+  it("desabilita criar enquanto aguarda e mostra feedback com erro da API", async () => {
+    let finishRequest!: () => void;
+    const requestMayFinish = new Promise<void>((resolve) => {
+      finishRequest = resolve;
+    });
+    server.use(
+      http.post("/api/profiles", async () => {
+        await requestMayFinish;
+        return HttpResponse.json(
+          { code: "CREATE_FAILED", message: "Falha ao criar perfil." },
+          { status: 500 },
+        );
+      }),
+    );
+    renderProfilesPage();
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole("button", { name: "+ Novo perfil" }));
+    await user.type(screen.getByLabelText("Nome"), "Novo perfil");
+    const submit = screen.getByRole("button", { name: "Criar perfil" });
+    await user.click(submit);
+    await waitFor(() => expect(submit).toBeDisabled());
+    finishRequest();
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Falha ao criar perfil.");
+  });
+
+  it("desabilita desativar enquanto aguarda e mostra feedback com erro da API", async () => {
+    let finishRequest!: () => void;
+    const requestMayFinish = new Promise<void>((resolve) => {
+      finishRequest = resolve;
+    });
+    server.use(
+      http.post("/api/profiles/:id/deactivate", async () => {
+        await requestMayFinish;
+        return HttpResponse.json(
+          { code: "DEACTIVATE_FAILED", message: "Falha ao desativar perfil." },
+          { status: 500 },
+        );
+      }),
+    );
+    renderProfilesPage();
+    const user = userEvent.setup();
+
+    const deactivate = await screen.findByRole("button", { name: "Desativar" });
+    await user.click(deactivate);
+    await waitFor(() => expect(deactivate).toBeDisabled());
+    finishRequest();
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Falha ao desativar perfil.");
+  });
+
+  it("desabilita reativar enquanto aguarda e mostra feedback com erro da API", async () => {
+    let finishRequest!: () => void;
+    const requestMayFinish = new Promise<void>((resolve) => {
+      finishRequest = resolve;
+    });
+    server.use(
+      http.get("/api/profiles", () =>
+        HttpResponse.json([ADMIN_PROFILE, CLIENT_PROFILE, { ...CUSTOM_PROFILE, isActive: false }]),
+      ),
+      http.post("/api/profiles/:id/activate", async () => {
+        await requestMayFinish;
+        return HttpResponse.json(
+          { code: "ACTIVATE_FAILED", message: "Falha ao reativar perfil." },
+          { status: 500 },
+        );
+      }),
+    );
+    renderProfilesPage();
+    const user = userEvent.setup();
+
+    const activate = await screen.findByRole("button", { name: "Reativar" });
+    await user.click(activate);
+    await waitFor(() => expect(activate).toBeDisabled());
+    finishRequest();
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Falha ao reativar perfil.");
+  });
 });

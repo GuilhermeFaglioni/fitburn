@@ -1,6 +1,6 @@
 import type { INestApplication } from "@nestjs/common";
 import request from "supertest";
-import { cleanDatabase } from "./db-test-helper.js";
+import { cleanDatabase, testPrisma } from "./db-test-helper.js";
 import { createAccessProfile, createUser, grantModuleAccess } from "./factories.js";
 import { loginAndGetAccessToken } from "./login-helper.js";
 import { createTestApp } from "./test-app.js";
@@ -33,6 +33,21 @@ describe("Motor de autorização (HTTP)", () => {
 
     expect(response.status).toBe(403);
     expect(response.body.code).toBe("FORBIDDEN");
+  });
+
+  it("nega acesso administrativo a membro da equipe desativado com access token antigo", async () => {
+    const profile = await createAccessProfile({ name: "Recepção" });
+    await grantModuleAccess({ profileId: profile.id, module: "USUARIOS", actions: ["VIEW"], scope: "ALL" });
+    const staff = await createUser({ email: "recepcao-inativa@fitburn.local", password: PASSWORD, profileId: profile.id });
+    const token = await loginAndGetAccessToken(app, staff.email, PASSWORD);
+    await testPrisma.user.update({ where: { id: staff.id }, data: { status: "INACTIVE" } });
+
+    const response = await request(app.getHttpServer())
+      .get("/api/users")
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(response.status).toBe(401);
+    expect(response.body.code).toBe("USER_INACTIVE");
   });
 
   it("cliente (escopo OWN) acessando outro usuário recebe 403 OUT_OF_SCOPE", async () => {

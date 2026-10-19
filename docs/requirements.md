@@ -30,12 +30,14 @@ Substituir o aplicativo white-label atual por um app próprio, melhorando as fun
 - academia focada em aulas personalizadas;
 - poucos clientes;
 - horários frequentemente lotados;
-- uso de espaço exclusivo;
-- sobreposição de horários não pode ocorrer;
+- o espaço pode receber aulas simultâneas de professores diferentes;
+- um professor não pode conduzir duas aulas no mesmo horário;
 - robustez extrema não é necessária na primeira versão;
 - estrutura deve permitir crescimento futuro.
 
 ## Requisitos críticos de agenda
+
+Aulas de professores diferentes podem se sobrepor; o mesmo professor não pode conduzir duas aulas simultâneas.
 
 A reserva precisa:
 
@@ -45,7 +47,7 @@ A reserva precisa:
 - revalidar disponibilidade no momento da confirmação;
 - recusar solicitações quando o frontend estiver dessincronizado;
 - retornar erro semanticamente correto;
-- impedir sobreposição e excesso de capacidade;
+- impedir conflito entre reservas do mesmo cliente e excesso de capacidade;
 - publicar notificações somente depois da confirmação.
 
 O frontend pode exibir disponibilidade para orientar o usuário, mas nunca pode ser considerado fonte de verdade.
