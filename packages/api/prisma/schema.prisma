@@ -88,21 +88,22 @@ model ProfileModuleAccess {
 }
 
 model User {
-  id           String     @id @default(uuid())
-  email        String     @unique
-  passwordHash String
-  fullName     String
+  id                 String     @id @default(uuid())
+  email              String     @unique
+  passwordHash       String
+  fullName           String
   /// Opcionais no banco: o admin inicial do seed (T4) não tem esses dados.
   /// Obrigatoriedade é decidida por fluxo na validação (zod) — cadastro de
   /// cliente exige telefone e nascimento; documento e endereço são opcionais.
-  phone        String?
-  birthDate    DateTime?
-  document     String?    @unique
-  address      String?
-  status       UserStatus @default(ACTIVE)
-  tokenVersion Int        @default(0)
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  phone              String?
+  birthDate          DateTime?
+  document           String?    @unique
+  address            String?
+  status             UserStatus @default(ACTIVE)
+  tokenVersion       Int        @default(0)
+  mustChangePassword Boolean    @default(false)
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
 
   profileId String
   profile   AccessProfile @relation(fields: [profileId], references: [id])

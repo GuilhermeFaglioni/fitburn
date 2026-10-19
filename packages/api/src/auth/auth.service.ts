@@ -88,7 +88,11 @@ export class AuthService {
 
       const updatedUser = await tx.user.update({
         where: { id: userId },
-        data: { passwordHash, tokenVersion: { increment: 1 } },
+        data: {
+          passwordHash,
+          mustChangePassword: false,
+          tokenVersion: { increment: 1 },
+        },
         include: { profile: true },
       });
       await this.usersService.revokeSessions(tx, userId);

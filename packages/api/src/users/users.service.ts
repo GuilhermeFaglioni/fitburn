@@ -32,6 +32,7 @@ import { hashPassword } from "../auth/password.util.js";
 import { recordAdminAuditEvent } from "../admin-audit/record-admin-audit-event.js";
 import { lockUserRow } from "./user-row-lock.js";
 import { projectClientForScope } from "../permissions/client-projection.js";
+import { getOnboardingPending } from "../onboarding/onboarding-requirements.js";
 
 export type UserWithProfile = User & { profile: AccessProfile };
 export type UserMutationActor = Pick<ProfileRequester, "userId"> &
@@ -138,6 +139,7 @@ export class UsersService {
             document: input.document ?? null,
             address: input.address ?? null,
             profileId: clientProfile.id,
+            mustChangePassword: true,
           },
           include: { profile: true },
         });
@@ -185,6 +187,7 @@ export class UsersService {
             passwordHash,
             fullName: input.fullName,
             profileId: profile.id,
+            mustChangePassword: true,
           },
           include: { profile: true },
         });
@@ -364,7 +367,11 @@ export class UsersService {
       await this.lockLiveUser(tx, id);
       await tx.user.update({
         where: { id },
-        data: { passwordHash, tokenVersion: { increment: 1 } },
+        data: {
+          passwordHash,
+          mustChangePassword: true,
+          tokenVersion: { increment: 1 },
+        },
       });
       await this.revokeSessions(tx, id);
       await recordAdminAuditEvent(tx, {
@@ -484,6 +491,7 @@ export class UsersService {
       status: user.status,
       profile: { id: user.profile.id, name: user.profile.name },
       permissions,
+      onboardingPending: getOnboardingPending(user),
     };
   }
 
@@ -498,6 +506,7 @@ export class UsersService {
       address: user.address,
       status: user.status,
       profile: { id: user.profile.id, name: user.profile.name },
+      onboardingPending: getOnboardingPending(user),
     };
   }
 

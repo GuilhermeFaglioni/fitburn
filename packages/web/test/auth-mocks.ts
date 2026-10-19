@@ -25,6 +25,7 @@ export function mockSuccessfulLogin(
     status: "ACTIVE",
     profile: { id: "profile-1", name: profileName },
     permissions,
+    onboardingPending: [],
   };
 
   server.use(

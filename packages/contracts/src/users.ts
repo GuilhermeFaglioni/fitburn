@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { profileSummarySchema, userStatusSchema } from "./auth.js";
+import { onboardingRequirementSchema, profileSummarySchema, userStatusSchema } from "./auth.js";
 
 export const createClientRequestSchema = z.object({
   fullName: z.string().trim().min(1, "Nome completo é obrigatório."),
@@ -54,6 +54,7 @@ export const userDetailSchema = z.object({
   address: z.string().nullable(),
   status: userStatusSchema,
   profile: z.object({ id: z.string(), name: z.string() }),
+  onboardingPending: z.array(onboardingRequirementSchema).default([]),
 });
 export type UserDetail = z.infer<typeof userDetailSchema>;
 

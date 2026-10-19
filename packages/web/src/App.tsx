@@ -29,6 +29,7 @@ import { ClientWorkoutSheetsPage } from "./pages/ClientWorkoutSheetsPage";
 import { ClientWorkoutSheetPage } from "./pages/ClientWorkoutSheetPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { OwnAreaLayout } from "./components/OwnAreaLayout";
+import { OnboardingPage } from "./pages/OnboardingPage";
 
 export default function App() {
   return (
@@ -48,6 +49,14 @@ export function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route
+        path="/onboarding"
+        element={
+          <ProtectedRoute>
+            <OnboardingPage />
+          </ProtectedRoute>
+        }
+      />
       <Route
         element={
           <ProtectedRoute>

@@ -7,7 +7,24 @@ export const UserStatus = {
   DELETED: "DELETED",
 } as const;
 
-export const userStatusSchema = z.enum([UserStatus.ACTIVE, UserStatus.INACTIVE, UserStatus.DELETED]);
+export const userStatusSchema = z.enum([
+  UserStatus.ACTIVE,
+  UserStatus.INACTIVE,
+  UserStatus.DELETED,
+]);
+
+export const OnboardingRequirement = {
+  PASSWORD_CHANGE: "PASSWORD_CHANGE",
+  PRIVACY_ACKNOWLEDGEMENT: "PRIVACY_ACKNOWLEDGEMENT",
+  TERMS_ACCEPTANCE: "TERMS_ACCEPTANCE",
+} as const;
+
+export const onboardingRequirementSchema = z.enum([
+  OnboardingRequirement.PASSWORD_CHANGE,
+  OnboardingRequirement.PRIVACY_ACKNOWLEDGEMENT,
+  OnboardingRequirement.TERMS_ACCEPTANCE,
+]);
+export type OnboardingRequirement = z.infer<typeof onboardingRequirementSchema>;
 
 export const loginRequestSchema = z.object({
   email: z.string().trim().email(),
@@ -28,6 +45,7 @@ export const currentUserSchema = z.object({
   status: userStatusSchema,
   profile: profileSummarySchema,
   permissions: z.array(effectivePermissionSchema),
+  onboardingPending: z.array(onboardingRequirementSchema).default([]),
 });
 export type CurrentUser = z.infer<typeof currentUserSchema>;
 
