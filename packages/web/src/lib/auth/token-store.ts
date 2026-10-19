@@ -5,6 +5,8 @@
  */
 let accessToken: string | null = null;
 
+export const AUTH_SESSION_ENDED_EVENT = "fitburn:session-ended";
+
 export const tokenStore = {
   get(): string | null {
     return accessToken;

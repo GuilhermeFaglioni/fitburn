@@ -1,6 +1,6 @@
 import { trackedFetch } from "../connectivity/connectivity-store";
 import { refreshSession } from "./api";
-import { tokenStore } from "./token-store";
+import { AUTH_SESSION_ENDED_EVENT, tokenStore } from "./token-store";
 
 let inFlightRefresh: ReturnType<typeof refreshSession> | null = null;
 
@@ -36,6 +36,9 @@ export async function authFetch(input: string, init: RequestInit = {}): Promise<
 
   const refreshedUser = await refreshOnce();
   if (!refreshedUser) {
+    if (!tokenStore.get() && typeof window !== "undefined") {
+      window.dispatchEvent(new Event(AUTH_SESSION_ENDED_EVENT));
+    }
     return response;
   }
 
