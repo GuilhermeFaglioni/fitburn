@@ -1,7 +1,7 @@
 # 004 — Sessão encerrada na web e erros silenciosos na tela de Perfis
 
-- **Status**: TODO
-- **Commit**: —
+- **Status**: DONE
+- **Commit**: `7c439cd7927548ac9c673547934c848fe1bdb132`
 - **Severity**: HIGH (sessão) / MEDIUM (Perfis)
 - **Origem**: auditoria web (Alto: sessão revogada; Médio: falhas silenciosas em Perfis)
 - **Escopo estimado**: `packages/web/src/lib/auth/*`, `packages/web/src/pages/ProfilesPage.tsx`, testes em `packages/web/test/`
