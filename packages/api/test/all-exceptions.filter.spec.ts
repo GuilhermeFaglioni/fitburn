@@ -2,6 +2,7 @@ import {
   ConflictException,
   ForbiddenException,
   HttpException,
+  Logger,
   MethodNotAllowedException,
   NotFoundException,
   PayloadTooLargeException,
@@ -60,5 +61,31 @@ describe("AllExceptionsFilter: código por status 4xx", () => {
     expect(result.status).toBe(status);
     expect(result.body.code).toBe(code);
     expect(result.body.message).not.toContain("interno");
+  });
+});
+
+describe("AllExceptionsFilter: log estruturado de erros", () => {
+  it("registra apenas campos permitidos e mascara dados do erro Prisma", () => {
+    const errorLog = vi.spyOn(Logger.prototype, "error").mockImplementation(() => undefined);
+
+    try {
+      const result = run(
+        new Error(
+          `PrismaClientKnownRequestError: criação recusada\nemail: "ana@example.com"\ndocument: "123.456.789-00"\nnotes: "meta pessoal"`,
+        ),
+      );
+      const message = errorLog.mock.calls[0]?.[0];
+      const entry = JSON.parse(String(message)) as Record<string, unknown>;
+      const serialized = JSON.stringify(entry);
+
+      expect(result.status).toBe(500);
+      expect(Object.keys(entry).sort()).toEqual(["event", "message", "statusCode"]);
+      expect(entry).toMatchObject({ event: "api.error", statusCode: 500 });
+      expect(serialized).not.toContain("ana@example.com");
+      expect(serialized).not.toContain("123.456.789-00");
+      expect(serialized).not.toContain("meta pessoal");
+    } finally {
+      errorLog.mockRestore();
+    }
   });
 });

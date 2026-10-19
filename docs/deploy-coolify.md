@@ -8,7 +8,7 @@ navegador ──HTTPS──► Traefik (Coolify) ──► web (Nginx :80) ─�
 ```
 
 - Um **único domínio** para app e API (`/api` é proxy do Nginx do `web`): o cookie de refresh funciona sem CORS.
-- Arquivos: `docker-compose.coolify.yml`, `docker/web/` (Dockerfile + Nginx), `docker/api/start.sh` (migrations + seeds + API).
+- Arquivos: `docker-compose.coolify.yml`, `docker/web/` (Dockerfile + Nginx), `docker/api/start.sh` (migrations + seeds + API) e `docker/backup/` (backup PostgreSQL).
 - A cada deploy a API aplica as migrations, garante o administrador e, com `DEMO_SEED=true`, completa a massa de demonstração (idempotente).
 
 ## 1. Pré-requisitos
@@ -24,7 +24,7 @@ navegador ──HTTPS──► Traefik (Coolify) ──► web (Nginx :80) ─�
 2. Selecione o repositório e o branch (`main`).
 3. **Build Pack: `Docker Compose`**.
 4. **Docker Compose Location:** `/docker-compose.coolify.yml` (base directory `/`).
-5. Continue. O Coolify lê o compose e lista os serviços `postgres`, `api` e `web`.
+5. Continue. O Coolify lê o compose e lista os serviços `postgres`, `api`, `web` e `backup`.
 
 ## 3. Domínio
 
@@ -48,8 +48,18 @@ Em **Environment Variables** do recurso (as que faltarem aparecem como obrigató
 | `INITIAL_ADMIN_PASSWORD` | senha forte, mínimo 12 caracteres |
 | `DEMO_SEED` | `true` para popular a demonstração (pode ficar `true`: é idempotente) |
 | `DEMO_USER_PASSWORD` | senha de **todas** as contas de demonstração (mínimo 12 caracteres) |
+| `BACKUP_DESTINATION` | destino S3 compatível, por exemplo `s3://fitburn-backups/pilot` |
+| `BACKUP_STORAGE_ENDPOINT` | endpoint HTTPS do storage S3 compatível |
+| `BACKUP_STORAGE_REGION` | região exigida pelo storage |
+| `BACKUP_STORAGE_ACCESS_KEY_ID` / `BACKUP_STORAGE_SECRET_ACCESS_KEY` | credenciais com acesso apenas ao bucket/prefixo de backup |
+| `BACKUP_AGE_RECIPIENT` | chave pública age (`age1...`) usada para criptografar os arquivos |
+| `BACKUP_HEARTBEAT_URL` | URL do monitor externo, chamada depois de backup e retenção bem-sucedidos |
 
 Opcionais, com padrão adequado: `POSTGRES_USER`, `POSTGRES_DB`, `TZ`, `TRUST_PROXY_HOPS` (`2` = Traefik + Nginx do `web`), `AUTH_RATE_LIMIT_*`, `JWT_ACCESS_TTL_SECONDS`, `REFRESH_TOKEN_TTL_DAYS`. Deixe `CORS_ALLOWED_ORIGINS` vazio.
+
+Gere o par age numa máquina confiável fora da VPS. Guarde o arquivo de identidade em local seguro e cadastre somente o recipient público em `BACKUP_AGE_RECIPIENT`; nunca copie a chave privada para o Coolify. O exemplo `.env.production.example` lista todas as variáveis obrigatórias do serviço. Elas não derrubam o restante do Compose quando ausentes (a demo não tem storage de backup): só o serviço `backup` recusa subir, com uma mensagem nos logs dizendo qual variável falta. No ambiente do piloto, confira nos logs que ele subiu.
+
+O serviço `backup` espera o PostgreSQL ficar saudável e agenda uma execução diária às 03:00 UTC. Cada execução cria um dump SQL comprimido com gzip, criptografa com age, envia para `BACKUP_DESTINATION/daily` e mantém os 14 mais recentes; aos domingos também grava em `weekly` e mantém os 8 mais recentes. O heartbeat só é enviado depois de upload e retenção concluídos. `file:///...` é aceito para testes; em produção, use S3 compatível para manter os arquivos fora da VPS.
 
 ### Rate limit de login e `X-Forwarded-For`
 
@@ -63,6 +73,37 @@ Não publique portas dos serviços `web` ou `api` fora do Traefik: só `web` dev
 2. Confira nos logs do `api` as linhas `[start] prisma migrate deploy`, `[start] seed base`, `[start] seed da demonstração` e `Fitburn API rodando`.
 3. Abra `https://fitburn.seudominio.com.br/api/health` → `{"status":"ok",...}`.
 4. Abra o app e entre com uma das contas abaixo.
+
+### Headers de segurança e HSTS
+
+O Nginx do `web` envia CSP, proteção contra framing, Referrer-Policy, nosniff e Permissions-Policy nas respostas da aplicação. O HSTS é aplicado pelo Traefik do Coolify, que termina o TLS; não configure HSTS no Nginx do `web`.
+
+No Coolify, abra **Servers → seu servidor → Proxy → Dynamic Configurations**, adicione `fitburn-hsts.yaml` e salve:
+
+```yaml
+http:
+  middlewares:
+    fitburn-hsts:
+      headers:
+        stsSeconds: 31536000
+```
+
+Isso define `max-age=31536000` (um ano). Deixe `stsIncludeSubdomains` e `stsPreload` desativados até confirmar que todos os subdomínios e requisitos de preload estão prontos. Em seguida, no recurso Compose do Fitburn, abra **General → Container labels** e mude **Label management** para **Managed manually**. Acrescente `fitburn-hsts@file` ao valor da label existente `traefik.http.routers.https-0-<resource-id>.middlewares`, preserve os middlewares já listados e faça redeploy. O sufixo `@file` aponta para o arquivo dinâmico do Traefik.
+
+Coolify documenta a criação de configuração dinâmica em [Dynamic configuration](https://coolify.io/docs/core/networking/proxy/traefik/dynamic-config) e a associação de middlewares em [Custom middlewares](https://coolify.io/docs/core/networking/proxy/traefik/custom-middlewares). A propriedade `stsSeconds` é definida pelo [middleware Headers do Traefik](https://doc.traefik.io/traefik/middlewares/http/headers/).
+
+Depois do redeploy, defina `BASE_URL` como `https://<domínio>/` e confira os headers efetivos pelo HTTPS na página, no fallback da SPA e num asset inexistente (resposta 404):
+
+```bash
+BASE_URL=https://fitburn.seudominio.com.br
+for path in / /rota-inexistente /assets/arquivo-inexistente.js; do
+  printf '\n%s\n' "$path"
+  curl -sS -D - -o /dev/null "$BASE_URL$path" \
+    | grep -Ei '^(HTTP/|content-security-policy:|x-frame-options:|referrer-policy:|x-content-type-options:|permissions-policy:|strict-transport-security:)'
+done
+```
+
+Cada resposta deve mostrar os cinco headers enviados pelo Nginx. `Strict-Transport-Security` deve mostrar `max-age=31536000`; confirme também no domínio HTTPS real antes de iniciar o piloto. Não use uma URL `http://` para validar HSTS.
 
 ### Verificação manual do IP usado no rate limit
 
@@ -116,7 +157,7 @@ Rodar de novo (a cada deploy) é seguro: nada é duplicado, e em outro dia a age
 - **Logs / terminal:** pelo painel do Coolify (serviço `api` → Logs / Terminal).
 - **Rodar o seed manualmente:** terminal do `api` → `node packages/api/dist/demo-seed/cli.js`.
 - **Reset completo da demonstração (apaga TUDO):** no terminal do `api`, `DEMO_RESET_ENABLED=true node packages/api/dist/demo-reset/cli.js --confirm-database=fitburn` (use o valor de `POSTGRES_DB`). Depois faça **Restart** do `api` (o `start.sh` refaz o seed se `DEMO_SEED=true`).
-- **Backup do banco:** no Coolify, o volume `postgres_data` pode ser incluído em backups do servidor; para um dump pontual, no terminal do `postgres`: `pg_dump -U fitburn fitburn > /tmp/fitburn.sql`.
+- **Backup do banco:** o serviço `backup` executa o dump diário criptografado para o destino S3 configurado. Um heartbeat ausente indica atraso ou falha; o alerta externo por atraso deve ser configurado no monitor escolhido.
 - **Voltar uma versão:** em **Deployments**, reimplante um commit anterior. Migrations não são revertidas automaticamente; uma migration nova e incompatível exige restaurar o backup.
 - Para uso real (dados de verdade), troque `DEMO_SEED` para `false` e revise `docs/deploy-runbook.md`, seção "Riscos aceitos na demo".
 
