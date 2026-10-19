@@ -19,6 +19,8 @@ const EXAMPLE_ENV_SOURCE = readFileSync(file(".env.production.example"), "utf8")
 const PROD_COMPOSE = readFileSync(file("docker-compose.prod.yml"), "utf8");
 const COOLIFY_COMPOSE = readFileSync(file("docker-compose.coolify.yml"), "utf8");
 const LOCAL_COMPOSE = readFileSync(file("docker-compose.prod.local.yml"), "utf8");
+const BACKUP_DOCKERFILE = readFileSync(file("docker/backup/Dockerfile"), "utf8");
+const BACKUP_CRONTAB = readFileSync(file("docker/backup/crontab"), "utf8");
 
 /** Nomes das variáveis do bloco `x-api-environment` (lidos do YAML, sem precisar do Docker). */
 function apiEnvironmentKeysFromYaml(): string[] {
@@ -79,6 +81,53 @@ describe("rate limit de login atrás dos proxies", () => {
   });
 });
 
+describe("backup no Compose do Coolify", () => {
+  const backup = serviceBlock(COOLIFY_COMPOSE, "backup");
+
+  it("fixa a base e versões das ferramentas e agenda execução diária interna", () => {
+    expect(BACKUP_DOCKERFILE).toMatch(/^FROM postgres:16-alpine$/m);
+    expect(BACKUP_DOCKERFILE).toContain("age/releases/download/v1.2.1/age-v1.2.1");
+    expect(BACKUP_DOCKERFILE).toContain("rclone-v1.69.1-linux-${rclone_arch}.zip");
+    expect(BACKUP_DOCKERFILE).toContain("supercronic/releases/download/v0.2.43/");
+    expect(BACKUP_CRONTAB.trim()).toBe("0 3 * * * /app/backup.sh");
+  });
+
+  it("exige configuração do backup, monta destino persistente e não publica portas", () => {
+    for (const name of [
+      "BACKUP_DESTINATION",
+      "BACKUP_STORAGE_ENDPOINT",
+      "BACKUP_STORAGE_REGION",
+      "BACKUP_STORAGE_ACCESS_KEY_ID",
+      "BACKUP_STORAGE_SECRET_ACCESS_KEY",
+      "BACKUP_AGE_RECIPIENT",
+      "BACKUP_HEARTBEAT_URL",
+    ]) {
+      expect(backup, `${name} ausente no serviço backup`).toContain(`\${${name}:?`);
+      expect(EXAMPLE_ENV, `${name} ausente em .env.production.example`).toHaveProperty(name);
+    }
+    expect(backup).toMatch(/^ {4}volumes:\n {6}- backup_data:\/backups$/m);
+    expect(backup).not.toMatch(/^ {4}ports:/m);
+    expect(COOLIFY_COMPOSE).toMatch(/^[ ]{2}backup_data:$/m);
+  });
+
+  it("mantém o serviço interno e aguarda o PostgreSQL ficar saudável", () => {
+    expect(backup).toContain("docker/backup/Dockerfile");
+    expect(backup).toMatch(/^ {4}depends_on:\n {6}postgres:\n {8}condition: service_healthy$/m);
+
+    if (!composeAvailable) return;
+    const config = composeConfig(["docker-compose.coolify.yml"]) as ComposeConfig;
+    const resolvedBackup = config.services.backup;
+    expect(resolvedBackup.ports ?? []).toEqual([]);
+    expect(
+      resolvedBackup.volumes?.some(
+        (volume) => volume.source === "backup_data" && volume.target === "/backups",
+      ),
+    ).toBe(true);
+    expect(resolvedBackup.environment?.BACKUP_DESTINATION).toBe("s3://fitburn-test/backups");
+    expect(resolvedBackup.environment?.BACKUP_AGE_RECIPIENT).toBe("age1fitburntestrecipient");
+  });
+});
+
 /** Lê a lista REQUIRED_IN_PRODUCTION direto do código da API, a fonte da verdade. */
 function requiredInProduction(): string[] {
   const source = readFileSync(path.resolve(__dirname, "../src/config/app-config.ts"), "utf8");
@@ -95,6 +144,13 @@ const FILLED_SECRETS = {
   JWT_ACCESS_SECRET: "0123456789abcdef0123456789abcdef0123456789abcdef",
   INITIAL_ADMIN_EMAIL: "admin@fitburn.example",
   INITIAL_ADMIN_PASSWORD: "uma-senha-forte-de-teste",
+  BACKUP_DESTINATION: "s3://fitburn-test/backups",
+  BACKUP_STORAGE_ENDPOINT: "https://s3.fitburn.example",
+  BACKUP_STORAGE_REGION: "us-east-1",
+  BACKUP_STORAGE_ACCESS_KEY_ID: "backup-test-access-key",
+  BACKUP_STORAGE_SECRET_ACCESS_KEY: "backup-test-secret-key",
+  BACKUP_AGE_RECIPIENT: "age1fitburntestrecipient",
+  BACKUP_HEARTBEAT_URL: "https://heartbeat.fitburn.example/backup-test",
 };
 
 describe(".env.production.example", () => {
