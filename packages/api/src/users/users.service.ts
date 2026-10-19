@@ -134,6 +134,13 @@ export class UsersService {
   ): Promise<UserWithProfile> {
     const profile = await this.getExistingProfile(input.profileId);
     await this.permissionsService.assertCanAssignProfile(requester.profile, profile);
+    if (profile.name === CLIENT_PROFILE_NAME) {
+      throw new DomainError(
+        ErrorCode.VALIDATION_ERROR,
+        "Clientes devem ser cadastrados pelo fluxo de clientes.",
+        ErrorStatus.VALIDATION,
+      );
+    }
     await this.assertEmailAvailable(input.email);
     const passwordHash = await hashPassword(input.password);
 
@@ -202,23 +209,25 @@ export class UsersService {
         },
       });
       if ((targetProfile?.name ?? current.profile.name) === CLIENT_PROFILE_NAME) {
-        if (input.birthDate) assertClientMinimumAge(input.birthDate);
+        const birthDate =
+          input.birthDate !== undefined
+            ? input.birthDate
+            : current.birthDate
+              ? dateOnlyToLocalDate(current.birthDate)
+              : null;
+        const becomingClient =
+          targetProfile?.name === CLIENT_PROFILE_NAME &&
+          current.profile.name !== CLIENT_PROFILE_NAME;
+        if ((input.birthDate !== undefined || becomingClient) && birthDate) {
+          assertClientMinimumAge(birthDate);
+        }
         if (input.phone === null) throw requiredClientFieldError("telefone");
         if (input.birthDate === null) throw requiredClientFieldError("data de nascimento");
 
         // Mudança de perfil deve criar um cliente válido. Clientes legados
         // incompletos continuam editáveis até que esses dados sejam corrigidos.
-        if (
-          targetProfile?.name === CLIENT_PROFILE_NAME &&
-          current.profile.name !== CLIENT_PROFILE_NAME
-        ) {
+        if (becomingClient) {
           const phone = input.phone !== undefined ? input.phone : current.phone;
-          const birthDate =
-            input.birthDate !== undefined
-              ? input.birthDate
-              : current.birthDate
-                ? dateOnlyToLocalDate(current.birthDate)
-                : null;
           if (phone === null) throw requiredClientFieldError("telefone");
           if (birthDate === null) throw requiredClientFieldError("data de nascimento");
         }

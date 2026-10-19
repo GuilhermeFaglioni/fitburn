@@ -162,7 +162,7 @@ Menu **Templates & modalidades**, aba **Templates de aula**, **+ Novo template**
 
 ## 9. Clientes simulados
 
-Menu **Clientes**, **+ Novo cliente** (página "Novo cliente", rota `/clientes/novo`; ao salvar volta para a lista de clientes). Todos os campos são obrigatórios: Nome completo, E-mail, Telefone, Data de nascimento, CPF, Endereço e **Senha inicial** (`<definir fora do repositório>`, mínimo de 8 caracteres). O documento é único por cliente.
+Menu **Clientes**, **+ Novo cliente** (página "Novo cliente", rota `/clientes/novo`; ao salvar volta para a lista de clientes). São obrigatórios: Nome completo, E-mail, Telefone, Data de nascimento e **Senha inicial** (`<definir fora do repositório>`, mínimo de 8 caracteres). CPF e endereço são opcionais; o documento é único quando informado.
 
 | Nome | E-mail | Telefone | Nascimento | Documento | Endereço | Contexto |
 |---|---|---|---|---|---|---|

@@ -353,9 +353,19 @@ describe("Clientes (HTTP)", () => {
       try {
         const admin = await createAdmin();
         const client = await createClient("ana");
+        await testPrisma.user.update({
+          where: { id: client.user.id },
+          data: {
+            phone: NEW_CLIENT.phone,
+            birthDate: new Date("2008-10-19T00:00:00.000Z"),
+          },
+        });
 
         const staffEdit = await patch(admin.token, `/${client.user.id}`, {
           birthDate: "2008-10-19",
+        });
+        const unrelatedEdit = await patch(admin.token, `/${client.user.id}`, {
+          phone: "11988887777",
         });
         const ownEdit = await request(app.getHttpServer())
           .patch("/api/me")
@@ -369,6 +379,11 @@ describe("Clientes (HTTP)", () => {
             message: "O cliente precisa ter pelo menos 18 anos.",
           });
         }
+        expect(unrelatedEdit.status).toBe(200);
+        expect(unrelatedEdit.body.phone).toBe("11988887777");
+        expect(
+          await testPrisma.user.findUniqueOrThrow({ where: { id: client.user.id } }),
+        ).toMatchObject({ phone: "11988887777" });
       } finally {
         vi.setSystemTime(previousTime);
       }
