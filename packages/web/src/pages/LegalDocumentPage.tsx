@@ -11,16 +11,41 @@ const DOCUMENTS = {
     checkboxLabel: "Li a política de privacidade",
     buttonLabel: "Registrar ciência",
     failureMessage: "Não foi possível registrar sua ciência.",
+    onboardingHeading: "Ciência da política de privacidade",
+    manifestationAction: "acknowledgePrivacy",
   },
   "terms-of-use": {
     checkboxLabel: "Li e aceito os termos de uso",
     buttonLabel: "Aceitar termos",
     failureMessage: "Não foi possível registrar seu aceite.",
+    onboardingHeading: "Aceite dos termos de uso",
+    manifestationAction: "acceptTerms",
   },
 } satisfies Record<
   LegalDocumentKey,
-  { checkboxLabel: string; buttonLabel: string; failureMessage: string }
+  {
+    checkboxLabel: string;
+    buttonLabel: string;
+    failureMessage: string;
+    onboardingHeading: string;
+    manifestationAction: "acknowledgePrivacy" | "acceptTerms";
+  }
 >;
+
+function useLegalDocument(documentKey: LegalDocumentKey) {
+  return useQuery({
+    queryKey: ["legal-document", documentKey],
+    queryFn: () => getLegalDocument(documentKey),
+  });
+}
+
+function LegalDocumentRequestState({ pending, error }: { pending: boolean; error: unknown }) {
+  return pending ? (
+    <LoadingState label="Carregando documento" />
+  ) : (
+    <p role="alert">{errorMessage(error, "Não foi possível carregar o documento.")}</p>
+  );
+}
 
 function LegalDocumentText({ content }: { content: string }) {
   return (
@@ -35,39 +60,57 @@ function LegalDocumentText({ content }: { content: string }) {
   );
 }
 
+function LegalDocumentContent({
+  title,
+  version,
+  content,
+}: {
+  title: string;
+  version: string;
+  content: string;
+}) {
+  return (
+    <>
+      <p>Versão {version}</p>
+      <div className="fb-profile__alert" role="note">
+        Conteúdo provisório para validação técnica. Esta ainda não é a versão jurídica aprovada.
+      </div>
+      <article className="fb-profile__card" aria-label={title}>
+        <LegalDocumentText content={content} />
+      </article>
+    </>
+  );
+}
+
 export function LegalDocumentPage({ documentKey }: { documentKey: LegalDocumentKey }) {
-  const query = useQuery({
-    queryKey: ["legal-document", documentKey],
-    queryFn: () => getLegalDocument(documentKey),
-  });
+  const query = useLegalDocument(documentKey);
+
+  if (query.isPending || query.isError) {
+    return (
+      <main id="conteudo" tabIndex={-1} className="fb-profile fb-legal-document">
+        <Link to="/login" className="fb-back-link">
+          Voltar ao login
+        </Link>
+        <LegalDocumentRequestState pending={query.isPending} error={query.error} />
+      </main>
+    );
+  }
 
   return (
     <main id="conteudo" tabIndex={-1} className="fb-profile fb-legal-document">
       <Link to="/login" className="fb-back-link">
         Voltar ao login
       </Link>
-      {query.isPending ? (
-        <LoadingState label="Carregando documento" />
-      ) : query.isError ? (
-        <p role="alert">{errorMessage(query.error, "Não foi possível carregar o documento.")}</p>
-      ) : (
-        <>
-          <h1 className="fb-profile__title">{query.data.title}</h1>
-          <p>Versão {query.data.version}</p>
-          <div className="fb-profile__alert" role="note">
-            Conteúdo provisório para validação técnica. Esta ainda não é a versão jurídica aprovada.
-          </div>
-          <article className="fb-profile__card" aria-label={query.data.title}>
-            <LegalDocumentText content={query.data.content} />
-          </article>
-          <nav aria-label="Outros documentos legais" className="fb-legal-document__links">
-            {documentKey !== "privacy-policy" && (
-              <Link to="/privacidade">Política de privacidade</Link>
-            )}
-            {documentKey !== "terms-of-use" && <Link to="/termos">Termos de uso</Link>}
-          </nav>
-        </>
-      )}
+      <h1 className="fb-profile__title">{query.data.title}</h1>
+      <LegalDocumentContent
+        title={query.data.title}
+        version={query.data.version}
+        content={query.data.content}
+      />
+      <nav aria-label="Outros documentos legais" className="fb-legal-document__links">
+        {documentKey !== "privacy-policy" && <Link to="/privacidade">Política de privacidade</Link>}
+        {documentKey !== "terms-of-use" && <Link to="/termos">Termos de uso</Link>}
+      </nav>
     </main>
   );
 }
@@ -77,35 +120,24 @@ export function LegalManifestationStep({ documentKey }: { documentKey: LegalDocu
   const [confirmed, setConfirmed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const document = DOCUMENTS[documentKey];
-  const query = useQuery({
-    queryKey: ["legal-document", documentKey],
-    queryFn: () => getLegalDocument(documentKey),
-  });
+  const query = useLegalDocument(documentKey);
+  const actions = { acknowledgePrivacy, acceptTerms };
   const mutation = useMutation({
-    mutationFn: () => (documentKey === "privacy-policy" ? acknowledgePrivacy() : acceptTerms()),
+    mutationFn: actions[document.manifestationAction],
     onError: (failure) => setError(errorMessage(failure, document.failureMessage)),
   });
-  if (query.isPending) return <LoadingState label="Carregando documento" />;
-  if (query.isError) {
-    return (
-      <p role="alert">{errorMessage(query.error, "Não foi possível carregar o documento.")}</p>
-    );
+  if (query.isPending || query.isError) {
+    return <LegalDocumentRequestState pending={query.isPending} error={query.error} />;
   }
 
   return (
     <main id="conteudo" tabIndex={-1} className="fb-profile fb-legal-document">
-      <h1 className="fb-profile__title">
-        {documentKey === "privacy-policy"
-          ? "Ciência da política de privacidade"
-          : "Aceite dos termos de uso"}
-      </h1>
-      <p>Versão {query.data.version}</p>
-      <div className="fb-profile__alert" role="note">
-        Conteúdo provisório para validação técnica. Esta ainda não é a versão jurídica aprovada.
-      </div>
-      <article className="fb-profile__card" aria-label={query.data.title}>
-        <LegalDocumentText content={query.data.content} />
-      </article>
+      <h1 className="fb-profile__title">{document.onboardingHeading}</h1>
+      <LegalDocumentContent
+        title={query.data.title}
+        version={query.data.version}
+        content={query.data.content}
+      />
       <label className="fb-profile__legal-confirmation">
         <input
           type="checkbox"
