@@ -14,6 +14,17 @@ enum UserStatus {
   DELETED
 }
 
+enum AdminAuditAction {
+  USER_CREATED
+  USER_UPDATED
+  USER_DEACTIVATED
+  USER_REACTIVATED
+  USER_DELETED
+  USER_PROFILE_CHANGED
+  USER_PASSWORD_RESET
+  PROFILE_PERMISSIONS_CHANGED
+}
+
 enum Module {
   USUARIOS
   PERFIS_DE_ACESSO
@@ -89,7 +100,7 @@ model User {
   document     String?    @unique
   address      String?
   status       UserStatus @default(ACTIVE)
-  tokenVersion Int        @default(0) @map("token_version")
+  tokenVersion Int        @default(0)
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 
@@ -124,6 +135,20 @@ model User {
   authoredWorkoutSheets WorkoutSheet[]          @relation("AuthoredWorkoutSheets")
 
   @@map("users")
+}
+
+/// Registro técnico das ações administrativas. Não armazena valores dos campos.
+model AdminAuditEvent {
+  id            String           @id @default(uuid())
+  actorId       String
+  action        AdminAuditAction
+  targetId      String
+  changedFields String[]         @default([])
+  createdAt     DateTime         @default(now()) @db.Timestamptz(3)
+
+  @@index([actorId, createdAt])
+  @@index([targetId, createdAt])
+  @@map("admin_audit_events")
 }
 
 enum OccurrenceStatus {

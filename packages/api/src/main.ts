@@ -1,6 +1,7 @@
 import "reflect-metadata";
 import { createApplication } from "./bootstrap/create-application.js";
 import { AppConfigError } from "./config/app-config.js";
+import { serializeRedactedLogEntry } from "./common/logging/redact-sensitive.js";
 
 async function bootstrap(): Promise<void> {
   const app = await createApplication();
@@ -11,6 +12,11 @@ async function bootstrap(): Promise<void> {
 
 bootstrap().catch((error: unknown) => {
   // Configuração inválida: mensagem objetiva, sem stack, e saída com erro (falha rápida).
-  console.error(error instanceof AppConfigError ? error.message : error);
+  console.error(
+    serializeRedactedLogEntry({
+      event: "api.bootstrap_error",
+      message: error instanceof AppConfigError ? error.message : error,
+    }),
+  );
   process.exit(1);
 });

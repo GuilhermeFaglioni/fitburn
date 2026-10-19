@@ -76,8 +76,9 @@ export class UsersController {
   @Post("clients")
   async createClient(
     @Body(new ZodValidationPipe(createClientRequestSchema)) body: CreateClientRequest,
+    @Req() req: AuthenticatedRequest,
   ): Promise<UserDetail> {
-    const user = await this.usersService.createClient(body);
+    const user = await this.usersService.createClient(body, requesterOf(req));
     return this.usersService.toUserDetail(user);
   }
 
@@ -107,8 +108,9 @@ export class UsersController {
   @RequirePermission(Module.USUARIOS, PermissionAction.EDIT)
   @Post(":id/deactivate")
   async deactivate(@Param("id") id: string, @Req() req: AuthenticatedRequest): Promise<UserDetail> {
-    assertUserInScope(requesterOf(req), id);
-    const user = await this.usersService.deactivate(id);
+    const requester = requesterOf(req);
+    assertUserInScope(requester, id);
+    const user = await this.usersService.deactivate(id, requester);
     return this.usersService.toUserDetail(user);
   }
 
@@ -119,7 +121,8 @@ export class UsersController {
   @RequirePermission(Module.USUARIOS, PermissionAction.DELETE)
   @Delete(":id")
   async remove(@Param("id") id: string, @Req() req: AuthenticatedRequest): Promise<UserDetail> {
-    assertUserInScope(requesterOf(req), id);
+    const requester = requesterOf(req);
+    assertUserInScope(requester, id);
     if (id === req.authUser.sub) {
       throw new DomainError(
         ErrorCode.VALIDATION_ERROR,
@@ -127,15 +130,16 @@ export class UsersController {
         ErrorStatus.VALIDATION,
       );
     }
-    const user = await this.usersService.anonymize(id);
+    const user = await this.usersService.anonymize(id, requester);
     return this.usersService.toUserDetail(user);
   }
 
   @RequirePermission(Module.USUARIOS, PermissionAction.EDIT)
   @Post(":id/reactivate")
   async reactivate(@Param("id") id: string, @Req() req: AuthenticatedRequest): Promise<UserDetail> {
-    assertUserInScope(requesterOf(req), id);
-    const user = await this.usersService.reactivate(id);
+    const requester = requesterOf(req);
+    assertUserInScope(requester, id);
+    const user = await this.usersService.reactivate(id, requester);
     return this.usersService.toUserDetail(user);
   }
 
@@ -147,7 +151,8 @@ export class UsersController {
     @Body(new ZodValidationPipe(resetPasswordRequestSchema)) body: ResetPasswordRequest,
     @Req() req: AuthenticatedRequest,
   ): Promise<void> {
-    assertUserInScope(requesterOf(req), id);
-    await this.usersService.resetPassword(id, body.newPassword);
+    const requester = requesterOf(req);
+    assertUserInScope(requester, id);
+    await this.usersService.resetPassword(id, body.newPassword, requester);
   }
 }
