@@ -1,7 +1,7 @@
 # 003 — Ciclo de vida de sessão (refresh atômico, reset de senha, desativação)
 
-- **Status**: TODO
-- **Commit**: —
+- **Status**: DONE
+- **Commit**: `d41947b` (API), `c173b36` (web)
 - **Severity**: MEDIUM
 - **Origem**: auditoria api-security M1, M2, M3 (M3 também em docs-conformance)
 - **Escopo estimado**: `packages/api/src/auth/auth.service.ts`, `packages/api/src/permissions/permissions.guard.ts` (ou `auth/jwt-auth.guard.ts`), `packages/api/src/users/users.service.ts` (só `resetPassword`), testes `refresh.e2e-spec.ts`, `auth.e2e-spec.ts`, `users.e2e-spec.ts`, `permissions.e2e-spec.ts`
@@ -36,6 +36,10 @@ Referência: `docs/open-decisions.md:21` deixa validade/rotação/revogação em
 - Não toque em atribuição de perfil (`createStaff`/`update`) nem em `profiles/*` (plano 001).
 - Não altere TTLs nem o formato do cookie.
 - Não introduza versão de sessão/blacklist de access token (fora do escopo; anote como melhoria futura).
+
+## Melhoria futura
+
+- Avaliar versionamento de sessão ou blacklist para invalidar access tokens emitidos antes da expiração, especialmente após reset de senha. Este plano revoga refresh tokens; access tokens existentes continuam sujeitos ao TTL normal.
 
 ## Aceitação
 

@@ -4,8 +4,15 @@ import { cleanDatabase, testPrisma } from "./db-test-helper.js";
 import { createAccessProfile, createUser, grantModuleAccess } from "./factories.js";
 import { loginAndGetAccessToken } from "./login-helper.js";
 import { createTestApp } from "./test-app.js";
+import { REFRESH_COOKIE_NAME } from "../src/auth/refresh-cookie.js";
 
 const PASSWORD = "SenhaForte123!";
+
+function extractRefreshCookie(response: request.Response): string | undefined {
+  const raw = response.headers["set-cookie"];
+  const cookies = Array.isArray(raw) ? raw : raw ? [raw] : [];
+  return cookies.find((cookie: string) => cookie.startsWith(`${REFRESH_COOKIE_NAME}=`));
+}
 
 describe("Gestão de usuários (HTTP)", () => {
   let app: INestApplication;
@@ -701,6 +708,30 @@ describe("Gestão de usuários (HTTP)", () => {
         .post("/api/auth/login")
         .send({ email: target.email, password: "NovaSenhaForte456!" });
       expect(withNewPassword.status).toBe(201);
+    });
+
+    it("revoga sessão anterior: reset de senha torna o refresh cookie anterior inválido", async () => {
+      const { token } = await loginAsAdmin();
+      const clientProfile = await createAccessProfile({ name: "Cliente", isSystem: true });
+      const target = await createUser({ email: "alvo@fitburn.local", password: PASSWORD, profileId: clientProfile.id });
+      const targetLogin = await request(app.getHttpServer())
+        .post("/api/auth/login")
+        .send({ email: target.email, password: PASSWORD });
+      const refreshCookie = extractRefreshCookie(targetLogin);
+      expect(refreshCookie).toBeDefined();
+
+      const reset = await request(app.getHttpServer())
+        .post(`/api/users/${target.id}/reset-password`)
+        .set("Authorization", `Bearer ${token}`)
+        .send({ newPassword: "NovaSenhaForte456!" });
+      expect(reset.status).toBe(204);
+
+      const refresh = await request(app.getHttpServer())
+        .post("/api/auth/refresh")
+        .set("Cookie", refreshCookie!);
+
+      expect(refresh.status).toBe(401);
+      expect(refresh.body.code).toBe("SESSION_EXPIRED");
     });
   });
 });

@@ -2,6 +2,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { http, HttpResponse } from "msw";
+import { authFetch } from "../src/lib/auth/authFetch";
 import { AuthProvider, useAuth } from "../src/lib/auth/AuthContext";
 import { SessionCacheReset } from "../src/lib/auth/SessionCacheReset";
 import { mockSuccessfulLogin } from "./auth-mocks";
@@ -63,5 +64,31 @@ describe("Cache de consultas na troca de sessão", () => {
     await new Promise((resolve) => setTimeout(resolve, 50));
 
     expect(queryClient.getQueryData(["algo"])).toBe("valor");
+  });
+
+  it("encerra a sessão visual quando a renovação recusa usuário inativo", async () => {
+    mockSuccessfulLogin("Administrador");
+    server.use(
+      http.get("/api/protegido", () =>
+        HttpResponse.json({ code: "USER_INACTIVE", message: "Este usuário está inativo." }, { status: 401 }),
+      ),
+      http.post("/api/auth/refresh", () =>
+        HttpResponse.json({ code: "SESSION_EXPIRED", message: "Sessão expirada." }, { status: 401 }),
+      ),
+    );
+    const user = userEvent.setup();
+    render(
+      <AuthProvider>
+        <LoginAndLogout />
+      </AuthProvider>,
+    );
+
+    await user.click(screen.getByRole("button", { name: "entrar" }));
+    await screen.findByText("logado");
+
+    const response = await authFetch("/api/protegido");
+
+    expect(response.status).toBe(401);
+    await waitFor(() => expect(screen.getByText("deslogado")).toBeInTheDocument());
   });
 });

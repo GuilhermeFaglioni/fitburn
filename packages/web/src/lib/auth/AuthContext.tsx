@@ -44,7 +44,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // resolver, o resultado tardio dela não deve sobrescrever essa ação.
   const hasExplicitAuthActionRef = useRef(false);
 
-  useEffect(() => onSessionEnded(() => setUser(null)), []);
+  useEffect(
+    () =>
+      onSessionEnded(() => {
+        hasExplicitAuthActionRef.current = true;
+        setUser(null);
+      }),
+    [],
+  );
 
   useEffect(() => {
     let cancelled = false;

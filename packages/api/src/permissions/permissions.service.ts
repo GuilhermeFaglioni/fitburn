@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import type { AccessProfile } from "@prisma/client";
+import type { AccessProfile, UserStatus } from "@prisma/client";
 import {
   ALL_MODULES,
   ALL_PERMISSION_ACTIONS,
@@ -37,15 +37,17 @@ const SCOPE_RANK: Record<PermissionScopeName, number> = {
 export class PermissionsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getProfileForUser(userId: string): Promise<AccessProfile | null> {
+  async getUserAuthorizationContext(
+    userId: string,
+  ): Promise<{ status: UserStatus; profile: AccessProfile } | null> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: { profile: true },
     });
     // Excluído (anonimizado) perde o acesso na hora, mesmo com um token ainda
     // válido (o JwtAuthGuard já barra; aqui é rede de segurança).
-    if (user?.status === "DELETED") return null;
-    return user?.profile ?? null;
+    if (!user || user.status === "DELETED") return null;
+    return { status: user.status, profile: user.profile };
   }
 
   async hasPermission(

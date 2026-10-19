@@ -67,6 +67,30 @@ describe("Renovação de sessão (HTTP)", () => {
     expect(second.status).toBe(200);
   });
 
+  it("consome um refresh token uma única vez quando duas requisições concorrem", async () => {
+    const profile = await createAccessProfile({ name: "Cliente", isSystem: true });
+    const user = await createUser({ email: "corrida@fitburn.local", password: PASSWORD, profileId: profile.id });
+    const statuses: number[][] = [];
+
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const login = await request(app.getHttpServer())
+        .post("/api/auth/login")
+        .send({ email: user.email, password: PASSWORD });
+      const refreshCookie = extractRefreshCookie(login);
+      expect(refreshCookie).toBeDefined();
+
+      const responses = await Promise.all([
+        request(app.getHttpServer()).post("/api/auth/refresh").set("Cookie", refreshCookie!),
+        request(app.getHttpServer()).post("/api/auth/refresh").set("Cookie", refreshCookie!),
+      ]);
+      statuses.push(responses.map((response) => response.status));
+    }
+
+    expect(statuses.every((pair) => pair.filter((status) => status === 200).length <= 1)).toBe(true);
+    const activeTokens = await testPrisma.refreshToken.count({ where: { userId: user.id, revokedAt: null } });
+    expect(activeTokens).toBeLessThanOrEqual(1);
+  });
+
   it("reusar um refresh token já rotacionado revoga todas as sessões do usuário", async () => {
     const { user, refreshCookie } = await loginAsNewUser();
 

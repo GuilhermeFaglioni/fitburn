@@ -133,6 +133,28 @@ describe("Auth (HTTP)", () => {
     });
   });
 
+  describe("GET /api/me", () => {
+    it("mantém USER_INACTIVE para cliente inativo com access token emitido antes da desativação", async () => {
+      const profile = await createAccessProfile({ name: "Cliente", isSystem: true });
+      const user = await createUser({
+        email: "cliente-inativo@fitburn.local",
+        password: "SenhaForte123!",
+        profileId: profile.id,
+      });
+      const login = await request(app.getHttpServer())
+        .post("/api/auth/login")
+        .send({ email: user.email, password: "SenhaForte123!" });
+      await testPrisma.user.update({ where: { id: user.id }, data: { status: "INACTIVE" } });
+
+      const response = await request(app.getHttpServer())
+        .get("/api/me")
+        .set("Authorization", `Bearer ${login.body.accessToken}`);
+
+      expect(response.status).toBe(401);
+      expect(response.body.code).toBe("USER_INACTIVE");
+    });
+  });
+
   describe("POST /api/auth/logout", () => {
     it("revoga a sessão referente ao cookie de refresh e limpa o cookie", async () => {
       await seedUser();
