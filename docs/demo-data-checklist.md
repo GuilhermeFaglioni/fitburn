@@ -313,7 +313,7 @@ Prazo das metas ativas: último dia do mês da demo.
 | Conta | Deve ver |
 |---|---|
 | Administrador | Menu completo (11 itens) |
-| Camila (Professor) | Dashboard, Clientes, Agenda, Fichas de treino, Metas, Minhas aulas; em Clientes só Marina, Thiago, Beatriz e Larissa |
+| Camila (Professor) | Dashboard, Clientes, Agenda, Templates & modalidades, Fichas de treino, Metas, Minhas aulas; em Clientes só Marina, Thiago, Beatriz e Larissa |
 | Bianca (Funcionário administrativo) | Dashboard, Clientes, Agenda, Reservas, Planos, Templates & modalidades, Metas, Atribuições; "+ Nova aula" desabilitado |
 | Marina, Thiago (Cliente) | Barra lateral: Home, Agenda, Plano, Ficha de treino, Perfil (sem "Sair": a saída é "Sair da conta" no Perfil); no celular, barra inferior com Treino no lugar de Ficha de treino |
 
