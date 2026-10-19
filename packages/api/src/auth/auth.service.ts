@@ -25,10 +25,7 @@ export class AuthService {
   ) {}
 
   async login(email: string, password: string): Promise<LoginResult> {
-    const credentials = await this.prisma.user.findUnique({
-      where: { email },
-      select: { id: true, email: true, passwordHash: true },
-    });
+    const credentials = await this.usersService.findByEmail(email);
     const passwordMatches = credentials
       ? await verifyPassword(password, credentials.passwordHash)
       : false;
