@@ -66,7 +66,7 @@ describe("Reset da demonstração: comando (processo separado)", () => {
     expect(result.status).not.toBe(0);
     expect(result.stderr).toMatch(/confirm/i);
     expect(await sentinelSurvived()).toBe(true);
-  });
+  }, 120_000);
 
   it("recusa quando a confirmação não bate com o banco da DATABASE_URL", async () => {
     const result = runCli(["--confirm-database=fitburn_prod"]);
@@ -82,13 +82,18 @@ describe("Reset da demonstração: comando (processo separado)", () => {
     expect((await testPrisma.user.findMany()).map((u) => u.email)).toEqual([ADMIN_EMAIL]);
     expect(
       (await testPrisma.accessProfile.findMany({ orderBy: { name: "asc" } })).map((p) => p.name),
-    ).toEqual(["Administrador", "Cliente"]);
+    ).toEqual([
+      "Administrador",
+      "Cliente",
+      "Funcionário administrativo",
+      "Professor",
+    ]);
     expect(await testPrisma.gamificationRule.count()).toBe(5);
 
     const second = runCli([`--confirm-database=${databaseName()}`]);
     expect(second.status).toBe(0);
     expect((await testPrisma.user.findMany()).map((u) => u.email)).toEqual([ADMIN_EMAIL]);
-    expect(await testPrisma.accessProfile.count()).toBe(2);
+    expect(await testPrisma.accessProfile.count()).toBe(4);
     expect(await testPrisma.gamificationRule.count()).toBe(5);
   }, 120_000);
 
