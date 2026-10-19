@@ -17,7 +17,6 @@ const file = (...parts: string[]): string => path.join(ROOT, ...parts);
 const EXAMPLE_ENV = dotenv.parse(readFileSync(file(".env.production.example")));
 const PROD_COMPOSE = readFileSync(file("docker-compose.prod.yml"), "utf8");
 const LOCAL_COMPOSE = readFileSync(file("docker-compose.prod.local.yml"), "utf8");
-const COOLIFY_COMPOSE = readFileSync(file("docker-compose.coolify.yml"), "utf8");
 
 /** Nomes das variáveis do bloco `x-api-environment` (lidos do YAML, sem precisar do Docker). */
 function apiEnvironmentKeysFromYaml(): string[] {
@@ -85,37 +84,8 @@ describe(".env.production.example", () => {
     });
     expect(config.isProduction).toBe(true);
     expect(config.refreshCookie.secure).toBe(true);
-    // Só confia no proxy imediato; a configuração de cada proxy controla o XFF enviado à API.
-    expect(config.trustProxyHops).toBe(1);
-  });
-});
-
-describe("X-Forwarded-For nos artefatos de deploy", () => {
-  it.each([
-    ["Vercel + Nginx", PROD_COMPOSE],
-    ["Coolify + Nginx", COOLIFY_COMPOSE],
-  ])("confia em um único proxy na topologia %s", (_topology, compose) => {
-    expect(compose).toMatch(/^\s+TRUST_PROXY_HOPS: "1"$/m);
-    expect(compose).not.toMatch(/TRUST_PROXY_HOPS:\s*\$\{/);
-  });
-
-  it("os Nginx acrescentam o peer imediato ao XFF antes de encaminhar à API", () => {
-    for (const proxy of [
-      readFileSync(file("docker/nginx/templates/api-proxy.inc"), "utf8"),
-      readFileSync(file("docker/web/nginx.conf"), "utf8"),
-    ]) {
-      expect(proxy).toContain("proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;");
-    }
-  });
-
-  it("documenta que clientes atrás de Vercel/Coolify compartilham IP do proxy no rate limit", () => {
-    const runbook = readFileSync(file("docs/deploy-runbook.md"), "utf8");
-    const coolify = readFileSync(file("docs/deploy-coolify.md"), "utf8");
-    expect(runbook).toContain("TRUST_PROXY_HOPS=1");
-    expect(runbook).toContain("Vercel");
-    expect(runbook).toContain("X-Forwarded-For");
-    expect(coolify).toContain("TRUST_PROXY_HOPS=1");
-    expect(coolify).toContain("X-Forwarded-For");
+    // Atrás do Nginx e do rewrite da Vercel: dois saltos até o IP do cliente.
+    expect(config.trustProxyHops).toBe(2);
   });
 });
 

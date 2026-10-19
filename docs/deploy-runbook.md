@@ -70,8 +70,7 @@ Pontos de atenção (o `.env.production.example` comenta cada variável):
 | `JWT_ACCESS_SECRET` | mínimo 32 caracteres; a API recusa iniciar com valor de exemplo ou curto |
 | `INITIAL_ADMIN_EMAIL` / `INITIAL_ADMIN_PASSWORD` | administrador da demo; senha com no mínimo 12 caracteres |
 | `CORS_ALLOWED_ORIGINS` | vazio |
-
-O Compose fixa `TRUST_PROXY_HOPS=1`: a API confia apenas no Nginx, que anexa o endereço do peer imediato ao `X-Forwarded-For` antes de encaminhar a requisição.
+| `TRUST_PROXY_HOPS` | `2` (Vercel + Nginx) |
 
 O `.env.production` **nunca** vai para o git (o `.gitignore` já o ignora). Para não repetir `-f` e `--env-file` em todo comando, exporte (vale para o restante deste runbook, na raiz do repositório):
 
@@ -225,7 +224,7 @@ A janela sem API é de alguns segundos (recriação do contêiner). O frontend �
 
 ### Riscos aceitos na demo
 
-- **Cota de login compartilhada pelo proxy.** O Compose fixa `TRUST_PROXY_HOPS=1`, e o Nginx acrescenta o endereço do peer imediato ao `X-Forwarded-For`. A API usa esse peer como `req.ip`, então um cliente não consegue trocar a cota enviando XFF forjado. Quando o tráfego passa pela Vercel, requisições vindas do mesmo endereço de origem da Vercel compartilham a cota; no Coolify, clientes atrás do mesmo Traefik também. Chamadas diretas ao Nginx são limitadas pelo endereço real do cliente. Não há configuração manual adicional fora do repositório.
+- **`TRUST_PROXY_HOPS=2` e IP forjável (X-Forwarded-For).** A API confia em dois saltos de proxy (Vercel e Nginx) para descobrir o IP do cliente, usado no limite de tentativas de login. Quem acessar o backend **direto** (`https://DOMAIN/api/...`, sem passar pela Vercel) consegue mandar um `X-Forwarded-For` falso e driblar o limite por IP. Risco **aceito** para a demonstração (dados fictícios, sem informação real). **Mitigação futura** (antes de qualquer uso com dados reais): fazer o Nginx aceitar `/api` só de requisições vindas da Vercel (segredo compartilhado em cabeçalho, ou lista de IPs da Vercel), ou colocar a API atrás de um único proxy e usar `TRUST_PROXY_HOPS=1`.
 
 ## 13. Verificação local do Compose de produção (sem TLS)
 
@@ -235,7 +234,7 @@ Permite conferir a stack inteira (Nginx, API na porta interna, PostgreSQL sem po
 cp .env.production.example .env.production
 # Preencha os obrigatórios com valores de teste, e ajuste:
 #   DOMAIN=localhost            (só satisfaz a variável obrigatória)
-#   TRUST_PROXY_HOPS=1 é fixado pelo Compose.
+#   TRUST_PROXY_HOPS=1          (sem Vercel na frente)
 # Ex.: POSTGRES_PASSWORD=$(openssl rand -hex 16), JWT_ACCESS_SECRET=$(openssl rand -hex 32),
 #      INITIAL_ADMIN_EMAIL=admin@fitburn.local, INITIAL_ADMIN_PASSWORD=uma-senha-forte-123
 
@@ -274,4 +273,4 @@ Para desmontar: `docker compose down` (mantém o volume) ou `docker compose down
 | `migrate` falha | Banco fora, senha do `.env.production` diferente da que criou o volume (o volume guarda a senha da primeira subida), ou migration com erro |
 | Nginx reinicia em loop após emitir certificado | `DOMAIN` diferente do usado no `certbot`; veja `docker compose logs nginx` |
 | 502 do Nginx logo após um deploy | API ainda subindo; aguarde o `healthy` e tente de novo |
-| Login bloqueado (429) | Rate limit usa o peer imediato do Nginx; clientes atrás do mesmo proxy compartilham cota |
+| Login bloqueado (429) | Rate limit por IP; se todos os usuários caem no mesmo IP, confira `TRUST_PROXY_HOPS` (2 atrás da Vercel) |

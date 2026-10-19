@@ -49,11 +49,7 @@ Em **Environment Variables** do recurso (as que faltarem aparecem como obrigató
 | `DEMO_SEED` | `true` para popular a demonstração (pode ficar `true`: é idempotente) |
 | `DEMO_USER_PASSWORD` | senha de **todas** as contas de demonstração (mínimo 12 caracteres) |
 
-Opcionais, com padrão adequado: `POSTGRES_USER`, `POSTGRES_DB`, `TZ`, `AUTH_RATE_LIMIT_*`, `JWT_ACCESS_TTL_SECONDS`, `REFRESH_TOKEN_TTL_DAYS`. Deixe `CORS_ALLOWED_ORIGINS` vazio.
-
-### Rate limit de login e `X-Forwarded-For`
-
-O Compose fixa `TRUST_PROXY_HOPS=1`: a API confia apenas no Nginx do serviço `web`. Esse Nginx anexa o endereço do peer imediato ao `X-Forwarded-For`; com isso, um cliente não consegue escolher o `req.ip` enviando um header próprio. A API vê o endereço do Traefik do Coolify, então clientes que chegam pelo mesmo proxy compartilham a cota de login. Não exponha o serviço `api` nem altere esse valor.
+Opcionais, com padrão adequado: `POSTGRES_USER`, `POSTGRES_DB`, `TZ`, `TRUST_PROXY_HOPS` (`2` = Traefik + Nginx do `web`; não mude), `AUTH_RATE_LIMIT_*`, `JWT_ACCESS_TTL_SECONDS`, `REFRESH_TOKEN_TTL_DAYS`. Deixe `CORS_ALLOWED_ORIGINS` vazio.
 
 ## 5. Deploy e verificação
 
