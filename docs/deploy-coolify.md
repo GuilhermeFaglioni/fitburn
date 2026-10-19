@@ -57,7 +57,7 @@ Em **Environment Variables** do recurso (as que faltarem aparecem como obrigató
 
 Opcionais, com padrão adequado: `POSTGRES_USER`, `POSTGRES_DB`, `TZ`, `TRUST_PROXY_HOPS` (`2` = Traefik + Nginx do `web`), `AUTH_RATE_LIMIT_*`, `JWT_ACCESS_TTL_SECONDS`, `REFRESH_TOKEN_TTL_DAYS`. Deixe `CORS_ALLOWED_ORIGINS` vazio.
 
-Gere o par age numa máquina confiável fora da VPS. Guarde o arquivo de identidade em local seguro e cadastre somente o recipient público em `BACKUP_AGE_RECIPIENT`; nunca copie a chave privada para o Coolify. O exemplo `.env.production.example` lista todas as variáveis obrigatórias do serviço.
+Gere o par age numa máquina confiável fora da VPS. Guarde o arquivo de identidade em local seguro e cadastre somente o recipient público em `BACKUP_AGE_RECIPIENT`; nunca copie a chave privada para o Coolify. O exemplo `.env.production.example` lista todas as variáveis obrigatórias do serviço. Elas não derrubam o restante do Compose quando ausentes (a demo não tem storage de backup): só o serviço `backup` recusa subir, com uma mensagem nos logs dizendo qual variável falta. No ambiente do piloto, confira nos logs que ele subiu.
 
 O serviço `backup` espera o PostgreSQL ficar saudável e agenda uma execução diária às 03:00 UTC. Cada execução cria um dump SQL comprimido com gzip, criptografa com age, envia para `BACKUP_DESTINATION/daily` e mantém os 14 mais recentes; aos domingos também grava em `weekly` e mantém os 8 mais recentes. O heartbeat só é enviado depois de upload e retenção concluídos. `file:///...` é aceito para testes; em produção, use S3 compatível para manter os arquivos fora da VPS.
 
@@ -73,6 +73,37 @@ Não publique portas dos serviços `web` ou `api` fora do Traefik: só `web` dev
 2. Confira nos logs do `api` as linhas `[start] prisma migrate deploy`, `[start] seed base`, `[start] seed da demonstração` e `Fitburn API rodando`.
 3. Abra `https://fitburn.seudominio.com.br/api/health` → `{"status":"ok",...}`.
 4. Abra o app e entre com uma das contas abaixo.
+
+### Headers de segurança e HSTS
+
+O Nginx do `web` envia CSP, proteção contra framing, Referrer-Policy, nosniff e Permissions-Policy nas respostas da aplicação. O HSTS é aplicado pelo Traefik do Coolify, que termina o TLS; não configure HSTS no Nginx do `web`.
+
+No Coolify, abra **Servers → seu servidor → Proxy → Dynamic Configurations**, adicione `fitburn-hsts.yaml` e salve:
+
+```yaml
+http:
+  middlewares:
+    fitburn-hsts:
+      headers:
+        stsSeconds: 31536000
+```
+
+Isso define `max-age=31536000` (um ano). Deixe `stsIncludeSubdomains` e `stsPreload` desativados até confirmar que todos os subdomínios e requisitos de preload estão prontos. Em seguida, no recurso Compose do Fitburn, abra **General → Container labels** e mude **Label management** para **Managed manually**. Acrescente `fitburn-hsts@file` ao valor da label existente `traefik.http.routers.https-0-<resource-id>.middlewares`, preserve os middlewares já listados e faça redeploy. O sufixo `@file` aponta para o arquivo dinâmico do Traefik.
+
+Coolify documenta a criação de configuração dinâmica em [Dynamic configuration](https://coolify.io/docs/core/networking/proxy/traefik/dynamic-config) e a associação de middlewares em [Custom middlewares](https://coolify.io/docs/core/networking/proxy/traefik/custom-middlewares). A propriedade `stsSeconds` é definida pelo [middleware Headers do Traefik](https://doc.traefik.io/traefik/middlewares/http/headers/).
+
+Depois do redeploy, defina `BASE_URL` como `https://<domínio>/` e confira os headers efetivos pelo HTTPS na página, no fallback da SPA e num asset inexistente (resposta 404):
+
+```bash
+BASE_URL=https://fitburn.seudominio.com.br
+for path in / /rota-inexistente /assets/arquivo-inexistente.js; do
+  printf '\n%s\n' "$path"
+  curl -sS -D - -o /dev/null "$BASE_URL$path" \
+    | grep -Ei '^(HTTP/|content-security-policy:|x-frame-options:|referrer-policy:|x-content-type-options:|permissions-policy:|strict-transport-security:)'
+done
+```
+
+Cada resposta deve mostrar os cinco headers enviados pelo Nginx. `Strict-Transport-Security` deve mostrar `max-age=31536000`; confirme também no domínio HTTPS real antes de iniciar o piloto. Não use uma URL `http://` para validar HSTS.
 
 ### Verificação manual do IP usado no rate limit
 
