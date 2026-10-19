@@ -59,10 +59,14 @@ export class PermissionsGuard implements CanActivate {
     request.authProfile = profile;
     const scope = await this.permissionsService.getEffectiveScope(profile, required.module);
     request.authScope = scope;
-    request.authClientScope =
-      required.module === Module.CLIENTES
-        ? scope
-        : await this.permissionsService.getEffectiveScope(profile, Module.CLIENTES);
+    if (required.module === Module.CLIENTES) {
+      request.authClientScope = scope;
+    } else if (required.module === Module.USUARIOS) {
+      request.authClientScope = await this.permissionsService.getEffectiveScope(
+        profile,
+        Module.CLIENTES,
+      );
+    }
     return true;
   }
 }
