@@ -131,6 +131,11 @@ function ModuleRow({
             </button>
           </BlockedAction>
         )}
+        {mutation.isError && (
+          <p role="alert" className="fb-error-box">
+            {mutation.error.message || "Não foi possível salvar as permissões."}
+          </p>
+        )}
       </td>
     </tr>
   );

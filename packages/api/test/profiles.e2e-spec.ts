@@ -212,6 +212,137 @@ describe("Perfis de acesso (HTTP)", () => {
         scope: "OWN",
       });
     });
+
+    it("mantém imutáveis nomes de perfis de sistema, mas permite editar descrições", async () => {
+      const { token, profile: adminProfile } = await loginAsAdmin();
+      const clientProfile = await createAccessProfile({ name: "Cliente", isSystem: true });
+
+      for (const [profile, newName] of [
+        [adminProfile, "Administrador renomeado"],
+        [clientProfile, "Cliente renomeado"],
+      ] as const) {
+        const renamed = await request(app.getHttpServer())
+          .patch(`/api/profiles/${profile.id}`)
+          .set("Authorization", `Bearer ${token}`)
+          .send({ name: newName });
+
+        expect(renamed.status).toBe(422);
+        expect(renamed.body.code).toBe("SYSTEM_PROFILE_IMMUTABLE");
+        expect((await testPrisma.accessProfile.findUniqueOrThrow({ where: { id: profile.id } })).name).toBe(
+          profile.name,
+        );
+
+        const description = await request(app.getHttpServer())
+          .patch(`/api/profiles/${profile.id}`)
+          .set("Authorization", `Bearer ${token}`)
+          .send({ description: `Descrição de ${profile.name}` });
+
+        expect(description.status).toBe(200);
+        expect(description.body).toMatchObject({ name: profile.name, description: `Descrição de ${profile.name}` });
+      }
+    });
+  });
+
+  describe("Teto de privilégio na matriz", () => {
+    it("recusa editar a própria matriz e conceder ação que o ator não possui; aceita subconjunto", async () => {
+      const actorProfile = await createAccessProfile({ name: "Gestor de perfis" });
+      await grantModuleAccess({
+        profileId: actorProfile.id,
+        module: "PERFIS_DE_ACESSO",
+        actions: ["EDIT"],
+        scope: "ALL",
+      });
+      await grantModuleAccess({
+        profileId: actorProfile.id,
+        module: "CLIENTES",
+        actions: ["VIEW"],
+        scope: "OWN",
+      });
+      const actor = await createUser({
+        email: "gestor-perfis@fitburn.local",
+        password: PASSWORD,
+        profileId: actorProfile.id,
+      });
+      const token = await loginAndGetAccessToken(app, actor.email, PASSWORD);
+      const targetProfile = await createAccessProfile({ name: "Perfil alvo" });
+      const setAccess = (profileId: string, actions: string[], scope: string) =>
+        request(app.getHttpServer())
+          .put(`/api/profiles/${profileId}/module-access/CLIENTES`)
+          .set("Authorization", `Bearer ${token}`)
+          .send({ actions, scope });
+
+      const selfMatrix = await setAccess(actorProfile.id, ["VIEW"], "OWN");
+      const excessiveAction = await setAccess(targetProfile.id, ["DELETE"], "OWN");
+      const subset = await setAccess(targetProfile.id, ["VIEW"], "OWN");
+
+      expect(selfMatrix.status).toBe(403);
+      expect(selfMatrix.body.code).toBe("FORBIDDEN");
+      expect(excessiveAction.status).toBe(403);
+      expect(excessiveAction.body.code).toBe("FORBIDDEN");
+      expect(subset.status).toBe(200);
+      expect(subset.body.moduleAccess).toContainEqual({
+        module: "CLIENTES",
+        actions: ["VIEW"],
+        scope: "OWN",
+      });
+    });
+
+    it("compara escopos pela amplitude efetiva e mantém equivalentes os escopos ASSIGNED", async () => {
+      const actorProfile = await createAccessProfile({ name: "Gestor de clientes" });
+      await grantModuleAccess({
+        profileId: actorProfile.id,
+        module: "PERFIS_DE_ACESSO",
+        actions: ["EDIT"],
+        scope: "ALL",
+      });
+      await grantModuleAccess({
+        profileId: actorProfile.id,
+        module: "CLIENTES",
+        actions: ["VIEW"],
+        scope: "ASSIGNED_CLIENTS",
+      });
+      const actor = await createUser({
+        email: "gestor-clientes@fitburn.local",
+        password: PASSWORD,
+        profileId: actorProfile.id,
+      });
+      const token = await loginAndGetAccessToken(app, actor.email, PASSWORD);
+      const targetProfile = await createAccessProfile({ name: "Clientes atribuídos" });
+      const setScope = (scope: string) =>
+        request(app.getHttpServer())
+          .put(`/api/profiles/${targetProfile.id}/module-access/CLIENTES`)
+          .set("Authorization", `Bearer ${token}`)
+          .send({ actions: ["VIEW"], scope });
+
+      const broaderScope = await setScope("ALL");
+      const equivalentAssignedScope = await setScope("ASSIGNED_CLASSES");
+
+      expect(broaderScope.status).toBe(403);
+      expect(broaderScope.body.code).toBe("FORBIDDEN");
+      expect(equivalentAssignedScope.status).toBe(200);
+      expect(equivalentAssignedScope.body.moduleAccess).toContainEqual({
+        module: "CLIENTES",
+        actions: ["VIEW"],
+        scope: "ASSIGNED_CLASSES",
+      });
+    });
+
+    it("o administrador de sistema pode conceder qualquer ação em perfis customizados", async () => {
+      const { token } = await loginAsAdmin();
+      const targetProfile = await createAccessProfile({ name: "Perfil avançado" });
+
+      const response = await request(app.getHttpServer())
+        .put(`/api/profiles/${targetProfile.id}/module-access/CLIENTES`)
+        .set("Authorization", `Bearer ${token}`)
+        .send({ actions: ["DELETE"], scope: "ALL" });
+
+      expect(response.status).toBe(200);
+      expect(response.body.moduleAccess).toContainEqual({
+        module: "CLIENTES",
+        actions: ["DELETE"],
+        scope: "ALL",
+      });
+    });
   });
 
   describe("Um perfil customizado concede acesso efetivo (e desativar revoga na hora)", () => {

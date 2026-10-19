@@ -12,6 +12,8 @@ import {
   type UpdateProfileRequest,
 } from "@fitburn/contracts";
 import { PrismaService } from "../prisma/prisma.service.js";
+import { PermissionsService } from "../permissions/permissions.service.js";
+import type { ProfileRequester } from "../permissions/scoped-requester.js";
 import { DomainError } from "../common/errors/domain-error.js";
 
 const SYSTEM_ADMIN_PROFILE_NAME = "Administrador";
@@ -19,7 +21,10 @@ const SYSTEM_CLIENT_PROFILE_NAME = "Cliente";
 
 @Injectable()
 export class ProfilesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly permissionsService: PermissionsService,
+  ) {}
 
   list(): Promise<AccessProfile[]> {
     return this.prisma.accessProfile.findMany({ orderBy: { name: "asc" } });
@@ -49,7 +54,15 @@ export class ProfilesService {
   }
 
   async update(id: string, input: UpdateProfileRequest): Promise<AccessProfile> {
-    await this.findByIdOrThrow(id);
+    const profile = await this.findByIdOrThrow(id);
+
+    if (profile.isSystem && input.name !== undefined && input.name !== profile.name) {
+      throw new DomainError(
+        ErrorCode.SYSTEM_PROFILE_IMMUTABLE,
+        "O nome dos perfis de sistema não pode ser alterado.",
+        ErrorStatus.UNPROCESSABLE,
+      );
+    }
 
     if (input.name !== undefined) {
       const existing = await this.prisma.accessProfile.findUnique({ where: { name: input.name } });
@@ -103,8 +116,22 @@ export class ProfilesService {
     module: ModuleName,
     actions: PermissionActionName[],
     scope: PermissionScopeName,
+    requester: ProfileRequester,
   ): Promise<void> {
     const profile = await this.findByIdOrThrow(id);
+
+    if (
+      !this.permissionsService.isSystemAdmin(requester.profile) &&
+      requester.profile.id === profile.id
+    ) {
+      throw new DomainError(
+        ErrorCode.FORBIDDEN,
+        "Você não pode alterar a matriz do próprio perfil.",
+        ErrorStatus.FORBIDDEN,
+      );
+    }
+
+    await this.permissionsService.assertCanGrant(requester.profile, { module, actions, scope });
 
     if (profile.isSystem && profile.name === SYSTEM_ADMIN_PROFILE_NAME) {
       throw new DomainError(

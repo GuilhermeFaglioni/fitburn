@@ -1,7 +1,7 @@
 # 001 — Autoelevação de privilégio (usuários e perfis)
 
-- **Status**: TODO
-- **Commit**: —
+- **Status**: DONE
+- **Commit**: `0e140c659c00d4535f9935a71409956c548cc82f`
 - **Severity**: HIGH
 - **Origem**: auditoria api-security A1, A2, A3
 - **Escopo estimado**: `packages/api/src/users/*`, `packages/api/src/profiles/*`, `packages/api/src/permissions/*`, testes e2e em `packages/api/test/`

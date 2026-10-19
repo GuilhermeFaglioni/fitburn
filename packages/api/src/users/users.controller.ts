@@ -85,8 +85,9 @@ export class UsersController {
   @Post("staff")
   async createStaff(
     @Body(new ZodValidationPipe(createStaffRequestSchema)) body: CreateStaffRequest,
+    @Req() req: AuthenticatedRequest,
   ): Promise<UserDetail> {
-    const user = await this.usersService.createStaff(body);
+    const user = await this.usersService.createStaff(body, requesterOf(req));
     return this.usersService.toUserDetail(user);
   }
 
@@ -97,8 +98,9 @@ export class UsersController {
     @Body(new ZodValidationPipe(updateUserRequestSchema)) body: UpdateUserRequest,
     @Req() req: AuthenticatedRequest,
   ): Promise<UserDetail> {
-    assertUserInScope(requesterOf(req), id);
-    const user = await this.usersService.update(id, body);
+    const requester = requesterOf(req);
+    assertUserInScope(requester, id);
+    const user = await this.usersService.update(id, body, requester);
     return this.usersService.toUserDetail(user);
   }
 
