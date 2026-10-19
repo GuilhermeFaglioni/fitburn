@@ -5,7 +5,7 @@ import { ErrorCode, ErrorStatus, type CurrentUser } from "@fitburn/contracts";
 import { DomainError } from "../common/errors/domain-error.js";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { UsersService, type UserWithProfile } from "../users/users.service.js";
-import { verifyPassword } from "./password.util.js";
+import { hashPassword, verifyPassword } from "./password.util.js";
 import { generateOpaqueToken, hashToken } from "./token.util.js";
 import { refreshTokenTtlMs } from "./refresh-token-ttl.js";
 import { lockUserRow } from "../users/user-row-lock.js";
@@ -25,7 +25,10 @@ export class AuthService {
   ) {}
 
   async login(email: string, password: string): Promise<LoginResult> {
-    const credentials = await this.usersService.findByEmail(email);
+    const credentials = await this.prisma.user.findUnique({
+      where: { email },
+      select: { id: true, email: true, passwordHash: true },
+    });
     const passwordMatches = credentials
       ? await verifyPassword(password, credentials.passwordHash)
       : false;
@@ -52,6 +55,51 @@ export class AuthService {
       }
 
       return this.issueSession(tx, user);
+    });
+  }
+
+  async changeOwnPassword(
+    userId: string,
+    tokenVersion: number,
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<LoginResult> {
+    const credentials = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { passwordHash: true },
+    });
+    if (!credentials) throw this.sessionExpired();
+    if (!(await verifyPassword(currentPassword, credentials.passwordHash))) {
+      throw this.currentPasswordInvalid();
+    }
+
+    const passwordHash = await hashPassword(newPassword);
+    return this.prisma.$transaction(async (tx) => {
+      await lockUserRow(tx, userId);
+      const user = await tx.user.findUnique({
+        where: { id: userId },
+        include: { profile: true },
+      });
+
+      // A concurrent credential change may have invalidated the request after its guard ran.
+      if (!user || user.status !== "ACTIVE" || user.tokenVersion !== tokenVersion) {
+        throw this.sessionExpired();
+      }
+      if (user.passwordHash !== credentials.passwordHash) {
+        throw this.currentPasswordInvalid();
+      }
+
+      const updatedUser = await tx.user.update({
+        where: { id: userId },
+        data: { passwordHash, tokenVersion: { increment: 1 } },
+        include: { profile: true },
+      });
+      await tx.refreshToken.updateMany({
+        where: { userId, revokedAt: null },
+        data: { revokedAt: new Date() },
+      });
+
+      return this.issueSession(tx, updatedUser);
     });
   }
 
@@ -87,6 +135,7 @@ export class AuthService {
       const currentToken = await tx.refreshToken.findUnique({ where: { id: existing.id } });
 
       if (!currentToken) return null;
+      if (user && currentToken.tokenVersion !== user.tokenVersion) return null;
       if (currentToken.revokedAt) {
         // Reuso efetivo continua revogando as outras sessões da conta.
         await tx.refreshToken.updateMany({
@@ -122,6 +171,7 @@ export class AuthService {
         data: {
           userId: user.id,
           tokenHash: hashToken(newRefreshToken),
+          tokenVersion: user.tokenVersion,
           expiresAt: new Date(now.getTime() + refreshTokenTtlMs()),
         },
       });
@@ -164,6 +214,7 @@ export class AuthService {
       data: {
         userId: user.id,
         tokenHash: hashToken(refreshToken),
+        tokenVersion: user.tokenVersion,
         expiresAt: new Date(Date.now() + refreshTokenTtlMs()),
       },
     });
@@ -176,6 +227,14 @@ export class AuthService {
       ErrorCode.INVALID_CREDENTIALS,
       "Não foi possível entrar. Verifique seu e-mail e senha e tente novamente.",
       ErrorStatus.UNAUTHENTICATED,
+    );
+  }
+
+  private currentPasswordInvalid(): DomainError {
+    return new DomainError(
+      ErrorCode.CURRENT_PASSWORD_INVALID,
+      "A senha atual está incorreta.",
+      ErrorStatus.VALIDATION,
     );
   }
 

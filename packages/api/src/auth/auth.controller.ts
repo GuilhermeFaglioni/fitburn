@@ -1,9 +1,22 @@
-import { Body, Controller, Inject, Get, HttpCode, HttpStatus, Post, Req, Res, UseGuards } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Inject,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Post,
+  Req,
+  Res,
+  UseGuards,
+} from "@nestjs/common";
 import type { Request, Response } from "express";
 import {
   ErrorCode,
   ErrorStatus,
+  changeOwnPasswordRequestSchema,
   loginRequestSchema,
+  type ChangeOwnPasswordRequest,
   type CurrentUser,
   type LoginRequest,
   type LoginResponse,
@@ -55,6 +68,24 @@ export class AuthController {
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response): Promise<void> {
     await this.authService.logout(readRefreshCookie(req));
     clearRefreshCookie(res);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post("password")
+  @HttpCode(HttpStatus.OK)
+  async changeOwnPassword(
+    @Req() req: AuthenticatedRequest,
+    @Body(new ZodValidationPipe(changeOwnPasswordRequestSchema)) body: ChangeOwnPasswordRequest,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<LoginResponse> {
+    const { accessToken, refreshToken, user } = await this.authService.changeOwnPassword(
+      req.authUser.sub,
+      req.authUser.tokenVersion,
+      body.currentPassword,
+      body.newPassword,
+    );
+    setRefreshCookie(res, refreshToken, this.config);
+    return { accessToken, user };
   }
 
   @UseGuards(JwtAuthGuard)

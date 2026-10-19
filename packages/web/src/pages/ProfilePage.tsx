@@ -1,7 +1,11 @@
 import { useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { updateOwnProfileRequestSchema, type UserDetail } from "@fitburn/contracts";
-import { errorMessage } from "../lib/auth/api";
+import {
+  changeOwnPasswordRequestSchema,
+  updateOwnProfileRequestSchema,
+  type UserDetail,
+} from "@fitburn/contracts";
+import { changeOwnPassword, errorMessage } from "../lib/auth/api";
 import { useAuth } from "../lib/auth/AuthContext";
 import { isClientUser } from "../lib/auth/areas";
 import { formatLocalDate } from "../lib/agenda/format";
@@ -65,9 +69,9 @@ function viewValue(profile: UserDetail, key: keyof FormState): string {
 
 /**
  * Perfil / Minha conta (PerfilDesktop.dc.html / PerfilMobile.dc.html): os
- * dados pessoais de quem está logado, com modo de visualização e de edição, e
- * o logout. Serve ao cliente (casca escura) e à equipe (casca administrativa,
- * clara). Perfil de acesso, status e senha não aparecem para edição.
+ * dados pessoais e troca de senha de quem está logado, além do logout. Serve
+ * ao cliente (casca escura) e à equipe (casca administrativa, clara). Perfil
+ * de acesso e status não aparecem para edição.
  */
 export function ProfilePage() {
   const { user, logout, updateIdentity } = useAuth();
@@ -76,6 +80,10 @@ export function ProfilePage() {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState<FormState | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({ currentPassword: "", newPassword: "" });
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [passwordMessage, setPasswordMessage] = useState<string | null>(null);
 
   const saveMutation = useMutation({
     mutationFn: updateMyProfile,
@@ -87,6 +95,25 @@ export function ProfilePage() {
       setError(null);
     },
     onError: (failure) => setError(errorMessage(failure, "Não foi possível salvar as alterações.")),
+  });
+
+  const passwordMutation = useMutation({
+    mutationFn: ({
+      currentPassword,
+      newPassword,
+    }: {
+      currentPassword: string;
+      newPassword: string;
+    }) => changeOwnPassword(currentPassword, newPassword),
+    onSuccess: () => {
+      setPasswordForm({ currentPassword: "", newPassword: "" });
+      setChangingPassword(false);
+      setPasswordError(null);
+      setPasswordMessage("Senha alterada com sucesso.");
+    },
+    onError: (failure) => {
+      setPasswordError(errorMessage(failure, "Não foi possível alterar a senha."));
+    },
   });
 
   const profile = profileQuery.data;
@@ -122,6 +149,32 @@ export function ProfilePage() {
     }
     setError(null);
     saveMutation.mutate(parsed.data);
+  }
+
+  function startPasswordChange() {
+    setPasswordForm({ currentPassword: "", newPassword: "" });
+    setPasswordError(null);
+    setPasswordMessage(null);
+    setChangingPassword(true);
+  }
+
+  function cancelPasswordChange() {
+    setPasswordForm({ currentPassword: "", newPassword: "" });
+    setPasswordError(null);
+    setChangingPassword(false);
+    passwordMutation.reset();
+  }
+
+  function submitPasswordChange(event: FormEvent) {
+    event.preventDefault();
+    const parsed = changeOwnPasswordRequestSchema.safeParse(passwordForm);
+    if (!parsed.success) {
+      setPasswordError(parsed.error.issues[0]?.message ?? "Dados inválidos.");
+      return;
+    }
+    setPasswordError(null);
+    setPasswordMessage(null);
+    passwordMutation.mutate(parsed.data);
   }
 
   return (
@@ -216,6 +269,88 @@ export function ProfilePage() {
                   </button>
                 </div>
               </form>
+            )}
+          </section>
+
+          <section className="fb-profile__card" aria-labelledby="fb-profile-password">
+            <div className="fb-profile__card-head">
+              <h2 id="fb-profile-password" className="fb-profile__card-title">
+                Senha
+              </h2>
+              {!changingPassword && (
+                <button
+                  type="button"
+                  className="fb-profile__link-btn"
+                  onClick={startPasswordChange}
+                >
+                  Alterar senha
+                </button>
+              )}
+            </div>
+
+            {passwordMessage && (
+              <Feedback tone="success" surface="dark">
+                {passwordMessage}
+              </Feedback>
+            )}
+
+            {changingPassword ? (
+              <form className="fb-profile__form" onSubmit={submitPasswordChange} noValidate>
+                <div className="fb-profile__grid">
+                  <label className="fb-profile__field">
+                    <span className="fb-profile__field-label">Senha atual</span>
+                    <input
+                      className="fb-profile__input"
+                      type="password"
+                      autoComplete="current-password"
+                      value={passwordForm.currentPassword}
+                      onChange={(event) =>
+                        setPasswordForm({ ...passwordForm, currentPassword: event.target.value })
+                      }
+                    />
+                  </label>
+                  <label className="fb-profile__field">
+                    <span className="fb-profile__field-label">Nova senha</span>
+                    <input
+                      className="fb-profile__input"
+                      type="password"
+                      autoComplete="new-password"
+                      value={passwordForm.newPassword}
+                      onChange={(event) =>
+                        setPasswordForm({ ...passwordForm, newPassword: event.target.value })
+                      }
+                    />
+                  </label>
+                </div>
+
+                {passwordError && (
+                  <Feedback tone="error" surface="dark">
+                    {passwordError}
+                  </Feedback>
+                )}
+
+                <div className="fb-profile__actions">
+                  <button
+                    type="button"
+                    className="fb-profile__btn fb-profile__btn--ghost"
+                    onClick={cancelPasswordChange}
+                    disabled={passwordMutation.isPending}
+                  >
+                    Cancelar troca de senha
+                  </button>
+                  <button
+                    type="submit"
+                    className="fb-profile__btn fb-profile__btn--primary"
+                    disabled={passwordMutation.isPending}
+                  >
+                    {passwordMutation.isPending ? "Alterando…" : "Salvar nova senha"}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <p className="fb-profile__password-hint">
+                Informe a senha atual para definir uma nova senha.
+              </p>
             )}
           </section>
         </>
