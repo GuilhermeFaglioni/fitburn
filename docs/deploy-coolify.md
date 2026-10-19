@@ -8,7 +8,7 @@ navegador ──HTTPS──► Traefik (Coolify) ──► web (Nginx :80) ─�
 ```
 
 - Um **único domínio** para app e API (`/api` é proxy do Nginx do `web`): o cookie de refresh funciona sem CORS.
-- Arquivos: `docker-compose.coolify.yml`, `docker/web/` (Dockerfile + Nginx), `docker/api/start.sh` (migrations + seeds + API).
+- Arquivos: `docker-compose.coolify.yml`, `docker/web/` (Dockerfile + Nginx), `docker/api/start.sh` (migrations + seeds + API) e `docker/backup/` (backup PostgreSQL).
 - A cada deploy a API aplica as migrations, garante o administrador e, com `DEMO_SEED=true`, completa a massa de demonstração (idempotente).
 
 ## 1. Pré-requisitos
@@ -24,7 +24,7 @@ navegador ──HTTPS──► Traefik (Coolify) ──► web (Nginx :80) ─�
 2. Selecione o repositório e o branch (`main`).
 3. **Build Pack: `Docker Compose`**.
 4. **Docker Compose Location:** `/docker-compose.coolify.yml` (base directory `/`).
-5. Continue. O Coolify lê o compose e lista os serviços `postgres`, `api` e `web`.
+5. Continue. O Coolify lê o compose e lista os serviços `postgres`, `api`, `web` e `backup`.
 
 ## 3. Domínio
 
@@ -48,8 +48,78 @@ Em **Environment Variables** do recurso (as que faltarem aparecem como obrigató
 | `INITIAL_ADMIN_PASSWORD` | senha forte, mínimo 12 caracteres |
 | `DEMO_SEED` | `true` para popular a demonstração (pode ficar `true`: é idempotente) |
 | `DEMO_USER_PASSWORD` | senha de **todas** as contas de demonstração (mínimo 12 caracteres) |
+| `BACKUP_DESTINATION` | destino S3 compatível, por exemplo `s3://fitburn-backups/pilot` |
+| `BACKUP_STORAGE_ENDPOINT` | endpoint HTTPS do storage S3 compatível |
+| `BACKUP_STORAGE_REGION` | região exigida pelo storage |
+| `BACKUP_STORAGE_ACCESS_KEY_ID` / `BACKUP_STORAGE_SECRET_ACCESS_KEY` | credenciais com acesso apenas ao bucket/prefixo de backup |
+| `BACKUP_AGE_RECIPIENT` | chave pública age (`age1...`) usada para criptografar os arquivos |
+| `BACKUP_HEARTBEAT_URL` | URL do monitor externo, chamada depois de backup e retenção bem-sucedidos |
 
 Opcionais, com padrão adequado: `POSTGRES_USER`, `POSTGRES_DB`, `TZ`, `TRUST_PROXY_HOPS` (`2` = Traefik + Nginx do `web`), `AUTH_RATE_LIMIT_*`, `JWT_ACCESS_TTL_SECONDS`, `REFRESH_TOKEN_TTL_DAYS`. Deixe `CORS_ALLOWED_ORIGINS` vazio.
+
+Gere o par age numa máquina confiável fora da VPS. Guarde o arquivo de identidade em local seguro e cadastre somente o recipient público em `BACKUP_AGE_RECIPIENT`; nunca copie a chave privada para o Coolify. O exemplo `.env.production.example` lista todas as variáveis obrigatórias do serviço. Elas não derrubam o restante do Compose quando ausentes (a demo não tem storage de backup): só o serviço `backup` recusa subir, com uma mensagem nos logs dizendo qual variável falta. No ambiente do piloto, confira nos logs que ele subiu.
+
+O serviço `backup` espera o PostgreSQL ficar saudável e agenda uma execução diária às 03:00 UTC. Cada execução cria um dump SQL comprimido com gzip, criptografa com age, envia para `BACKUP_DESTINATION/daily` e mantém os 14 mais recentes; aos domingos também grava em `weekly` e mantém os 8 mais recentes. O heartbeat só é enviado depois de upload e retenção concluídos. `file:///...` é aceito para testes; em produção, use S3 compatível para manter os arquivos fora da VPS.
+
+### Restaurar um backup
+
+A identidade privada age (`identity.txt`) fica fora da VPS, num gerenciador de senhas/cofre, no item **Fitburn / Backup age identity**, com uma cópia offline de contingência. Só o responsável técnico (`<RESPONSÁVEL TÉCNICO>`) e um substituto designado (`<SUBSTITUTO>`) podem acessar; preencher os nomes ao configurar o cofre. Rotacione a identidade quando o responsável mudar ou houver suspeita de vazamento; atualize `BACKUP_AGE_RECIPIENT` no Coolify e confirme no ensaio que a nova chave abre um backup. Não copie a identidade para Coolify, VPS, repositório, ticket ou log. No momento da restauração, monte o arquivo como somente leitura na máquina do operador; o script não o copia para o volume nem para o banco.
+
+1. Faça a restauração numa máquina confiável do operador e num PostgreSQL isolado. Escolha uma base vazia para `RESTORE_TARGET_DATABASE`, diferente da base de origem e de qualquer base de produção. Não conecte a restauração à base de produção.
+2. Obtenha o caminho exato do objeto `.sql.gz.age` em `BACKUP_DESTINATION/daily/` ou `weekly/` e, pelo cofre, o caminho local da identidade privada. O backup usa o nome UTC `backup-*.sql.gz.age`.
+3. No repositório da mesma versão que será restaurada, construa a imagem local que contém `age`, `rclone`, `gzip`, `psql` e o script:
+
+   ```bash
+   docker build --file docker/backup/Dockerfile --tag fitburn-backup-restore .
+   ```
+
+4. Defina credenciais de acesso ao PostgreSQL isolado e ao storage S3 no shell do operador. Use credencial S3 somente de leitura para obter o objeto. Para apontar o container Docker ao PostgreSQL local da máquina, use `host.docker.internal` como `PGHOST` e como `RESTORE_SOURCE_PGHOST`:
+
+   ```bash
+   export RESTORE_TARGET_DATABASE='<nome-de-uma-base-vazia>'
+   export RESTORE_SOURCE_PGDATABASE='<nome-da-base-de-origem>'
+   export BACKUP_FILE='s3://<bucket>/<prefixo>/daily/<arquivo>.sql.gz.age'
+   export AGE_IDENTITY_FILE="$HOME/<caminho-seguro>/identity.txt"
+   export PGHOST=host.docker.internal
+   export PGPORT=5432
+   export PGUSER='<usuario-postgres-de-restauracao>'
+   read -r -s -p 'Senha do PostgreSQL: ' PGPASSWORD; export PGPASSWORD; printf '\n'
+   export BACKUP_STORAGE_ENDPOINT='<endpoint-https-do-storage>'
+   export BACKUP_STORAGE_REGION='<regiao>'
+   export BACKUP_STORAGE_ACCESS_KEY_ID='<credencial-de-leitura>'
+   read -r -s -p 'Secret do storage: ' BACKUP_STORAGE_SECRET_ACCESS_KEY; export BACKUP_STORAGE_SECRET_ACCESS_KEY; printf '\n'
+   ```
+
+   `RESTORE_SOURCE_PGDATABASE` é sempre obrigatório e deve nomear a base original ou um snapshot dela; o script recusa se o alvo tiver o mesmo nome. Por padrão, a comparação com a origem é obrigatória: informe também `RESTORE_SOURCE_PGHOST`, `RESTORE_SOURCE_PGPORT`, `RESTORE_SOURCE_PGUSER` e `RESTORE_SOURCE_PGPASSWORD`, usando conta somente de leitura. A origem deve representar o mesmo estado temporal do backup; uma base viva com gravações posteriores terá contagens diferentes e a comparação falhará mesmo que o restore esteja correto. Em um ensaio, use snapshot/clone correspondente ou congele gravações durante backup e restore. Se não houver origem correspondente ou ela estiver indisponível, defina só o nome dela e acrescente `--without-source` ao comando do passo 6; o script lista contagens e consulta amostras no destino, mas não pode afirmar igualdade com a origem. Nunca use a base restaurada como origem.
+
+5. Crie a base-alvo vazia no PostgreSQL isolado antes de restaurar:
+
+   ```bash
+   createdb --host='<host-do-postgres-isolado>' --port="$PGPORT" --username="$PGUSER" "$RESTORE_TARGET_DATABASE"
+   ```
+
+6. Rode o script. A identidade é montada somente para leitura; `BACKUP_FILE` aceita `s3://` e `file://`:
+
+   ```bash
+   docker run --rm \
+     --add-host=host.docker.internal:host-gateway \
+     --user "$(id -u):$(id -g)" \
+     --volume "$AGE_IDENTITY_FILE:/run/restore/identity.txt:ro" \
+     --env PGHOST --env PGPORT --env PGUSER --env PGPASSWORD \
+     --env RESTORE_TARGET_DATABASE --env BACKUP_FILE \
+     --env AGE_IDENTITY_FILE=/run/restore/identity.txt \
+     --env BACKUP_STORAGE_ENDPOINT --env BACKUP_STORAGE_REGION \
+     --env BACKUP_STORAGE_ACCESS_KEY_ID --env BACKUP_STORAGE_SECRET_ACCESS_KEY \
+     --env RESTORE_SOURCE_PGHOST --env RESTORE_SOURCE_PGPORT \
+     --env RESTORE_SOURCE_PGUSER --env RESTORE_SOURCE_PGPASSWORD \
+     --env RESTORE_SOURCE_PGDATABASE \
+     --entrypoint /app/restore.sh \
+     fitburn-backup-restore
+   ```
+
+   Por padrão, o script recusa qualquer destino que já contenha tabelas, views, sequências ou outros objetos. Para substituir o destino, acrescente `--allow-nonempty` ao fim do comando: isso remove todos os schemas não sistêmicos do alvo. Só use após confirmar explicitamente o destino e aceitar a perda do conteúdo atual. Se a origem estiver indisponível, acrescente `--without-source`; para combinar as opções, use `--allow-nonempty --without-source`. O script baixa o objeto, descriptografa para um diretório temporário, valida o gzip e restaura com `ON_ERROR_STOP`. Ao terminar, compara contagens de todas as tabelas e amostras de usuário, reserva, presença, ficha e lançamentos de pontos com a origem; no modo `--without-source`, lista contagens e consulta essas amostras no alvo. Também exige FKs presentes e validadas. O relatório não imprime os registros de amostra.
+
+7. Com origem acessível, confirme `Contagens de tabelas conferem com a origem`; sem ela, confira a lista `Contagens no banco restaurado` e registre que não houve comparação. Em ambos os casos, confirme `Integridade referencial verificada` e as mensagens de amostras. Guarde o resultado junto ao registro do ensaio; o ensaio confirma que a identidade privada abre o backup escolhido. Sem acesso à origem, as contagens e amostras listadas não provam igualdade com o backup de origem.
 
 ### Rate limit de login e `X-Forwarded-For`
 
@@ -63,6 +133,37 @@ Não publique portas dos serviços `web` ou `api` fora do Traefik: só `web` dev
 2. Confira nos logs do `api` as linhas `[start] prisma migrate deploy`, `[start] seed base`, `[start] seed da demonstração` e `Fitburn API rodando`.
 3. Abra `https://fitburn.seudominio.com.br/api/health` → `{"status":"ok",...}`.
 4. Abra o app e entre com uma das contas abaixo.
+
+### Headers de segurança e HSTS
+
+O Nginx do `web` envia CSP, proteção contra framing, Referrer-Policy, nosniff e Permissions-Policy nas respostas da aplicação. O HSTS é aplicado pelo Traefik do Coolify, que termina o TLS; não configure HSTS no Nginx do `web`.
+
+No Coolify, abra **Servers → seu servidor → Proxy → Dynamic Configurations**, adicione `fitburn-hsts.yaml` e salve:
+
+```yaml
+http:
+  middlewares:
+    fitburn-hsts:
+      headers:
+        stsSeconds: 31536000
+```
+
+Isso define `max-age=31536000` (um ano). Deixe `stsIncludeSubdomains` e `stsPreload` desativados até confirmar que todos os subdomínios e requisitos de preload estão prontos. Em seguida, no recurso Compose do Fitburn, abra **General → Container labels** e mude **Label management** para **Managed manually**. Acrescente `fitburn-hsts@file` ao valor da label existente `traefik.http.routers.https-0-<resource-id>.middlewares`, preserve os middlewares já listados e faça redeploy. O sufixo `@file` aponta para o arquivo dinâmico do Traefik.
+
+Coolify documenta a criação de configuração dinâmica em [Dynamic configuration](https://coolify.io/docs/core/networking/proxy/traefik/dynamic-config) e a associação de middlewares em [Custom middlewares](https://coolify.io/docs/core/networking/proxy/traefik/custom-middlewares). A propriedade `stsSeconds` é definida pelo [middleware Headers do Traefik](https://doc.traefik.io/traefik/middlewares/http/headers/).
+
+Depois do redeploy, defina `BASE_URL` como `https://<domínio>/` e confira os headers efetivos pelo HTTPS na página, no fallback da SPA e num asset inexistente (resposta 404):
+
+```bash
+BASE_URL=https://fitburn.seudominio.com.br
+for path in / /rota-inexistente /assets/arquivo-inexistente.js; do
+  printf '\n%s\n' "$path"
+  curl -sS -D - -o /dev/null "$BASE_URL$path" \
+    | grep -Ei '^(HTTP/|content-security-policy:|x-frame-options:|referrer-policy:|x-content-type-options:|permissions-policy:|strict-transport-security:)'
+done
+```
+
+Cada resposta deve mostrar os cinco headers enviados pelo Nginx. `Strict-Transport-Security` deve mostrar `max-age=31536000`; confirme também no domínio HTTPS real antes de iniciar o piloto. Não use uma URL `http://` para validar HSTS.
 
 ### Verificação manual do IP usado no rate limit
 
@@ -116,7 +217,7 @@ Rodar de novo (a cada deploy) é seguro: nada é duplicado, e em outro dia a age
 - **Logs / terminal:** pelo painel do Coolify (serviço `api` → Logs / Terminal).
 - **Rodar o seed manualmente:** terminal do `api` → `node packages/api/dist/demo-seed/cli.js`.
 - **Reset completo da demonstração (apaga TUDO):** no terminal do `api`, `DEMO_RESET_ENABLED=true node packages/api/dist/demo-reset/cli.js --confirm-database=fitburn` (use o valor de `POSTGRES_DB`). Depois faça **Restart** do `api` (o `start.sh` refaz o seed se `DEMO_SEED=true`).
-- **Backup do banco:** no Coolify, o volume `postgres_data` pode ser incluído em backups do servidor; para um dump pontual, no terminal do `postgres`: `pg_dump -U fitburn fitburn > /tmp/fitburn.sql`.
+- **Backup do banco:** o serviço `backup` executa o dump diário criptografado para o destino S3 configurado. Um heartbeat ausente indica atraso ou falha; o alerta externo por atraso deve ser configurado no monitor escolhido.
 - **Voltar uma versão:** em **Deployments**, reimplante um commit anterior. Migrations não são revertidas automaticamente; uma migration nova e incompatível exige restaurar o backup.
 - Para uso real (dados de verdade), troque `DEMO_SEED` para `false` e revise `docs/deploy-runbook.md`, seção "Riscos aceitos na demo".
 

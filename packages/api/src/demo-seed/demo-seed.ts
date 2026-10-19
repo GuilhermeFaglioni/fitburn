@@ -1,7 +1,8 @@
-import type { Module, PermissionAction, PermissionScope, PrismaClient } from "@prisma/client";
+import type { PrismaClient } from "@prisma/client";
 import { addDays, gymDateTimeToUtc, gymToday, weekdayOf } from "@fitburn/contracts";
 import { hashPassword } from "../auth/password.util.js";
 import { seedBaseData } from "../seed/base-seed.js";
+import { PROFESSOR_PROFILE } from "../seed/default-profiles.js";
 import type { AttendanceService } from "../attendance/attendance.service.js";
 import type { GoalsService } from "../goals/goals.service.js";
 import {
@@ -12,7 +13,6 @@ import {
   PERSONAL_CLASS,
   PLANS,
   PRIME_SLOTS,
-  PROFESSOR_PROFILE,
   MORNING_SLOTS,
   SATURDAY_SLOTS,
   SLOTS,
@@ -90,25 +90,11 @@ export async function seedDemoData(deps: DemoSeedDeps): Promise<DemoSeedSummary>
   const admin = await prisma.user.findUniqueOrThrow({ where: { email: adminEmail } });
   const adminRequester = { userId: admin.id, scope: "ALL" } as const;
   const passwordHash = await hashPassword(password);
+  const professorProfile = await prisma.accessProfile.findUniqueOrThrow({
+    where: { name: PROFESSOR_PROFILE.name },
+  });
 
   // ---------------------------------------------------------------- perfis e equipe
-  const professorProfile = await prisma.accessProfile.upsert({
-    where: { name: PROFESSOR_PROFILE.name },
-    update: {},
-    create: { name: PROFESSOR_PROFILE.name, description: PROFESSOR_PROFILE.description },
-  });
-  for (const [module, actions, scope] of PROFESSOR_PROFILE.access) {
-    await prisma.profileModuleAccess.upsert({
-      where: { profileId_module: { profileId: professorProfile.id, module: module as Module } },
-      update: {},
-      create: {
-        profileId: professorProfile.id,
-        module: module as Module,
-        actions: [...actions] as PermissionAction[],
-        scope: scope as PermissionScope,
-      },
-    });
-  }
   const adminProfile = await prisma.accessProfile.findUniqueOrThrow({
     where: { name: "Administrador" },
   });

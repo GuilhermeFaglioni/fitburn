@@ -1,8 +1,16 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Module, PermissionAction, SystemProfileName, type UserDetail } from "@fitburn/contracts";
+import {
+  Module,
+  PermissionAction,
+  PermissionScope,
+  SystemProfileName,
+  type UserDetail,
+  type UserResponse,
+} from "@fitburn/contracts";
 import { BlockedAction } from "../components/BlockedAction";
 import { DeleteUserDialog } from "../components/DeleteUserDialog";
+import { ResetUserPasswordDialog } from "../components/ResetUserPasswordDialog";
 import { useAuth } from "../lib/auth/AuthContext";
 import { invalidateAfterDeletion } from "../lib/invalidate-after-deletion";
 import { deactivateUser, deleteUser, listUsers, reactivateUser } from "../lib/users/api";
@@ -23,13 +31,19 @@ function profileBadgeClass(profileName: string): string {
   }
 }
 
+function isStaffUser(user: UserResponse): user is UserDetail {
+  return user.profile !== undefined && user.profile.name !== SystemProfileName.CLIENT;
+}
+
 export function UsersPage() {
-  const { can, user: currentUser } = useAuth();
+  const { can, scopeOf, user: currentUser } = useAuth();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [userToEdit, setUserToEdit] = useState<UserDetail | null>(null);
   const [userToDelete, setUserToDelete] = useState<UserDetail | null>(null);
+  const [userToResetPassword, setUserToResetPassword] = useState<UserDetail | null>(null);
+  const [passwordResetFeedback, setPasswordResetFeedback] = useState<string | null>(null);
 
   const usersQuery = useQuery({
     queryKey: ["users", {}],
@@ -38,13 +52,14 @@ export function UsersPage() {
 
   const normalizedSearch = searchTerm.trim().toLowerCase();
   // Como no design, a lista é só da equipe; os clientes ficam em Clientes.
-  const filteredUsers = usersQuery.data?.filter(
-    (user) =>
-      user.profile.name !== SystemProfileName.CLIENT &&
-      (normalizedSearch === "" ||
+  const filteredUsers = usersQuery.data
+    ?.filter(isStaffUser)
+    .filter(
+      (user) =>
+        normalizedSearch === "" ||
         user.fullName.toLowerCase().includes(normalizedSearch) ||
-        user.email.toLowerCase().includes(normalizedSearch)),
-  );
+        user.email.toLowerCase().includes(normalizedSearch),
+    );
 
   function invalidateUsers() {
     return queryClient.invalidateQueries({ queryKey: ["users"] });
@@ -61,6 +76,8 @@ export function UsersPage() {
 
   const canCreate = can(Module.USUARIOS, PermissionAction.CREATE);
   const canEdit = can(Module.USUARIOS, PermissionAction.EDIT);
+  const canResetOtherUsers =
+    canEdit && scopeOf(Module.USUARIOS) === PermissionScope.ALL;
   const canDelete = can(Module.USUARIOS, PermissionAction.DELETE);
 
   return (
@@ -114,6 +131,23 @@ export function UsersPage() {
           }}
           onClose={() => setUserToDelete(null)}
         />
+      )}
+
+      {userToResetPassword && (
+        <ResetUserPasswordDialog
+          user={userToResetPassword}
+          onReset={() => {
+            setUserToResetPassword(null);
+            setPasswordResetFeedback(`Senha de ${userToResetPassword.fullName} redefinida.`);
+          }}
+          onClose={() => setUserToResetPassword(null)}
+        />
+      )}
+
+      {passwordResetFeedback && (
+        <p role="status" className="fb-success-box">
+          {passwordResetFeedback}
+        </p>
       )}
 
       {usersQuery.isLoading && <LoadingState />}
@@ -197,6 +231,21 @@ export function UsersPage() {
                           </button>
                         )}
                       </BlockedAction>
+                      {user.id !== currentUser?.id && canResetOtherUsers && (
+                        <>
+                          {" "}
+                          <button
+                            type="button"
+                            className="fb-row-btn"
+                            onClick={() => {
+                              setPasswordResetFeedback(null);
+                              setUserToResetPassword(user);
+                            }}
+                          >
+                            Redefinir senha
+                          </button>
+                        </>
+                      )}
                       {user.id !== currentUser?.id && (
                         <>
                           {" "}

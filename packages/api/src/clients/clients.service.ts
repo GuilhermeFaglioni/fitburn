@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import type { Prisma } from "@prisma/client";
 import {
   dateOnlyToLocalDate,
+  PermissionScope,
   UserStatus,
   type ClientListItem,
   type ClientOverview,
@@ -9,6 +10,7 @@ import {
   type CreateClientRequest,
   type UpdateClientRequest,
   type UserDetail,
+  type UserResponse,
 } from "@fitburn/contracts";
 import { GamificationService } from "../gamification/gamification.service.js";
 import {
@@ -17,6 +19,7 @@ import {
   clientScopeFilter,
 } from "../permissions/client-scope.js";
 import { assertFullScope, type ScopedRequester } from "../permissions/scoped-requester.js";
+import { projectClientForScope } from "../permissions/client-projection.js";
 import { PlansService } from "../plans/plans.service.js";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { ReservationsService } from "../reservations/reservations.service.js";
@@ -51,8 +54,15 @@ export class ClientsService {
     if (query.status) conditions.push({ status: query.status });
     if (query.search) {
       const contains = { contains: query.search, mode: "insensitive" } as const;
+      const searchableFields: Prisma.UserWhereInput[] = [
+        { fullName: contains },
+        { email: contains },
+      ];
+      if (requester.scope === PermissionScope.ALL) {
+        searchableFields.push({ document: contains });
+      }
       conditions.push({
-        OR: [{ fullName: contains }, { email: contains }, { document: contains }],
+        OR: searchableFields,
       });
     }
 
@@ -75,15 +85,20 @@ export class ClientsService {
       orderBy: { fullName: "asc" },
     });
 
-    return clients.map(({ planAssignments, ...client }) => ({
-      ...client,
-      activePlan: planAssignments[0]
-        ? {
-            name: planAssignments[0].plan.name,
-            endDate: dateOnlyToLocalDate(planAssignments[0].endDate),
-          }
-        : null,
-    }));
+    return clients.map(({ planAssignments, ...client }) =>
+      projectClientForScope(
+        {
+          ...client,
+          activePlan: planAssignments[0]
+            ? {
+                name: planAssignments[0].plan.name,
+                endDate: dateOnlyToLocalDate(planAssignments[0].endDate),
+              }
+            : null,
+        },
+        requester.scope,
+      ),
+    );
   }
 
   async overview(id: string, requester: ScopedRequester): Promise<ClientOverview> {
@@ -99,7 +114,7 @@ export class ClientsService {
       ]);
 
     return {
-      client: this.usersService.toUserDetail(user!),
+      client: this.usersService.toUserResponseForClientScope(user!, requester.scope),
       plan,
       upcomingReservations,
       pastReservations,
@@ -110,31 +125,43 @@ export class ClientsService {
 
   async create(input: CreateClientRequest, requester: ScopedRequester): Promise<UserDetail> {
     assertFullScope(requester, "Só quem tem acesso a todos os clientes cadastra clientes.");
-    return this.usersService.toUserDetail(await this.usersService.createClient(input));
+    return this.usersService.toUserDetail(await this.usersService.createClient(input, requester));
   }
 
   async update(
     id: string,
     input: UpdateClientRequest,
     requester: ScopedRequester,
-  ): Promise<UserDetail> {
+  ): Promise<UserResponse> {
     await assertClientInScope(this.prisma, id, requester);
-    return this.usersService.toUserDetail(await this.usersService.update(id, input));
+    return this.usersService.toUserResponseForClientScope(
+      await this.usersService.update(id, input, requester),
+      requester.scope,
+    );
   }
 
-  async deactivate(id: string, requester: ScopedRequester): Promise<UserDetail> {
+  async deactivate(id: string, requester: ScopedRequester): Promise<UserResponse> {
     await assertClientInScope(this.prisma, id, requester);
-    return this.usersService.toUserDetail(await this.usersService.deactivate(id));
+    return this.usersService.toUserResponseForClientScope(
+      await this.usersService.deactivate(id, requester),
+      requester.scope,
+    );
   }
 
   /** Exclusão com anonimização (irreversível); o histórico do cliente permanece. */
-  async remove(id: string, requester: ScopedRequester): Promise<UserDetail> {
+  async remove(id: string, requester: ScopedRequester): Promise<UserResponse> {
     await assertClientInScope(this.prisma, id, requester);
-    return this.usersService.toUserDetail(await this.usersService.anonymize(id));
+    return this.usersService.toUserResponseForClientScope(
+      await this.usersService.anonymize(id, requester),
+      requester.scope,
+    );
   }
 
-  async reactivate(id: string, requester: ScopedRequester): Promise<UserDetail> {
+  async reactivate(id: string, requester: ScopedRequester): Promise<UserResponse> {
     await assertClientInScope(this.prisma, id, requester);
-    return this.usersService.toUserDetail(await this.usersService.reactivate(id));
+    return this.usersService.toUserResponseForClientScope(
+      await this.usersService.reactivate(id, requester),
+      requester.scope,
+    );
   }
 }

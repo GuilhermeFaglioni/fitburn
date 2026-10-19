@@ -44,7 +44,7 @@ const RESERVATION_LABEL: Record<ReservationDetail["status"], string> = {
   NO_SHOW: "NÃO COMPARECEU",
 };
 
-function valueOrDash(value: string | null): string {
+function valueOrDash(value: string | null | undefined): string {
   return value || "—";
 }
 
@@ -89,12 +89,24 @@ function TabContent({
             <dd>{client.email}</dd>
             <dt>Telefone</dt>
             <dd>{valueOrDash(client.phone)}</dd>
-            <dt>Data de nascimento</dt>
-            <dd>{client.birthDate ? formatLocalDate(client.birthDate) : "—"}</dd>
-            <dt>Documento</dt>
-            <dd>{valueOrDash(client.document)}</dd>
-            <dt>Endereço</dt>
-            <dd>{valueOrDash(client.address)}</dd>
+            {client.birthDate !== undefined && (
+              <>
+                <dt>Data de nascimento</dt>
+                <dd>{client.birthDate ? formatLocalDate(client.birthDate) : "—"}</dd>
+              </>
+            )}
+            {client.document !== undefined && (
+              <>
+                <dt>Documento</dt>
+                <dd>{valueOrDash(client.document)}</dd>
+              </>
+            )}
+            {client.address !== undefined && (
+              <>
+                <dt>Endereço</dt>
+                <dd>{valueOrDash(client.address)}</dd>
+              </>
+            )}
           </dl>
           {client.status !== "DELETED" && (
             <div>

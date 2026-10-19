@@ -1,4 +1,5 @@
 import { Injectable } from "@nestjs/common";
+import { AdminAuditAction } from "@prisma/client";
 import type { AccessProfile } from "@prisma/client";
 import {
   ErrorCode,
@@ -15,6 +16,7 @@ import { PrismaService } from "../prisma/prisma.service.js";
 import { PermissionsService } from "../permissions/permissions.service.js";
 import type { ProfileRequester } from "../permissions/scoped-requester.js";
 import { DomainError } from "../common/errors/domain-error.js";
+import { recordAdminAuditEvent } from "../admin-audit/record-admin-audit-event.js";
 
 const SYSTEM_ADMIN_PROFILE_NAME = "Administrador";
 const SYSTEM_CLIENT_PROFILE_NAME = "Cliente";
@@ -33,7 +35,11 @@ export class ProfilesService {
   async findByIdOrThrow(id: string): Promise<AccessProfile> {
     const profile = await this.prisma.accessProfile.findUnique({ where: { id } });
     if (!profile) {
-      throw new DomainError(ErrorCode.NOT_FOUND, "Perfil de acesso não encontrado.", ErrorStatus.NOT_FOUND);
+      throw new DomainError(
+        ErrorCode.NOT_FOUND,
+        "Perfil de acesso não encontrado.",
+        ErrorStatus.NOT_FOUND,
+      );
     }
     return profile;
   }
@@ -152,27 +158,63 @@ export class ProfilesService {
       );
     }
 
-    if (actions.length === 0) {
-      await this.prisma.profileModuleAccess.deleteMany({ where: { profileId: id, module } });
-      return;
-    }
+    await this.prisma.$transaction(async (tx) => {
+      const existingAccess = await tx.profileModuleAccess.findUnique({
+        where: { profileId_module: { profileId: id, module } },
+      });
+      let changedFields: string[] = [];
 
-    await this.prisma.profileModuleAccess.upsert({
-      where: { profileId_module: { profileId: id, module } },
-      update: { actions, scope },
-      create: { profileId: id, module, actions, scope },
+      if (actions.length === 0) {
+        await tx.profileModuleAccess.deleteMany({ where: { profileId: id, module } });
+        if (existingAccess) changedFields = ["actions", "scope"];
+      } else if (existingAccess) {
+        const actionsChanged =
+          existingAccess.actions.length !== actions.length ||
+          existingAccess.actions.some((action, index) => action !== actions[index]);
+        const scopeChanged = existingAccess.scope !== scope;
+        changedFields = [
+          ...(actionsChanged ? ["actions"] : []),
+          ...(scopeChanged ? ["scope"] : []),
+        ];
+
+        if (changedFields.length > 0) {
+          await tx.profileModuleAccess.update({
+            where: { profileId_module: { profileId: id, module } },
+            data: {
+              ...(actionsChanged ? { actions } : {}),
+              ...(scopeChanged ? { scope } : {}),
+            },
+          });
+        }
+      } else {
+        await tx.profileModuleAccess.create({ data: { profileId: id, module, actions, scope } });
+        changedFields = ["actions", "scope"];
+      }
+
+      await recordAdminAuditEvent(tx, {
+        actorId: requester.userId,
+        action: AdminAuditAction.PROFILE_PERMISSIONS_CHANGED,
+        targetId: id,
+        changedFields,
+      });
     });
   }
 
   async toProfileDetail(profile: AccessProfile): Promise<ProfileDetail> {
-    const rows = await this.prisma.profileModuleAccess.findMany({ where: { profileId: profile.id } });
+    const rows = await this.prisma.profileModuleAccess.findMany({
+      where: { profileId: profile.id },
+    });
     return {
       id: profile.id,
       name: profile.name,
       description: profile.description,
       isSystem: profile.isSystem,
       isActive: profile.isActive,
-      moduleAccess: rows.map((row) => ({ module: row.module, actions: row.actions, scope: row.scope })),
+      moduleAccess: rows.map((row) => ({
+        module: row.module,
+        actions: row.actions,
+        scope: row.scope,
+      })),
     };
   }
 

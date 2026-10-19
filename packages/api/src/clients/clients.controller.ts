@@ -11,6 +11,7 @@ import {
   type CreateClientRequest,
   type UpdateClientRequest,
   type UserDetail,
+  type UserResponse,
 } from "@fitburn/contracts";
 import { JwtAuthGuard, type AuthenticatedRequest } from "../auth/jwt-auth.guard.js";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe.js";
@@ -54,25 +55,25 @@ export class ClientsController {
     @Param("id") id: string,
     @Body(new ZodValidationPipe(updateClientRequestSchema)) body: UpdateClientRequest,
     @Req() req: AuthenticatedRequest,
-  ): Promise<UserDetail> {
+  ): Promise<UserResponse> {
     return this.clientsService.update(id, body, requesterOf(req));
   }
 
   @RequirePermission(Module.CLIENTES, PermissionAction.EDIT)
   @Post(":id/deactivate")
-  deactivate(@Param("id") id: string, @Req() req: AuthenticatedRequest): Promise<UserDetail> {
+  deactivate(@Param("id") id: string, @Req() req: AuthenticatedRequest): Promise<UserResponse> {
     return this.clientsService.deactivate(id, requesterOf(req));
   }
 
   @RequirePermission(Module.CLIENTES, PermissionAction.DELETE)
   @Delete(":id")
-  remove(@Param("id") id: string, @Req() req: AuthenticatedRequest): Promise<UserDetail> {
+  remove(@Param("id") id: string, @Req() req: AuthenticatedRequest): Promise<UserResponse> {
     return this.clientsService.remove(id, requesterOf(req));
   }
 
   @RequirePermission(Module.CLIENTES, PermissionAction.EDIT)
   @Post(":id/reactivate")
-  reactivate(@Param("id") id: string, @Req() req: AuthenticatedRequest): Promise<UserDetail> {
+  reactivate(@Param("id") id: string, @Req() req: AuthenticatedRequest): Promise<UserResponse> {
     return this.clientsService.reactivate(id, requesterOf(req));
   }
 }

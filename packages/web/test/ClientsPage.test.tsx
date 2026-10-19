@@ -152,6 +152,27 @@ const OVERVIEW: ClientOverview = {
   ],
 };
 
+const RESTRICTED_CLIENTS: ClientListItem[] = [
+  {
+    id: "c-marina",
+    fullName: "Marina Souza",
+    email: "marina@email.com",
+    phone: "11999990000",
+    status: "ACTIVE",
+  },
+];
+
+const RESTRICTED_OVERVIEW: ClientOverview = {
+  ...OVERVIEW,
+  client: {
+    id: "c-marina",
+    fullName: "Marina Souza",
+    email: "marina@email.com",
+    phone: "11999990000",
+    status: "ACTIVE",
+  },
+};
+
 describe("Clientes (equipe)", () => {
   const requests: string[] = [];
 
@@ -214,6 +235,83 @@ describe("Clientes (equipe)", () => {
       await user.type(screen.getByLabelText("Buscar por nome, e-mail ou documento"), "zzz");
 
       expect(await screen.findByText("Nenhum cliente encontrado.")).toBeInTheDocument();
+    });
+
+    it("mantém a área do professor funcional com a projeção reduzida", async () => {
+      mockSuccessfulLogin("Professor", [
+        {
+          module: Module.CLIENTES,
+          actions: [PermissionAction.VIEW],
+          scope: PermissionScope.ASSIGNED_CLIENTS,
+        },
+      ]);
+      server.use(http.get("/api/clients", () => HttpResponse.json(RESTRICTED_CLIENTS)));
+
+      renderAt("/clientes");
+
+      expect(await screen.findByText("Marina Souza")).toBeInTheDocument();
+      expect(screen.getByText("marina@email.com")).toBeInTheDocument();
+      expect(screen.getByText("11999990000")).toBeInTheDocument();
+      expect(screen.getByLabelText("Buscar por nome ou e-mail")).toBeInTheDocument();
+      expect(screen.queryByLabelText("Plano")).not.toBeInTheDocument();
+      expect(screen.queryByRole("columnheader", { name: "Plano" })).not.toBeInTheDocument();
+    });
+
+    it("mostra o detalhe do cliente atribuído sem campos pessoais removidos", async () => {
+      mockSuccessfulLogin("Professor", [
+        {
+          module: Module.CLIENTES,
+          actions: [PermissionAction.VIEW],
+          scope: PermissionScope.ASSIGNED_CLIENTS,
+        },
+      ]);
+      server.use(http.get("/api/clients/:id", () => HttpResponse.json(RESTRICTED_OVERVIEW)));
+
+      renderAt("/clientes/c-marina");
+
+      expect(await screen.findByText("Marina Souza")).toBeInTheDocument();
+      expect(screen.getByText("marina@email.com")).toBeInTheDocument();
+      expect(screen.getByText("11999990000")).toBeInTheDocument();
+      expect(screen.queryByText("Documento")).not.toBeInTheDocument();
+      expect(screen.queryByText("Endereço")).not.toBeInTheDocument();
+      expect(screen.queryByText("Data de nascimento")).not.toBeInTheDocument();
+    });
+
+    it("permite editar os campos visíveis sem reenviar dados pessoais removidos", async () => {
+      const user = userEvent.setup();
+      const bodies: unknown[] = [];
+      mockSuccessfulLogin("Professor", [
+        {
+          module: Module.CLIENTES,
+          actions: [PermissionAction.VIEW, PermissionAction.EDIT],
+          scope: PermissionScope.ASSIGNED_CLIENTS,
+        },
+      ]);
+      server.use(
+        http.get("/api/clients/:id", () => HttpResponse.json(RESTRICTED_OVERVIEW)),
+        http.patch("/api/clients/:id", async ({ request }) => {
+          bodies.push(await request.json());
+          return HttpResponse.json(RESTRICTED_OVERVIEW.client);
+        }),
+      );
+
+      renderAt("/clientes/c-marina");
+      await screen.findByText("Marina Souza");
+      await user.click(screen.getByRole("button", { name: "Editar dados" }));
+      const form = screen.getByRole("form", { name: "Edição de cliente" });
+      expect(within(form).getByLabelText("Nome completo")).toBeInTheDocument();
+      expect(within(form).getByLabelText("E-mail")).toBeInTheDocument();
+      expect(within(form).getByLabelText("Telefone")).toBeInTheDocument();
+      expect(within(form).queryByLabelText("Documento")).not.toBeInTheDocument();
+      expect(within(form).queryByLabelText("Endereço")).not.toBeInTheDocument();
+      expect(within(form).queryByLabelText("Data de nascimento")).not.toBeInTheDocument();
+      await user.clear(within(form).getByLabelText("Telefone"));
+      await user.type(within(form).getByLabelText("Telefone"), "11988887777");
+      await user.click(within(form).getByRole("button", { name: "Salvar" }));
+
+      await waitFor(() => expect(bodies).toEqual([
+        { fullName: "Marina Souza", email: "marina@email.com", phone: "11988887777" },
+      ]));
     });
 
     it("desativa e reativa a partir da linha", async () => {

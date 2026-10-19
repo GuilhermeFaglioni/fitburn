@@ -1,6 +1,12 @@
 import { randomBytes } from "node:crypto";
 import { Injectable } from "@nestjs/common";
-import { Prisma, type AccessProfile, type User, type UserStatus } from "@prisma/client";
+import {
+  AdminAuditAction,
+  Prisma,
+  type AccessProfile,
+  type User,
+  type UserStatus,
+} from "@prisma/client";
 import {
   dateOnlyToLocalDate,
   ErrorCode,
@@ -14,6 +20,7 @@ import {
   type PermissionScopeName,
   type UpdateUserRequest,
   type UserDetail,
+  type UserResponse,
 } from "@fitburn/contracts";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { lockAdvisory } from "../prisma/advisory-lock.js";
@@ -22,8 +29,13 @@ import { PermissionsService } from "../permissions/permissions.service.js";
 import type { ProfileRequester } from "../permissions/scoped-requester.js";
 import { DomainError } from "../common/errors/domain-error.js";
 import { hashPassword } from "../auth/password.util.js";
+import { recordAdminAuditEvent } from "../admin-audit/record-admin-audit-event.js";
+import { lockUserRow } from "./user-row-lock.js";
+import { projectClientForScope } from "../permissions/client-projection.js";
 
 export type UserWithProfile = User & { profile: AccessProfile };
+export type UserMutationActor = Pick<ProfileRequester, "userId"> &
+  Partial<Pick<ProfileRequester, "profile">>;
 
 const CLIENT_PROFILE_NAME = "Cliente";
 const CLIENT_MINIMUM_AGE = 18;
@@ -104,26 +116,47 @@ export class UsersService {
     });
   }
 
-  async createClient(input: CreateClientRequest): Promise<UserWithProfile> {
+  async createClient(
+    input: CreateClientRequest,
+    requester: UserMutationActor,
+  ): Promise<UserWithProfile> {
     assertClientMinimumAge(input.birthDate);
     const clientProfile = await this.getSystemProfile(CLIENT_PROFILE_NAME);
     await this.assertEmailAvailable(input.email);
     await this.assertDocumentAvailable(input.document);
     const passwordHash = await hashPassword(input.password);
 
-    return this.prisma.user
-      .create({
-        data: {
-          email: input.email,
-          passwordHash,
-          fullName: input.fullName,
-          phone: input.phone,
-          birthDate: new Date(input.birthDate),
-          document: input.document ?? null,
-          address: input.address ?? null,
-          profileId: clientProfile.id,
-        },
-        include: { profile: true },
+    return this.prisma
+      .$transaction(async (tx) => {
+        const user = await tx.user.create({
+          data: {
+            email: input.email,
+            passwordHash,
+            fullName: input.fullName,
+            phone: input.phone,
+            birthDate: new Date(input.birthDate),
+            document: input.document ?? null,
+            address: input.address ?? null,
+            profileId: clientProfile.id,
+          },
+          include: { profile: true },
+        });
+        await recordAdminAuditEvent(tx, {
+          actorId: requester.userId,
+          action: AdminAuditAction.USER_CREATED,
+          targetId: user.id,
+          changedFields: [
+            "fullName",
+            "email",
+            "phone",
+            "birthDate",
+            "document",
+            "address",
+            "password",
+            "profileId",
+          ],
+        });
+        return user;
       })
       .catch((error: unknown) => this.rethrowUniqueViolation(error, input.email, input.document));
   }
@@ -144,15 +177,24 @@ export class UsersService {
     await this.assertEmailAvailable(input.email);
     const passwordHash = await hashPassword(input.password);
 
-    return this.prisma.user
-      .create({
-        data: {
-          email: input.email,
-          passwordHash,
-          fullName: input.fullName,
-          profileId: profile.id,
-        },
-        include: { profile: true },
+    return this.prisma
+      .$transaction(async (tx) => {
+        const user = await tx.user.create({
+          data: {
+            email: input.email,
+            passwordHash,
+            fullName: input.fullName,
+            profileId: profile.id,
+          },
+          include: { profile: true },
+        });
+        await recordAdminAuditEvent(tx, {
+          actorId: requester.userId,
+          action: AdminAuditAction.USER_CREATED,
+          targetId: user.id,
+          changedFields: ["fullName", "email", "password", "profileId"],
+        });
+        return user;
       })
       .catch((error: unknown) => this.rethrowUniqueViolation(error, input.email));
   }
@@ -160,11 +202,11 @@ export class UsersService {
   async update(
     id: string,
     input: UpdateUserRequest,
-    requester?: ProfileRequester,
+    requester?: UserMutationActor,
   ): Promise<UserWithProfile> {
     let targetProfile: AccessProfile | undefined;
     if (input.profileId !== undefined) {
-      if (!requester) {
+      if (!requester?.profile) {
         throw new DomainError(
           ErrorCode.FORBIDDEN,
           "Não foi possível validar as permissões para alterar o perfil de acesso.",
@@ -188,7 +230,7 @@ export class UsersService {
       await this.assertDocumentAvailable(input.document, id);
     }
 
-    return this.updateRow(id, input, targetProfile).catch((error: unknown) =>
+    return this.updateRow(id, input, targetProfile, requester?.userId).catch((error: unknown) =>
       this.rethrowUniqueViolation(error, input.email, input.document, id),
     );
   }
@@ -196,28 +238,25 @@ export class UsersService {
   private updateRow(
     id: string,
     input: UpdateUserRequest,
-    targetProfile?: AccessProfile,
+    targetProfile: AccessProfile | undefined,
+    actorId: string | undefined,
   ): Promise<UserWithProfile> {
     return this.prisma.$transaction(async (tx) => {
       await this.lockLiveUser(tx, id);
-      const current = await tx.user.findUniqueOrThrow({
+      const previousUser = await tx.user.findUniqueOrThrow({
         where: { id },
-        select: {
-          phone: true,
-          birthDate: true,
-          profile: { select: { name: true } },
-        },
+        include: { profile: true },
       });
-      if ((targetProfile?.name ?? current.profile.name) === CLIENT_PROFILE_NAME) {
+      if ((targetProfile?.name ?? previousUser.profile.name) === CLIENT_PROFILE_NAME) {
         const birthDate =
           input.birthDate !== undefined
             ? input.birthDate
-            : current.birthDate
-              ? dateOnlyToLocalDate(current.birthDate)
+            : previousUser.birthDate
+              ? dateOnlyToLocalDate(previousUser.birthDate)
               : null;
         const becomingClient =
           targetProfile?.name === CLIENT_PROFILE_NAME &&
-          current.profile.name !== CLIENT_PROFILE_NAME;
+          previousUser.profile.name !== CLIENT_PROFILE_NAME;
         if ((input.birthDate !== undefined || becomingClient) && birthDate) {
           assertClientMinimumAge(birthDate);
         }
@@ -227,59 +266,113 @@ export class UsersService {
         // Mudança de perfil deve criar um cliente válido. Clientes legados
         // incompletos continuam editáveis até que esses dados sejam corrigidos.
         if (becomingClient) {
-          const phone = input.phone !== undefined ? input.phone : current.phone;
+          const phone = input.phone !== undefined ? input.phone : previousUser.phone;
           if (phone === null) throw requiredClientFieldError("telefone");
           if (birthDate === null) throw requiredClientFieldError("data de nascimento");
         }
       }
-      return tx.user.update({
-        where: { id },
-        data: {
-          ...(input.fullName !== undefined ? { fullName: input.fullName } : {}),
-          ...(input.email !== undefined ? { email: input.email } : {}),
-          ...(input.phone !== undefined ? { phone: input.phone } : {}),
-          ...(input.birthDate !== undefined
-            ? { birthDate: input.birthDate ? new Date(input.birthDate) : null }
-            : {}),
-          ...(input.document !== undefined ? { document: input.document } : {}),
-          ...(input.address !== undefined ? { address: input.address } : {}),
-          ...(input.profileId !== undefined ? { profileId: input.profileId } : {}),
-        },
-        include: { profile: true },
-      });
-    });
-  }
-
-  async deactivate(id: string): Promise<UserWithProfile> {
-    return this.prisma.$transaction(async (tx) => {
-      await this.lockLiveUser(tx, id);
+      const updateData = {
+        ...(input.fullName !== undefined ? { fullName: input.fullName } : {}),
+        ...(input.email !== undefined ? { email: input.email } : {}),
+        ...(input.phone !== undefined ? { phone: input.phone } : {}),
+        ...(input.birthDate !== undefined
+          ? { birthDate: input.birthDate ? new Date(input.birthDate) : null }
+          : {}),
+        ...(input.document !== undefined ? { document: input.document } : {}),
+        ...(input.address !== undefined ? { address: input.address } : {}),
+        ...(input.profileId !== undefined ? { profileId: input.profileId } : {}),
+      } satisfies Prisma.UserUpdateInput;
       const user = await tx.user.update({
         where: { id },
-        data: { status: "INACTIVE" },
+        data: updateData,
         include: { profile: true },
       });
-      await this.revokeSessions(tx, id);
+      const changedFields = (Object.keys(updateData) as Array<keyof typeof updateData>).filter(
+        (field) => {
+          const previousValue = previousUser[field];
+          const nextValue = user[field];
+          return previousValue instanceof Date && nextValue instanceof Date
+            ? previousValue.getTime() !== nextValue.getTime()
+            : previousValue !== nextValue;
+        },
+      );
+      if (actorId) {
+        await recordAdminAuditEvent(tx, {
+          actorId,
+          action:
+            changedFields.includes("profileId")
+              ? AdminAuditAction.USER_PROFILE_CHANGED
+              : AdminAuditAction.USER_UPDATED,
+          targetId: id,
+          changedFields,
+        });
+      }
       return user;
     });
   }
 
-  reactivate(id: string): Promise<UserWithProfile> {
+  async deactivate(id: string, requester: UserMutationActor): Promise<UserWithProfile> {
     return this.prisma.$transaction(async (tx) => {
-      await this.lockLiveUser(tx, id);
-      return tx.user.update({
+      const previousStatus = await this.lockLiveUser(tx, id);
+      const user = await tx.user.update({
         where: { id },
-        data: { status: "ACTIVE" },
+        data: {
+          status: "INACTIVE",
+          ...(previousStatus === "ACTIVE" ? { tokenVersion: { increment: 1 } } : {}),
+        },
         include: { profile: true },
       });
+      await this.revokeSessions(tx, id);
+      await recordAdminAuditEvent(tx, {
+        actorId: requester.userId,
+        action: AdminAuditAction.USER_DEACTIVATED,
+        targetId: id,
+        changedFields: previousStatus === user.status ? [] : ["status"],
+      });
+      return user;
     });
   }
 
-  async resetPassword(id: string, newPassword: string): Promise<void> {
+  reactivate(id: string, requester: UserMutationActor): Promise<UserWithProfile> {
+    return this.prisma.$transaction(async (tx) => {
+      const previousStatus = await this.lockLiveUser(tx, id);
+      const user = await tx.user.update({
+        where: { id },
+        data: {
+          status: "ACTIVE",
+          ...(previousStatus === "INACTIVE" ? { tokenVersion: { increment: 1 } } : {}),
+        },
+        include: { profile: true },
+      });
+      await recordAdminAuditEvent(tx, {
+        actorId: requester.userId,
+        action: AdminAuditAction.USER_REACTIVATED,
+        targetId: id,
+        changedFields: previousStatus === user.status ? [] : ["status"],
+      });
+      return user;
+    });
+  }
+
+  async resetPassword(
+    id: string,
+    newPassword: string,
+    requester: UserMutationActor,
+  ): Promise<void> {
     const passwordHash = await hashPassword(newPassword);
     await this.prisma.$transaction(async (tx) => {
       await this.lockLiveUser(tx, id);
-      await tx.user.update({ where: { id }, data: { passwordHash } });
+      await tx.user.update({
+        where: { id },
+        data: { passwordHash, tokenVersion: { increment: 1 } },
+      });
       await this.revokeSessions(tx, id);
+      await recordAdminAuditEvent(tx, {
+        actorId: requester.userId,
+        action: AdminAuditAction.USER_PASSWORD_RESET,
+        targetId: id,
+        changedFields: ["password"],
+      });
     });
   }
 
@@ -291,7 +384,7 @@ export class UsersService {
    * revogadas. Nenhuma referência histórica (reservas, presenças, pontos,
    * planos, fichas) é tocada.
    */
-  async anonymize(id: string): Promise<UserWithProfile> {
+  async anonymize(id: string, requester: UserMutationActor): Promise<UserWithProfile> {
     // Hash de uma senha aleatória descartada: ninguém conhece, ninguém entra.
     const passwordHash = await hashPassword(randomBytes(32).toString("hex"));
     return this.prisma.$transaction(async (tx) => {
@@ -308,10 +401,26 @@ export class UsersService {
           document: null,
           address: null,
           status: "DELETED",
+          tokenVersion: { increment: 1 },
         },
         include: { profile: true },
       });
       await this.revokeSessions(tx, id);
+      await recordAdminAuditEvent(tx, {
+        actorId: requester.userId,
+        action: AdminAuditAction.USER_DELETED,
+        targetId: id,
+        changedFields: [
+          "fullName",
+          "email",
+          "password",
+          "phone",
+          "birthDate",
+          "document",
+          "address",
+          "status",
+        ],
+      });
       return user;
     });
   }
@@ -351,20 +460,19 @@ export class UsersService {
    * excluído: uma exclusão concorrente não pode ser desfeita por edição,
    * reativação ou troca de senha, nem duas exclusões passarem juntas.
    */
-  private async lockLiveUser(tx: Prisma.TransactionClient, id: string): Promise<void> {
-    const rows = await tx.$queryRaw<Array<{ status: string }>>`
-      SELECT status::text AS status FROM users WHERE id = ${id} FOR UPDATE
-    `;
-    if (rows.length === 0) {
+  private async lockLiveUser(tx: Prisma.TransactionClient, id: string): Promise<UserStatus> {
+    const status = await lockUserRow(tx, id);
+    if (status === null) {
       throw new DomainError(ErrorCode.NOT_FOUND, "Usuário não encontrado.", ErrorStatus.NOT_FOUND);
     }
-    if (rows[0].status === "DELETED") {
+    if (status === "DELETED") {
       throw new DomainError(
         ErrorCode.USER_ALREADY_DELETED,
         "Este usuário já foi excluído.",
         ErrorStatus.CONFLICT,
       );
     }
+    return status;
   }
 
   async toCurrentUser(user: UserWithProfile): Promise<CurrentUser> {
@@ -391,6 +499,22 @@ export class UsersService {
       status: user.status,
       profile: { id: user.profile.id, name: user.profile.name },
     };
+  }
+
+  isClientUser(user: UserWithProfile | null): boolean {
+    return user?.profile.isSystem === true && user.profile.name === SystemProfileName.CLIENT;
+  }
+
+  toUserResponseForClientScope(
+    user: UserWithProfile,
+    clientScope: PermissionScopeName,
+    wasClient = this.isClientUser(user),
+  ): UserResponse {
+    const detail = this.toUserDetail(user);
+    if (wasClient || this.isClientUser(user)) {
+      return projectClientForScope(detail, clientScope);
+    }
+    return detail;
   }
 
   private async getSystemProfile(name: string): Promise<AccessProfile> {

@@ -8,7 +8,7 @@ import {
 } from "@nestjs/common";
 import type { Response } from "express";
 import { ErrorCode, type ApiErrorBody } from "@fitburn/contracts";
-import { redactSensitive } from "../logging/redact-sensitive.js";
+import { serializeRedactedLogEntry } from "../logging/redact-sensitive.js";
 
 const INTERNAL_ERROR_MESSAGE = "Erro interno inesperado.";
 
@@ -57,7 +57,12 @@ export class AllExceptionsFilter implements ExceptionFilter {
   }
 
   private respondInternalError(response: Response, exception: unknown, status: number): void {
-    this.logger.error(redactSensitive(this.describe(exception)));
+    const logEntry = serializeRedactedLogEntry({
+      event: "api.error",
+      statusCode: status,
+      message: this.describe(exception),
+    });
+    this.logger.error(logEntry);
     const payload: ApiErrorBody = {
       code: ErrorCode.INTERNAL_ERROR,
       message: INTERNAL_ERROR_MESSAGE,
