@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Module, PermissionAction, SystemProfileName, type UserDetail } from "@fitburn/contracts";
 import { BlockedAction } from "../components/BlockedAction";
 import { DeleteUserDialog } from "../components/DeleteUserDialog";
+import { ResetUserPasswordDialog } from "../components/ResetUserPasswordDialog";
 import { useAuth } from "../lib/auth/AuthContext";
 import { invalidateAfterDeletion } from "../lib/invalidate-after-deletion";
 import { deactivateUser, deleteUser, listUsers, reactivateUser } from "../lib/users/api";
@@ -30,6 +31,8 @@ export function UsersPage() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [userToEdit, setUserToEdit] = useState<UserDetail | null>(null);
   const [userToDelete, setUserToDelete] = useState<UserDetail | null>(null);
+  const [userToResetPassword, setUserToResetPassword] = useState<UserDetail | null>(null);
+  const [passwordResetFeedback, setPasswordResetFeedback] = useState<string | null>(null);
 
   const usersQuery = useQuery({
     queryKey: ["users", {}],
@@ -116,6 +119,23 @@ export function UsersPage() {
         />
       )}
 
+      {userToResetPassword && (
+        <ResetUserPasswordDialog
+          user={userToResetPassword}
+          onReset={() => {
+            setUserToResetPassword(null);
+            setPasswordResetFeedback(`Senha de ${userToResetPassword.fullName} redefinida.`);
+          }}
+          onClose={() => setUserToResetPassword(null)}
+        />
+      )}
+
+      {passwordResetFeedback && (
+        <p role="status" className="fb-success-box">
+          {passwordResetFeedback}
+        </p>
+      )}
+
       {usersQuery.isLoading && <LoadingState />}
       {usersQuery.isError && (
         <ErrorState
@@ -197,6 +217,21 @@ export function UsersPage() {
                           </button>
                         )}
                       </BlockedAction>
+                      {user.id !== currentUser?.id && canEdit && (
+                        <>
+                          {" "}
+                          <button
+                            type="button"
+                            className="fb-row-btn"
+                            onClick={() => {
+                              setPasswordResetFeedback(null);
+                              setUserToResetPassword(user);
+                            }}
+                          >
+                            Redefinir senha
+                          </button>
+                        </>
+                      )}
                       {user.id !== currentUser?.id && (
                         <>
                           {" "}

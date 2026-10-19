@@ -206,7 +206,10 @@ export class UsersService {
     const passwordHash = await hashPassword(newPassword);
     await this.prisma.$transaction(async (tx) => {
       await this.lockLiveUser(tx, id);
-      await tx.user.update({ where: { id }, data: { passwordHash } });
+      await tx.user.update({
+        where: { id },
+        data: { passwordHash, tokenVersion: { increment: 1 } },
+      });
       await this.revokeSessions(tx, id);
     });
   }

@@ -202,6 +202,113 @@ describe("UsersPage", () => {
     expect(patched).toMatchObject({ fullName: "Nome Novo", profileId: "profile-professor" });
   });
 
+  it("redefine a senha de outro usuário com confirmação e feedback", async () => {
+    const other = { ...CLIENT_ATIVO, id: "user-9", fullName: "Rafael Professor" };
+    const requests: Array<{ id: string; body: unknown }> = [];
+    server.use(
+      http.get("/api/users", () => HttpResponse.json([CLIENT_ATIVO, other])),
+      http.post("/api/users/:id/reset-password", async ({ params, request }) => {
+        requests.push({ id: String(params.id), body: await request.json() });
+        return new HttpResponse(null, { status: 204 });
+      }),
+    );
+
+    renderUsersPage();
+    const user = userEvent.setup();
+    const row = (await screen.findByText("Rafael Professor")).closest("tr")!;
+
+    await user.click(within(row).getByRole("button", { name: "Redefinir senha" }));
+    const dialog = screen.getByRole("dialog", { name: "Redefinir senha?" });
+    expect(dialog).toHaveTextContent("Rafael Professor");
+
+    const password = within(dialog).getByLabelText("Nova senha");
+    await user.type(password, "curta");
+    await user.click(within(dialog).getByRole("button", { name: "Confirmar redefinição" }));
+    expect(requests).toEqual([]);
+
+    await user.clear(password);
+    await user.type(password, "NovaSenhaForte456!");
+    await user.click(within(dialog).getByRole("button", { name: "Confirmar redefinição" }));
+
+    await waitFor(() =>
+      expect(requests).toEqual([{ id: "user-9", body: { newPassword: "NovaSenhaForte456!" } }]),
+    );
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "Senha de Rafael Professor redefinida.",
+    );
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.queryByText("NovaSenhaForte456!")).not.toBeInTheDocument();
+  });
+
+  it("cancelar limpa o campo e não chama a API", async () => {
+    const other = { ...CLIENT_ATIVO, id: "user-9", fullName: "Rafael Professor" };
+    let resetCalls = 0;
+    server.use(
+      http.get("/api/users", () => HttpResponse.json([CLIENT_ATIVO, other])),
+      http.post("/api/users/:id/reset-password", () => {
+        resetCalls += 1;
+        return new HttpResponse(null, { status: 204 });
+      }),
+    );
+
+    renderUsersPage();
+    const user = userEvent.setup();
+    const row = (await screen.findByText("Rafael Professor")).closest("tr")!;
+    await user.click(within(row).getByRole("button", { name: "Redefinir senha" }));
+    const dialog = screen.getByRole("dialog", { name: "Redefinir senha?" });
+    const password = within(dialog).getByLabelText("Nova senha");
+    const secret = "SenhaTemporaria456!";
+    await user.type(password, secret);
+    await user.click(within(dialog).getByRole("button", { name: "Cancelar" }));
+
+    expect(resetCalls).toBe(0);
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Nova senha")).not.toBeInTheDocument();
+    expect(window.location.href).not.toContain(secret);
+    expect(Object.values(window.localStorage).join()).not.toContain(secret);
+    expect(Object.values(window.sessionStorage).join()).not.toContain(secret);
+  });
+
+  it("bloqueia envios duplicados e limpa a senha quando a API falha", async () => {
+    const other = { ...CLIENT_ATIVO, id: "user-9", fullName: "Rafael Professor" };
+    const requests: string[] = [];
+    let releaseRequest!: () => void;
+    const responsePending = new Promise<void>((resolve) => {
+      releaseRequest = resolve;
+    });
+    server.use(
+      http.get("/api/users", () => HttpResponse.json([CLIENT_ATIVO, other])),
+      http.post("/api/users/:id/reset-password", async ({ request }) => {
+        const body = (await request.json()) as { newPassword: string };
+        requests.push(body.newPassword);
+        await responsePending;
+        return HttpResponse.json(
+          { code: "INTERNAL_ERROR", message: "Falha no servidor." },
+          { status: 500 },
+        );
+      }),
+    );
+
+    renderUsersPage();
+    const user = userEvent.setup();
+    const row = (await screen.findByText("Rafael Professor")).closest("tr")!;
+    await user.click(within(row).getByRole("button", { name: "Redefinir senha" }));
+    const dialog = screen.getByRole("dialog", { name: "Redefinir senha?" });
+    const password = within(dialog).getByLabelText("Nova senha");
+    const secret = "SenhaTemporaria456!";
+    await user.type(password, secret);
+    const submit = within(dialog).getByRole("button", { name: "Confirmar redefinição" });
+    await user.click(submit);
+    await waitFor(() => expect(requests).toEqual([secret]));
+    await user.click(submit);
+    expect(requests).toEqual([secret]);
+
+    releaseRequest();
+    expect(await within(dialog).findByRole("alert")).toHaveTextContent("Falha no servidor.");
+    expect(password).toHaveValue("");
+    expect(within(dialog).queryByText(secret)).not.toBeInTheDocument();
+  });
+
   it("desativa e reativa um usuário a partir da lista", async () => {
     let status: "ACTIVE" | "INACTIVE" = "ACTIVE";
     server.use(
@@ -303,6 +410,7 @@ describe("UsersPage", () => {
 
     const row = (await screen.findByText("Cliente Ativo")).closest("tr")!;
     expect(within(row).queryByRole("button", { name: "Excluir" })).not.toBeInTheDocument();
+    expect(within(row).queryByRole("button", { name: "Redefinir senha" })).not.toBeInTheDocument();
   });
 
   describe("sem permissão", () => {
@@ -325,6 +433,9 @@ describe("UsersPage", () => {
       const remove = within(row).getByRole("button", { name: "Excluir" });
       expect(remove).toBeDisabled();
       expect(remove).toHaveAttribute("title", "Você não tem permissão para excluir usuários.");
+      expect(
+        within(row).queryByRole("button", { name: "Redefinir senha" }),
+      ).not.toBeInTheDocument();
     });
   });
 });

@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
+import type { Prisma } from "@prisma/client";
 import { ErrorCode, ErrorStatus, type CurrentUser } from "@fitburn/contracts";
 import { DomainError } from "../common/errors/domain-error.js";
 import { PrismaService } from "../prisma/prisma.service.js";
@@ -23,26 +24,37 @@ export class AuthService {
   ) {}
 
   async login(email: string, password: string): Promise<LoginResult> {
-    const user = await this.usersService.findByEmail(email);
-    const passwordMatches = user ? await verifyPassword(password, user.passwordHash) : false;
+    const credentials = await this.prisma.user.findUnique({
+      where: { email },
+      select: { id: true, email: true, passwordHash: true },
+    });
+    const passwordMatches = credentials
+      ? await verifyPassword(password, credentials.passwordHash)
+      : false;
 
-    if (!user || !passwordMatches) {
-      throw new DomainError(
-        ErrorCode.INVALID_CREDENTIALS,
-        "Não foi possível entrar. Verifique seu e-mail e senha e tente novamente.",
-        ErrorStatus.UNAUTHENTICATED,
-      );
-    }
+    if (!credentials || !passwordMatches) throw this.invalidCredentials();
 
-    if (user.status !== "ACTIVE") {
-      throw new DomainError(
-        ErrorCode.USER_INACTIVE,
-        "Este usuário está inativo. Fale com a administração da Fitburn.",
-        ErrorStatus.UNAUTHENTICATED,
-      );
-    }
+    return this.prisma.$transaction(async (tx) => {
+      await this.lockUserRow(tx, credentials.id);
+      const user = await tx.user.findUnique({
+        where: { id: credentials.id },
+        include: { profile: true },
+      });
 
-    return this.issueSession(user);
+      // A senha ou o e-mail podem ter mudado enquanto o hash era verificado.
+      if (!user || user.email !== email || user.passwordHash !== credentials.passwordHash) {
+        throw this.invalidCredentials();
+      }
+      if (user.status !== "ACTIVE") {
+        throw new DomainError(
+          ErrorCode.USER_INACTIVE,
+          "Este usuário está inativo. Fale com a administração da Fitburn.",
+          ErrorStatus.UNAUTHENTICATED,
+        );
+      }
+
+      return this.issueSession(tx, user);
+    });
   }
 
   /**
@@ -57,40 +69,45 @@ export class AuthService {
     }
 
     const tokenHash = hashToken(rawRefreshToken);
-    const existing = await this.prisma.refreshToken.findUnique({ where: { tokenHash } });
+    const existing = await this.prisma.refreshToken.findUnique({
+      where: { tokenHash },
+      select: { id: true, userId: true },
+    });
 
     if (!existing) {
       throw this.sessionExpired();
     }
 
-    if (existing.revokedAt) {
-      await this.prisma.refreshToken.updateMany({
-        where: { userId: existing.userId, revokedAt: null },
-        data: { revokedAt: new Date() },
-      });
-      throw this.sessionExpired();
-    }
-
-    if (existing.expiresAt.getTime() <= Date.now()) {
-      throw this.sessionExpired();
-    }
-
-    const user = await this.usersService.findById(existing.userId);
-    if (!user || user.status !== "ACTIVE") {
-      throw this.sessionExpired();
-    }
-
     const newRefreshToken = generateOpaqueToken();
     const now = new Date();
-    const consumed = await this.prisma.$transaction(async (tx) => {
+    const session = await this.prisma.$transaction(async (tx) => {
+      await this.lockUserRow(tx, existing.userId);
+      const user = await tx.user.findUnique({
+        where: { id: existing.userId },
+        include: { profile: true },
+      });
+      const currentToken = await tx.refreshToken.findUnique({ where: { id: existing.id } });
+
+      if (!currentToken) return null;
+      if (currentToken.revokedAt) {
+        // Reuso efetivo continua revogando as outras sessões da conta.
+        await tx.refreshToken.updateMany({
+          where: { userId: existing.userId, revokedAt: null },
+          data: { revokedAt: now },
+        });
+        return null;
+      }
+      if (currentToken.expiresAt.getTime() <= now.getTime()) return null;
+      if (!user || user.status !== "ACTIVE") return null;
+
       const result = await tx.refreshToken.updateMany({
-        where: { id: existing.id, revokedAt: null, expiresAt: { gt: now } },
+        where: { id: currentToken.id, revokedAt: null, expiresAt: { gt: now } },
         data: { revokedAt: now },
       });
 
       if (result.count !== 1) {
         const current = await tx.refreshToken.findUnique({
-          where: { id: existing.id },
+          where: { id: currentToken.id },
           select: { revokedAt: true },
         });
         if (current?.revokedAt) {
@@ -100,7 +117,7 @@ export class AuthService {
             data: { revokedAt: now },
           });
         }
-        return false;
+        return null;
       }
 
       await tx.refreshToken.create({
@@ -110,15 +127,20 @@ export class AuthService {
           expiresAt: new Date(now.getTime() + refreshTokenTtlMs()),
         },
       });
-      return true;
+      return {
+        accessToken: await this.jwtService.signAsync({
+          sub: user.id,
+          tokenVersion: user.tokenVersion,
+        }),
+        user,
+      };
     });
-    if (!consumed) throw this.sessionExpired();
+    if (!session) throw this.sessionExpired();
 
-    const accessToken = await this.jwtService.signAsync({ sub: user.id });
     return {
-      accessToken,
+      accessToken: session.accessToken,
       refreshToken: newRefreshToken,
-      user: await this.usersService.toCurrentUser(user),
+      user: await this.usersService.toCurrentUser(session.user),
     };
   }
 
@@ -131,10 +153,16 @@ export class AuthService {
     });
   }
 
-  private async issueSession(user: UserWithProfile): Promise<LoginResult> {
-    const accessToken = await this.jwtService.signAsync({ sub: user.id });
+  private async issueSession(
+    tx: Prisma.TransactionClient,
+    user: UserWithProfile,
+  ): Promise<LoginResult> {
+    const accessToken = await this.jwtService.signAsync({
+      sub: user.id,
+      tokenVersion: user.tokenVersion,
+    });
     const refreshToken = generateOpaqueToken();
-    await this.prisma.refreshToken.create({
+    await tx.refreshToken.create({
       data: {
         userId: user.id,
         tokenHash: hashToken(refreshToken),
@@ -143,6 +171,20 @@ export class AuthService {
     });
 
     return { accessToken, refreshToken, user: await this.usersService.toCurrentUser(user) };
+  }
+
+  private invalidCredentials(): DomainError {
+    return new DomainError(
+      ErrorCode.INVALID_CREDENTIALS,
+      "Não foi possível entrar. Verifique seu e-mail e senha e tente novamente.",
+      ErrorStatus.UNAUTHENTICATED,
+    );
+  }
+
+  private async lockUserRow(tx: Prisma.TransactionClient, userId: string): Promise<void> {
+    await tx.$queryRaw<Array<{ id: string }>>`
+      SELECT id FROM users WHERE id = ${userId} FOR UPDATE
+    `;
   }
 
   private sessionExpired(): DomainError {

@@ -640,7 +640,7 @@ describe("Gestão de usuários (HTTP)", () => {
       const { token } = await loginAsAdmin();
       const clientProfile = await createAccessProfile({ name: "Cliente", isSystem: true });
       const target = await createUser({ email: "alvo@fitburn.local", password: PASSWORD, profileId: clientProfile.id });
-      await loginAndGetAccessToken(app, target.email, PASSWORD);
+      const oldAccessToken = await loginAndGetAccessToken(app, target.email, PASSWORD);
       await loginAndGetAccessToken(app, target.email, PASSWORD);
 
       const response = await request(app.getHttpServer())
@@ -649,6 +649,12 @@ describe("Gestão de usuários (HTTP)", () => {
 
       expect(response.status).toBe(201);
       expect(response.body.status).toBe("INACTIVE");
+
+      const protectedRequest = await request(app.getHttpServer())
+        .get("/api/auth/me")
+        .set("Authorization", `Bearer ${oldAccessToken}`);
+      expect(protectedRequest.status).toBe(401);
+      expect(protectedRequest.body.code).toBe("UNAUTHENTICATED");
 
       const activeSessions = await testPrisma.refreshToken.count({
         where: { userId: target.id, revokedAt: null },
@@ -687,6 +693,77 @@ describe("Gestão de usuários (HTTP)", () => {
   });
 
   describe("POST /api/users/:id/reset-password", () => {
+    it("nega reset sem permissão e preserva a senha e sessão existentes", async () => {
+      const readOnlyProfile = await createAccessProfile({ name: "Leitura" });
+      await grantModuleAccess({
+        profileId: readOnlyProfile.id,
+        module: "USUARIOS",
+        actions: ["VIEW"],
+        scope: "ALL",
+      });
+      const operator = await createUser({
+        email: "leitura@fitburn.local",
+        password: PASSWORD,
+        profileId: readOnlyProfile.id,
+      });
+      const operatorToken = await loginAndGetAccessToken(app, operator.email, PASSWORD);
+      const clientProfile = await createAccessProfile({ name: "Cliente", isSystem: true });
+      const target = await createUser({
+        email: "alvo@fitburn.local",
+        password: PASSWORD,
+        profileId: clientProfile.id,
+      });
+      const targetLogin = await request(app.getHttpServer())
+        .post("/api/auth/login")
+        .send({ email: target.email, password: PASSWORD });
+      const refreshCookie = extractRefreshCookie(targetLogin);
+      expect(refreshCookie).toBeDefined();
+
+      const reset = await request(app.getHttpServer())
+        .post(`/api/users/${target.id}/reset-password`)
+        .set("Authorization", `Bearer ${operatorToken}`)
+        .send({ newPassword: "NovaSenhaForte456!" });
+      expect(reset.status).toBe(403);
+      expect(reset.body.code).toBe("FORBIDDEN");
+
+      const oldPassword = await request(app.getHttpServer())
+        .post("/api/auth/login")
+        .send({ email: target.email, password: PASSWORD });
+      expect(oldPassword.status).toBe(201);
+
+      const newPassword = await request(app.getHttpServer())
+        .post("/api/auth/login")
+        .send({ email: target.email, password: "NovaSenhaForte456!" });
+      expect(newPassword.status).toBe(401);
+
+      const refresh = await request(app.getHttpServer())
+        .post("/api/auth/refresh")
+        .set("Cookie", refreshCookie!);
+      expect(refresh.status).toBe(200);
+    });
+
+    it("recusa senha abaixo do contrato e preserva credenciais existentes", async () => {
+      const { token } = await loginAsAdmin();
+      const clientProfile = await createAccessProfile({ name: "Cliente", isSystem: true });
+      const target = await createUser({
+        email: "alvo@fitburn.local",
+        password: PASSWORD,
+        profileId: clientProfile.id,
+      });
+
+      const reset = await request(app.getHttpServer())
+        .post(`/api/users/${target.id}/reset-password`)
+        .set("Authorization", `Bearer ${token}`)
+        .send({ newPassword: "curta" });
+      expect(reset.status).toBe(400);
+      expect(reset.body.code).toBe("VALIDATION_ERROR");
+
+      const oldPassword = await request(app.getHttpServer())
+        .post("/api/auth/login")
+        .send({ email: target.email, password: PASSWORD });
+      expect(oldPassword.status).toBe(201);
+    });
+
     it("permite login com a nova senha e recusa a antiga", async () => {
       const { token } = await loginAsAdmin();
       const clientProfile = await createAccessProfile({ name: "Cliente", isSystem: true });
@@ -708,6 +785,11 @@ describe("Gestão de usuários (HTTP)", () => {
         .post("/api/auth/login")
         .send({ email: target.email, password: "NovaSenhaForte456!" });
       expect(withNewPassword.status).toBe(201);
+
+      const authorized = await request(app.getHttpServer())
+        .get("/api/auth/me")
+        .set("Authorization", `Bearer ${withNewPassword.body.accessToken as string}`);
+      expect(authorized.status).toBe(200);
     });
 
     it("revoga sessão anterior: reset de senha torna o refresh cookie anterior inválido", async () => {
@@ -719,6 +801,7 @@ describe("Gestão de usuários (HTTP)", () => {
         .send({ email: target.email, password: PASSWORD });
       const refreshCookie = extractRefreshCookie(targetLogin);
       expect(refreshCookie).toBeDefined();
+      const oldAccessToken = targetLogin.body.accessToken as string;
 
       const reset = await request(app.getHttpServer())
         .post(`/api/users/${target.id}/reset-password`)
@@ -726,12 +809,98 @@ describe("Gestão de usuários (HTTP)", () => {
         .send({ newPassword: "NovaSenhaForte456!" });
       expect(reset.status).toBe(204);
 
+      const protectedRequest = await request(app.getHttpServer())
+        .get("/api/auth/me")
+        .set("Authorization", `Bearer ${oldAccessToken}`);
+      expect(protectedRequest.status).toBe(401);
+      expect(protectedRequest.body.code).toBe("UNAUTHENTICATED");
+
       const refresh = await request(app.getHttpServer())
         .post("/api/auth/refresh")
         .set("Cookie", refreshCookie!);
 
       expect(refresh.status).toBe(401);
       expect(refresh.body.code).toBe("SESSION_EXPIRED");
+    });
+
+    it("na corrida entre reset, login e refresh nenhuma sessão anterior sobrevive", async () => {
+      const { token } = await loginAsAdmin();
+      const clientProfile = await createAccessProfile({ name: "Cliente", isSystem: true });
+      const target = await createUser({
+        email: "alvo@fitburn.local",
+        password: PASSWORD,
+        profileId: clientProfile.id,
+      });
+      const initialLogin = await request(app.getHttpServer())
+        .post("/api/auth/login")
+        .send({ email: target.email, password: PASSWORD });
+      const initialRefreshCookie = extractRefreshCookie(initialLogin);
+      expect(initialRefreshCookie).toBeDefined();
+      const initialAccessToken = initialLogin.body.accessToken as string;
+
+      const [reset, racedLogin, racedRefresh] = await Promise.all([
+        request(app.getHttpServer())
+          .post(`/api/users/${target.id}/reset-password`)
+          .set("Authorization", `Bearer ${token}`)
+          .send({ newPassword: "NovaSenhaForte456!" }),
+        request(app.getHttpServer())
+          .post("/api/auth/login")
+          .send({ email: target.email, password: PASSWORD }),
+        request(app.getHttpServer())
+          .post("/api/auth/refresh")
+          .set("Cookie", initialRefreshCookie!),
+      ]);
+
+      expect(reset.status).toBe(204);
+      expect([201, 401]).toContain(racedLogin.status);
+      expect([200, 401]).toContain(racedRefresh.status);
+
+      const oldAccess = await request(app.getHttpServer())
+        .get("/api/auth/me")
+        .set("Authorization", `Bearer ${initialAccessToken}`);
+      expect(oldAccess.status).toBe(401);
+
+      for (const session of [
+        {
+          response: racedLogin,
+          cookie: extractRefreshCookie(racedLogin),
+          successStatus: 201,
+        },
+        {
+          response: racedRefresh,
+          cookie: extractRefreshCookie(racedRefresh),
+          successStatus: 200,
+        },
+      ]) {
+        if (session.response.status !== session.successStatus) continue;
+        const access = await request(app.getHttpServer())
+          .get("/api/auth/me")
+          .set("Authorization", `Bearer ${session.response.body.accessToken as string}`);
+        expect(access.status).toBe(401);
+        expect(session.cookie).toBeDefined();
+        const refresh = await request(app.getHttpServer())
+          .post("/api/auth/refresh")
+          .set("Cookie", session.cookie!);
+        expect(refresh.status).toBe(401);
+      }
+    });
+
+    it("recusa access token quando o usuário não existe mais", async () => {
+      const clientProfile = await createAccessProfile({ name: "Cliente", isSystem: true });
+      const target = await createUser({
+        email: "alvo@fitburn.local",
+        password: PASSWORD,
+        profileId: clientProfile.id,
+      });
+      const accessToken = await loginAndGetAccessToken(app, target.email, PASSWORD);
+      await testPrisma.user.delete({ where: { id: target.id } });
+
+      const protectedRequest = await request(app.getHttpServer())
+        .get("/api/auth/me")
+        .set("Authorization", `Bearer ${accessToken}`);
+
+      expect(protectedRequest.status).toBe(401);
+      expect(protectedRequest.body.code).toBe("UNAUTHENTICATED");
     });
   });
 });
