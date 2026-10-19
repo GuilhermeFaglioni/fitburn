@@ -2,6 +2,8 @@ import { useId, useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Module, PermissionAction, SystemProfileName } from "@fitburn/contracts";
 import { BlockedAction } from "../components/BlockedAction";
+import { EmptyState, ErrorState, Feedback, LoadingState } from "../components/states";
+import { errorMessage } from "../lib/auth/api";
 import { useAuth } from "../lib/auth/AuthContext";
 import {
   activateProfile,
@@ -27,6 +29,7 @@ export function ProfilesPage() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newName, setNewName] = useState("");
   const [newDescription, setNewDescription] = useState("");
+  const [mutationError, setMutationError] = useState<string | null>(null);
 
   const profilesQuery = useQuery({ queryKey: ["profiles"], queryFn: listProfiles });
   const catalogQuery = useQuery({ queryKey: ["profiles", "catalog"], queryFn: getCatalog });
@@ -37,6 +40,8 @@ export function ProfilesPage() {
 
   const createMutation = useMutation({
     mutationFn: () => createProfile({ name: newName, description: newDescription || undefined }),
+    onMutate: () => setMutationError(null),
+    onError: (error) => setMutationError(errorMessage(error, "Não foi possível criar o perfil.")),
     onSuccess: () => {
       setShowCreateForm(false);
       setNewName("");
@@ -47,10 +52,16 @@ export function ProfilesPage() {
 
   const deactivateMutation = useMutation({
     mutationFn: deactivateProfile,
+    onMutate: () => setMutationError(null),
+    onError: (error) =>
+      setMutationError(errorMessage(error, "Não foi possível desativar o perfil.")),
     onSuccess: invalidateProfiles,
   });
   const activateMutation = useMutation({
     mutationFn: activateProfile,
+    onMutate: () => setMutationError(null),
+    onError: (error) =>
+      setMutationError(errorMessage(error, "Não foi possível reativar o perfil.")),
     onSuccess: invalidateProfiles,
   });
 
@@ -72,7 +83,25 @@ export function ProfilesPage() {
   return (
     <div className="fb-matrix-layout">
       <ul className="fb-role-list" style={{ listStyle: "none", margin: 0, padding: 0 }}>
-        {profiles.map((profile) => (
+        {profilesQuery.isLoading && (
+          <li>
+            <LoadingState />
+          </li>
+        )}
+        {profilesQuery.isError && (
+          <li>
+            <ErrorState
+              message="Não foi possível carregar os perfis."
+              onRetry={() => void profilesQuery.refetch()}
+            />
+          </li>
+        )}
+        {profilesQuery.data?.length === 0 && (
+          <li>
+            <EmptyState message="Nenhum perfil cadastrado." />
+          </li>
+        )}
+        {profilesQuery.data?.map((profile) => (
           <li key={profile.id} style={{ display: "flex", alignItems: "center", gap: 4 }}>
             <button
               type="button"
@@ -89,6 +118,7 @@ export function ProfilesPage() {
                   <button
                     type="button"
                     className="fb-row-btn"
+                    disabled={deactivateMutation.isPending}
                     onClick={() => deactivateMutation.mutate(profile.id)}
                   >
                     Desativar
@@ -97,6 +127,7 @@ export function ProfilesPage() {
                   <button
                     type="button"
                     className="fb-row-btn"
+                    disabled={activateMutation.isPending}
                     onClick={() => activateMutation.mutate(profile.id)}
                   >
                     Reativar
@@ -121,6 +152,8 @@ export function ProfilesPage() {
       </ul>
 
       <div className="fb-matrix-content">
+        {mutationError && <Feedback tone="error">{mutationError}</Feedback>}
+
         {showCreateForm && (
           <form
             onSubmit={handleCreateSubmit}
@@ -142,10 +175,18 @@ export function ProfilesPage() {
               value={newDescription}
               onChange={(event) => setNewDescription(event.target.value)}
             />
-            <button type="submit" className="fb-btn-primary">
+            <button type="submit" className="fb-btn-primary" disabled={createMutation.isPending}>
               Criar perfil
             </button>
           </form>
+        )}
+
+        {catalogQuery.isLoading && <LoadingState />}
+        {catalogQuery.isError && (
+          <ErrorState
+            message="Não foi possível carregar o catálogo de perfis."
+            onRetry={() => void catalogQuery.refetch()}
+          />
         )}
 
         {selectedProfile && catalogQuery.data && (
