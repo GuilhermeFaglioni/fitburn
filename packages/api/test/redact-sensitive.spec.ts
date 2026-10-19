@@ -53,4 +53,112 @@ describe("redactSensitive: cabeçalhos de autenticação", () => {
     expect(redactSensitive('password: "abc123"')).not.toContain("abc123");
     expect(redactSensitive("erro ao salvar o usuário 42")).toBe("erro ao salvar o usuário 42");
   });
+
+  it("mascara campos pessoais em mensagens de log", () => {
+    const output = redactSensitive(
+      'email: "ana@example.com", document: "123.456.789-00", phone: "+55 11 99999-0000", address: "Rua A, 10", birthDate: "2000-01-01", description: "meta pessoal"',
+    );
+
+    for (const value of [
+      "ana@example.com",
+      "123.456.789-00",
+      "+55 11 99999-0000",
+      "Rua A, 10",
+      "2000-01-01",
+      "meta pessoal",
+    ]) {
+      expect(output).not.toContain(value);
+    }
+  });
+
+  it("mascara campos pessoais em objetos aninhados", () => {
+    const output = redactSensitive({
+      request: {
+        user: {
+          email: "ana@example.com",
+          document: "123.456.789-00",
+          phone: "+55 11 99999-0000",
+          address: "Rua A, 10",
+          birthDate: "2000-01-01",
+        },
+        goals: [{ title: "correr 10 km", description: "meta pessoal" }],
+        workoutSheet: {
+          title: "treino da Ana",
+          notes: "treino com dado de saúde",
+          exercises: [
+            {
+              name: "agachamento",
+              sets: "4 séries",
+              reps: "8 repetições",
+              load: "40 kg",
+              duration: "45 segundos",
+              distance: "500 metros",
+              notes: "dor no joelho",
+            },
+          ],
+        },
+      },
+    });
+
+    expect(output).toEqual({
+      request: {
+        user: {
+          email: "[REDACTED]",
+          document: "[REDACTED]",
+          phone: "[REDACTED]",
+          address: "[REDACTED]",
+          birthDate: "[REDACTED]",
+        },
+        goals: [{ title: "[REDACTED]", description: "[REDACTED]" }],
+        workoutSheet: {
+          title: "[REDACTED]",
+          notes: "[REDACTED]",
+          exercises: [
+            {
+              name: "[REDACTED]",
+              sets: "[REDACTED]",
+              reps: "[REDACTED]",
+              load: "[REDACTED]",
+              duration: "[REDACTED]",
+              distance: "[REDACTED]",
+              notes: "[REDACTED]",
+            },
+          ],
+        },
+      },
+    });
+  });
+
+  it("continua mascarando credenciais em objetos estruturados", () => {
+    const output = redactSensitive({
+      credentials: {
+        authorization: `Bearer ${JWT}`,
+        cookie: `fitburn_refresh_token=${REFRESH}`,
+        password: "senha-temporaria",
+      },
+    });
+
+    expect(output).toEqual({
+      credentials: {
+        authorization: "[REDACTED]",
+        cookie: "[REDACTED]",
+        password: "[REDACTED]",
+      },
+    });
+  });
+
+  it("mascara dados pessoais em mensagens Prisma multilinha", () => {
+    const output = redactSensitive(
+      `PrismaClientKnownRequestError: Invalid prisma.user.create() invocation:\n{\n  data: {\n    email: "ana@example.com",\n    document: "123.456.789-00",\n    description: "meta na primeira linha\ne lesão na segunda"\n  }\n}`,
+    );
+
+    for (const value of [
+      "ana@example.com",
+      "123.456.789-00",
+      "meta na primeira linha",
+      "lesão na segunda",
+    ]) {
+      expect(output).not.toContain(value);
+    }
+  });
 });

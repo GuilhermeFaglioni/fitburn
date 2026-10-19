@@ -1,10 +1,11 @@
-import type { INestApplication } from "@nestjs/common";
+import { Logger, type INestApplication } from "@nestjs/common";
 import cookieParser from "cookie-parser";
 import type { Express, NextFunction, Request, Response } from "express";
 import { rateLimit } from "express-rate-limit";
 import helmet from "helmet";
 import { ErrorCode, type ApiErrorBody } from "@fitburn/contracts";
 import { AllExceptionsFilter } from "../common/filters/all-exceptions.filter.js";
+import { serializeRedactedLogEntry } from "../common/logging/redact-sensitive.js";
 import type { AppConfig } from "../config/app-config.js";
 
 /**
@@ -22,6 +23,7 @@ export function configureApp(app: INestApplication, config: AppConfig): void {
   const server = app.getHttpAdapter().getInstance() as Express;
   server.disable("x-powered-by");
   server.set("trust proxy", config.trustProxyHops);
+  logHttpRequests(server);
 
   app.setGlobalPrefix("api");
 
@@ -55,6 +57,27 @@ export function configureApp(app: INestApplication, config: AppConfig): void {
 
   app.use(cookieParser());
   app.useGlobalFilters(new AllExceptionsFilter());
+}
+
+function logHttpRequests(server: Express): void {
+  const logger = new Logger("HttpRequest");
+
+  server.use((req: Request, res: Response, next: NextFunction) => {
+    const startedAt = Date.now();
+
+    res.once("finish", () => {
+      const entry = {
+        event: "http.request",
+        method: req.method,
+        route: typeof req.route?.path === "string" ? req.route.path : "unmatched",
+        statusCode: res.statusCode,
+        durationMs: Date.now() - startedAt,
+      };
+      logger.log(serializeRedactedLogEntry(entry));
+    });
+
+    next();
+  });
 }
 
 function authRateLimiter(config: AppConfig) {
