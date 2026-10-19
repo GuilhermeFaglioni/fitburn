@@ -1,10 +1,10 @@
 # Checklist da massa de dados da demonstração
 
-Lista do que o administrador da demo cadastra, à mão, depois do reset do ambiente remoto, para o [roteiro da demonstração](demo-script.md) funcionar. Fonte: Fase 9 (spec #10, ticket #54) e `docs/mvp-web-pwa.md` (Reset da demonstração, Público da demonstração).
+Lista da massa **manual** que o administrador cadastra depois do reset do ambiente remoto. O [roteiro da demonstração](demo-script.md) pressupõe este cenário. Há também um seed automático para Coolify, descrito em [deploy-coolify.md](deploy-coolify.md#o-que-a-demonstração-contém), mas ele cria um conjunto diferente e não substitui esta checklist. Fonte: Fase 9 (spec #10, ticket #54) e `docs/mvp-web-pwa.md` (Reset da demonstração, Público da demonstração).
 
 Regras desta massa:
 
-- **Cadastro manual pela interface**, como o MVP define. Não existe seed de dados de demonstração e este documento não cria um. A única exceção é a criação das contas de equipe, que não tem tela (seção 7).
+- **Cadastro manual pela interface**, como o MVP define. O seed automático de Coolify é outro cenário e não é usado por este checklist. A única exceção é a criação das contas de equipe, que não tem tela (seção 7).
 - **Tudo é fictício**, com nomes e contextos de um estúdio boutique de aulas personalizadas.
 - **Nenhuma credencial vai para o repositório**, nem de exemplo: senhas e e-mails reais das contas ficam no gerenciador de senhas da equipe. Onde este documento pede uma senha, ele mostra `<definir fora do repositório>`.
 - Datas são relativas: **D** é o dia da demonstração, **D-1** a véspera, **D+1** o dia seguinte.
@@ -214,7 +214,7 @@ Menu **Atribuições** ("Atribuição de clientes a professores"): escolha o pro
 
 ## 12. Grade de ocorrências da semana
 
-Menu **Agenda**, **+ Nova aula** com **Recorrência = Repetir semanalmente**: escolha o template, a **Data** inicial, o **Horário**, os **Dias da semana**, **Repetir até** e **Salvar**. **Data** inicial = a segunda-feira da semana de D (a grade da semana atual aparece completa na Agenda; nos dias que já passaram as aulas ficam com 0 reservas); **Repetir até** = D+28. A agenda é um espaço exclusivo (nunca duas aulas ao mesmo tempo) e a criação recorrente é tudo ou nada; se uma série recusar por sobreposição, a mensagem lista as datas em conflito.
+Menu **Agenda**, **+ Nova aula** com **Recorrência = Repetir semanalmente**: escolha o template, a **Data** inicial, o **Horário**, os **Dias da semana**, **Repetir até** e **Salvar**. **Data** inicial = a segunda-feira da semana de D (a grade da semana atual aparece completa na Agenda; nos dias que já passaram as aulas ficam com 0 reservas); **Repetir até** = D+28. Aulas de professores diferentes podem ocorrer ao mesmo tempo; a criação recorrente é tudo ou nada e, se uma série tiver conflito para o mesmo professor, a mensagem lista as datas em conflito.
 
 | Template | Dias | Horário | Professor |
 |---|---|---|---|
@@ -230,7 +230,7 @@ Menu **Agenda**, **+ Nova aula** com **Recorrência = Repetir semanalmente**: es
 
 A janela das **12h40 às 18h00** fica livre todos os dias: é onde entram as aulas de cena (seção 13) e as aulas-relâmpago (seção 14). Nada é cadastrado para o domingo.
 
-Confira em **Agenda** (semana atual e próxima): as aulas aparecem como "HH:MM Modalidade Prof. X · 0/N", sem sobreposição.
+Confira em **Agenda** (semana atual e próxima): as aulas aparecem como "HH:MM Modalidade Prof. X · 0/N". Sobreposição entre professores diferentes é permitida; não deve haver duas aulas do mesmo professor no mesmo horário.
 
 ## 13. Aulas de cena e reservas de cena
 
@@ -238,7 +238,7 @@ Aulas avulsas do roteiro, criadas em **Agenda**, **+ Nova aula** (sem recorrênc
 
 | Código | Template | Quando | Capacidade | Professor | Uso no roteiro |
 |---|---|---|---|---|---|
-| R1 | Personal Studio 1:1 | D+1, 14:00 | 1 (a **aula com uma única vaga**) | Rafael Nogueira | Disputa pela última vaga (3.6); conflito de horário (3.2, criar uma aula às 14:10) |
+| R1 | Personal Studio 1:1 | D+1, 14:00 | 1 (a **aula com uma única vaga**) | Rafael Nogueira | Disputa pela última vaga (3.6); conflito do mesmo professor (3.2, criar uma aula às 14:10) |
 | R2 | Personal Studio 1:1 | D+1, 15:00 | 1 | Rafael Nogueira | Remarcação recusada (3.7) |
 | F | Força & Hipertrofia | D+1, 16:00 | **2** (troque de 4 para 2) | Rafael Nogueira | Aula cheia (3.1); Ocupação no Dashboard |
 | X | Yoga Vinyasa | D+1, 17:00 | 6 | Camila Andrade | Reserva da Marina: reserva duplicada (3.3) e origem da remarcação (3.7) |
@@ -342,7 +342,7 @@ O Dashboard conta o mês atual: os números acima valem enquanto as aulas-relâm
 - **Um perfil de navegador por conta ativa** (o cookie de refresh é compartilhado) e faça login antes da demo: 10 tentativas com falha por minuto e por IP travam o login de todos.
 - **Horários são os de Brasília** (America/Sao_Paulo), independentemente do fuso do aparelho. A presença abre pelo relógio do servidor.
 - **Aulas com reservas não podem ser canceladas nem excluídas** (a tela bloqueia e o servidor recusa). Para desfazer uma aula de cena cadastrada errado, cancele antes as reservas dela em **Reservas**.
-- **Uma reserva por cliente por aula** e nunca duas aulas ao mesmo tempo no estúdio: se uma reserva de cena recusar, leia a mensagem (aula cheia, duplicada ou já iniciada).
+- **Uma reserva por cliente por aula e sem reservas sobrepostas da mesma pessoa.** Aulas de professores diferentes podem ocorrer ao mesmo tempo; se uma reserva de cena recusar, leia a mensagem (aula cheia, duplicada, conflito de horário ou já iniciada).
 - **Gustavo, Fernando, Juliana e Otávio só em aulas do Rafael.** Qualquer reserva deles numa aula da Camila os coloca no escopo dela e quebra o cenário 3.5.
 - **Não conclua a meta da Marina, não registre a presença da P nem use a PR antes da demo**: presença e meta não voltam para "pendente" (o ensaio final deve usar aulas que a demo não consome, ou deve ser seguido de novo reset e recadastro).
 - **E-mail e documento são únicos.** Use exatamente as convenções acima para não colidir ao recadastrar.

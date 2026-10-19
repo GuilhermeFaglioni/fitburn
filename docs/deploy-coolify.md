@@ -62,7 +62,7 @@ Daí em diante, ative **Auto Deploy** (webhook do GitHub) se quiser publicar a c
 
 ## 6. Contas de demonstração
 
-Senha de todas: o valor de `DEMO_USER_PASSWORD`.
+As contas de professor e cliente geradas pelo seed usam `DEMO_USER_PASSWORD`; o administrador inicial usa `INITIAL_ADMIN_PASSWORD`.
 
 | Quem | E-mail | Perfil |
 |---|---|---|
@@ -77,6 +77,8 @@ Senha de todas: o valor de `DEMO_USER_PASSWORD`.
 Os e-mails usam o domínio reservado `.example` (não recebe e-mail). Para transformar um professor em administrador, troque `role` em `packages/api/src/demo-seed/demo-data.ts` (ou crie o perfil/usuário pelo próprio app).
 
 ### O que a demonstração contém
+
+Este é o cenário do **seed automático** (`DEMO_SEED=true`), separado da massa manual de [demo-data-checklist.md](demo-data-checklist.md), que é a base do [roteiro da demonstração](demo-script.md). O administrador vem das variáveis `INITIAL_ADMIN_*`; o seed cria quatro contas de professor e 14 contas de cliente, sem senhas fixas no repositório.
 
 - **Uma única modalidade e aula: Personal Class** (60 min, 3 vagas), para vários professores. No mesmo horário há várias Personal Class, desde que de professores diferentes (nos horários nobres, 07h, 12h, 18h e 19h, os quatro professores atendem ao mesmo tempo). O mesmo professor nunca tem duas aulas sobrepostas.
 - Agenda de 5 semanas para trás e 3 para frente (seg-sáb), com reservas, faltas, cancelamentos e algumas aulas **lotadas** nos próximos dias.
