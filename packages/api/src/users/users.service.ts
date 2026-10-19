@@ -1,6 +1,12 @@
 import { randomBytes } from "node:crypto";
 import { Injectable } from "@nestjs/common";
-import { Prisma, type AccessProfile, type User, type UserStatus } from "@prisma/client";
+import {
+  AdminAuditAction,
+  Prisma,
+  type AccessProfile,
+  type User,
+  type UserStatus,
+} from "@prisma/client";
 import {
   dateOnlyToLocalDate,
   ErrorCode,
@@ -21,8 +27,11 @@ import { PermissionsService } from "../permissions/permissions.service.js";
 import type { ProfileRequester } from "../permissions/scoped-requester.js";
 import { DomainError } from "../common/errors/domain-error.js";
 import { hashPassword } from "../auth/password.util.js";
+import { recordAdminAuditEvent } from "../admin-audit/record-admin-audit-event.js";
 
 export type UserWithProfile = User & { profile: AccessProfile };
+export type UserMutationActor = Pick<ProfileRequester, "userId"> &
+  Partial<Pick<ProfileRequester, "profile">>;
 
 const CLIENT_PROFILE_NAME = "Cliente";
 
@@ -80,44 +89,77 @@ export class UsersService {
     });
   }
 
-  async createClient(input: CreateClientRequest): Promise<UserWithProfile> {
+  async createClient(
+    input: CreateClientRequest,
+    requester: UserMutationActor,
+  ): Promise<UserWithProfile> {
     const clientProfile = await this.getSystemProfile(CLIENT_PROFILE_NAME);
     await this.assertEmailAvailable(input.email);
     await this.assertDocumentAvailable(input.document);
     const passwordHash = await hashPassword(input.password);
 
-    return this.prisma.user
-      .create({
-        data: {
-          email: input.email,
-          passwordHash,
-          fullName: input.fullName,
-          phone: input.phone,
-          birthDate: new Date(input.birthDate),
-          document: input.document,
-          address: input.address,
-          profileId: clientProfile.id,
-        },
-        include: { profile: true },
+    return this.prisma
+      .$transaction(async (tx) => {
+        const user = await tx.user.create({
+          data: {
+            email: input.email,
+            passwordHash,
+            fullName: input.fullName,
+            phone: input.phone,
+            birthDate: new Date(input.birthDate),
+            document: input.document,
+            address: input.address,
+            profileId: clientProfile.id,
+          },
+          include: { profile: true },
+        });
+        await recordAdminAuditEvent(tx, {
+          actorId: requester.userId,
+          action: AdminAuditAction.USER_CREATED,
+          targetId: user.id,
+          changedFields: [
+            "fullName",
+            "email",
+            "phone",
+            "birthDate",
+            "document",
+            "address",
+            "password",
+            "profileId",
+          ],
+        });
+        return user;
       })
       .catch((error: unknown) => this.rethrowUniqueViolation(error, input.email, input.document));
   }
 
-  async createStaff(input: CreateStaffRequest, requester: ProfileRequester): Promise<UserWithProfile> {
+  async createStaff(
+    input: CreateStaffRequest,
+    requester: ProfileRequester,
+  ): Promise<UserWithProfile> {
     const profile = await this.getExistingProfile(input.profileId);
     await this.permissionsService.assertCanAssignProfile(requester.profile, profile);
     await this.assertEmailAvailable(input.email);
     const passwordHash = await hashPassword(input.password);
 
-    return this.prisma.user
-      .create({
-        data: {
-          email: input.email,
-          passwordHash,
-          fullName: input.fullName,
-          profileId: profile.id,
-        },
-        include: { profile: true },
+    return this.prisma
+      .$transaction(async (tx) => {
+        const user = await tx.user.create({
+          data: {
+            email: input.email,
+            passwordHash,
+            fullName: input.fullName,
+            profileId: profile.id,
+          },
+          include: { profile: true },
+        });
+        await recordAdminAuditEvent(tx, {
+          actorId: requester.userId,
+          action: AdminAuditAction.USER_CREATED,
+          targetId: user.id,
+          changedFields: ["fullName", "email", "password", "profileId"],
+        });
+        return user;
       })
       .catch((error: unknown) => this.rethrowUniqueViolation(error, input.email));
   }
@@ -125,10 +167,10 @@ export class UsersService {
   async update(
     id: string,
     input: UpdateUserRequest,
-    requester?: ProfileRequester,
+    requester?: UserMutationActor,
   ): Promise<UserWithProfile> {
     if (input.profileId !== undefined) {
-      if (!requester) {
+      if (!requester?.profile) {
         throw new DomainError(
           ErrorCode.FORBIDDEN,
           "Não foi possível validar as permissões para alterar o perfil de acesso.",
@@ -152,15 +194,19 @@ export class UsersService {
       await this.assertDocumentAvailable(input.document, id);
     }
 
-    return this.updateRow(id, input).catch((error: unknown) =>
+    return this.updateRow(id, input, requester?.userId).catch((error: unknown) =>
       this.rethrowUniqueViolation(error, input.email, input.document, id),
     );
   }
 
-  private updateRow(id: string, input: UpdateUserRequest): Promise<UserWithProfile> {
+  private updateRow(
+    id: string,
+    input: UpdateUserRequest,
+    actorId: string | undefined,
+  ): Promise<UserWithProfile> {
     return this.prisma.$transaction(async (tx) => {
       await this.lockLiveUser(tx, id);
-      return tx.user.update({
+      const user = await tx.user.update({
         where: { id },
         data: {
           ...(input.fullName !== undefined ? { fullName: input.fullName } : {}),
@@ -175,10 +221,23 @@ export class UsersService {
         },
         include: { profile: true },
       });
+      const changedFields = Object.keys(input);
+      if (actorId && changedFields.length > 0) {
+        await recordAdminAuditEvent(tx, {
+          actorId,
+          action:
+            input.profileId !== undefined
+              ? AdminAuditAction.USER_PROFILE_CHANGED
+              : AdminAuditAction.USER_UPDATED,
+          targetId: id,
+          changedFields,
+        });
+      }
+      return user;
     });
   }
 
-  async deactivate(id: string): Promise<UserWithProfile> {
+  async deactivate(id: string, requester: UserMutationActor): Promise<UserWithProfile> {
     return this.prisma.$transaction(async (tx) => {
       await this.lockLiveUser(tx, id);
       const user = await tx.user.update({
@@ -187,27 +246,50 @@ export class UsersService {
         include: { profile: true },
       });
       await this.revokeSessions(tx, id);
+      await recordAdminAuditEvent(tx, {
+        actorId: requester.userId,
+        action: AdminAuditAction.USER_DEACTIVATED,
+        targetId: id,
+        changedFields: ["status"],
+      });
       return user;
     });
   }
 
-  reactivate(id: string): Promise<UserWithProfile> {
+  reactivate(id: string, requester: UserMutationActor): Promise<UserWithProfile> {
     return this.prisma.$transaction(async (tx) => {
       await this.lockLiveUser(tx, id);
-      return tx.user.update({
+      const user = await tx.user.update({
         where: { id },
         data: { status: "ACTIVE" },
         include: { profile: true },
       });
+      await recordAdminAuditEvent(tx, {
+        actorId: requester.userId,
+        action: AdminAuditAction.USER_REACTIVATED,
+        targetId: id,
+        changedFields: ["status"],
+      });
+      return user;
     });
   }
 
-  async resetPassword(id: string, newPassword: string): Promise<void> {
+  async resetPassword(
+    id: string,
+    newPassword: string,
+    requester: UserMutationActor,
+  ): Promise<void> {
     const passwordHash = await hashPassword(newPassword);
     await this.prisma.$transaction(async (tx) => {
       await this.lockLiveUser(tx, id);
       await tx.user.update({ where: { id }, data: { passwordHash } });
       await this.revokeSessions(tx, id);
+      await recordAdminAuditEvent(tx, {
+        actorId: requester.userId,
+        action: AdminAuditAction.USER_PASSWORD_RESET,
+        targetId: id,
+        changedFields: ["password"],
+      });
     });
   }
 
@@ -219,7 +301,7 @@ export class UsersService {
    * revogadas. Nenhuma referência histórica (reservas, presenças, pontos,
    * planos, fichas) é tocada.
    */
-  async anonymize(id: string): Promise<UserWithProfile> {
+  async anonymize(id: string, requester: UserMutationActor): Promise<UserWithProfile> {
     // Hash de uma senha aleatória descartada: ninguém conhece, ninguém entra.
     const passwordHash = await hashPassword(randomBytes(32).toString("hex"));
     return this.prisma.$transaction(async (tx) => {
@@ -240,6 +322,21 @@ export class UsersService {
         include: { profile: true },
       });
       await this.revokeSessions(tx, id);
+      await recordAdminAuditEvent(tx, {
+        actorId: requester.userId,
+        action: AdminAuditAction.USER_DELETED,
+        targetId: id,
+        changedFields: [
+          "fullName",
+          "email",
+          "password",
+          "phone",
+          "birthDate",
+          "document",
+          "address",
+          "status",
+        ],
+      });
       return user;
     });
   }
