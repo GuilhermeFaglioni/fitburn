@@ -1,7 +1,7 @@
 # 005 — Infra: dependências vulneráveis, guarda do deploy Vercel e X-Forwarded-For
 
-- **Status**: TODO
-- **Commit**: —
+- **Status**: DONE
+- **Commit**: `6a1b26860687c4298bdca1f1ebeba6314747bb8b`
 - **Severity**: MEDIUM
 - **Origem**: auditoria contracts-infra (dependências; placeholder Vercel) e api-security M4 (rate limit contornável por `X-Forwarded-For`)
 - **Escopo estimado**: `package.json`, `pnpm-lock.yaml`, `packages/*/package.json`, `vercel.json`, `.github/workflows/ci.yml`, `scripts/deploy-check.mjs`, `docker/`, `docker-compose.prod.yml`, `docs/deploy-runbook.md`, `docs/deploy-coolify.md`

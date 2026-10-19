@@ -17,7 +17,7 @@ Verificação geral (raiz da worktree): `pnpm typecheck`, `pnpm test`, `pnpm bui
 | 002 | Corrida de escopo na edição/cancelamento/exclusão de aula | HIGH | api | TODO |
 | 003 | Ciclo de vida de sessão (refresh atômico, reset, desativação) | MEDIUM | api | TODO |
 | 004 | Sessão encerrada na web + erros da tela de Perfis | HIGH / MEDIUM | web | TODO |
-| 005 | Infra: dependências vulneráveis, guarda de deploy Vercel, X-Forwarded-For | MEDIUM | infra | TODO |
+| 005 | Infra: dependências vulneráveis, guarda de deploy Vercel, X-Forwarded-For | MEDIUM | infra | DONE |
 | 006 | Documentação: regra de sobreposição e cenário do seed de demo | MEDIUM | docs | TODO |
 
 Todos são independentes entre si. Conflitos de merge esperados são pequenos: 001 e 003 tocam funções diferentes de `packages/api/src/users/users.service.ts`.
