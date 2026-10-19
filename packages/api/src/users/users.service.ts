@@ -448,7 +448,7 @@ export class UsersService {
     }
   }
 
-  private revokeSessions(tx: Prisma.TransactionClient, userId: string) {
+  revokeSessions(tx: Prisma.TransactionClient, userId: string) {
     return tx.refreshToken.updateMany({
       where: { userId, revokedAt: null },
       data: { revokedAt: new Date() },

@@ -36,6 +36,14 @@ export const resetPasswordRequestSchema = z.object({
 });
 export type ResetPasswordRequest = z.infer<typeof resetPasswordRequestSchema>;
 
+export const changeOwnPasswordRequestSchema = z
+  .object({
+    currentPassword: z.string().min(1, "Informe a senha atual."),
+    newPassword: z.string().min(8, "A senha precisa ter pelo menos 8 caracteres."),
+  })
+  .strict();
+export type ChangeOwnPasswordRequest = z.infer<typeof changeOwnPasswordRequestSchema>;
+
 export const userDetailSchema = z.object({
   id: z.string(),
   email: z.string(),

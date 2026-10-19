@@ -13,6 +13,7 @@ import {
 } from "@fitburn/contracts";
 import { AppRoutes } from "../src/App";
 import { AuthProvider } from "../src/lib/auth/AuthContext";
+import { tokenStore } from "../src/lib/auth/token-store";
 import { server } from "./msw-server";
 
 const CLIENT_ME: UserDetail = {
@@ -68,12 +69,18 @@ function renderAt(path: string) {
 describe("Perfil / Minha conta", () => {
   let me: UserDetail;
   let patches: unknown[];
+  let passwordChanges: unknown[];
+  let passwordUrls: string[];
   let logoutCalls: number;
+  let refreshCalls: number;
 
   function mockSession(detail: UserDetail, permissions: EffectivePermission[] = []) {
     me = { ...detail };
     patches = [];
+    passwordChanges = [];
+    passwordUrls = [];
     logoutCalls = 0;
+    refreshCalls = 0;
     const current: CurrentUser = {
       id: detail.id,
       email: detail.email,
@@ -83,9 +90,10 @@ describe("Perfil / Minha conta", () => {
       permissions,
     };
     server.use(
-      http.post("/api/auth/refresh", () =>
-        HttpResponse.json({ accessToken: "token", user: current }),
-      ),
+      http.post("/api/auth/refresh", () => {
+        refreshCalls += 1;
+        return HttpResponse.json({ accessToken: "token", user: current });
+      }),
       http.post("/api/auth/logout", () => {
         logoutCalls += 1;
         return new HttpResponse(null, { status: 204 });
@@ -103,6 +111,11 @@ describe("Perfil / Minha conta", () => {
         }
         me = { ...me, ...body };
         return HttpResponse.json(me);
+      }),
+      http.post("/api/auth/password", async ({ request }) => {
+        passwordUrls.push(request.url);
+        passwordChanges.push(await request.json());
+        return HttpResponse.json({ accessToken: "token-renovado", user: current });
       }),
     );
   }
@@ -248,9 +261,78 @@ describe("Perfil / Minha conta", () => {
       renderAt("/perfil");
 
       await user.click(await screen.findByRole("button", { name: "Editar" }));
-      expect(screen.queryByLabelText(/perfil de acesso/i)).not.toBeInTheDocument();
-      expect(screen.queryByLabelText(/status/i)).not.toBeInTheDocument();
-      expect(screen.queryByLabelText(/senha/i)).not.toBeInTheDocument();
+      const card = screen.getByRole("region", { name: "Dados pessoais" });
+      expect(within(card).queryByLabelText(/perfil de acesso/i)).not.toBeInTheDocument();
+      expect(within(card).queryByLabelText(/status/i)).not.toBeInTheDocument();
+      expect(within(card).queryByLabelText(/senha/i)).not.toBeInTheDocument();
+    });
+
+    it("troca a senha e limpa os campos sem encerrar a sessão", async () => {
+      const user = userEvent.setup();
+      renderAt("/perfil");
+
+      await user.click(await screen.findByRole("button", { name: "Alterar senha" }));
+      await user.type(screen.getByLabelText("Senha atual"), "SenhaAtual123!");
+      await user.type(screen.getByLabelText("Nova senha"), "SenhaNova456!");
+      await user.click(screen.getByRole("button", { name: "Salvar nova senha" }));
+
+      expect(passwordChanges).toEqual([
+        { currentPassword: "SenhaAtual123!", newPassword: "SenhaNova456!" },
+      ]);
+      expect(passwordUrls).toHaveLength(1);
+      expect(passwordUrls[0]).toMatch(/\/api\/auth\/password$/);
+      expect(passwordUrls[0]).not.toContain("SenhaAtual123!");
+      expect(passwordUrls[0]).not.toContain("SenhaNova456!");
+      expect(await screen.findByText("Senha alterada com sucesso.")).toBeInTheDocument();
+      expect(tokenStore.get()).toBe("token-renovado");
+      expect(screen.queryByLabelText("Senha atual")).not.toBeInTheDocument();
+      expect(screen.queryByLabelText("Nova senha")).not.toBeInTheDocument();
+      expect(window.localStorage.length).toBe(0);
+      expect(window.sessionStorage.length).toBe(0);
+      expect(logoutCalls).toBe(0);
+      expect(
+        screen.getByText("/perfil", { selector: "[data-testid=location]" }),
+      ).toBeInTheDocument();
+    });
+
+    it("limpa os campos ao cancelar a troca", async () => {
+      const user = userEvent.setup();
+      renderAt("/perfil");
+
+      await user.click(await screen.findByRole("button", { name: "Alterar senha" }));
+      await user.type(screen.getByLabelText("Senha atual"), "SenhaAtual123!");
+      await user.type(screen.getByLabelText("Nova senha"), "SenhaNova456!");
+      await user.click(screen.getByRole("button", { name: "Cancelar troca de senha" }));
+
+      expect(screen.queryByLabelText("Senha atual")).not.toBeInTheDocument();
+      expect(screen.queryByLabelText("Nova senha")).not.toBeInTheDocument();
+      expect(passwordChanges).toEqual([]);
+    });
+
+    it("mostra senha atual incorreta sem encerrar ou renovar a sessão", async () => {
+      server.use(
+        http.post("/api/auth/password", () =>
+          HttpResponse.json(
+            { code: "CURRENT_PASSWORD_INVALID", message: "A senha atual está incorreta." },
+            { status: 400 },
+          ),
+        ),
+      );
+      const user = userEvent.setup();
+      renderAt("/perfil");
+
+      await user.click(await screen.findByRole("button", { name: "Alterar senha" }));
+      await user.type(screen.getByLabelText("Senha atual"), "senha-errada");
+      await user.type(screen.getByLabelText("Nova senha"), "SenhaNova456!");
+      await user.click(screen.getByRole("button", { name: "Salvar nova senha" }));
+
+      expect(await screen.findByRole("alert")).toHaveTextContent("A senha atual está incorreta.");
+      expect(refreshCalls).toBe(1);
+      expect(logoutCalls).toBe(0);
+      expect(screen.getByLabelText("Senha atual")).toHaveValue("senha-errada");
+      expect(
+        screen.getByText("/perfil", { selector: "[data-testid=location]" }),
+      ).toBeInTheDocument();
     });
 
     it("sai do app pela ação de logout da tela", async () => {

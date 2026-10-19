@@ -1,5 +1,6 @@
 import { loginResponseSchema, type CurrentUser } from "@fitburn/contracts";
 import { trackedFetch } from "../connectivity/connectivity-store";
+import { authFetch } from "./authFetch";
 import { tokenStore } from "./token-store";
 
 export class ApiError extends Error {
@@ -45,6 +46,21 @@ export async function login(email: string, password: string): Promise<CurrentUse
 export async function logout(): Promise<void> {
   await trackedFetch("/api/auth/logout", { method: "POST", credentials: "include" });
   tokenStore.set(null);
+}
+
+/** Troca a senha atual e substitui o access token sem encerrar a sessão. */
+export async function changeOwnPassword(
+  currentPassword: string,
+  newPassword: string,
+): Promise<CurrentUser> {
+  const response = await authFetch("/api/auth/password", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ currentPassword, newPassword }),
+  });
+  const data = loginResponseSchema.parse(await parseOrThrow(response));
+  tokenStore.set(data.accessToken);
+  return data.user;
 }
 
 /** Resultado de uma tentativa de renovar a sessão via /auth/refresh. */
