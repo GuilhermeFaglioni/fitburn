@@ -385,14 +385,17 @@ describe.skipIf(!dockerAvailable)("backup diário criptografado", () => {
       },
     ]);
 
-    const orphanRows = await restoreClient.query(
-      `SELECT
-         (SELECT count(*) FROM reservations r LEFT JOIN users u ON u.id = r."clientId" WHERE u.id IS NULL) AS reservations,
-         (SELECT count(*) FROM reservations r LEFT JOIN class_occurrences c ON c.id = r."occurrenceId" WHERE c.id IS NULL) AS occurrences,
-         (SELECT count(*) FROM points_entries p LEFT JOIN reservations r ON r.id = p."reservationId" WHERE p."reservationId" IS NOT NULL AND r.id IS NULL) AS points,
-         (SELECT count(*) FROM workout_sheets w LEFT JOIN users u ON u.id = w."authorId" WHERE u.id IS NULL) AS sheets`,
+    const foreignKeys = await restoreClient.query<{ conname: string; convalidated: boolean }>(
+      `SELECT conname, convalidated
+         FROM pg_constraint
+        WHERE contype = 'f'
+          AND connamespace = 'public'::regnamespace
+        ORDER BY conname`,
     );
-    expect(Object.values(orphanRows.rows[0]).map(Number)).toEqual([0, 0, 0, 0]);
+    expect(foreignKeys.rows.length).toBeGreaterThan(0);
+    expect(
+      foreignKeys.rows.filter(({ convalidated }) => !convalidated).map(({ conname }) => conname),
+    ).toEqual([]);
 
     await sourceClient.end();
     sourceClient = undefined;
@@ -413,15 +416,20 @@ function testDatabaseUrlFromEnv(): string {
 }
 
 async function databaseCounts(client: Client): Promise<Record<string, number>> {
-  const result = await client.query(
-    `SELECT
-       (SELECT count(*) FROM users) AS users,
-       (SELECT count(*) FROM reservations) AS reservations,
-       (SELECT count(*) FROM class_occurrences) AS occurrences,
-       (SELECT count(*) FROM workout_sheets) AS workout_sheets,
-       (SELECT count(*) FROM points_entries) AS points_entries`,
+  const tables = await client.query<{ table_name: string }>(
+    `SELECT table_name
+       FROM information_schema.tables
+      WHERE table_schema = 'public'
+        AND table_type = 'BASE TABLE'
+      ORDER BY table_name`,
   );
-  return Object.fromEntries(
-    Object.entries(result.rows[0]).map(([name, count]) => [name, Number(count)]),
-  );
+  const counts: Array<[string, number]> = [];
+  for (const { table_name } of tables.rows) {
+    const identifier = `"${table_name.replaceAll('"', '""')}"`;
+    const result = await client.query<{ count: string }>(
+      `SELECT count(*) AS count FROM public.${identifier}`,
+    );
+    counts.push([table_name, Number(result.rows[0].count)]);
+  }
+  return Object.fromEntries(counts);
 }
