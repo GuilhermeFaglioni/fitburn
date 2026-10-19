@@ -59,6 +59,7 @@ describe("Trilha de auditoria administrativa (HTTP)", () => {
       "12345678900",
       "Rua Confidencial, 123",
       "SenhaPrivada#456",
+      "1990-05-20",
     ];
     const response = await request(app.getHttpServer())
       .post("/api/users/clients")
@@ -135,6 +136,12 @@ describe("Trilha de auditoria administrativa (HTTP)", () => {
       .set("Authorization", `Bearer ${token}`)
       .send({ profileId: replacementProfile.id });
     expect(profileChange.status).toBe(200);
+
+    const unchangedProfile = await request(app.getHttpServer())
+      .patch(`/api/users/${staff.body.id}`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ profileId: replacementProfile.id });
+    expect(unchangedProfile.status).toBe(200);
 
     const events = await readAuditEvents();
     expect(events).toHaveLength(4);

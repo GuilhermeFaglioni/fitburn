@@ -206,6 +206,7 @@ export class UsersService {
   ): Promise<UserWithProfile> {
     return this.prisma.$transaction(async (tx) => {
       await this.lockLiveUser(tx, id);
+      const previousUser = await tx.user.findUniqueOrThrow({ where: { id } });
       const user = await tx.user.update({
         where: { id },
         data: {
@@ -221,12 +222,29 @@ export class UsersService {
         },
         include: { profile: true },
       });
-      const changedFields = Object.keys(input);
+      const updatableFields = [
+        "fullName",
+        "email",
+        "phone",
+        "birthDate",
+        "document",
+        "address",
+        "profileId",
+      ] as const;
+      const changedFields = updatableFields.filter((field) => {
+        if (!(field in input)) return false;
+
+        const previousValue = previousUser[field];
+        const nextValue = user[field];
+        return previousValue instanceof Date && nextValue instanceof Date
+          ? previousValue.getTime() !== nextValue.getTime()
+          : previousValue !== nextValue;
+      });
       if (actorId && changedFields.length > 0) {
         await recordAdminAuditEvent(tx, {
           actorId,
           action:
-            input.profileId !== undefined
+            changedFields.includes("profileId")
               ? AdminAuditAction.USER_PROFILE_CHANGED
               : AdminAuditAction.USER_UPDATED,
           targetId: id,
