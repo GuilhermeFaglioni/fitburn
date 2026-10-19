@@ -2,7 +2,7 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
   "installCommand": "pnpm install --frozen-lockfile",
-  "buildCommand": "pnpm --filter @fitburn/contracts build && pnpm --filter @fitburn/web build",
+  "buildCommand": "node scripts/deploy-check.mjs --strict && pnpm --filter @fitburn/contracts build && pnpm --filter @fitburn/web build",
   "outputDirectory": "packages/web/dist",
   "rewrites": [
     {

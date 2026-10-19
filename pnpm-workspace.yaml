@@ -1,5 +1,8 @@
 packages:
   - "packages/*"
+overrides:
+  lodash: 4.18.1
+  source-map-js: 1.2.2
 allowBuilds:
   # argon2 precisa compilar seu binding nativo (bcrypt/argon2id) para hash de senha.
   argon2: true

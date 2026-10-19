@@ -1,7 +1,7 @@
 # 005 — Infra: dependências vulneráveis, guarda do deploy Vercel e X-Forwarded-For
 
-- **Status**: TODO
-- **Commit**: —
+- **Status**: DONE
+- **Commit**: `ffd33752c8221fb646b63116c003a224a0461e27` (follow-up; revert `24b23fc7ff8077e35922d0bb0483930aa71ed4d4`)
 - **Severity**: MEDIUM
 - **Origem**: auditoria contracts-infra (dependências; placeholder Vercel) e api-security M4 (rate limit contornável por `X-Forwarded-For`)
 - **Escopo estimado**: `package.json`, `pnpm-lock.yaml`, `packages/*/package.json`, `vercel.json`, `.github/workflows/ci.yml`, `scripts/deploy-check.mjs`, `docker/`, `docker-compose.prod.yml`, `docs/deploy-runbook.md`, `docs/deploy-coolify.md`
@@ -38,3 +38,17 @@
 - Build Vercel falha com placeholder (comprovado localmente pelo comando do `buildCommand`).
 - Docs de deploy descrevem a mitigação de XFF e o que for manual.
 - Commits separados por tema, ex.: `fix(deps): atualiza dependências com advisories`, `fix(deploy): falha o build da Vercel com destino placeholder`, `fix(deploy): impede IP forjado por X-Forwarded-For no rate limit`.
+
+## Follow-up (2026-10-18) — evitar cota compartilhada pelo proxy
+
+O `TRUST_PROXY_HOPS=1` do commit `6a1b26860687c4298bdca1f1ebeba6314747bb8b` fazia todos os clientes atrás do mesmo Traefik/Vercel compartilhar a cota de falhas de login. O commit de revert normal `24b23fc7ff8077e35922d0bb0483930aa71ed4d4` restaurou `TRUST_PROXY_HOPS=2` nos Compose e o risco aceito do backend direto Vercel+Nginx em `.env.production.example` e `docs/deploy-runbook.md`; não houve reescrita de histórico.
+
+O commit `ffd33752c8221fb646b63116c003a224a0461e27` adicionou testes para o valor padrão configurável `2`, ausência de porta publicada da API em todos os Compose e a documentação do Coolify. O runbook Coolify descreve a condição esperada do Traefik (`forwardedHeaders` sem `insecure` nem `trustedIPs`) e inclui um teste manual com XFF forjado: mantendo uma origem real e mudando o header, a 11ª falha deve retornar `429`.
+
+**Pendente fora da worktree:** confirmar esse comportamento no VPS Coolify. Não foi executado, conforme os Boundaries deste plano; a configuração do Traefik do VPS permanece não verificada até o passo manual.
+
+Verificações locais:
+
+- `pnpm --filter @fitburn/api exec vitest run test/deploy-artifacts.spec.ts` — 32/32 passaram; a nova verificação documental falhou antes da inclusão do procedimento e passou depois.
+- `pnpm typecheck` — passou.
+- `pnpm exec eslint packages/api/test/deploy-artifacts.spec.ts` — passou.
