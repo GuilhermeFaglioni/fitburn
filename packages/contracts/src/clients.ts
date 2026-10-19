@@ -3,7 +3,7 @@ import { UserStatus, userStatusSchema } from "./auth.js";
 import { gamificationSummarySchema } from "./gamification.js";
 import { myPlanSchema } from "./plans.js";
 import { reservationDetailSchema } from "./reservations.js";
-import { userDetailSchema } from "./users.js";
+import { clientUserResponseSchema } from "./users.js";
 import { workoutSheetSchema } from "./workout-sheets.js";
 
 /** Excluídos nunca aparecem na lista, então não há filtro por eles. */
@@ -25,9 +25,9 @@ export const clientListItemSchema = z.object({
   fullName: z.string(),
   email: z.string(),
   phone: z.string().nullable(),
-  document: z.string().nullable(),
+  document: z.string().nullable().optional(),
   status: userStatusSchema,
-  activePlan: z.object({ name: z.string(), endDate: z.string() }).nullable(),
+  activePlan: z.object({ name: z.string(), endDate: z.string() }).nullable().optional(),
 });
 export type ClientListItem = z.infer<typeof clientListItemSchema>;
 
@@ -54,7 +54,7 @@ export type UpdateClientRequest = z.infer<typeof updateClientRequestSchema>;
  * histórico), reservas futuras e passadas, gamificação e fichas de treino.
  */
 export const clientOverviewSchema = z.object({
-  client: userDetailSchema,
+  client: clientUserResponseSchema,
   plan: myPlanSchema,
   upcomingReservations: z.array(reservationDetailSchema),
   pastReservations: z.array(reservationDetailSchema),
