@@ -32,7 +32,14 @@ describe("Segurança em configuração de produção (HTTP)", () => {
   let app: INestApplication;
 
   beforeAll(async () => {
-    app = await createTestApp({ env: { ...validProductionEnv, AUTH_RATE_LIMIT_MAX: "1000" } });
+    app = await createTestApp({
+      env: {
+        ...validProductionEnv,
+        AUTH_RATE_LIMIT_MAX: "1000",
+        PRIVACY_POLICY_REQUIRES_NEW_MANIFESTATION: "false",
+        TERMS_OF_USE_REQUIRES_NEW_MANIFESTATION: "false",
+      },
+    });
   });
 
   afterAll(async () => {
@@ -87,7 +94,10 @@ describe("Segurança em configuração de produção (HTTP)", () => {
 
     beforeAll(async () => {
       corsApp = await createTestApp({
-        env: { ...validProductionEnv, CORS_ALLOWED_ORIGINS: `${allowedOrigin}, https://admin.academia.example` },
+        env: {
+          ...validProductionEnv,
+          CORS_ALLOWED_ORIGINS: `${allowedOrigin}, https://admin.academia.example`,
+        },
       });
     });
 
@@ -109,7 +119,9 @@ describe("Segurança em configuração de produção (HTTP)", () => {
         .get("/api/health")
         .set("Origin", "https://admin.academia.example");
 
-      expect(response.headers["access-control-allow-origin"]).toBe("https://admin.academia.example");
+      expect(response.headers["access-control-allow-origin"]).toBe(
+        "https://admin.academia.example",
+      );
     });
 
     it("não libera origens fora da lista", async () => {
@@ -148,7 +160,9 @@ describe("Segurança em configuração de produção (HTTP)", () => {
         createTestApp({ env: { ...validProductionEnv, CORS_ALLOWED_ORIGINS: "*" } }),
       ).rejects.toThrow(/CORS_ALLOWED_ORIGINS/);
       await expect(
-        createTestApp({ env: { ...validProductionEnv, CORS_ALLOWED_ORIGINS: "app.academia.example" } }),
+        createTestApp({
+          env: { ...validProductionEnv, CORS_ALLOWED_ORIGINS: "app.academia.example" },
+        }),
       ).rejects.toThrow(/CORS_ALLOWED_ORIGINS/);
     });
   });
@@ -249,7 +263,11 @@ describe("Segurança em configuração de produção (HTTP)", () => {
     async function loginAsAdmin() {
       const profile = await createAccessProfile({ name: "Administrador", isSystem: true });
       await createAccessProfile({ name: "Cliente", isSystem: true });
-      const admin = await createUser({ email: "admin@fitburn.local", password: PASSWORD, profileId: profile.id });
+      const admin = await createUser({
+        email: "admin@fitburn.local",
+        password: PASSWORD,
+        profileId: profile.id,
+      });
       const token = await loginAndGetAccessToken(app, admin.email, PASSWORD);
       return { admin, token };
     }
@@ -429,7 +447,9 @@ describe("Rate limiting em produção (HTTP)", () => {
     const limited = await appWith({ AUTH_RATE_LIMIT_MAX: "2" });
     const user = await createClientUser();
     const login = (password = PASSWORD) =>
-      request(limited.getHttpServer()).post("/api/auth/login").send({ email: user.email, password });
+      request(limited.getHttpServer())
+        .post("/api/auth/login")
+        .send({ email: user.email, password });
 
     for (let i = 0; i < 5; i++) expect((await login()).status).toBe(201);
 
@@ -494,7 +514,12 @@ describe("Rate limiting em produção (HTTP)", () => {
   });
 
   it("recusa iniciar com limite ou janela inválidos", () => {
-    for (const bad of [{ AUTH_RATE_LIMIT_MAX: "0" }, { AUTH_RATE_LIMIT_MAX: "abc" }, { AUTH_RATE_LIMIT_WINDOW_SECONDS: "-5" }, { TRUST_PROXY_HOPS: "x" }]) {
+    for (const bad of [
+      { AUTH_RATE_LIMIT_MAX: "0" },
+      { AUTH_RATE_LIMIT_MAX: "abc" },
+      { AUTH_RATE_LIMIT_WINDOW_SECONDS: "-5" },
+      { TRUST_PROXY_HOPS: "x" },
+    ]) {
       expect(() => loadAppConfig({ ...validProductionEnv, ...bad })).toThrow(AppConfigError);
     }
   });
