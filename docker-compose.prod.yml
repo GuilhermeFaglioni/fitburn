@@ -34,7 +34,8 @@ x-api-environment: &api-environment
   INITIAL_ADMIN_PASSWORD: ${INITIAL_ADMIN_PASSWORD:?defina INITIAL_ADMIN_PASSWORD em .env.production}
   INITIAL_ADMIN_NAME: ${INITIAL_ADMIN_NAME:-Administrador Fitburn}
   CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-}
-  TRUST_PROXY_HOPS: ${TRUST_PROXY_HOPS:-2}
+  # Só o Nginx é confiável; ele acrescenta o peer imediato ao XFF antes da API.
+  TRUST_PROXY_HOPS: "1"
   AUTH_RATE_LIMIT_MAX: ${AUTH_RATE_LIMIT_MAX:-10}
   AUTH_RATE_LIMIT_WINDOW_SECONDS: ${AUTH_RATE_LIMIT_WINDOW_SECONDS:-60}
 
