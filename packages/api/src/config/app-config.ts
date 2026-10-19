@@ -31,9 +31,14 @@ export interface AppConfig {
   authRateLimit: { enabled: boolean; max: number; windowMs: number };
   /** Versões vigentes e controle de nova manifestação dos documentos legais. */
   legalDocuments: {
-    privacyPolicy: { version: string; requiresNewManifestation: boolean };
-    termsOfUse: { version: string; requiresNewManifestation: boolean };
+    privacyPolicy: LegalDocumentSettings;
+    termsOfUse: LegalDocumentSettings;
   };
+}
+
+interface LegalDocumentSettings {
+  version: string;
+  requiresNewManifestation: boolean;
 }
 
 export class AppConfigError extends Error {

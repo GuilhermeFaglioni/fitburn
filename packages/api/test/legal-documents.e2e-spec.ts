@@ -96,6 +96,18 @@ describe("Documentos legais e manifestações (HTTP)", () => {
       .set("Authorization", `Bearer ${accessToken}`);
     expect(repeatedPrivacy.body.manifestation.id).not.toBe(privacy.body.manifestation.id);
 
+    await expect(
+      testPrisma.userManifestation.update({
+        where: { id: privacy.body.manifestation.id as string },
+        data: { version: "v2" },
+      }),
+    ).rejects.toThrow(/append-only/i);
+    await expect(
+      testPrisma.userManifestation.delete({
+        where: { id: privacy.body.manifestation.id as string },
+      }),
+    ).rejects.toThrow(/append-only/i);
+
     const terms = await request(app.getHttpServer())
       .post("/api/onboarding/terms-acceptance")
       .set("Authorization", `Bearer ${accessToken}`);
