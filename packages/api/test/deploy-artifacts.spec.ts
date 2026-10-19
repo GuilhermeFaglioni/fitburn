@@ -239,8 +239,21 @@ describe.skipIf(!composeAvailable)("nginx no Compose resolvido", () => {
 
 describe("vercel.json", () => {
   const vercel = JSON.parse(readFileSync(file("vercel.json"), "utf8")) as {
+    buildCommand: string;
     rewrites: { source: string; destination: string }[];
   };
+
+  it("falha o build antes do bundle enquanto o destino da API for placeholder", () => {
+    expect(vercel.buildCommand).toMatch(
+      /^node scripts\/deploy-check\.mjs --strict && pnpm --filter @fitburn\/contracts build && pnpm --filter @fitburn\/web build$/,
+    );
+    const result = spawnSync("sh", ["-c", vercel.buildCommand], {
+      cwd: ROOT,
+      encoding: "utf8",
+    });
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("placeholder");
+  });
 
   it("reescreve /api para o backend antes do fallback do SPA", () => {
     const [api, ...rest] = vercel.rewrites;
