@@ -327,6 +327,44 @@ describe("Perfis de acesso (HTTP)", () => {
       });
     });
 
+    it("permite revogar o módulo mesmo quando o escopo enviado é mais amplo que o do ator", async () => {
+      const actorProfile = await createAccessProfile({ name: "Gestor restrito" });
+      await grantModuleAccess({
+        profileId: actorProfile.id,
+        module: "PERFIS_DE_ACESSO",
+        actions: ["EDIT"],
+        scope: "ALL",
+      });
+      await grantModuleAccess({
+        profileId: actorProfile.id,
+        module: "CLIENTES",
+        actions: ["VIEW"],
+        scope: "ASSIGNED_CLIENTS",
+      });
+      const actor = await createUser({
+        email: "gestor-restrito@fitburn.local",
+        password: PASSWORD,
+        profileId: actorProfile.id,
+      });
+      const token = await loginAndGetAccessToken(app, actor.email, PASSWORD);
+      const targetProfile = await createAccessProfile({ name: "Perfil amplo" });
+      await grantModuleAccess({
+        profileId: targetProfile.id,
+        module: "CLIENTES",
+        actions: ["VIEW"],
+        scope: "ALL",
+      });
+
+      // A tela reenvia o escopo atual da linha (ALL) ao desmarcar todas as ações.
+      const response = await request(app.getHttpServer())
+        .put(`/api/profiles/${targetProfile.id}/module-access/CLIENTES`)
+        .set("Authorization", `Bearer ${token}`)
+        .send({ actions: [], scope: "ALL" });
+
+      expect(response.status).toBe(200);
+      expect(response.body.moduleAccess).not.toContainEqual(expect.objectContaining({ module: "CLIENTES" }));
+    });
+
     it("o administrador de sistema pode conceder qualquer ação em perfis customizados", async () => {
       const { token } = await loginAsAdmin();
       const targetProfile = await createAccessProfile({ name: "Perfil avançado" });

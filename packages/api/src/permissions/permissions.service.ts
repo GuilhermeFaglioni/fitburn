@@ -105,6 +105,8 @@ export class PermissionsService {
     const actorPermissions = await this.getEffectivePermissions(actorProfile);
 
     for (const grant of grants) {
+      // Sem ações a linha é apagada (revogação): o escopo enviado não concede nada.
+      if (grant.actions.length === 0) continue;
       const actorPermission = actorPermissions.find((permission) => permission.module === grant.module);
       const actorScope = await this.getEffectiveScope(actorProfile, grant.module);
       const actionExceedsActor = grant.actions.some(
