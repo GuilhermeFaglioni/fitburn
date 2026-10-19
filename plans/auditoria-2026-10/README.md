@@ -15,7 +15,7 @@ Verificação geral (raiz da worktree): `pnpm typecheck`, `pnpm test`, `pnpm bui
 |---|---|---|---|---|
 | 001 | Autoelevação de privilégio (usuários e perfis) | HIGH | api | TODO |
 | 002 | Corrida de escopo na edição/cancelamento/exclusão de aula | HIGH | api | TODO |
-| 003 | Ciclo de vida de sessão (refresh atômico, reset, desativação) | MEDIUM | api | TODO |
+| 003 | Ciclo de vida de sessão (refresh atômico, reset, desativação) | MEDIUM | api | DONE |
 | 004 | Sessão encerrada na web + erros da tela de Perfis | HIGH / MEDIUM | web | TODO |
 | 005 | Infra: dependências vulneráveis, guarda de deploy Vercel, X-Forwarded-For | MEDIUM | infra | TODO |
 | 006 | Documentação: regra de sobreposição e cenário do seed de demo | MEDIUM | docs | TODO |
