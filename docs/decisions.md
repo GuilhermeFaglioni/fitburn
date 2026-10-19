@@ -67,6 +67,14 @@ Registro das decisões tomadas durante a conversa. O documento separa decisões 
 | D-034 | Backend não confia no estado do frontend | Aprovado | O backend sempre revalida vagas, conflitos e elegibilidade. |
 | D-035 | Estado desatualizado é recusado com erro correto | Aprovado | O cliente precisa atualizar a tela e informar o motivo real ao usuário. |
 | D-036 | Notificação é posterior à confirmação | Aprovado | Falha no push não desfaz uma reserva confirmada. |
+| D-037 | Aulas simultâneas de professores diferentes são permitidas | Aprovado | O espaço não é exclusivo; o conflito de agenda vale apenas para o mesmo professor. |
+
+### D-037 — Aulas simultâneas de professores diferentes
+
+- **Data:** 2026-10-18.
+- **Contexto:** o espaço deixou de ser exclusivo; professores diferentes podem conduzir aulas no mesmo horário.
+- **Decisão:** permitir sobreposição entre aulas de professores diferentes e impedir duas aulas simultâneas do mesmo professor.
+- **Consequências:** a exclusion constraint do banco é escopada por `instructorId`, com pré-validação equivalente na API. A agenda retorna `OCCURRENCE_OVERLAP` para conflito do mesmo professor e a mensagem já identifica essa regra; `SCHEDULE_CONFLICT` continua sendo o conflito entre reservas simultâneas do mesmo cliente.
 
 ## Regra de mudança
 

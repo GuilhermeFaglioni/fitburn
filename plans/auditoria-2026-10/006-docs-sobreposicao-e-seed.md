@@ -1,7 +1,7 @@
 # 006 — Documentação: regra de sobreposição de aulas e cenário do seed de demo
 
-- **Status**: TODO
-- **Commit**: —
+- **Status**: DONE
+- **Commit**: `a02d98d`
 - **Severity**: MEDIUM (classificado como Crítico/incerto pela auditoria porque docs e código divergiam)
 - **Origem**: auditoria api-logic M1, docs-conformance (Crítico: sobreposição; Médio: seed vs checklist)
 - **Escopo estimado**: `docs/requirements.md`, `docs/decisions.md`, `docs/open-decisions.md` (se aplicável), `docs/demo-script.md`, `docs/demo-data-checklist.md`, `docs/deploy-coolify.md`, `docs/test-matrix.md`, `CONTEXT.md` (se citar a regra)
@@ -9,7 +9,7 @@
 
 ## Decisão já tomada (pelo responsável do produto)
 
-**Aulas simultâneas são permitidas quando os professores são diferentes.** O conflito de horário (`SCHEDULE_CONFLICT`) continua proibido para o **mesmo professor**, garantido no banco pela exclusion constraint por `instructorId` (`packages/api/prisma/migrations/20261006120000_instructor_scoped_overlap/migration.sql`) e pela pré-validação em `packages/api/src/agenda/occurrences.service.ts`. Essa é a regra já descrita em `docs/deploy-coolify.md:81` e coberta por `packages/api/test/occurrences.e2e-spec.ts` (~206-227). **O código não muda.**
+**Aulas simultâneas são permitidas quando os professores são diferentes.** O conflito de agenda (`OCCURRENCE_OVERLAP`) continua proibido para o **mesmo professor**, garantido no banco pela exclusion constraint por `instructorId` (`packages/api/prisma/migrations/20261006120000_instructor_scoped_overlap/migration.sql`) e pela pré-validação em `packages/api/src/agenda/occurrences.service.ts`. `SCHEDULE_CONFLICT` é o conflito entre reservas sobrepostas do mesmo cliente. Essa regra de agenda já está descrita em `docs/deploy-coolify.md:81` e coberta por `packages/api/test/occurrences.e2e-spec.ts` (~206-227). **O código não muda.**
 
 ## Problema
 
@@ -19,7 +19,7 @@
 ## Alvo
 
 1. Registrar **D-037** em `docs/decisions.md` no formato das decisões existentes: contexto (espaço deixou de ser exclusivo; aulas simultâneas de professores diferentes), decisão, consequências (constraint por professor; conflito só para o mesmo professor; mensagens da API já dizem isso) e data 2026-10-18. Se `open-decisions.md` tiver item relacionado, marque como decidido apontando para D-037.
-2. Atualizar `requirements.md`, `demo-script.md`, `demo-data-checklist.md`, `test-matrix.md` (linha de conflito de agenda) e `CONTEXT.md` (se citar a regra) para a regra nova. No roteiro, a demonstração de conflito passa a ser: duas aulas do **mesmo professor** no mesmo horário → `SCHEDULE_CONFLICT`; e mostrar que professores diferentes podem ter aula simultânea. Confirme na interface (código em `packages/web/src/pages/agenda/*`) se o conflito do mesmo professor é alcançável pela UI antes de afirmar no roteiro.
+2. Atualizar `requirements.md`, `demo-script.md`, `demo-data-checklist.md`, `test-matrix.md` (linha de conflito de agenda) e `CONTEXT.md` (se citar a regra) para a regra nova. No roteiro, demonstrar a recusa de duas aulas do **mesmo professor** no mesmo horário (`OCCURRENCE_OVERLAP`), que professores diferentes podem ter aula simultânea e que duas reservas sobrepostas do mesmo cliente são recusadas com `SCHEDULE_CONFLICT`. Confirme na interface (código em `packages/web/src/pages/agenda/*`) se o conflito do mesmo professor é alcançável pela UI antes de afirmar no roteiro.
 3. Seed: deixar explícito que existem **dois cenários**: (a) o seed automático (`DEMO_SEED=true`, Coolify) — documente o que ele cria (contas por papel sem senhas em texto, modalidade/template, professores, clientes, aulas), lendo `packages/api/src/demo-seed/*` e `packages/api/test/demo-seed.e2e-spec.ts`; e (b) a massa manual do checklist, usada pelo `demo-script.md`. Corrija a frase "não existe seed" e diga, no topo do checklist e do roteiro, qual cenário cada um pressupõe. Não altere o código do seed.
 
 ## Passos
