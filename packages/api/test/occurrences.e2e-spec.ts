@@ -33,6 +33,47 @@ describe("Ocorrências avulsas e agenda administrativa (HTTP)", () => {
     };
   }
 
+  async function reassignWhileRequestWaitsForLock<T>(
+    occurrenceId: string,
+    instructorId: string,
+    sendRequest: () => PromiseLike<T>,
+  ): Promise<T> {
+    let response: Promise<T> | undefined;
+    try {
+      await testPrisma.$transaction(async (tx) => {
+        await tx.$queryRaw`SELECT id FROM class_occurrences WHERE id = ${occurrenceId} FOR UPDATE`;
+        response = Promise.resolve(sendRequest());
+        await waitForOccurrenceLockWaiter();
+        await tx.classOccurrence.update({ where: { id: occurrenceId }, data: { instructorId } });
+      });
+    } catch (error) {
+      await response?.catch(() => undefined);
+      throw error;
+    }
+    if (!response) throw new Error("A requisição concorrente não foi iniciada.");
+    return response;
+  }
+
+  async function waitForOccurrenceLockWaiter(): Promise<void> {
+    const deadline = Date.now() + 10_000;
+    while (Date.now() < deadline) {
+      const [activity] = await testPrisma.$queryRaw<Array<{ waiting: boolean }>>`
+        SELECT EXISTS (
+          SELECT 1
+          FROM pg_stat_activity
+          WHERE datname = current_database()
+            AND pid <> pg_backend_pid()
+            AND wait_event_type = 'Lock'
+            AND query ILIKE '%class_occurrences%'
+            AND query ILIKE '%FOR UPDATE%'
+        ) AS waiting
+      `;
+      if (activity?.waiting) return;
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+    throw new Error("A requisição não chegou à espera do lock da ocorrência.");
+  }
+
   async function loginAsAdmin() {
     const profile = await createAccessProfile({ name: "Administrador", isSystem: true });
     const user = await createUser({
@@ -547,6 +588,63 @@ describe("Ocorrências avulsas e agenda administrativa (HTTP)", () => {
       expect(response.status).toBe(403);
       expect(response.body.code).toBe("OUT_OF_SCOPE");
     });
+
+    it.each(["editar", "cancelar", "excluir"] as const)(
+      "revalida escopo ao %s após reatribuição concorrente",
+      async (action) => {
+        const adminToken = await loginAsAdmin();
+        const professorProfile = await createAccessProfile({ name: "Professor" });
+        await grantModuleAccess({
+          profileId: professorProfile.id,
+          module: "OCORRENCIAS",
+          actions: ["VIEW", "EDIT", "DELETE"],
+          scope: "ASSIGNED_CLASSES",
+        });
+        const professorA = await createUser({
+          email: "professora-a@fitburn.local",
+          password: PASSWORD,
+          profileId: professorProfile.id,
+          fullName: "Professora A",
+        });
+        const professorB = await createUser({
+          email: "professora-b@fitburn.local",
+          password: PASSWORD,
+          profileId: professorProfile.id,
+          fullName: "Professora B",
+        });
+        const tokenA = await loginAndGetAccessToken(app, professorA.email, PASSWORD);
+        const template = await createTemplate(adminToken, { defaultInstructorId: professorA.id });
+        const occurrence = await api(adminToken).post("/api/occurrences").send({
+          templateId: template.id,
+          date: "2026-10-05",
+          startTime: "18:00",
+        });
+        expect(occurrence.status).toBe(201);
+
+        const sendRequest = () => {
+          const url = `/api/occurrences/${occurrence.body.id}`;
+          if (action === "editar") return api(tokenA).patch(url).send({ capacity: 5 });
+          if (action === "cancelar") return api(tokenA).post(`${url}/cancel`);
+          return api(tokenA).delete(url);
+        };
+        const response = await reassignWhileRequestWaitsForLock(
+          occurrence.body.id,
+          professorB.id,
+          sendRequest,
+        );
+
+        expect(response.status).toBe(403);
+        expect(response.body.code).toBe("OUT_OF_SCOPE");
+        const stored = await testPrisma.classOccurrence.findUnique({
+          where: { id: occurrence.body.id },
+        });
+        expect(stored).toMatchObject({
+          instructorId: professorB.id,
+          status: "SCHEDULED",
+          capacity: 10,
+        });
+      },
+    );
   });
 
   describe("Listagem e opções", () => {
