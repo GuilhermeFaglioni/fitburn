@@ -8,7 +8,7 @@ navegador ──HTTPS──► Traefik (Coolify) ──► web (Nginx :80) ─�
 ```
 
 - Um **único domínio** para app e API (`/api` é proxy do Nginx do `web`): o cookie de refresh funciona sem CORS.
-- Arquivos: `docker-compose.coolify.yml`, `docker/web/` (Dockerfile + Nginx), `docker/api/start.sh` (migrations + seeds + API).
+- Arquivos: `docker-compose.coolify.yml`, `docker/web/` (Dockerfile + Nginx), `docker/api/start.sh` (migrations + seeds + API) e `docker/backup/` (backup PostgreSQL).
 - A cada deploy a API aplica as migrations, garante o administrador e, com `DEMO_SEED=true`, completa a massa de demonstração (idempotente).
 
 ## 1. Pré-requisitos
@@ -24,7 +24,7 @@ navegador ──HTTPS──► Traefik (Coolify) ──► web (Nginx :80) ─�
 2. Selecione o repositório e o branch (`main`).
 3. **Build Pack: `Docker Compose`**.
 4. **Docker Compose Location:** `/docker-compose.coolify.yml` (base directory `/`).
-5. Continue. O Coolify lê o compose e lista os serviços `postgres`, `api` e `web`.
+5. Continue. O Coolify lê o compose e lista os serviços `postgres`, `api`, `web` e `backup`.
 
 ## 3. Domínio
 
@@ -48,8 +48,18 @@ Em **Environment Variables** do recurso (as que faltarem aparecem como obrigató
 | `INITIAL_ADMIN_PASSWORD` | senha forte, mínimo 12 caracteres |
 | `DEMO_SEED` | `true` para popular a demonstração (pode ficar `true`: é idempotente) |
 | `DEMO_USER_PASSWORD` | senha de **todas** as contas de demonstração (mínimo 12 caracteres) |
+| `BACKUP_DESTINATION` | destino S3 compatível, por exemplo `s3://fitburn-backups/pilot` |
+| `BACKUP_STORAGE_ENDPOINT` | endpoint HTTPS do storage S3 compatível |
+| `BACKUP_STORAGE_REGION` | região exigida pelo storage |
+| `BACKUP_STORAGE_ACCESS_KEY_ID` / `BACKUP_STORAGE_SECRET_ACCESS_KEY` | credenciais com acesso apenas ao bucket/prefixo de backup |
+| `BACKUP_AGE_RECIPIENT` | chave pública age (`age1...`) usada para criptografar os arquivos |
+| `BACKUP_HEARTBEAT_URL` | URL do monitor externo, chamada depois de backup e retenção bem-sucedidos |
 
 Opcionais, com padrão adequado: `POSTGRES_USER`, `POSTGRES_DB`, `TZ`, `TRUST_PROXY_HOPS` (`2` = Traefik + Nginx do `web`), `AUTH_RATE_LIMIT_*`, `JWT_ACCESS_TTL_SECONDS`, `REFRESH_TOKEN_TTL_DAYS`. Deixe `CORS_ALLOWED_ORIGINS` vazio.
+
+Gere o par age numa máquina confiável fora da VPS. Guarde o arquivo de identidade em local seguro e cadastre somente o recipient público em `BACKUP_AGE_RECIPIENT`; nunca copie a chave privada para o Coolify. O exemplo `.env.production.example` lista todas as variáveis obrigatórias do serviço. Elas não derrubam o restante do Compose quando ausentes (a demo não tem storage de backup): só o serviço `backup` recusa subir, com uma mensagem nos logs dizendo qual variável falta. No ambiente do piloto, confira nos logs que ele subiu.
+
+O serviço `backup` espera o PostgreSQL ficar saudável e agenda uma execução diária às 03:00 UTC. Cada execução cria um dump SQL comprimido com gzip, criptografa com age, envia para `BACKUP_DESTINATION/daily` e mantém os 14 mais recentes; aos domingos também grava em `weekly` e mantém os 8 mais recentes. O heartbeat só é enviado depois de upload e retenção concluídos. `file:///...` é aceito para testes; em produção, use S3 compatível para manter os arquivos fora da VPS.
 
 ### Rate limit de login e `X-Forwarded-For`
 
@@ -147,7 +157,7 @@ Rodar de novo (a cada deploy) é seguro: nada é duplicado, e em outro dia a age
 - **Logs / terminal:** pelo painel do Coolify (serviço `api` → Logs / Terminal).
 - **Rodar o seed manualmente:** terminal do `api` → `node packages/api/dist/demo-seed/cli.js`.
 - **Reset completo da demonstração (apaga TUDO):** no terminal do `api`, `DEMO_RESET_ENABLED=true node packages/api/dist/demo-reset/cli.js --confirm-database=fitburn` (use o valor de `POSTGRES_DB`). Depois faça **Restart** do `api` (o `start.sh` refaz o seed se `DEMO_SEED=true`).
-- **Backup do banco:** no Coolify, o volume `postgres_data` pode ser incluído em backups do servidor; para um dump pontual, no terminal do `postgres`: `pg_dump -U fitburn fitburn > /tmp/fitburn.sql`.
+- **Backup do banco:** o serviço `backup` executa o dump diário criptografado para o destino S3 configurado. Um heartbeat ausente indica atraso ou falha; o alerta externo por atraso deve ser configurado no monitor escolhido.
 - **Voltar uma versão:** em **Deployments**, reimplante um commit anterior. Migrations não são revertidas automaticamente; uma migration nova e incompatível exige restaurar o backup.
 - Para uso real (dados de verdade), troque `DEMO_SEED` para `false` e revise `docs/deploy-runbook.md`, seção "Riscos aceitos na demo".
 
