@@ -15,6 +15,7 @@ import { GoalCard } from "./goals/GoalCard";
 import { GoalForm, type GoalFormValues } from "./goals/GoalForm";
 import { StudentList } from "./goals/StudentList";
 import { EmptyState, ErrorState, Feedback, LoadingState } from "../components/states";
+import { HealthDataNotice } from "../components/HealthDataNotice";
 
 /**
  * Metas individuais (MetasAdmin.dc.html): à esquerda os alunos do professor
@@ -95,6 +96,7 @@ export function GoalsPage() {
       />
 
       <div className="fb-goals__main">
+        <HealthDataNotice />
         {clientsQuery.isLoading && <LoadingState />}
         {clientsQuery.isError && (
           <ErrorState

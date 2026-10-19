@@ -2,7 +2,6 @@ import { Body, Controller, Get, Patch, Req, UseGuards } from "@nestjs/common";
 import {
   ErrorCode,
   ErrorStatus,
-  SystemProfileName,
   updateOwnProfileRequestSchema,
   type UpdateOwnProfileRequest,
   type UserDetail,
@@ -34,9 +33,6 @@ export class MeController {
     @Body(new ZodValidationPipe(updateOwnProfileRequestSchema)) body: UpdateOwnProfileRequest,
   ): Promise<UserDetail> {
     const current = await this.currentUser(req);
-    if (current.profile.name === SystemProfileName.CLIENT && current.profile.isSystem) {
-      this.assertClientRequiredFieldsKept(body);
-    }
     const user = await this.usersService.update(current.id, body);
     return this.usersService.toUserDetail(user);
   }
@@ -53,25 +49,6 @@ export class MeController {
       );
     }
     return user;
-  }
-
-  /** Telefone, nascimento, documento e endereço são obrigatórios no cadastro do cliente: não podem ser anulados. */
-  private assertClientRequiredFieldsKept(body: UpdateOwnProfileRequest): void {
-    const labels = {
-      phone: "telefone",
-      birthDate: "data de nascimento",
-      document: "documento",
-      address: "endereço",
-    } as const;
-    for (const field of Object.keys(labels) as Array<keyof typeof labels>) {
-      if (body[field] === null) {
-        throw new DomainError(
-          ErrorCode.VALIDATION_ERROR,
-          `O campo ${labels[field]} é obrigatório e não pode ser removido.`,
-          ErrorStatus.VALIDATION,
-        );
-      }
-    }
   }
 
   private sessionInvalid(): DomainError {

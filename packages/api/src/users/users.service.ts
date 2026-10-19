@@ -11,6 +11,7 @@ import {
   dateOnlyToLocalDate,
   ErrorCode,
   ErrorStatus,
+  gymToday,
   PermissionScope,
   SystemProfileName,
   type CreateClientRequest,
@@ -19,6 +20,7 @@ import {
   type PermissionScopeName,
   type UpdateUserRequest,
   type UserDetail,
+  type UserResponse,
 } from "@fitburn/contracts";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { lockAdvisory } from "../prisma/advisory-lock.js";
@@ -29,12 +31,36 @@ import { DomainError } from "../common/errors/domain-error.js";
 import { hashPassword } from "../auth/password.util.js";
 import { recordAdminAuditEvent } from "../admin-audit/record-admin-audit-event.js";
 import { lockUserRow } from "./user-row-lock.js";
+import { projectClientForScope } from "../permissions/client-projection.js";
 
 export type UserWithProfile = User & { profile: AccessProfile };
 export type UserMutationActor = Pick<ProfileRequester, "userId"> &
   Partial<Pick<ProfileRequester, "profile">>;
 
 const CLIENT_PROFILE_NAME = "Cliente";
+const CLIENT_MINIMUM_AGE = 18;
+
+function assertClientMinimumAge(birthDate: string): void {
+  const [year, month, day] = birthDate.split("-").map(Number);
+  const eligibleDate = new Date(Date.UTC(year + CLIENT_MINIMUM_AGE, month - 1, day))
+    .toISOString()
+    .slice(0, 10);
+  if (gymToday() < eligibleDate) {
+    throw new DomainError(
+      ErrorCode.CLIENT_UNDERAGE,
+      "O cliente precisa ter pelo menos 18 anos.",
+      ErrorStatus.VALIDATION,
+    );
+  }
+}
+
+function requiredClientFieldError(label: string): DomainError {
+  return new DomainError(
+    ErrorCode.VALIDATION_ERROR,
+    `O campo ${label} é obrigatório e não pode ser removido.`,
+    ErrorStatus.VALIDATION,
+  );
+}
 
 /** Nome neutro de quem foi excluído (anonimizado). */
 export const DELETED_USER_NAME = "Usuário excluído";
@@ -94,6 +120,7 @@ export class UsersService {
     input: CreateClientRequest,
     requester: UserMutationActor,
   ): Promise<UserWithProfile> {
+    assertClientMinimumAge(input.birthDate);
     const clientProfile = await this.getSystemProfile(CLIENT_PROFILE_NAME);
     await this.assertEmailAvailable(input.email);
     await this.assertDocumentAvailable(input.document);
@@ -108,8 +135,8 @@ export class UsersService {
             fullName: input.fullName,
             phone: input.phone,
             birthDate: new Date(input.birthDate),
-            document: input.document,
-            address: input.address,
+            document: input.document ?? null,
+            address: input.address ?? null,
             profileId: clientProfile.id,
           },
           include: { profile: true },
@@ -140,6 +167,13 @@ export class UsersService {
   ): Promise<UserWithProfile> {
     const profile = await this.getExistingProfile(input.profileId);
     await this.permissionsService.assertCanAssignProfile(requester.profile, profile);
+    if (profile.name === CLIENT_PROFILE_NAME) {
+      throw new DomainError(
+        ErrorCode.VALIDATION_ERROR,
+        "Clientes devem ser cadastrados pelo fluxo de clientes.",
+        ErrorStatus.VALIDATION,
+      );
+    }
     await this.assertEmailAvailable(input.email);
     const passwordHash = await hashPassword(input.password);
 
@@ -170,6 +204,7 @@ export class UsersService {
     input: UpdateUserRequest,
     requester?: UserMutationActor,
   ): Promise<UserWithProfile> {
+    let targetProfile: AccessProfile | undefined;
     if (input.profileId !== undefined) {
       if (!requester?.profile) {
         throw new DomainError(
@@ -185,8 +220,8 @@ export class UsersService {
           ErrorStatus.FORBIDDEN,
         );
       }
-      const profile = await this.getExistingProfile(input.profileId);
-      await this.permissionsService.assertCanAssignProfile(requester.profile, profile);
+      targetProfile = await this.getExistingProfile(input.profileId);
+      await this.permissionsService.assertCanAssignProfile(requester.profile, targetProfile);
     }
     if (input.email !== undefined) {
       await this.assertEmailAvailable(input.email, id);
@@ -195,7 +230,7 @@ export class UsersService {
       await this.assertDocumentAvailable(input.document, id);
     }
 
-    return this.updateRow(id, input, requester?.userId).catch((error: unknown) =>
+    return this.updateRow(id, input, targetProfile, requester?.userId).catch((error: unknown) =>
       this.rethrowUniqueViolation(error, input.email, input.document, id),
     );
   }
@@ -203,11 +238,39 @@ export class UsersService {
   private updateRow(
     id: string,
     input: UpdateUserRequest,
+    targetProfile: AccessProfile | undefined,
     actorId: string | undefined,
   ): Promise<UserWithProfile> {
     return this.prisma.$transaction(async (tx) => {
       await this.lockLiveUser(tx, id);
-      const previousUser = await tx.user.findUniqueOrThrow({ where: { id } });
+      const previousUser = await tx.user.findUniqueOrThrow({
+        where: { id },
+        include: { profile: true },
+      });
+      if ((targetProfile?.name ?? previousUser.profile.name) === CLIENT_PROFILE_NAME) {
+        const birthDate =
+          input.birthDate !== undefined
+            ? input.birthDate
+            : previousUser.birthDate
+              ? dateOnlyToLocalDate(previousUser.birthDate)
+              : null;
+        const becomingClient =
+          targetProfile?.name === CLIENT_PROFILE_NAME &&
+          previousUser.profile.name !== CLIENT_PROFILE_NAME;
+        if ((input.birthDate !== undefined || becomingClient) && birthDate) {
+          assertClientMinimumAge(birthDate);
+        }
+        if (input.phone === null) throw requiredClientFieldError("telefone");
+        if (input.birthDate === null) throw requiredClientFieldError("data de nascimento");
+
+        // Mudança de perfil deve criar um cliente válido. Clientes legados
+        // incompletos continuam editáveis até que esses dados sejam corrigidos.
+        if (becomingClient) {
+          const phone = input.phone !== undefined ? input.phone : previousUser.phone;
+          if (phone === null) throw requiredClientFieldError("telefone");
+          if (birthDate === null) throw requiredClientFieldError("data de nascimento");
+        }
+      }
       const updateData = {
         ...(input.fullName !== undefined ? { fullName: input.fullName } : {}),
         ...(input.email !== undefined ? { email: input.email } : {}),
@@ -436,6 +499,22 @@ export class UsersService {
       status: user.status,
       profile: { id: user.profile.id, name: user.profile.name },
     };
+  }
+
+  isClientUser(user: UserWithProfile | null): boolean {
+    return user?.profile.isSystem === true && user.profile.name === SystemProfileName.CLIENT;
+  }
+
+  toUserResponseForClientScope(
+    user: UserWithProfile,
+    clientScope: PermissionScopeName,
+    wasClient = this.isClientUser(user),
+  ): UserResponse {
+    const detail = this.toUserDetail(user);
+    if (wasClient || this.isClientUser(user)) {
+      return projectClientForScope(detail, clientScope);
+    }
+    return detail;
   }
 
   private async getSystemProfile(name: string): Promise<AccessProfile> {

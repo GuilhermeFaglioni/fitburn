@@ -3,7 +3,7 @@ import { UserStatus, userStatusSchema } from "./auth.js";
 import { gamificationSummarySchema } from "./gamification.js";
 import { myPlanSchema } from "./plans.js";
 import { reservationDetailSchema } from "./reservations.js";
-import { userDetailSchema } from "./users.js";
+import { clientUserResponseSchema } from "./users.js";
 import { workoutSheetSchema } from "./workout-sheets.js";
 
 /** Excluídos nunca aparecem na lista, então não há filtro por eles. */
@@ -25,17 +25,16 @@ export const clientListItemSchema = z.object({
   fullName: z.string(),
   email: z.string(),
   phone: z.string().nullable(),
-  document: z.string().nullable(),
+  document: z.string().nullable().optional(),
   status: userStatusSchema,
-  activePlan: z.object({ name: z.string(), endDate: z.string() }).nullable(),
+  activePlan: z.object({ name: z.string(), endDate: z.string() }).nullable().optional(),
 });
 export type ClientListItem = z.infer<typeof clientListItemSchema>;
 
 /**
  * Edição dos dados do cliente: sem perfil de acesso, status nem senha.
- * Telefone, nascimento, documento e endereço são obrigatórios no cadastro do
- * cliente, então podem ser trocados mas não anulados (a equipe, sim, pode
- * deixá-los vazios no cadastro de usuário da equipe).
+ * Telefone e nascimento continuam obrigatórios. Documento e endereço podem
+ * ser removidos enviando `null`.
  */
 export const updateClientRequestSchema = z
   .object({
@@ -43,8 +42,8 @@ export const updateClientRequestSchema = z
     email: z.string().trim().email("E-mail inválido.").optional(),
     phone: z.string().trim().min(1).optional(),
     birthDate: z.string().date("Data de nascimento inválida.").optional(),
-    document: z.string().trim().min(1).optional(),
-    address: z.string().trim().min(1).optional(),
+    document: z.string().trim().min(1).nullable().optional(),
+    address: z.string().trim().min(1).nullable().optional(),
   })
   .strict();
 export type UpdateClientRequest = z.infer<typeof updateClientRequestSchema>;
@@ -54,7 +53,7 @@ export type UpdateClientRequest = z.infer<typeof updateClientRequestSchema>;
  * histórico), reservas futuras e passadas, gamificação e fichas de treino.
  */
 export const clientOverviewSchema = z.object({
-  client: userDetailSchema,
+  client: clientUserResponseSchema,
   plan: myPlanSchema,
   upcomingReservations: z.array(reservationDetailSchema),
   pastReservations: z.array(reservationDetailSchema),

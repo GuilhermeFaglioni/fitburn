@@ -172,6 +172,11 @@ describe("Metas individuais (professor)", () => {
     expect(
       await screen.findByText("Selecione um aluno para ver e criar metas."),
     ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Durante o piloto, não registre diagnósticos, lesões ou outros dados de saúde.",
+      ),
+    ).toBeInTheDocument();
     const list = screen.getByRole("list", { name: "Meus alunos" });
     expect(
       within(list)

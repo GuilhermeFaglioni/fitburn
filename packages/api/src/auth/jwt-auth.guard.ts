@@ -15,7 +15,10 @@ export interface AuthenticatedRequest extends Request {
   authUser: AuthTokenPayload;
   /** Preenchidos pelo PermissionsGuard quando a rota declara @RequirePermission. */
   authProfile?: AccessProfile;
+  /** Escopo efetivo no módulo exigido pela rota. */
   authScope?: PermissionScopeName;
+  /** Escopo efetivo de CLIENTES, usado para projetar dados em qualquer módulo. */
+  authClientScope?: PermissionScopeName;
 }
 
 @Injectable()

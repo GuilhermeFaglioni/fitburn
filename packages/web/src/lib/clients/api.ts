@@ -2,9 +2,11 @@ import { z } from "zod";
 import {
   clientListItemSchema,
   clientOverviewSchema,
+  clientUserResponseSchema,
   userDetailSchema,
   type ClientListItem,
   type ClientOverview,
+  type ClientUserResponse,
   type ClientsQuery,
   type CreateClientRequest,
   type UpdateClientRequest,
@@ -42,24 +44,24 @@ export async function createClientRecord(input: CreateClientRequest): Promise<Us
 export async function updateClientRecord(
   id: string,
   input: UpdateClientRequest,
-): Promise<UserDetail> {
+): Promise<ClientUserResponse> {
   const response = await authFetch(`/api/clients/${id}`, {
     method: "PATCH",
     headers: JSON_HEADERS,
     body: JSON.stringify(input),
   });
-  return userDetailSchema.parse(await parseOrThrow(response));
+  return clientUserResponseSchema.parse(await parseOrThrow(response));
 }
 
-export async function setClientActive(id: string, active: boolean): Promise<UserDetail> {
+export async function setClientActive(id: string, active: boolean): Promise<ClientUserResponse> {
   const response = await authFetch(`/api/clients/${id}/${active ? "reactivate" : "deactivate"}`, {
     method: "POST",
   });
-  return userDetailSchema.parse(await parseOrThrow(response));
+  return clientUserResponseSchema.parse(await parseOrThrow(response));
 }
 
 /** Exclusão com anonimização (irreversível). */
-export async function deleteClientRecord(id: string): Promise<UserDetail> {
+export async function deleteClientRecord(id: string): Promise<ClientUserResponse> {
   const response = await authFetch(`/api/clients/${id}`, { method: "DELETE" });
-  return userDetailSchema.parse(await parseOrThrow(response));
+  return clientUserResponseSchema.parse(await parseOrThrow(response));
 }

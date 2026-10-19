@@ -1,13 +1,13 @@
 import { z } from "zod";
-import { userStatusSchema } from "./auth.js";
+import { profileSummarySchema, userStatusSchema } from "./auth.js";
 
 export const createClientRequestSchema = z.object({
   fullName: z.string().trim().min(1, "Nome completo é obrigatório."),
   email: z.string().trim().email(),
   phone: z.string().trim().min(1, "Telefone é obrigatório."),
   birthDate: z.string().date("Data de nascimento inválida."),
-  document: z.string().trim().min(1, "Documento é obrigatório."),
-  address: z.string().trim().min(1, "Endereço é obrigatório."),
+  document: z.string().trim().min(1).optional(),
+  address: z.string().trim().min(1).optional(),
   password: z.string().min(8, "A senha precisa ter pelo menos 8 caracteres."),
 });
 export type CreateClientRequest = z.infer<typeof createClientRequestSchema>;
@@ -56,6 +56,28 @@ export const userDetailSchema = z.object({
   profile: z.object({ id: z.string(), name: z.string() }),
 });
 export type UserDetail = z.infer<typeof userDetailSchema>;
+
+/** Dados de clientes permitidos para leitores sem escopo total. */
+export const clientProjectionSchema = z.object({
+  id: z.string(),
+  fullName: z.string(),
+  email: z.string(),
+  phone: z.string().nullable(),
+  status: userStatusSchema,
+});
+export type ClientProjection = z.infer<typeof clientProjectionSchema>;
+
+/** Resposta completa ou reduzida de uma rota que pode devolver um cliente. */
+export const clientUserResponseSchema = clientProjectionSchema.extend({
+  birthDate: z.string().nullable().optional(),
+  document: z.string().nullable().optional(),
+  address: z.string().nullable().optional(),
+  profile: profileSummarySchema.optional(),
+});
+export type ClientUserResponse = z.infer<typeof clientUserResponseSchema>;
+
+export const userResponseSchema = z.union([userDetailSchema, clientUserResponseSchema]);
+export type UserResponse = z.infer<typeof userResponseSchema>;
 
 /**
  * Edição dos próprios dados pessoais (Minha conta). `.strict()`: perfil de
