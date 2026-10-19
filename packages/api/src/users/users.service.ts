@@ -207,39 +207,31 @@ export class UsersService {
     return this.prisma.$transaction(async (tx) => {
       await this.lockLiveUser(tx, id);
       const previousUser = await tx.user.findUniqueOrThrow({ where: { id } });
+      const updateData = {
+        ...(input.fullName !== undefined ? { fullName: input.fullName } : {}),
+        ...(input.email !== undefined ? { email: input.email } : {}),
+        ...(input.phone !== undefined ? { phone: input.phone } : {}),
+        ...(input.birthDate !== undefined
+          ? { birthDate: input.birthDate ? new Date(input.birthDate) : null }
+          : {}),
+        ...(input.document !== undefined ? { document: input.document } : {}),
+        ...(input.address !== undefined ? { address: input.address } : {}),
+        ...(input.profileId !== undefined ? { profileId: input.profileId } : {}),
+      } satisfies Prisma.UserUpdateInput;
       const user = await tx.user.update({
         where: { id },
-        data: {
-          ...(input.fullName !== undefined ? { fullName: input.fullName } : {}),
-          ...(input.email !== undefined ? { email: input.email } : {}),
-          ...(input.phone !== undefined ? { phone: input.phone } : {}),
-          ...(input.birthDate !== undefined
-            ? { birthDate: input.birthDate ? new Date(input.birthDate) : null }
-            : {}),
-          ...(input.document !== undefined ? { document: input.document } : {}),
-          ...(input.address !== undefined ? { address: input.address } : {}),
-          ...(input.profileId !== undefined ? { profileId: input.profileId } : {}),
-        },
+        data: updateData,
         include: { profile: true },
       });
-      const updatableFields = [
-        "fullName",
-        "email",
-        "phone",
-        "birthDate",
-        "document",
-        "address",
-        "profileId",
-      ] as const;
-      const changedFields = updatableFields.filter((field) => {
-        if (!(field in input)) return false;
-
-        const previousValue = previousUser[field];
-        const nextValue = user[field];
-        return previousValue instanceof Date && nextValue instanceof Date
-          ? previousValue.getTime() !== nextValue.getTime()
-          : previousValue !== nextValue;
-      });
+      const changedFields = (Object.keys(updateData) as Array<keyof typeof updateData>).filter(
+        (field) => {
+          const previousValue = previousUser[field];
+          const nextValue = user[field];
+          return previousValue instanceof Date && nextValue instanceof Date
+            ? previousValue.getTime() !== nextValue.getTime()
+            : previousValue !== nextValue;
+        },
+      );
       if (actorId && changedFields.length > 0) {
         await recordAdminAuditEvent(tx, {
           actorId,

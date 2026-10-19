@@ -92,7 +92,7 @@ describe("Trilha de auditoria administrativa (HTTP)", () => {
     });
     const auditContents = JSON.stringify(events);
     for (const value of personalValues) expect(auditContents).not.toContain(value);
-  }, 30_000);
+  });
 
   it("registra criação por Clientes, edição e troca de perfil", async () => {
     const { user: actor, token } = await loginAsAdmin();
@@ -187,7 +187,7 @@ describe("Trilha de auditoria administrativa (HTTP)", () => {
     ]) {
       expect(auditContents).not.toContain(value);
     }
-  }, 60_000);
+  });
 
   it("registra desativação, reativação, redefinição de senha e exclusão", async () => {
     const { user: actor, token } = await loginAsAdmin();
@@ -271,7 +271,7 @@ describe("Trilha de auditoria administrativa (HTTP)", () => {
     ]) {
       expect(auditContents).not.toContain(value);
     }
-  }, 60_000);
+  });
 
   it("registra alterações da matriz sem persistir os valores das permissões", async () => {
     const { user: actor, token } = await loginAsAdmin();
@@ -283,16 +283,40 @@ describe("Trilha de auditoria administrativa (HTTP)", () => {
       .send({ actions: ["VIEW", "EDIT"], scope: "ALL" });
     expect(grant.status).toBe(200);
 
+    const unchangedGrant = await request(app.getHttpServer())
+      .put(`/api/profiles/${profile.id}/module-access/CLIENTES`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ actions: ["VIEW", "EDIT"], scope: "ALL" });
+    expect(unchangedGrant.status).toBe(200);
+
+    const scopeChange = await request(app.getHttpServer())
+      .put(`/api/profiles/${profile.id}/module-access/CLIENTES`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ actions: ["VIEW", "EDIT"], scope: "OWN" });
+    expect(scopeChange.status).toBe(200);
+
     const revoke = await request(app.getHttpServer())
       .put(`/api/profiles/${profile.id}/module-access/CLIENTES`)
       .set("Authorization", `Bearer ${token}`)
       .send({ actions: [], scope: "OWN" });
     expect(revoke.status).toBe(200);
 
+    const unchangedRevoke = await request(app.getHttpServer())
+      .put(`/api/profiles/${profile.id}/module-access/CLIENTES`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ actions: [], scope: "OWN" });
+    expect(unchangedRevoke.status).toBe(200);
+
     const events = await readAuditEvents();
-    expect(events).toHaveLength(2);
+    expect(events).toHaveLength(3);
     expect(events).toEqual(
       expect.arrayContaining([
+        expect.objectContaining({
+          actorId: actor.id,
+          action: "PROFILE_PERMISSIONS_CHANGED",
+          targetId: profile.id,
+          changedFields: ["scope"],
+        }),
         expect.objectContaining({
           actorId: actor.id,
           action: "PROFILE_PERMISSIONS_CHANGED",
@@ -315,7 +339,7 @@ describe("Trilha de auditoria administrativa (HTTP)", () => {
     await expect(
       testPrisma.$executeRaw`UPDATE "admin_audit_events" SET "changedFields" = ARRAY['leaked']::TEXT[]`,
     ).rejects.toThrow("Admin audit events are append-only");
-  }, 60_000);
+  });
 
   it("reverte a ação quando a gravação da trilha falha", async () => {
     const { token } = await loginAsAdmin();
@@ -361,5 +385,5 @@ describe("Trilha de auditoria administrativa (HTTP)", () => {
     });
     expect(createdUser).toBeNull();
     expect(await readAuditEvents()).toHaveLength(0);
-  }, 60_000);
+  });
 });

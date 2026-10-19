@@ -159,22 +159,46 @@ export class ProfilesService {
     }
 
     await this.prisma.$transaction(async (tx) => {
+      const existingAccess = await tx.profileModuleAccess.findUnique({
+        where: { profileId_module: { profileId: id, module } },
+      });
+      let changedFields: string[] = [];
+
       if (actions.length === 0) {
         await tx.profileModuleAccess.deleteMany({ where: { profileId: id, module } });
+        if (existingAccess) changedFields = ["actions", "scope"];
+      } else if (existingAccess) {
+        const actionsChanged =
+          existingAccess.actions.length !== actions.length ||
+          existingAccess.actions.some((action, index) => action !== actions[index]);
+        const scopeChanged = existingAccess.scope !== scope;
+        changedFields = [
+          ...(actionsChanged ? ["actions"] : []),
+          ...(scopeChanged ? ["scope"] : []),
+        ];
+
+        if (changedFields.length > 0) {
+          await tx.profileModuleAccess.update({
+            where: { profileId_module: { profileId: id, module } },
+            data: {
+              ...(actionsChanged ? { actions } : {}),
+              ...(scopeChanged ? { scope } : {}),
+            },
+          });
+        }
       } else {
-        await tx.profileModuleAccess.upsert({
-          where: { profileId_module: { profileId: id, module } },
-          update: { actions, scope },
-          create: { profileId: id, module, actions, scope },
-        });
+        await tx.profileModuleAccess.create({ data: { profileId: id, module, actions, scope } });
+        changedFields = ["actions", "scope"];
       }
 
-      await recordAdminAuditEvent(tx, {
-        actorId: requester.userId,
-        action: AdminAuditAction.PROFILE_PERMISSIONS_CHANGED,
-        targetId: id,
-        changedFields: ["actions", "scope"],
-      });
+      if (changedFields.length > 0) {
+        await recordAdminAuditEvent(tx, {
+          actorId: requester.userId,
+          action: AdminAuditAction.PROFILE_PERMISSIONS_CHANGED,
+          targetId: id,
+          changedFields,
+        });
+      }
     });
   }
 
