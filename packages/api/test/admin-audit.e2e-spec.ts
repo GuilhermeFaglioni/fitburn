@@ -144,7 +144,7 @@ describe("Trilha de auditoria administrativa (HTTP)", () => {
     expect(unchangedProfile.status).toBe(200);
 
     const events = await readAuditEvents();
-    expect(events).toHaveLength(4);
+    expect(events).toHaveLength(5);
     expect(events).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -169,6 +169,12 @@ describe("Trilha de auditoria administrativa (HTTP)", () => {
           action: "USER_PROFILE_CHANGED",
           targetId: staff.body.id,
           changedFields: ["profileId"],
+        }),
+        expect.objectContaining({
+          actorId: actor.id,
+          action: "USER_UPDATED",
+          targetId: staff.body.id,
+          changedFields: [],
         }),
       ]),
     );
@@ -205,10 +211,20 @@ describe("Trilha de auditoria administrativa (HTTP)", () => {
       .set("Authorization", `Bearer ${token}`);
     expect(deactivated.status).toBe(201);
 
+    const unchangedDeactivate = await request(app.getHttpServer())
+      .post(`/api/users/${target.id}/deactivate`)
+      .set("Authorization", `Bearer ${token}`);
+    expect(unchangedDeactivate.status).toBe(201);
+
     const reactivated = await request(app.getHttpServer())
       .post(`/api/users/${target.id}/reactivate`)
       .set("Authorization", `Bearer ${token}`);
     expect(reactivated.status).toBe(201);
+
+    const unchangedReactivate = await request(app.getHttpServer())
+      .post(`/api/users/${target.id}/reactivate`)
+      .set("Authorization", `Bearer ${token}`);
+    expect(unchangedReactivate.status).toBe(201);
 
     const newPassword = "SenhaNova#789";
     const reset = await request(app.getHttpServer())
@@ -223,7 +239,7 @@ describe("Trilha de auditoria administrativa (HTTP)", () => {
     expect(deleted.status).toBe(200);
 
     const events = await readAuditEvents();
-    expect(events).toHaveLength(4);
+    expect(events).toHaveLength(6);
     expect(events).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -258,6 +274,18 @@ describe("Trilha de auditoria administrativa (HTTP)", () => {
             "address",
             "status",
           ]),
+        }),
+        expect.objectContaining({
+          actorId: actor.id,
+          action: "USER_DEACTIVATED",
+          targetId: target.id,
+          changedFields: [],
+        }),
+        expect.objectContaining({
+          actorId: actor.id,
+          action: "USER_REACTIVATED",
+          targetId: target.id,
+          changedFields: [],
         }),
       ]),
     );
@@ -308,7 +336,7 @@ describe("Trilha de auditoria administrativa (HTTP)", () => {
     expect(unchangedRevoke.status).toBe(200);
 
     const events = await readAuditEvents();
-    expect(events).toHaveLength(3);
+    expect(events).toHaveLength(5);
     expect(events).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -329,8 +357,20 @@ describe("Trilha de auditoria administrativa (HTTP)", () => {
           targetId: profile.id,
           changedFields: ["actions", "scope"],
         }),
+        expect.objectContaining({
+          actorId: actor.id,
+          action: "PROFILE_PERMISSIONS_CHANGED",
+          targetId: profile.id,
+          changedFields: [],
+        }),
       ]),
     );
+    expect(events.filter((event) => event.changedFields.length === 0)).toHaveLength(2);
+    expect(
+      events.filter(
+        (event) => event.changedFields.length === 1 && event.changedFields[0] === "scope",
+      ),
+    ).toHaveLength(1);
     const auditContents = JSON.stringify(events);
     for (const value of ["VIEW", "EDIT", "ALL", "OWN", "CLIENTES", profile.name]) {
       expect(auditContents).not.toContain(value);

@@ -232,7 +232,7 @@ export class UsersService {
             : previousValue !== nextValue;
         },
       );
-      if (actorId && changedFields.length > 0) {
+      if (actorId) {
         await recordAdminAuditEvent(tx, {
           actorId,
           action:
@@ -249,7 +249,7 @@ export class UsersService {
 
   async deactivate(id: string, requester: UserMutationActor): Promise<UserWithProfile> {
     return this.prisma.$transaction(async (tx) => {
-      await this.lockLiveUser(tx, id);
+      const previousStatus = await this.lockLiveUser(tx, id);
       const user = await tx.user.update({
         where: { id },
         data: { status: "INACTIVE" },
@@ -260,7 +260,7 @@ export class UsersService {
         actorId: requester.userId,
         action: AdminAuditAction.USER_DEACTIVATED,
         targetId: id,
-        changedFields: ["status"],
+        changedFields: previousStatus === user.status ? [] : ["status"],
       });
       return user;
     });
@@ -268,7 +268,7 @@ export class UsersService {
 
   reactivate(id: string, requester: UserMutationActor): Promise<UserWithProfile> {
     return this.prisma.$transaction(async (tx) => {
-      await this.lockLiveUser(tx, id);
+      const previousStatus = await this.lockLiveUser(tx, id);
       const user = await tx.user.update({
         where: { id },
         data: { status: "ACTIVE" },
@@ -278,7 +278,7 @@ export class UsersService {
         actorId: requester.userId,
         action: AdminAuditAction.USER_REACTIVATED,
         targetId: id,
-        changedFields: ["status"],
+        changedFields: previousStatus === user.status ? [] : ["status"],
       });
       return user;
     });
@@ -386,8 +386,8 @@ export class UsersService {
    * excluído: uma exclusão concorrente não pode ser desfeita por edição,
    * reativação ou troca de senha, nem duas exclusões passarem juntas.
    */
-  private async lockLiveUser(tx: Prisma.TransactionClient, id: string): Promise<void> {
-    const rows = await tx.$queryRaw<Array<{ status: string }>>`
+  private async lockLiveUser(tx: Prisma.TransactionClient, id: string): Promise<UserStatus> {
+    const rows = await tx.$queryRaw<Array<{ status: UserStatus }>>`
       SELECT status::text AS status FROM users WHERE id = ${id} FOR UPDATE
     `;
     if (rows.length === 0) {
@@ -400,6 +400,7 @@ export class UsersService {
         ErrorStatus.CONFLICT,
       );
     }
+    return rows[0].status;
   }
 
   async toCurrentUser(user: UserWithProfile): Promise<CurrentUser> {

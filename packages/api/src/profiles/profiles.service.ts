@@ -191,14 +191,12 @@ export class ProfilesService {
         changedFields = ["actions", "scope"];
       }
 
-      if (changedFields.length > 0) {
-        await recordAdminAuditEvent(tx, {
-          actorId: requester.userId,
-          action: AdminAuditAction.PROFILE_PERMISSIONS_CHANGED,
-          targetId: id,
-          changedFields,
-        });
-      }
+      await recordAdminAuditEvent(tx, {
+        actorId: requester.userId,
+        action: AdminAuditAction.PROFILE_PERMISSIONS_CHANGED,
+        targetId: id,
+        changedFields,
+      });
     });
   }
 
