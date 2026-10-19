@@ -10,6 +10,7 @@ const USER = {
   status: "ACTIVE" as const,
   profile: { id: "profile-1", name: "Cliente" },
   permissions: [],
+  onboardingPending: [],
 };
 
 function refreshRespondsWith(status: number, body: Record<string, unknown> = { code: "X", message: "x" }) {
