@@ -1,6 +1,8 @@
 import type { PrismaClient } from "@prisma/client";
+import type { Module, PermissionAction, PermissionScope } from "@prisma/client";
 import { hashPassword } from "../auth/password.util.js";
 import { seedGamificationRules } from "../gamification/default-rules.js";
+import { DEFAULT_STAFF_PROFILES } from "./default-profiles.js";
 
 /** Cliente completo ou uma transação interativa dele. */
 export type SeedClient = Pick<
@@ -37,6 +39,24 @@ export async function seedBaseData(
     update: {},
     create: { name: "Cliente", isSystem: true },
   });
+
+  for (const profile of DEFAULT_STAFF_PROFILES) {
+    await prisma.accessProfile.upsert({
+      where: { name: profile.name },
+      update: {},
+      create: {
+        name: profile.name,
+        description: profile.description,
+        moduleAccess: {
+          create: profile.access.map(({ module, actions, scope }) => ({
+            module: module as Module,
+            actions: [...actions] as PermissionAction[],
+            scope: scope as PermissionScope,
+          })),
+        },
+      },
+    });
+  }
 
   // Administrador não precisa de linhas aqui: o motor de autorização sempre
   // libera tudo para o perfil de sistema Administrador (PermissionsService).

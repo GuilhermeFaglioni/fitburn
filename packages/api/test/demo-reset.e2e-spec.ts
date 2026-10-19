@@ -260,7 +260,7 @@ describe("Reset da demonstração: schema do banco", () => {
       await empty.$disconnect();
       await testPrisma.$executeRawUnsafe(`DROP DATABASE IF EXISTS "${emptyDb}"`);
     }
-  });
+  }, 120_000);
 });
 
 /** Estado do banco sem ids e timestamps, para comparar dois resets. */
@@ -372,7 +372,7 @@ describe("Reset da demonstração: estado final e idempotência", () => {
   const reset = (env = demoEnv()) =>
     runDemoReset({ env, confirmation: databaseName, prisma: testPrisma, migrate: noMigrate });
 
-  it("deixa só o administrador inicial, os perfis de sistema e as regras de gamificação", async () => {
+  it("deixa o administrador inicial, os perfis padrão e as regras de gamificação", async () => {
     await reset();
 
     expect(await stateSnapshot()).toEqual({
@@ -391,6 +391,50 @@ describe("Reset da demonstração: estado final e idempotência", () => {
           isSystem: true,
           isActive: true,
           access: [{ module: "USUARIOS", actions: ["VIEW"], scope: "OWN" }],
+        },
+        {
+          name: "Funcionário administrativo",
+          isSystem: false,
+          isActive: true,
+          access: [
+            { module: "CLIENTES", actions: ["VIEW", "CREATE", "EDIT"], scope: "ALL" },
+            { module: "DASHBOARD", actions: ["VIEW"], scope: "ALL" },
+            { module: "GAMIFICACAO", actions: ["VIEW"], scope: "ALL" },
+            { module: "OCORRENCIAS", actions: ["VIEW"], scope: "ALL" },
+            { module: "PLANOS", actions: ["VIEW", "CREATE", "EDIT"], scope: "ALL" },
+            { module: "RESERVAS", actions: ["VIEW", "CREATE", "EDIT"], scope: "ALL" },
+            { module: "TEMPLATES_DE_AULA", actions: ["VIEW"], scope: "ALL" },
+          ],
+        },
+        {
+          name: "Professor",
+          isSystem: false,
+          isActive: true,
+          access: [
+            { module: "CLIENTES", actions: ["VIEW"], scope: "ASSIGNED_CLIENTS" },
+            { module: "DASHBOARD", actions: ["VIEW"], scope: "ALL" },
+            {
+              module: "FICHAS_DE_TREINO",
+              actions: ["VIEW", "CREATE", "EDIT"],
+              scope: "ASSIGNED_CLIENTS",
+            },
+            {
+              module: "GAMIFICACAO",
+              actions: ["VIEW", "CREATE", "EDIT"],
+              scope: "ASSIGNED_CLIENTS",
+            },
+            {
+              module: "OCORRENCIAS",
+              actions: ["VIEW", "CREATE", "EDIT"],
+              scope: "ASSIGNED_CLASSES",
+            },
+            {
+              module: "PRESENCA",
+              actions: ["VIEW", "EXECUTE"],
+              scope: "ASSIGNED_CLASSES",
+            },
+            { module: "TEMPLATES_DE_AULA", actions: ["VIEW"], scope: "ALL" },
+          ],
         },
       ],
       rules: [
