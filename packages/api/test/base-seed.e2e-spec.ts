@@ -30,26 +30,36 @@ describe("Seed base de perfis padrão (HTTP)", () => {
 
   it("cria Professor e Funcionário administrativo com as matrizes padrão documentadas", async () => {
     await seedBaseData(app.get(PrismaService), ENV);
-    const token = await loginAndGetAccessToken(app, ENV.INITIAL_ADMIN_EMAIL, ENV.INITIAL_ADMIN_PASSWORD);
+    const token = await loginAndGetAccessToken(
+      app,
+      ENV.INITIAL_ADMIN_EMAIL,
+      ENV.INITIAL_ADMIN_PASSWORD,
+    );
     const response = await request(app.getHttpServer())
       .get("/api/profiles")
       .set("Authorization", `Bearer ${token}`);
 
     expect(response.status).toBe(200);
-    const professor = response.body.find((profile: { name: string }) => profile.name === "Professor");
+    const professor = response.body.find(
+      (profile: { name: string }) => profile.name === "Professor",
+    );
     const employee = response.body.find(
       (profile: { name: string }) => profile.name === "Funcionário administrativo",
     );
     expect(professor).toBeDefined();
     expect(employee).toBeDefined();
-    expect(response.body.filter((profile: { name: string }) => profile.name === "Professor")).toHaveLength(1);
+    expect(
+      response.body.filter((profile: { name: string }) => profile.name === "Professor"),
+    ).toHaveLength(1);
     expect(
       response.body.filter(
         (profile: { name: string }) => profile.name === "Funcionário administrativo",
       ),
     ).toHaveLength(1);
 
-    const matrixOf = (profile: { moduleAccess: Array<{ module: string; actions: string[]; scope: string }> }) =>
+    const matrixOf = (profile: {
+      moduleAccess: Array<{ module: string; actions: string[]; scope: string }>;
+    }) =>
       Object.fromEntries(
         profile.moduleAccess.map(({ module, actions, scope }) => [module, { actions, scope }]),
       );
@@ -76,7 +86,11 @@ describe("Seed base de perfis padrão (HTTP)", () => {
 
   it("preserva perfil, matriz e permissões removidas quando o seed roda novamente", async () => {
     await seedBaseData(app.get(PrismaService), ENV);
-    const token = await loginAndGetAccessToken(app, ENV.INITIAL_ADMIN_EMAIL, ENV.INITIAL_ADMIN_PASSWORD);
+    const token = await loginAndGetAccessToken(
+      app,
+      ENV.INITIAL_ADMIN_EMAIL,
+      ENV.INITIAL_ADMIN_PASSWORD,
+    );
     const before = await request(app.getHttpServer())
       .get("/api/profiles")
       .set("Authorization", `Bearer ${token}`);
@@ -132,7 +146,9 @@ describe("Seed base de perfis padrão (HTTP)", () => {
     expect(
       preservedEmployee.moduleAccess.map((access: { module: string }) => access.module),
     ).not.toContain("PLANOS");
-    expect(after.body.filter((profile: { name: string }) => profile.name === "Professor")).toHaveLength(1);
+    expect(
+      after.body.filter((profile: { name: string }) => profile.name === "Professor"),
+    ).toHaveLength(1);
     expect(
       after.body.filter(
         (profile: { name: string }) => profile.name === "Funcionário administrativo",

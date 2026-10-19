@@ -40,10 +40,10 @@ Respeite a ordem, porque cada item depende do anterior:
 O reset (`pnpm demo:reset --confirm-database=<nome do banco>`, na VPS via `docker compose exec`, passo a passo em [deploy-runbook.md](deploy-runbook.md), seção 9) apaga **tudo**, inclusive as contas de equipe e os clientes, roda migrations e seeds e deixa:
 
 - o usuário administrador inicial (e-mail, senha e nome vêm de `INITIAL_ADMIN_EMAIL`, `INITIAL_ADMIN_PASSWORD` e `INITIAL_ADMIN_NAME` do ambiente; nunca no repositório);
-- os perfis de sistema **Administrador** e **Cliente**;
+- os perfis de sistema **Administrador** e **Cliente**, além de **Professor** e **Funcionário administrativo**;
 - as regras de gamificação (presença 10 pontos, meta 25, streak de 3, 5 e 10 presenças com bônus de 5, 10 e 20 pontos).
 
-Confira depois do reset: login do administrador funciona; **Usuários e perfis** lista só ele e os perfis Administrador e Cliente; o Dashboard mostra tudo zerado. Só então comece a seção 5.
+Confira depois do reset: login do administrador funciona; **Usuários e perfis** lista só ele e os perfis Administrador, Cliente, Professor e Funcionário administrativo; o Dashboard mostra tudo zerado. Só então comece a seção 5.
 
 ## 4. Contas por perfil (sem credenciais)
 
@@ -77,21 +77,22 @@ Menu **Templates & modalidades**, aba **Modalidades**, **+ Nova modalidade** (No
 
 ## 6. Perfis Professor e Funcionário administrativo
 
-O seed base cria **Professor** e **Funcionário administrativo** quando ainda não existem. As matrizes abaixo estão documentadas em `packages/api/src/seed/default-profiles.ts`; o seed da demonstração reutiliza a mesma matriz do Professor. Rodar qualquer seed novamente não restaura permissões removidas nem altera perfil existente. Para perfis personalizados, use **Usuários e perfis**, aba **Perfis de acesso**, **+ Novo perfil** (Nome, Descrição, **Criar perfil**). Selecione o perfil e, na "Matriz de permissões", marque as ações e escolha o **Escopo** de cada módulo; **Salvar** é por linha (linha sem ação marcada = sem acesso; o escopo padrão de uma linha nova é "Registros próprios"). Só o perfil de sistema Cliente tem escopo fixo; o Administrador é sempre total.
+O seed base cria **Professor** e **Funcionário administrativo** quando ainda não existem. As matrizes abaixo estão documentadas em `packages/api/src/seed/default-profiles.ts`; o seed da demonstração reutiliza a mesma matriz do Professor. Ao repetir o seed base, esses dois perfis existentes e suas matrizes não são alterados; permissões removidas deles permanecem removidas. Para perfis personalizados, use **Usuários e perfis**, aba **Perfis de acesso**, **+ Novo perfil** (Nome, Descrição, **Criar perfil**). Selecione o perfil e, na "Matriz de permissões", marque as ações e escolha o **Escopo** de cada módulo; **Salvar** é por linha (linha sem ação marcada = sem acesso; o escopo padrão de uma linha nova é "Registros próprios"). Só o perfil de sistema Cliente tem escopo fixo; o Administrador é sempre total.
 
 **Professor** (descrição: "Conduz aulas, registra presença e acompanha os próprios alunos.")
 
 | Módulo | Ações | Escopo |
 |---|---|---|
 | Dashboard | Visualizar | Qualquer (o dashboard usa o escopo de cada módulo que o alimenta) |
-| Ocorrências/Agendamento | Visualizar | Aulas atribuídas |
+| Templates de aula | Visualizar | Qualquer |
+| Ocorrências/Agendamento | Visualizar, Criar, Editar | Aulas atribuídas |
 | Presença | Visualizar, Executar | Aulas atribuídas |
 | Clientes | Visualizar | Clientes atribuídos |
 | Fichas de treino | Visualizar, Criar, Editar | Clientes atribuídos |
 | Gamificação | Visualizar, Criar, Editar | Clientes atribuídos |
 | Demais módulos | nenhuma | n/a |
 
-Menu esperado do Professor: Dashboard, Clientes, Agenda, Fichas de treino, Metas, Minhas aulas.
+Menu esperado do Professor: Dashboard, Clientes, Agenda, Templates & modalidades, Fichas de treino, Metas, Minhas aulas.
 
 **Funcionário administrativo** (descrição: "Recepção: reservas, clientes e planos.")
 

@@ -1,8 +1,4 @@
-import type {
-  Module,
-  PermissionAction,
-  PermissionScope,
-} from "@prisma/client";
+import type { Module, PermissionAction, PermissionScope } from "@prisma/client";
 
 type DefaultProfileAccess = {
   module: Module;
@@ -58,7 +54,4 @@ export const ADMINISTRATIVE_EMPLOYEE_PROFILE = {
   ],
 } as const satisfies DefaultStaffProfile;
 
-export const DEFAULT_STAFF_PROFILES = [
-  PROFESSOR_PROFILE,
-  ADMINISTRATIVE_EMPLOYEE_PROFILE,
-] as const;
+export const DEFAULT_STAFF_PROFILES = [PROFESSOR_PROFILE, ADMINISTRATIVE_EMPLOYEE_PROFILE] as const;
