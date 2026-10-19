@@ -93,7 +93,16 @@ function runBackup(database: string) {
   );
 }
 
-function runRestore(targetDatabase: string, backupFile: string, allowNonempty = false) {
+function runRestore(
+  targetDatabase: string,
+  backupFile: string,
+  options: {
+    allowNonempty?: boolean;
+    includeSourceConnection?: boolean;
+    withoutSource?: boolean;
+  } = {},
+) {
+  const { allowNonempty = false, includeSourceConnection = true, withoutSource = false } = options;
   const sourceDatabase = databaseUrl.pathname.replace(/^\//, "");
   const environment = {
     ...process.env,
@@ -102,10 +111,14 @@ function runRestore(targetDatabase: string, backupFile: string, allowNonempty = 
     PGUSER: decodeURIComponent(databaseUrl.username),
     PGPASSWORD: decodeURIComponent(databaseUrl.password),
     RESTORE_TARGET_DATABASE: targetDatabase,
-    RESTORE_SOURCE_PGHOST: "host.docker.internal",
-    RESTORE_SOURCE_PGPORT: databaseUrl.port || "5432",
-    RESTORE_SOURCE_PGUSER: decodeURIComponent(databaseUrl.username),
-    RESTORE_SOURCE_PGPASSWORD: decodeURIComponent(databaseUrl.password),
+    ...(includeSourceConnection
+      ? {
+          RESTORE_SOURCE_PGHOST: "host.docker.internal",
+          RESTORE_SOURCE_PGPORT: databaseUrl.port || "5432",
+          RESTORE_SOURCE_PGUSER: decodeURIComponent(databaseUrl.username),
+          RESTORE_SOURCE_PGPASSWORD: decodeURIComponent(databaseUrl.password),
+        }
+      : {}),
     RESTORE_SOURCE_PGDATABASE: sourceDatabase,
     BACKUP_FILE: `file://${backupFile}`,
     AGE_IDENTITY_FILE: "/keys/identity.txt",
@@ -116,10 +129,6 @@ function runRestore(targetDatabase: string, backupFile: string, allowNonempty = 
     "PGUSER",
     "PGPASSWORD",
     "RESTORE_TARGET_DATABASE",
-    "RESTORE_SOURCE_PGHOST",
-    "RESTORE_SOURCE_PGPORT",
-    "RESTORE_SOURCE_PGUSER",
-    "RESTORE_SOURCE_PGPASSWORD",
     "RESTORE_SOURCE_PGDATABASE",
     "BACKUP_FILE",
     "AGE_IDENTITY_FILE",
@@ -141,10 +150,23 @@ function runRestore(targetDatabase: string, backupFile: string, allowNonempty = 
       "--volume",
       `${identityDirectory}:/keys:ro`,
       ...passThrough.flatMap((name) => ["--env", name]),
+      ...(includeSourceConnection
+        ? [
+            "--env",
+            "RESTORE_SOURCE_PGHOST",
+            "--env",
+            "RESTORE_SOURCE_PGPORT",
+            "--env",
+            "RESTORE_SOURCE_PGUSER",
+            "--env",
+            "RESTORE_SOURCE_PGPASSWORD",
+          ]
+        : []),
       "--entrypoint",
       "/app/restore.sh",
       image,
       ...(allowNonempty ? ["--allow-nonempty"] : []),
+      ...(withoutSource ? ["--without-source"] : []),
     ],
     environment,
   );
@@ -363,6 +385,12 @@ describe.skipIf(!dockerAvailable)("backup diário criptografado", () => {
     const encryptedFile = dailyFiles[dailyFiles.length - 1];
     expect(encryptedFile).toBeTruthy();
 
+    const missingSourceConnection = runRestore(restoreDatabase, encryptedFile, {
+      includeSourceConnection: false,
+    });
+    expect(missingSourceConnection.status).not.toBe(0);
+    expect(missingSourceConnection.stderr).toContain("comparação com a origem é obrigatória");
+
     const restored = runRestore(restoreDatabase, encryptedFile);
     expectSuccessful(restored, "descriptografia, descompressão e restauração");
     expect(restored.stdout).toContain("Contagens de tabelas conferem com a origem");
@@ -373,8 +401,17 @@ describe.skipIf(!dockerAvailable)("backup diário criptografado", () => {
     expect(rejectedOverwrite.status).not.toBe(0);
     expect(rejectedOverwrite.stderr).toContain("Banco-alvo contém dados ou objetos");
 
-    const confirmedOverwrite = runRestore(restoreDatabase, encryptedFile, true);
+    const confirmedOverwrite = runRestore(restoreDatabase, encryptedFile, { allowNonempty: true });
     expectSuccessful(confirmedOverwrite, "restauração com confirmação explícita do alvo não vazio");
+
+    const withoutSource = runRestore(restoreDatabase, encryptedFile, {
+      allowNonempty: true,
+      includeSourceConnection: false,
+      withoutSource: true,
+    });
+    expectSuccessful(withoutSource, "restauração explícita sem comparação com a origem");
+    expect(withoutSource.stdout).toContain("Contagens no banco restaurado:");
+    expect(withoutSource.stdout).toContain("Amostras consultadas no banco restaurado");
 
     const failedBackup = runBackup("fitburn_database_does_not_exist");
     expect(failedBackup.status).not.toBe(0);

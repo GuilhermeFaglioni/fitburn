@@ -11,12 +11,16 @@ require_value() {
   [ -n "$2" ] || fail "$1 é obrigatório"
 }
 
-if [ "$#" -gt 1 ] || { [ "$#" -eq 1 ] && [ "$1" != "--allow-nonempty" ]; }; then
-  fail 'uso: restore.sh [--allow-nonempty]'
-fi
-
 allow_nonempty=false
-if [ "$#" -eq 1 ]; then allow_nonempty=true; fi
+without_source=false
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --allow-nonempty) allow_nonempty=true ;;
+    --without-source) without_source=true ;;
+    *) fail 'uso: restore.sh [--allow-nonempty] [--without-source]' ;;
+  esac
+  shift
+done
 
 require_value RESTORE_TARGET_DATABASE "${RESTORE_TARGET_DATABASE:-}"
 require_value PGHOST "${PGHOST:-}"
@@ -32,13 +36,19 @@ require_value RESTORE_SOURCE_PGDATABASE "${RESTORE_SOURCE_PGDATABASE:-}"
   || fail 'RESTORE_TARGET_DATABASE precisa ser diferente do banco de origem'
 
 verify_source=false
+source_connection_configured=false
 if [ -n "${RESTORE_SOURCE_PGHOST:-}${RESTORE_SOURCE_PGPORT:-}${RESTORE_SOURCE_PGUSER:-}${RESTORE_SOURCE_PGPASSWORD:-}" ]; then
   require_value RESTORE_SOURCE_PGHOST "${RESTORE_SOURCE_PGHOST:-}"
   require_value RESTORE_SOURCE_PGPORT "${RESTORE_SOURCE_PGPORT:-}"
   require_value RESTORE_SOURCE_PGUSER "${RESTORE_SOURCE_PGUSER:-}"
   require_value RESTORE_SOURCE_PGPASSWORD "${RESTORE_SOURCE_PGPASSWORD:-}"
-  verify_source=true
+  source_connection_configured=true
 fi
+[ "$source_connection_configured" = false ] || [ "$without_source" = false ] \
+  || fail 'não combine credenciais de origem com --without-source'
+[ "$source_connection_configured" = true ] || [ "$without_source" = true ] \
+  || fail 'comparação com a origem é obrigatória; use --without-source para restaurar sem ela explicitamente'
+verify_source=$source_connection_configured
 
 workdir=$(mktemp -d)
 trap 'rm -rf "$workdir"' EXIT HUP INT TERM
@@ -91,6 +101,16 @@ source_psql() {
     psql --no-psqlrc --set ON_ERROR_STOP=1 --dbname "$RESTORE_SOURCE_PGDATABASE" "$@"
 }
 
+database_psql() {
+  database_kind=$1
+  shift
+  if [ "$database_kind" = source ]; then
+    source_psql "$@"
+  else
+    target_psql "$@"
+  fi
+}
+
 target_object_count=$(target_psql --quiet --tuples-only --no-align --command \
   "SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname NOT IN ('pg_catalog', 'information_schema') AND n.nspname NOT LIKE 'pg_toast%' AND c.relkind IN ('r', 'p', 'v', 'm', 'S', 'f')")
 target_object_count=$(printf '%s' "$target_object_count" | tr -d '[:space:]')
@@ -110,7 +130,8 @@ fi
 gzip -dc "$compressed_file" | target_psql --file=-
 
 table_counts() {
-  target_psql --quiet --tuples-only --no-align <<'SQL'
+  database_kind=$1
+  database_psql "$database_kind" --quiet --tuples-only --no-align <<'SQL'
 SELECT format('SELECT %L || chr(9) || count(*)::text FROM %I.%I;', table_name, table_schema, table_name)
 FROM information_schema.tables
 WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
@@ -119,19 +140,9 @@ ORDER BY table_name
 SQL
 }
 
-source_table_counts() {
-  source_psql --quiet --tuples-only --no-align <<'SQL'
-SELECT format('SELECT %L || chr(9) || count(*)::text FROM %I.%I;', table_name, table_schema, table_name)
-FROM information_schema.tables
-WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
-ORDER BY table_name
-\gexec
-SQL
-}
-
-target_counts=$(table_counts)
+target_counts=$(table_counts target)
 if [ "$verify_source" = true ]; then
-  source_counts=$(source_table_counts)
+  source_counts=$(table_counts source)
   if [ "$target_counts" != "$source_counts" ]; then
     printf '[restore] erro: contagens por tabela diferem da origem\n' >&2
     printf '%s\n' '--- origem' "$source_counts" '--- alvo' "$target_counts" >&2
@@ -173,11 +184,7 @@ sample() {
       query="SELECT jsonb_build_object('id', id, 'type', type::text, 'points', points, 'clientId', \"clientId\", 'reservationId', \"reservationId\")::text FROM points_entries ORDER BY id LIMIT 1"
       ;;
   esac
-  if [ "$database_kind" = source ]; then
-    source_psql --quiet --tuples-only --no-align --command "$query"
-  else
-    target_psql --quiet --tuples-only --no-align --command "$query"
-  fi
+  database_psql "$database_kind" --quiet --tuples-only --no-align --command "$query"
 }
 
 for sample_kind in user reservation presence sheet points; do
