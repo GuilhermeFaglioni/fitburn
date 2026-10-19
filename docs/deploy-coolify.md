@@ -61,6 +61,66 @@ Gere o par age numa máquina confiável fora da VPS. Guarde o arquivo de identid
 
 O serviço `backup` espera o PostgreSQL ficar saudável e agenda uma execução diária às 03:00 UTC. Cada execução cria um dump SQL comprimido com gzip, criptografa com age, envia para `BACKUP_DESTINATION/daily` e mantém os 14 mais recentes; aos domingos também grava em `weekly` e mantém os 8 mais recentes. O heartbeat só é enviado depois de upload e retenção concluídos. `file:///...` é aceito para testes; em produção, use S3 compatível para manter os arquivos fora da VPS.
 
+### Restaurar um backup
+
+A identidade privada age (`identity.txt`) fica fora da VPS, num gerenciador de senhas/cofre, no item **Fitburn / Backup age identity**, com uma cópia offline de contingência. Só o responsável técnico (`<RESPONSÁVEL TÉCNICO>`) e um substituto designado (`<SUBSTITUTO>`) podem acessar; preencher os nomes ao configurar o cofre. Rotacione a identidade quando o responsável mudar ou houver suspeita de vazamento; atualize `BACKUP_AGE_RECIPIENT` no Coolify e confirme no ensaio que a nova chave abre um backup. Não copie a identidade para Coolify, VPS, repositório, ticket ou log. No momento da restauração, monte o arquivo como somente leitura na máquina do operador; o script não o copia para o volume nem para o banco.
+
+1. Faça a restauração numa máquina confiável do operador e num PostgreSQL isolado. Escolha uma base vazia para `RESTORE_TARGET_DATABASE`, diferente da base de origem e de qualquer base de produção. Não conecte a restauração à base de produção.
+2. Obtenha o caminho exato do objeto `.sql.gz.age` em `BACKUP_DESTINATION/daily/` ou `weekly/` e, pelo cofre, o caminho local da identidade privada. O backup usa o nome UTC `backup-*.sql.gz.age`.
+3. No repositório da mesma versão que será restaurada, construa a imagem local que contém `age`, `rclone`, `gzip`, `psql` e o script:
+
+   ```bash
+   docker build --file docker/backup/Dockerfile --tag fitburn-backup-restore .
+   ```
+
+4. Defina credenciais de acesso ao PostgreSQL isolado e ao storage S3 no shell do operador. Use credencial S3 somente de leitura para obter o objeto. Para apontar o container Docker ao PostgreSQL local da máquina, use `host.docker.internal` como `PGHOST` e como `RESTORE_SOURCE_PGHOST`:
+
+   ```bash
+   export RESTORE_TARGET_DATABASE='<nome-de-uma-base-vazia>'
+   export RESTORE_SOURCE_PGDATABASE='<nome-da-base-de-origem>'
+   export BACKUP_FILE='s3://<bucket>/<prefixo>/daily/<arquivo>.sql.gz.age'
+   export AGE_IDENTITY_FILE="$HOME/<caminho-seguro>/identity.txt"
+   export PGHOST=host.docker.internal
+   export PGPORT=5432
+   export PGUSER='<usuario-postgres-de-restauracao>'
+   read -r -s -p 'Senha do PostgreSQL: ' PGPASSWORD; export PGPASSWORD; printf '\n'
+   export BACKUP_STORAGE_ENDPOINT='<endpoint-https-do-storage>'
+   export BACKUP_STORAGE_REGION='<regiao>'
+   export BACKUP_STORAGE_ACCESS_KEY_ID='<credencial-de-leitura>'
+   read -r -s -p 'Secret do storage: ' BACKUP_STORAGE_SECRET_ACCESS_KEY; export BACKUP_STORAGE_SECRET_ACCESS_KEY; printf '\n'
+   ```
+
+   `RESTORE_SOURCE_PGDATABASE` é sempre obrigatório e deve nomear a base original; o script recusa se o alvo tiver o mesmo nome. Para comparar o backup com uma origem acessível, informe também `RESTORE_SOURCE_PGHOST`, `RESTORE_SOURCE_PGPORT`, `RESTORE_SOURCE_PGUSER` e `RESTORE_SOURCE_PGPASSWORD`. Use conta somente de leitura e nunca use a base restaurada como origem. Se a origem estiver indisponível, defina só o nome da origem: o script lista contagens e consulta amostras no destino, mas não pode afirmar igualdade com a origem.
+
+5. Crie a base-alvo vazia no PostgreSQL isolado antes de restaurar:
+
+   ```bash
+   createdb --host='<host-do-postgres-isolado>' --port="$PGPORT" --username="$PGUSER" "$RESTORE_TARGET_DATABASE"
+   ```
+
+6. Rode o script. A identidade é montada somente para leitura; `BACKUP_FILE` aceita `s3://` e `file://`:
+
+   ```bash
+   docker run --rm \
+     --add-host=host.docker.internal:host-gateway \
+     --user "$(id -u):$(id -g)" \
+     --volume "$AGE_IDENTITY_FILE:/run/restore/identity.txt:ro" \
+     --env PGHOST --env PGPORT --env PGUSER --env PGPASSWORD \
+     --env RESTORE_TARGET_DATABASE --env BACKUP_FILE \
+     --env AGE_IDENTITY_FILE=/run/restore/identity.txt \
+     --env BACKUP_STORAGE_ENDPOINT --env BACKUP_STORAGE_REGION \
+     --env BACKUP_STORAGE_ACCESS_KEY_ID --env BACKUP_STORAGE_SECRET_ACCESS_KEY \
+     --env RESTORE_SOURCE_PGHOST --env RESTORE_SOURCE_PGPORT \
+     --env RESTORE_SOURCE_PGUSER --env RESTORE_SOURCE_PGPASSWORD \
+     --env RESTORE_SOURCE_PGDATABASE \
+     --entrypoint /app/restore.sh \
+     fitburn-backup-restore
+   ```
+
+   Por padrão, o script recusa qualquer destino que já contenha tabelas, views, sequências ou outros objetos. Para substituir o destino, acrescente `--allow-nonempty` ao fim do comando: isso remove todos os schemas não sistêmicos do alvo. Só use após confirmar explicitamente o destino e aceitar a perda do conteúdo atual. O script baixa o objeto, descriptografa para um diretório temporário, valida o gzip e restaura com `ON_ERROR_STOP`. Ao terminar, compara contagens de todas as tabelas e amostras de usuário, reserva, presença, ficha e lançamentos de pontos com a origem, quando ela foi informada; também exige FKs presentes e validadas. O relatório não imprime os registros de amostra.
+
+7. Confirme as mensagens `Contagens de tabelas conferem com a origem`, `Integridade referencial verificada` e `Amostras verificadas`. Guarde o resultado junto ao registro do ensaio; o ensaio confirma que a identidade privada abre o backup escolhido. Sem acesso à origem, registre essa limitação; as contagens e amostras listadas não provam igualdade com o backup de origem.
+
 ### Rate limit de login e `X-Forwarded-For`
 
 O Compose usa `TRUST_PROXY_HOPS=2` para a cadeia Traefik do Coolify → Nginx do `web` → API. Essa configuração só é segura se o Traefik não confiar no `X-Forwarded-For` enviado pelo cliente externo e substituir o header pelo IP real de origem. O comportamento esperado é o padrão do Traefik sem `forwardedHeaders.insecure` e sem `forwardedHeaders.trustedIPs` configurados. **A configuração do Traefik deste VPS não foi confirmada**; confirme no passo manual abaixo antes de confiar nela.

@@ -20,9 +20,10 @@ RUN apk add --no-cache ca-certificates curl unzip \
 
 WORKDIR /app
 COPY --chown=postgres:postgres docker/backup/backup.sh /app/backup.sh
+COPY --chown=postgres:postgres docker/backup/restore.sh /app/restore.sh
 COPY --chown=postgres:postgres docker/backup/entrypoint.sh /usr/local/bin/backup-entrypoint
 COPY --chown=postgres:postgres docker/backup/crontab /etc/crontabs/postgres
-RUN chmod 0755 /app/backup.sh /usr/local/bin/backup-entrypoint \
+RUN chmod 0755 /app/backup.sh /app/restore.sh /usr/local/bin/backup-entrypoint \
   && mkdir -p /backups \
   && chown postgres:postgres /backups
 

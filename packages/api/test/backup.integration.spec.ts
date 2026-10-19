@@ -19,22 +19,16 @@ const restoreDatabase = `fitburn_backup_restore_${runId}`;
 
 let databaseUrl: URL;
 let adminClient: Client | undefined;
-let sourceClient: Client | undefined;
-let restoreClient: Client | undefined;
 let heartbeatUrl: string;
 let publicRecipient: string;
 let identityDirectory: string;
-let fixtureEmail: string;
-let fixtureReservationId: string;
-let fixtureSheetTitle: string;
-let fixturePoints: number;
 
 function docker(args: string[], env: NodeJS.ProcessEnv = process.env) {
   return spawnSync("docker", args, { cwd: ROOT, encoding: "utf8", env });
 }
 
 function expectSuccessful(result: ReturnType<typeof docker>, operation: string): void {
-  expect(result.status, `${operation} falhou`).toBe(0);
+  expect(result.status, `${operation} falhou\n${result.stderr}\n${result.stdout}`).toBe(0);
 }
 
 function databaseConnectionString(database: string, hostname = databaseUrl.hostname): string {
@@ -99,6 +93,63 @@ function runBackup(database: string) {
   );
 }
 
+function runRestore(targetDatabase: string, backupFile: string, allowNonempty = false) {
+  const sourceDatabase = databaseUrl.pathname.replace(/^\//, "");
+  const environment = {
+    ...process.env,
+    PGHOST: "host.docker.internal",
+    PGPORT: databaseUrl.port || "5432",
+    PGUSER: decodeURIComponent(databaseUrl.username),
+    PGPASSWORD: decodeURIComponent(databaseUrl.password),
+    RESTORE_TARGET_DATABASE: targetDatabase,
+    RESTORE_SOURCE_PGHOST: "host.docker.internal",
+    RESTORE_SOURCE_PGPORT: databaseUrl.port || "5432",
+    RESTORE_SOURCE_PGUSER: decodeURIComponent(databaseUrl.username),
+    RESTORE_SOURCE_PGPASSWORD: decodeURIComponent(databaseUrl.password),
+    RESTORE_SOURCE_PGDATABASE: sourceDatabase,
+    BACKUP_FILE: `file://${backupFile}`,
+    AGE_IDENTITY_FILE: "/keys/identity.txt",
+  };
+  const passThrough = [
+    "PGHOST",
+    "PGPORT",
+    "PGUSER",
+    "PGPASSWORD",
+    "RESTORE_TARGET_DATABASE",
+    "RESTORE_SOURCE_PGHOST",
+    "RESTORE_SOURCE_PGPORT",
+    "RESTORE_SOURCE_PGUSER",
+    "RESTORE_SOURCE_PGPASSWORD",
+    "RESTORE_SOURCE_PGDATABASE",
+    "BACKUP_FILE",
+    "AGE_IDENTITY_FILE",
+  ];
+  return docker(
+    [
+      "run",
+      "--rm",
+      "--platform",
+      platform,
+      "--user",
+      `${process.getuid?.() ?? 1000}:${process.getgid?.() ?? 1000}`,
+      "--network",
+      testNetwork,
+      "--add-host",
+      "host.docker.internal:host-gateway",
+      "--volume",
+      `${backupVolume}:/backups:ro`,
+      "--volume",
+      `${identityDirectory}:/keys:ro`,
+      ...passThrough.flatMap((name) => ["--env", name]),
+      "--entrypoint",
+      "/app/restore.sh",
+      image,
+      ...(allowNonempty ? ["--allow-nonempty"] : []),
+    ],
+    environment,
+  );
+}
+
 async function waitForHeartbeatMonitor(): Promise<void> {
   for (let attempt = 0; attempt < 20; attempt += 1) {
     const readiness = docker([
@@ -138,10 +189,6 @@ async function createBackupFixture(): Promise<void> {
   });
   const reservation = await createReservation(client.id, occurrence.id, "COMPLETED");
   const points = 17;
-  fixtureSheetTitle = `Ficha de backup ${runId}`;
-  fixturePoints = points;
-  fixtureEmail = client.email;
-  fixtureReservationId = reservation.id;
   await testPrisma.pointsEntry.create({
     data: {
       type: "ATTENDANCE",
@@ -152,7 +199,7 @@ async function createBackupFixture(): Promise<void> {
     },
   });
   await testPrisma.workoutSheet.create({
-    data: { title: fixtureSheetTitle, clientId: client.id, authorId: instructor.id },
+    data: { title: `Ficha de backup ${runId}`, clientId: client.id, authorId: instructor.id },
   });
 }
 
@@ -238,8 +285,6 @@ describe.skipIf(!dockerAvailable)("backup diário criptografado", () => {
   }, 300_000);
 
   afterAll(async () => {
-    if (sourceClient) await sourceClient.end();
-    if (restoreClient) await restoreClient.end();
     if (adminClient) {
       await adminClient.query(`DROP DATABASE IF EXISTS "${restoreDatabase}" WITH (FORCE)`);
       await adminClient.end();
@@ -318,89 +363,18 @@ describe.skipIf(!dockerAvailable)("backup diário criptografado", () => {
     const encryptedFile = dailyFiles[dailyFiles.length - 1];
     expect(encryptedFile).toBeTruthy();
 
-    const restoreEnv = {
-      ...process.env,
-      PGHOST: "host.docker.internal",
-      PGPORT: databaseUrl.port || "5432",
-      PGUSER: decodeURIComponent(databaseUrl.username),
-      PGPASSWORD: decodeURIComponent(databaseUrl.password),
-      PGDATABASE: restoreDatabase,
-      BACKUP_FILE: encryptedFile,
-    };
-    const restored = docker(
-      [
-        "run",
-        "--rm",
-        "--platform",
-        platform,
-        "--user",
-        `${process.getuid?.() ?? 1000}:${process.getgid?.() ?? 1000}`,
-        "--network",
-        testNetwork,
-        "--add-host",
-        "host.docker.internal:host-gateway",
-        "--volume",
-        `${backupVolume}:/backups:ro`,
-        "--volume",
-        `${identityDirectory}:/keys:ro`,
-        ...["PGHOST", "PGPORT", "PGUSER", "PGPASSWORD", "PGDATABASE", "BACKUP_FILE"].flatMap(
-          (name) => ["--env", name],
-        ),
-        "--entrypoint",
-        "/bin/sh",
-        image,
-        "-c",
-        'set -o pipefail; age --decrypt --identity /keys/identity.txt "$BACKUP_FILE" | gzip -dc | psql --set ON_ERROR_STOP=1',
-      ],
-      restoreEnv,
-    );
+    const restored = runRestore(restoreDatabase, encryptedFile);
     expectSuccessful(restored, "descriptografia, descompressão e restauração");
+    expect(restored.stdout).toContain("Contagens de tabelas conferem com a origem");
+    expect(restored.stdout).toContain("Integridade referencial verificada");
+    expect(restored.stdout).toContain("Amostras verificadas: usuário, reserva, presença, ficha e pontos");
 
-    sourceClient = new Client({ connectionString: testDatabaseUrlFromEnv() });
-    restoreClient = new Client({ connectionString: databaseConnectionString(restoreDatabase) });
-    await sourceClient.connect();
-    await restoreClient.connect();
-    const sourceCounts = await databaseCounts(sourceClient);
-    const restoredCounts = await databaseCounts(restoreClient);
-    expect(restoredCounts).toEqual(sourceCounts);
+    const rejectedOverwrite = runRestore(restoreDatabase, encryptedFile);
+    expect(rejectedOverwrite.status).not.toBe(0);
+    expect(rejectedOverwrite.stderr).toContain("Banco-alvo contém dados ou objetos");
 
-    const sample = await restoreClient.query(
-      `SELECT u.email,
-              r.status::text AS reservation_status,
-              ws.title AS sheet_title,
-              pe.points
-         FROM users u
-         JOIN reservations r ON r."clientId" = u.id
-         JOIN workout_sheets ws ON ws."clientId" = u.id
-         JOIN points_entries pe ON pe."clientId" = u.id AND pe."reservationId" = r.id
-        WHERE u.email = $1 AND r.id = $2`,
-      [fixtureEmail, fixtureReservationId],
-    );
-    expect(sample.rows).toEqual([
-      {
-        email: fixtureEmail,
-        reservation_status: "COMPLETED",
-        sheet_title: fixtureSheetTitle,
-        points: fixturePoints,
-      },
-    ]);
-
-    const foreignKeys = await restoreClient.query<{ conname: string; convalidated: boolean }>(
-      `SELECT conname, convalidated
-         FROM pg_constraint
-        WHERE contype = 'f'
-          AND connamespace = 'public'::regnamespace
-        ORDER BY conname`,
-    );
-    expect(foreignKeys.rows.length).toBeGreaterThan(0);
-    expect(
-      foreignKeys.rows.filter(({ convalidated }) => !convalidated).map(({ conname }) => conname),
-    ).toEqual([]);
-
-    await sourceClient.end();
-    sourceClient = undefined;
-    await restoreClient.end();
-    restoreClient = undefined;
+    const confirmedOverwrite = runRestore(restoreDatabase, encryptedFile, true);
+    expectSuccessful(confirmedOverwrite, "restauração com confirmação explícita do alvo não vazio");
 
     const failedBackup = runBackup("fitburn_database_does_not_exist");
     expect(failedBackup.status).not.toBe(0);
@@ -408,28 +382,3 @@ describe.skipIf(!dockerAvailable)("backup diário criptografado", () => {
     expect(failedHeartbeats.stdout.trim().split("\n").filter(Boolean)).toEqual(["heartbeat"]);
   }, 300_000);
 });
-
-function testDatabaseUrlFromEnv(): string {
-  const value = process.env.DATABASE_URL_TEST;
-  if (!value) throw new Error("DATABASE_URL_TEST é obrigatório");
-  return value;
-}
-
-async function databaseCounts(client: Client): Promise<Record<string, number>> {
-  const tables = await client.query<{ table_name: string }>(
-    `SELECT table_name
-       FROM information_schema.tables
-      WHERE table_schema = 'public'
-        AND table_type = 'BASE TABLE'
-      ORDER BY table_name`,
-  );
-  const counts: Array<[string, number]> = [];
-  for (const { table_name } of tables.rows) {
-    const identifier = `"${table_name.replaceAll('"', '""')}"`;
-    const result = await client.query<{ count: string }>(
-      `SELECT count(*) AS count FROM public.${identifier}`,
-    );
-    counts.push([table_name, Number(result.rows[0].count)]);
-  }
-  return Object.fromEntries(counts);
-}
