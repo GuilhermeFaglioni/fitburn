@@ -654,7 +654,7 @@ describe("Gestão de usuários (HTTP)", () => {
         .get("/api/auth/me")
         .set("Authorization", `Bearer ${oldAccessToken}`);
       expect(protectedRequest.status).toBe(401);
-      expect(protectedRequest.body.code).toBe("UNAUTHENTICATED");
+      expect(protectedRequest.body.code).toBe("USER_INACTIVE");
 
       const activeSessions = await testPrisma.refreshToken.count({
         where: { userId: target.id, revokedAt: null },
