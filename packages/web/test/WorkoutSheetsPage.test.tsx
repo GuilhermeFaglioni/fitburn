@@ -173,6 +173,11 @@ describe("Fichas de treino (professor)", () => {
     expect(
       await screen.findByRole("heading", { name: /Fichas de Marina Souza/ }),
     ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Durante o piloto, não registre diagnósticos, lesões ou outros dados de saúde.",
+      ),
+    ).toBeInTheDocument();
   });
 
   async function openMarina() {

@@ -226,7 +226,7 @@ describe("Perfil / Minha conta (HTTP)", () => {
       expect(stored.passwordHash).toBe(user.passwordHash);
     });
 
-    it.each([["phone"], ["birthDate"], ["document"], ["address"]])(
+    it.each([["phone"], ["birthDate"]])(
       "recusa anular %s de um cliente (cadastro obrigatório), sem mudar nada",
       async (field) => {
         const { token, user } = await loginAsClient();
@@ -243,6 +243,18 @@ describe("Perfil / Minha conta (HTTP)", () => {
         expect(stored[field as "phone" | "birthDate" | "document" | "address"]).not.toBeNull();
       },
     );
+
+    it("permite remover documento e endereço em Minha conta", async () => {
+      const { token } = await loginAsClient();
+
+      const response = await request(app.getHttpServer())
+        .patch("/api/me")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ document: null, address: null });
+
+      expect(response.status).toBe(200);
+      expect(response.body).toMatchObject({ document: null, address: null });
+    });
 
     it("a equipe pode limpar telefone, data de nascimento, documento e endereço", async () => {
       const profile = await createAccessProfile({ name: "Recepção" });

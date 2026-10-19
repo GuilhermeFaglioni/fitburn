@@ -57,8 +57,8 @@ export function ClientCreatePage() {
         email,
         phone,
         birthDate,
-        document: documentNumber,
-        address,
+        document: documentNumber.trim() || undefined,
+        address: address.trim() || undefined,
         password,
       });
       setCreated(true);
@@ -160,7 +160,7 @@ export function ClientCreatePage() {
           </div>
 
           <div className="fb-cadastro__field">
-            <label htmlFor={`${id}-document`}>CPF *</label>
+            <label htmlFor={`${id}-document`}>CPF (opcional)</label>
             <input
               id={`${id}-document`}
               type="text"
@@ -170,7 +170,6 @@ export function ClientCreatePage() {
               onChange={(event) => setDocumentNumber(event.target.value)}
               aria-invalid={documentError ? true : undefined}
               aria-describedby={documentError ? `${id}-document-error` : undefined}
-              required
             />
             {documentError && (
               <span id={`${id}-document-error`} role="alert" className="fb-cadastro__error">
@@ -179,9 +178,8 @@ export function ClientCreatePage() {
             )}
           </div>
 
-          {/* O design não marca o endereço como obrigatório; o contrato da API (createClientRequestSchema) ainda o exige. */}
           <div className="fb-cadastro__field fb-cadastro__field--wide">
-            <label htmlFor={`${id}-address`}>Endereço</label>
+            <label htmlFor={`${id}-address`}>Endereço (opcional)</label>
             <input
               id={`${id}-address`}
               type="text"
@@ -189,7 +187,6 @@ export function ClientCreatePage() {
               placeholder="Rua, número, bairro, cidade"
               value={address}
               onChange={(event) => setAddress(event.target.value)}
-              required
             />
           </div>
 

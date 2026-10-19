@@ -513,39 +513,36 @@ describe("Clientes (equipe)", () => {
       expect(await screen.findByRole("button", { name: "Editar dados" })).toBeInTheDocument();
     });
 
-    it("telefone, nascimento, documento e endereço são obrigatórios: não envia campo vazio nem só com espaços", async () => {
+    it("mantém telefone e nascimento obrigatórios e permite remover documento e endereço", async () => {
       const user = userEvent.setup();
-      const bodies: unknown[] = [];
+      let body: unknown;
       server.use(
         http.patch("/api/clients/:id", async ({ request }) => {
-          bodies.push(await request.json());
+          body = await request.json();
           return HttpResponse.json(OVERVIEW.client);
         }),
       );
       renderAt("/clientes/c-marina");
       await user.click(await screen.findByRole("button", { name: "Editar dados" }));
 
-      for (const label of ["Telefone", "Data de nascimento", "Documento", "Endereço"]) {
+      for (const label of ["Telefone", "Data de nascimento"]) {
         expect(screen.getByLabelText(label)).toBeRequired();
       }
+      for (const label of ["Documento", "Endereço"]) {
+        expect(screen.getByLabelText(label)).not.toBeRequired();
+      }
+
+      await user.clear(screen.getByLabelText("Documento"));
       const address = screen.getByLabelText("Endereço");
       await user.clear(address);
-      await user.type(address, "   ");
       await user.click(screen.getByRole("button", { name: "Salvar" }));
 
-      expect(await screen.findByRole("alert")).toHaveTextContent(/obrigat/i);
-      expect(bodies).toHaveLength(0);
-
-      await user.clear(address);
-      await user.type(address, "Rua Nova, 5");
-      await user.click(screen.getByRole("button", { name: "Salvar" }));
-
-      await waitFor(() => expect(bodies).toHaveLength(1));
-      expect(bodies[0]).toMatchObject({
+      await waitFor(() => expect(body).toBeDefined());
+      expect(body).toMatchObject({
         phone: "11999990000",
         birthDate: "1994-03-12",
-        document: "123.456.789-00",
-        address: "Rua Nova, 5",
+        document: null,
+        address: null,
       });
     });
 
@@ -555,7 +552,11 @@ describe("Clientes (equipe)", () => {
       server.use(
         http.delete("/api/clients/:id", ({ params }) => {
           calls.push(String(params.id));
-          return HttpResponse.json({ ...OVERVIEW.client, fullName: "Usuário excluído", status: "DELETED" });
+          return HttpResponse.json({
+            ...OVERVIEW.client,
+            fullName: "Usuário excluído",
+            status: "DELETED",
+          });
         }),
       );
       renderAt("/clientes/c-marina");
@@ -574,7 +575,11 @@ describe("Clientes (equipe)", () => {
       const user = userEvent.setup();
       server.use(
         http.delete("/api/clients/:id", () =>
-          HttpResponse.json({ ...OVERVIEW.client, fullName: "Usuário excluído", status: "DELETED" }),
+          HttpResponse.json({
+            ...OVERVIEW.client,
+            fullName: "Usuário excluído",
+            status: "DELETED",
+          }),
         ),
       );
       const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });

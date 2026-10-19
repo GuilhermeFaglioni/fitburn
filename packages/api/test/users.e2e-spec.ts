@@ -1,5 +1,6 @@
 import type { INestApplication } from "@nestjs/common";
 import request from "supertest";
+import { vi } from "vitest";
 import { cleanDatabase, testPrisma } from "./db-test-helper.js";
 import { createAccessProfile, createUser, grantModuleAccess } from "./factories.js";
 import { loginAndGetAccessToken } from "./login-helper.js";
@@ -149,6 +150,25 @@ describe("Gestão de usuários (HTTP)", () => {
 
       expect(response.status).toBe(201);
       expect(response.body.profile).toMatchObject({ id: staffProfile.id, name: "Recepção" });
+    });
+
+    it("recusa criar Cliente pelo fluxo de equipe", async () => {
+      const { token } = await loginAsAdmin();
+      const clientProfile = await createAccessProfile({ name: "Cliente", isSystem: true });
+
+      const response = await request(app.getHttpServer())
+        .post("/api/users/staff")
+        .set("Authorization", `Bearer ${token}`)
+        .send({
+          fullName: "Cliente sem dados obrigatórios",
+          email: "cliente-incompleto@fitburn.local",
+          password: PASSWORD,
+          profileId: clientProfile.id,
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body.code).toBe("VALIDATION_ERROR");
+      expect(response.body.message).toBe("Clientes devem ser cadastrados pelo fluxo de clientes.");
     });
 
     it("recusa um profileId inexistente", async () => {
@@ -375,6 +395,41 @@ describe("Gestão de usuários (HTTP)", () => {
       expect(response.body.fullName).toBe("Nome Atualizado");
       expect(response.body.profile.name).toBe("Recepção");
     });
+
+    it("recusa converter para Cliente usuário com nascimento de menor", async () => {
+      const previousTime = new Date();
+      vi.setSystemTime(new Date("2026-10-19T02:30:00.000Z"));
+      try {
+        const { token } = await loginAsAdmin();
+        const staffProfile = await createAccessProfile({ name: "Recepção" });
+        const clientProfile = await createAccessProfile({ name: "Cliente", isSystem: true });
+        const target = await createUser({
+          email: "menor-equipe@fitburn.local",
+          password: PASSWORD,
+          profileId: staffProfile.id,
+        });
+        await testPrisma.user.update({
+          where: { id: target.id },
+          data: { phone: "31999990000", birthDate: new Date("2008-10-19T00:00:00.000Z") },
+        });
+
+        const response = await request(app.getHttpServer())
+          .patch(`/api/users/${target.id}`)
+          .set("Authorization", `Bearer ${token}`)
+          .send({ profileId: clientProfile.id });
+
+        expect(response.status).toBe(400);
+        expect(response.body).toMatchObject({
+          code: "CLIENT_UNDERAGE",
+          message: "O cliente precisa ter pelo menos 18 anos.",
+        });
+        expect(await testPrisma.user.findUniqueOrThrow({ where: { id: target.id } })).toMatchObject({
+          profileId: staffProfile.id,
+        });
+      } finally {
+        vi.setSystemTime(previousTime);
+      }
+    }, 20_000);
 
     it("impede usuário não-administrador de trocar o próprio perfil para Administrador", async () => {
       const actorProfile = await createAccessProfile({ name: "Equipe limitada" });

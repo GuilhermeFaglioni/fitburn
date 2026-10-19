@@ -9,6 +9,7 @@ import {
 import { BlockedAction } from "../../components/BlockedAction";
 import { STATUS_LABEL } from "./status";
 import { EmptyState } from "../../components/states";
+import { HealthDataNotice } from "../../components/HealthDataNotice";
 
 export interface SheetFormValues {
   title: string;
@@ -142,6 +143,7 @@ export function SheetEditor({ editing, allowed, pending, onCancel, onSubmit }: S
 
   return (
     <form className="fb-sheets__form" onSubmit={(event) => void submit(event)}>
+      <HealthDataNotice />
       <div className="fb-sheets__form-top">
         <div className="fb-modal__field fb-sheets__grow">
           <label htmlFor={`${id}-title`}>Título</label>

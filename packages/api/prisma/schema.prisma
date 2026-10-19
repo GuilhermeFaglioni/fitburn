@@ -94,7 +94,7 @@ model User {
   fullName     String
   /// Opcionais no banco: o admin inicial do seed (T4) não tem esses dados.
   /// Obrigatoriedade é decidida por fluxo na validação (zod) — cadastro de
-  /// cliente exige todos, cadastro de equipe não.
+  /// cliente exige telefone e nascimento; documento e endereço são opcionais.
   phone        String?
   birthDate    DateTime?
   document     String?    @unique

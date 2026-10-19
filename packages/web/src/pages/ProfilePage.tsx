@@ -90,7 +90,8 @@ export function ProfilePage() {
   });
 
   const profile = profileQuery.data;
-  const light = user ? !isClientUser(user) : false;
+  const isClient = user ? isClientUser(user) : false;
+  const light = user ? !isClient : false;
 
   function startEdit() {
     if (!profile) return;
@@ -108,6 +109,10 @@ export function ProfilePage() {
   function submit(event: FormEvent) {
     event.preventDefault();
     if (!form) return;
+    if (isClient && (!form.phone.trim() || !form.birthDate.trim())) {
+      setError("Telefone e data de nascimento são obrigatórios.");
+      return;
+    }
     const parsed = updateOwnProfileRequestSchema.safeParse({
       fullName: form.fullName,
       email: form.email,
@@ -186,6 +191,7 @@ export function ProfilePage() {
                         className="fb-profile__input"
                         type={type}
                         autoComplete={autoComplete}
+                        required={isClient && (key === "phone" || key === "birthDate")}
                         value={form[key]}
                         onChange={(event) => setForm({ ...form, [key]: event.target.value })}
                       />

@@ -39,13 +39,15 @@ function renderPage() {
   );
 }
 
-async function fillForm(user: ReturnType<typeof userEvent.setup>) {
+async function fillForm(user: ReturnType<typeof userEvent.setup>, includeOptionalFields = true) {
   await user.type(screen.getByLabelText("Nome completo *"), "Carla Nova");
   await user.type(screen.getByLabelText("E-mail *"), "carla@email.com");
   await user.type(screen.getByLabelText("Telefone *"), "11911112222");
   await user.type(screen.getByLabelText("Data de nascimento *"), "1995-05-20");
-  await user.type(screen.getByLabelText("CPF *"), "111.222.333-44");
-  await user.type(screen.getByLabelText("Endereço"), "Rua A, 1");
+  if (includeOptionalFields) {
+    await user.type(screen.getByLabelText("CPF (opcional)"), "111.222.333-44");
+    await user.type(screen.getByLabelText("Endereço (opcional)"), "Rua A, 1");
+  }
   await user.type(screen.getByLabelText("Senha inicial *"), "SenhaForte123!");
 }
 
@@ -62,8 +64,10 @@ describe("Cadastro de cliente (tela cheia)", () => {
     expect(screen.getByPlaceholderText("Nome e sobrenome")).toBeInTheDocument();
     expect(screen.getByPlaceholderText("email@exemplo.com")).toBeInTheDocument();
     expect(screen.getByPlaceholderText("(00) 00000-0000")).toBeInTheDocument();
-    expect(screen.getByPlaceholderText("000.000.000-00")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("000.000.000-00")).not.toBeRequired();
     expect(screen.getByPlaceholderText("Rua, número, bairro, cidade")).toBeInTheDocument();
+    expect(screen.getByLabelText("Telefone *")).toBeRequired();
+    expect(screen.getByLabelText("Data de nascimento *")).toBeRequired();
     expect(screen.getByLabelText("Perfil de acesso *")).toHaveValue("Cliente");
     expect(
       screen.getByText("Somente administradores podem alterar o perfil de acesso."),
@@ -147,6 +151,46 @@ describe("Cadastro de cliente (tela cheia)", () => {
     expect(email).toHaveValue("carla@email.com");
   });
 
+  it("cadastra sem CPF e endereço e mantém telefone e nascimento obrigatórios", async () => {
+    const user = userEvent.setup();
+    let body: unknown;
+    server.use(
+      http.post("/api/clients", async ({ request }) => {
+        body = await request.json();
+        return HttpResponse.json(
+          {
+            id: "user-2",
+            email: "carla@email.com",
+            fullName: "Carla Nova",
+            phone: "11911112222",
+            birthDate: "1995-05-20",
+            document: null,
+            address: null,
+            status: "ACTIVE",
+            profile: { id: "profile-cliente", name: "Cliente" },
+          },
+          { status: 201 },
+        );
+      }),
+    );
+    renderPage();
+    await screen.findByRole("heading", { name: "Novo cliente" });
+
+    await fillForm(user, false);
+    await user.click(screen.getByRole("button", { name: "Salvar cliente" }));
+
+    expect(await screen.findByRole("status")).toHaveTextContent("Cliente cadastrado com sucesso.");
+    expect(body).toMatchObject({
+      fullName: "Carla Nova",
+      email: "carla@email.com",
+      phone: "11911112222",
+      birthDate: "1995-05-20",
+      password: "SenhaForte123!",
+    });
+    expect(body).not.toHaveProperty("document");
+    expect(body).not.toHaveProperty("address");
+  });
+
   it("mostra o erro sob o campo de CPF quando o documento já está cadastrado", async () => {
     const user = userEvent.setup();
     server.use(
@@ -164,7 +208,7 @@ describe("Cadastro de cliente (tela cheia)", () => {
     await user.click(screen.getByRole("button", { name: "Salvar cliente" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Este CPF já está cadastrado.");
-    expect(screen.getByLabelText("CPF *")).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByLabelText("CPF (opcional)")).toHaveAttribute("aria-invalid", "true");
   });
 
   it("avisa com um alerta geral quando a API recusa os dados", async () => {

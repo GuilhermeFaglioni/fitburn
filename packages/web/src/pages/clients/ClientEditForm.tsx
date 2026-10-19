@@ -9,6 +9,11 @@ import { ApiError } from "../../lib/auth/api";
 import { updateClientRecord } from "../../lib/clients/api";
 import { Feedback } from "../../components/states";
 
+function blankToNull(value: string): string | null {
+  const trimmed = value.trim();
+  return trimmed === "" ? null : trimmed;
+}
+
 const ERROR_MESSAGES: Record<string, string> = {
   EMAIL_ALREADY_IN_USE: "Este e-mail já está em uso.",
   DOCUMENT_ALREADY_IN_USE: "Este documento já está em uso.",
@@ -47,16 +52,12 @@ export function ClientEditForm({ client, onDone }: { client: ClientUserResponse;
     };
     if (canEditFullDetails) {
       input.birthDate = birthDate;
-      input.document = documentNumber;
-      input.address = address;
+      input.document = blankToNull(documentNumber);
+      input.address = blankToNull(address);
     }
     const parsed = updateClientRequestSchema.safeParse(input);
     if (!parsed.success) {
-      setValidationError(
-        canEditFullDetails
-          ? "Preencha todos os campos: todos são obrigatórios para o cliente."
-          : "Confira os campos exibidos e tente novamente.",
-      );
+      setValidationError(parsed.error.issues[0]?.message ?? "Dados inválidos.");
       return;
     }
     setValidationError(null);
@@ -97,7 +98,7 @@ export function ClientEditForm({ client, onDone }: { client: ClientUserResponse;
             type={type ?? "text"}
             value={value}
             onChange={(event) => setValue(event.target.value)}
-            required
+            required={name !== "document" && name !== "address"}
           />
         </div>
       ))}
