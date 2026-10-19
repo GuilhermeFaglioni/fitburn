@@ -19,6 +19,23 @@ const EXAMPLE_ENV_SOURCE = readFileSync(file(".env.production.example"), "utf8")
 const PROD_COMPOSE = readFileSync(file("docker-compose.prod.yml"), "utf8");
 const COOLIFY_COMPOSE = readFileSync(file("docker-compose.coolify.yml"), "utf8");
 const LOCAL_COMPOSE = readFileSync(file("docker-compose.prod.local.yml"), "utf8");
+const BACKUP_DOCKERFILE = readFileSync(file("docker/backup/Dockerfile"), "utf8");
+const BACKUP_CRONTAB = readFileSync(file("docker/backup/crontab"), "utf8");
+const WEB_NGINX = readFileSync(file("docker/web/nginx.conf"), "utf8");
+
+function nginxLocations(source: string): { name: string; body: string }[] {
+  return [...source.matchAll(/^\s*location\s+([^{}]+)[{]([\s\S]*?)^\s*[}]/gm)].map(
+    ([, name, body]) => ({ name: name.trim(), body }),
+  );
+}
+
+const WEB_SECURITY_HEADERS = [
+  /^\s*add_header Content-Security-Policy "[^\n]*frame-ancestors 'none'[^\n]*" always;$/m,
+  /^\s*add_header X-Frame-Options DENY always;$/m,
+  /^\s*add_header Referrer-Policy strict-origin-when-cross-origin always;$/m,
+  /^\s*add_header X-Content-Type-Options nosniff always;$/m,
+  /^\s*add_header Permissions-Policy "[^\n]+" always;$/m,
+];
 
 /** Nomes das variáveis do bloco `x-api-environment` (lidos do YAML, sem precisar do Docker). */
 function apiEnvironmentKeysFromYaml(): string[] {
@@ -79,6 +96,53 @@ describe("rate limit de login atrás dos proxies", () => {
   });
 });
 
+describe("backup no Compose do Coolify", () => {
+  const backup = serviceBlock(COOLIFY_COMPOSE, "backup");
+
+  it("fixa a base e versões das ferramentas e agenda execução diária interna", () => {
+    expect(BACKUP_DOCKERFILE).toMatch(/^FROM postgres:16-alpine$/m);
+    expect(BACKUP_DOCKERFILE).toContain("age/releases/download/v1.2.1/age-v1.2.1");
+    expect(BACKUP_DOCKERFILE).toContain("rclone-v1.69.1-linux-${rclone_arch}.zip");
+    expect(BACKUP_DOCKERFILE).toContain("supercronic/releases/download/v0.2.43/");
+    expect(BACKUP_CRONTAB.trim()).toBe("0 3 * * * /app/backup.sh");
+  });
+
+  it("exige configuração do backup, monta destino persistente e não publica portas", () => {
+    for (const name of [
+      "BACKUP_DESTINATION",
+      "BACKUP_STORAGE_ENDPOINT",
+      "BACKUP_STORAGE_REGION",
+      "BACKUP_STORAGE_ACCESS_KEY_ID",
+      "BACKUP_STORAGE_SECRET_ACCESS_KEY",
+      "BACKUP_AGE_RECIPIENT",
+      "BACKUP_HEARTBEAT_URL",
+    ]) {
+      expect(backup, `${name} ausente no serviço backup`).toContain(`\${${name}:-}`);
+      expect(EXAMPLE_ENV, `${name} ausente em .env.production.example`).toHaveProperty(name);
+    }
+    expect(backup).toMatch(/^ {4}volumes:\n {6}- backup_data:\/backups$/m);
+    expect(backup).not.toMatch(/^ {4}ports:/m);
+    expect(COOLIFY_COMPOSE).toMatch(/^[ ]{2}backup_data:$/m);
+  });
+
+  it("mantém o serviço interno e aguarda o PostgreSQL ficar saudável", () => {
+    expect(backup).toContain("docker/backup/Dockerfile");
+    expect(backup).toMatch(/^ {4}depends_on:\n {6}postgres:\n {8}condition: service_healthy$/m);
+
+    if (!composeAvailable) return;
+    const config = composeConfig(["docker-compose.coolify.yml"]) as ComposeConfig;
+    const resolvedBackup = config.services.backup;
+    expect(resolvedBackup.ports ?? []).toEqual([]);
+    expect(
+      resolvedBackup.volumes?.some(
+        (volume) => volume.source === "backup_data" && volume.target === "/backups",
+      ),
+    ).toBe(true);
+    expect(resolvedBackup.environment?.BACKUP_DESTINATION).toBe("s3://fitburn-test/backups");
+    expect(resolvedBackup.environment?.BACKUP_AGE_RECIPIENT).toBe("age1fitburntestrecipient");
+  });
+});
+
 /** Lê a lista REQUIRED_IN_PRODUCTION direto do código da API, a fonte da verdade. */
 function requiredInProduction(): string[] {
   const source = readFileSync(path.resolve(__dirname, "../src/config/app-config.ts"), "utf8");
@@ -95,6 +159,13 @@ const FILLED_SECRETS = {
   JWT_ACCESS_SECRET: "0123456789abcdef0123456789abcdef0123456789abcdef",
   INITIAL_ADMIN_EMAIL: "admin@fitburn.example",
   INITIAL_ADMIN_PASSWORD: "uma-senha-forte-de-teste",
+  BACKUP_DESTINATION: "s3://fitburn-test/backups",
+  BACKUP_STORAGE_ENDPOINT: "https://s3.fitburn.example",
+  BACKUP_STORAGE_REGION: "us-east-1",
+  BACKUP_STORAGE_ACCESS_KEY_ID: "backup-test-access-key",
+  BACKUP_STORAGE_SECRET_ACCESS_KEY: "backup-test-secret-key",
+  BACKUP_AGE_RECIPIENT: "age1fitburntestrecipient",
+  BACKUP_HEARTBEAT_URL: "https://heartbeat.fitburn.example/backup-test",
 };
 
 describe(".env.production.example", () => {
@@ -318,6 +389,43 @@ describe("artefatos do Nginx e do runbook", () => {
     for (const term of ["prisma migrate deploy", "/api/health", "pnpm demo:reset", "DOMAIN"]) {
       expect(runbook).toContain(term);
     }
+  });
+});
+
+describe("headers de segurança do Nginx web", () => {
+  const locationsWithOwnHeaders = nginxLocations(WEB_NGINX).filter(({ body }) =>
+    /^\s*add_header\s/m.test(body),
+  );
+
+  it("repete todos os headers de segurança em cada location com add_header próprio", () => {
+    expect(locationsWithOwnHeaders.map(({ name }) => name)).toEqual([
+      "/assets/",
+      "~* ^/(index\\.html|sw\\.js|registerSW\\.js|workbox-.*\\.js|manifest\\.webmanifest)$",
+      "/",
+    ]);
+
+    for (const { name, body } of locationsWithOwnHeaders) {
+      for (const header of WEB_SECURITY_HEADERS) {
+        expect(body, `${name} precisa declarar ${header.source}`).toMatch(header);
+      }
+    }
+  });
+
+  it("mantém a CSP compatível com as fontes usadas pelo app e com os artefatos da PWA", () => {
+    expect(WEB_NGINX).toContain(
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    );
+    expect(WEB_NGINX).toContain("font-src 'self' data: https://fonts.gstatic.com");
+    expect(WEB_NGINX).toContain("manifest-src 'self'");
+    expect(WEB_NGINX).toContain("worker-src 'self'");
+  });
+
+  it("documenta a ativação do HSTS no Traefik e a conferência dos headers via HTTPS", () => {
+    const coolify = readFileSync(file("docs/deploy-coolify.md"), "utf8");
+    expect(coolify).toContain("stsSeconds: 31536000");
+    expect(coolify).toContain("Strict-Transport-Security");
+    expect(coolify).toContain("curl -sS -D - -o /dev/null");
+    expect(coolify).toContain("https://<domínio>/");
   });
 });
 

@@ -30,6 +30,15 @@ export async function reactivateUser(id: string): Promise<UserResponse> {
   return userResponseSchema.parse(await parseOrThrow(response));
 }
 
+export async function resetUserPassword(id: string, newPassword: string): Promise<void> {
+  const response = await authFetch(`/api/users/${id}/reset-password`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ newPassword }),
+  });
+  await parseOrThrow(response);
+}
+
 /** Exclusão com anonimização (irreversível) de qualquer usuário. */
 export async function deleteUser(id: string): Promise<UserResponse> {
   const response = await authFetch(`/api/users/${id}`, { method: "DELETE" });

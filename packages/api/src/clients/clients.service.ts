@@ -125,7 +125,7 @@ export class ClientsService {
 
   async create(input: CreateClientRequest, requester: ScopedRequester): Promise<UserDetail> {
     assertFullScope(requester, "Só quem tem acesso a todos os clientes cadastra clientes.");
-    return this.usersService.toUserDetail(await this.usersService.createClient(input));
+    return this.usersService.toUserDetail(await this.usersService.createClient(input, requester));
   }
 
   async update(
@@ -135,7 +135,7 @@ export class ClientsService {
   ): Promise<UserResponse> {
     await assertClientInScope(this.prisma, id, requester);
     return this.usersService.toUserResponseForClientScope(
-      await this.usersService.update(id, input),
+      await this.usersService.update(id, input, requester),
       requester.scope,
     );
   }
@@ -143,7 +143,7 @@ export class ClientsService {
   async deactivate(id: string, requester: ScopedRequester): Promise<UserResponse> {
     await assertClientInScope(this.prisma, id, requester);
     return this.usersService.toUserResponseForClientScope(
-      await this.usersService.deactivate(id),
+      await this.usersService.deactivate(id, requester),
       requester.scope,
     );
   }
@@ -152,7 +152,7 @@ export class ClientsService {
   async remove(id: string, requester: ScopedRequester): Promise<UserResponse> {
     await assertClientInScope(this.prisma, id, requester);
     return this.usersService.toUserResponseForClientScope(
-      await this.usersService.anonymize(id),
+      await this.usersService.anonymize(id, requester),
       requester.scope,
     );
   }
@@ -160,7 +160,7 @@ export class ClientsService {
   async reactivate(id: string, requester: ScopedRequester): Promise<UserResponse> {
     await assertClientInScope(this.prisma, id, requester);
     return this.usersService.toUserResponseForClientScope(
-      await this.usersService.reactivate(id),
+      await this.usersService.reactivate(id, requester),
       requester.scope,
     );
   }

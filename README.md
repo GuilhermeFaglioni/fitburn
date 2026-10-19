@@ -40,6 +40,7 @@ O monorepo (`packages/contracts`, `packages/api`, `packages/web`) é gerenciado 
 ## Documentos
 
 - [Arquitetura geral](docs/architecture-overview.md)
+- [Contratos da API de saúde](docs/api-health.md)
 - [Decisões registradas](docs/decisions.md)
 - [Requisitos e restrições](docs/requirements.md)
 - [Reserva de aula](docs/critical-reservation.md)

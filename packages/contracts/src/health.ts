@@ -12,3 +12,10 @@ export const healthResponseSchema = z.object({
 });
 
 export type HealthResponse = z.infer<typeof healthResponseSchema>;
+
+export const healthLivenessResponseSchema = z.object({
+  status: z.literal(HealthStatus.OK),
+  timestamp: z.string(),
+});
+
+export type HealthLivenessResponse = z.infer<typeof healthLivenessResponseSchema>;
