@@ -110,7 +110,7 @@ export class ClientsService {
 
   async create(input: CreateClientRequest, requester: ScopedRequester): Promise<UserDetail> {
     assertFullScope(requester, "Só quem tem acesso a todos os clientes cadastra clientes.");
-    return this.usersService.toUserDetail(await this.usersService.createClient(input));
+    return this.usersService.toUserDetail(await this.usersService.createClient(input, requester));
   }
 
   async update(
@@ -119,22 +119,22 @@ export class ClientsService {
     requester: ScopedRequester,
   ): Promise<UserDetail> {
     await assertClientInScope(this.prisma, id, requester);
-    return this.usersService.toUserDetail(await this.usersService.update(id, input));
+    return this.usersService.toUserDetail(await this.usersService.update(id, input, requester));
   }
 
   async deactivate(id: string, requester: ScopedRequester): Promise<UserDetail> {
     await assertClientInScope(this.prisma, id, requester);
-    return this.usersService.toUserDetail(await this.usersService.deactivate(id));
+    return this.usersService.toUserDetail(await this.usersService.deactivate(id, requester));
   }
 
   /** Exclusão com anonimização (irreversível); o histórico do cliente permanece. */
   async remove(id: string, requester: ScopedRequester): Promise<UserDetail> {
     await assertClientInScope(this.prisma, id, requester);
-    return this.usersService.toUserDetail(await this.usersService.anonymize(id));
+    return this.usersService.toUserDetail(await this.usersService.anonymize(id, requester));
   }
 
   async reactivate(id: string, requester: ScopedRequester): Promise<UserDetail> {
     await assertClientInScope(this.prisma, id, requester);
-    return this.usersService.toUserDetail(await this.usersService.reactivate(id));
+    return this.usersService.toUserDetail(await this.usersService.reactivate(id, requester));
   }
 }
