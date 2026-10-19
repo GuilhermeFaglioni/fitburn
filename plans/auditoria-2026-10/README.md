@@ -13,7 +13,7 @@ Verificação geral (raiz da worktree): `pnpm typecheck`, `pnpm test`, `pnpm bui
 
 | # | Título | Severidade | Área | Status |
 |---|---|---|---|---|
-| 001 | Autoelevação de privilégio (usuários e perfis) | HIGH | api | TODO |
+| 001 | Autoelevação de privilégio (usuários e perfis) | HIGH | api | DONE |
 | 002 | Corrida de escopo na edição/cancelamento/exclusão de aula | HIGH | api | TODO |
 | 003 | Ciclo de vida de sessão (refresh atômico, reset, desativação) | MEDIUM | api | TODO |
 | 004 | Sessão encerrada na web + erros da tela de Perfis | HIGH / MEDIUM | web | TODO |
