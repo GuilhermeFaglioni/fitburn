@@ -8,6 +8,7 @@ import { PrismaService } from "../prisma/prisma.service.js";
 
 export interface AuthTokenPayload {
   sub: string;
+  tokenVersion: number;
 }
 
 export interface AuthenticatedRequest extends Request {
@@ -39,18 +40,23 @@ export class JwtAuthGuard implements CanActivate {
       throw this.unauthenticated();
     }
 
-    // O token segue válido por alguns minutos depois de a pessoa ser excluída
-    // (anonimizada): quem foi excluído perde o acesso na hora, em toda rota
-    // autenticada. INACTIVE não é barrado aqui para que controladores de
-    // domínio retornem USER_INACTIVE; rotas de equipe são barradas pelo
-    // PermissionsGuard.
+    // Revoga imediatamente tokens de usuários ausentes, inativos ou com senha
+    // redefinida desde a emissão do access token.
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
-      select: { status: true },
+      select: { status: true, tokenVersion: true },
     });
-    if (user?.status === "DELETED") {
+    if (!user) {
       throw this.unauthenticated();
     }
+    if (user.status !== "ACTIVE") {
+      throw new DomainError(
+        ErrorCode.USER_INACTIVE,
+        "Este usuário está inativo. Fale com a administração da Fitburn.",
+        ErrorStatus.UNAUTHENTICATED,
+      );
+    }
+    if (user.tokenVersion !== payload.tokenVersion) throw this.unauthenticated();
 
     request.authUser = payload;
     return true;

@@ -28,6 +28,7 @@ import type { ProfileRequester } from "../permissions/scoped-requester.js";
 import { DomainError } from "../common/errors/domain-error.js";
 import { hashPassword } from "../auth/password.util.js";
 import { recordAdminAuditEvent } from "../admin-audit/record-admin-audit-event.js";
+import { lockUserRow } from "./user-row-lock.js";
 
 export type UserWithProfile = User & { profile: AccessProfile };
 export type UserMutationActor = Pick<ProfileRequester, "userId"> &
@@ -252,7 +253,10 @@ export class UsersService {
       const previousStatus = await this.lockLiveUser(tx, id);
       const user = await tx.user.update({
         where: { id },
-        data: { status: "INACTIVE" },
+        data: {
+          status: "INACTIVE",
+          ...(previousStatus === "ACTIVE" ? { tokenVersion: { increment: 1 } } : {}),
+        },
         include: { profile: true },
       });
       await this.revokeSessions(tx, id);
@@ -271,7 +275,10 @@ export class UsersService {
       const previousStatus = await this.lockLiveUser(tx, id);
       const user = await tx.user.update({
         where: { id },
-        data: { status: "ACTIVE" },
+        data: {
+          status: "ACTIVE",
+          ...(previousStatus === "INACTIVE" ? { tokenVersion: { increment: 1 } } : {}),
+        },
         include: { profile: true },
       });
       await recordAdminAuditEvent(tx, {
@@ -292,7 +299,10 @@ export class UsersService {
     const passwordHash = await hashPassword(newPassword);
     await this.prisma.$transaction(async (tx) => {
       await this.lockLiveUser(tx, id);
-      await tx.user.update({ where: { id }, data: { passwordHash } });
+      await tx.user.update({
+        where: { id },
+        data: { passwordHash, tokenVersion: { increment: 1 } },
+      });
       await this.revokeSessions(tx, id);
       await recordAdminAuditEvent(tx, {
         actorId: requester.userId,
@@ -328,6 +338,7 @@ export class UsersService {
           document: null,
           address: null,
           status: "DELETED",
+          tokenVersion: { increment: 1 },
         },
         include: { profile: true },
       });
@@ -387,20 +398,18 @@ export class UsersService {
    * reativação ou troca de senha, nem duas exclusões passarem juntas.
    */
   private async lockLiveUser(tx: Prisma.TransactionClient, id: string): Promise<UserStatus> {
-    const rows = await tx.$queryRaw<Array<{ status: UserStatus }>>`
-      SELECT status::text AS status FROM users WHERE id = ${id} FOR UPDATE
-    `;
-    if (rows.length === 0) {
+    const status = await lockUserRow(tx, id);
+    if (status === null) {
       throw new DomainError(ErrorCode.NOT_FOUND, "Usuário não encontrado.", ErrorStatus.NOT_FOUND);
     }
-    if (rows[0].status === "DELETED") {
+    if (status === "DELETED") {
       throw new DomainError(
         ErrorCode.USER_ALREADY_DELETED,
         "Este usuário já foi excluído.",
         ErrorStatus.CONFLICT,
       );
     }
-    return rows[0].status;
+    return status;
   }
 
   async toCurrentUser(user: UserWithProfile): Promise<CurrentUser> {

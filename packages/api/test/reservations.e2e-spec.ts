@@ -214,7 +214,7 @@ describe("Reservas (HTTP)", () => {
 
       const response = await reserve(ana.token, occurrence.id);
 
-      expect(response.status).toBe(403);
+      expect(response.status).toBe(401);
       expect(response.body.code).toBe("USER_INACTIVE");
       expect(await testPrisma.reservation.count()).toBe(0);
     });
@@ -690,7 +690,7 @@ describe("Reservas (HTTP)", () => {
       const inactive = await reschedule(ana.token, original.body.id, yoga.id);
 
       expect(missing.status).toBe(404);
-      expect(inactive.status).toBe(403);
+      expect(inactive.status).toBe(401);
       expect(inactive.body.code).toBe("USER_INACTIVE");
       expect(await statusOf(original.body.id)).toBe("CONFIRMED");
     });
