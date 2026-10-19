@@ -25,6 +25,7 @@ interface AuthContextValue {
   isInitializing: boolean;
   login: (email: string, password: string) => Promise<CurrentUser>;
   logout: () => Promise<void>;
+  changeOwnPassword: (currentPassword: string, newPassword: string) => Promise<CurrentUser>;
   /** Atualiza na sessão os dados de identidade que a pessoa editou (nome e e-mail), sem novo login. */
   updateIdentity: (identity: Pick<CurrentUser, "fullName" | "email">) => void;
   can: (module: ModuleName, action: PermissionActionName) => boolean;
@@ -107,6 +108,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }, []);
 
+  const changeOwnPassword = useCallback(async (currentPassword: string, newPassword: string) => {
+    const updatedUser = await authApi.changeOwnPassword(currentPassword, newPassword);
+    setUser(updatedUser);
+    return updatedUser;
+  }, []);
+
   const updateIdentity = useCallback((identity: Pick<CurrentUser, "fullName" | "email">) => {
     setUser((current) => (current ? { ...current, ...identity } : current));
   }, []);
@@ -132,11 +139,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isInitializing,
       login,
       logout,
+      changeOwnPassword,
       updateIdentity,
       can,
       scopeOf,
     }),
-    [user, isInitializing, login, logout, updateIdentity, can, scopeOf],
+    [user, isInitializing, login, logout, changeOwnPassword, updateIdentity, can, scopeOf],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

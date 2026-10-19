@@ -60,6 +60,7 @@ describe("Perfil / Minha conta (HTTP)", () => {
         address: "Rua das Palmeiras, 220",
         status: "ACTIVE",
         profile: { id: user.profileId, name: "Cliente" },
+        onboardingPending: [],
       });
     });
 

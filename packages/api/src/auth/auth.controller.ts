@@ -28,6 +28,7 @@ import { UsersService } from "../users/users.service.js";
 import { AuthService } from "./auth.service.js";
 import { JwtAuthGuard, type AuthenticatedRequest } from "./jwt-auth.guard.js";
 import { clearRefreshCookie, readRefreshCookie, setRefreshCookie } from "./refresh-cookie.js";
+import { AllowDuringOnboarding } from "../onboarding/allow-during-onboarding.decorator.js";
 
 @Controller("auth")
 export class AuthController {
@@ -71,6 +72,7 @@ export class AuthController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @AllowDuringOnboarding()
   @Post("password")
   @HttpCode(HttpStatus.OK)
   async changeOwnPassword(
@@ -89,6 +91,7 @@ export class AuthController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @AllowDuringOnboarding()
   @Get("me")
   async me(@Req() req: AuthenticatedRequest): Promise<CurrentUser> {
     const user = await this.usersService.findById(req.authUser.sub);

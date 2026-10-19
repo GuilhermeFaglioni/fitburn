@@ -26,6 +26,7 @@ const CLIENT_ME: UserDetail = {
   address: "Rua das Palmeiras, 220",
   status: "ACTIVE",
   profile: { id: "profile-1", name: "Cliente" },
+  onboardingPending: [],
 };
 
 const STAFF_ME: UserDetail = {
@@ -38,6 +39,7 @@ const STAFF_ME: UserDetail = {
   address: null,
   status: "ACTIVE",
   profile: { id: "profile-2", name: "Professor" },
+  onboardingPending: [],
 };
 
 const TEACHER_PERMISSIONS: EffectivePermission[] = [
@@ -88,6 +90,7 @@ describe("Perfil / Minha conta", () => {
       status: detail.status,
       profile: detail.profile,
       permissions,
+      onboardingPending: [],
     };
     server.use(
       http.post("/api/auth/refresh", () => {

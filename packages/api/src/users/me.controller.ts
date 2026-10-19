@@ -10,6 +10,7 @@ import { JwtAuthGuard, type AuthenticatedRequest } from "../auth/jwt-auth.guard.
 import { DomainError } from "../common/errors/domain-error.js";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe.js";
 import { UsersService, type UserWithProfile } from "./users.service.js";
+import { AllowDuringOnboarding } from "../onboarding/allow-during-onboarding.decorator.js";
 
 /**
  * Perfil / Minha conta: os dados pessoais do próprio usuário autenticado.
@@ -22,6 +23,7 @@ export class MeController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
+  @AllowDuringOnboarding()
   async get(@Req() req: AuthenticatedRequest): Promise<UserDetail> {
     const user = await this.currentUser(req);
     return this.usersService.toUserDetail(user);
