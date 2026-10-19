@@ -1,16 +1,22 @@
 import { trackedFetch } from "../connectivity/connectivity-store";
-import { refreshSession } from "./api";
+import { refreshSessionOutcome, type RefreshOutcome } from "./api";
+import { emitSessionEnded } from "./session-events";
 import { tokenStore } from "./token-store";
 
-let inFlightRefresh: ReturnType<typeof refreshSession> | null = null;
+let inFlightRefresh: Promise<RefreshOutcome> | null = null;
 
 // Várias chamadas simultâneas que tomam 401 ao mesmo tempo compartilham a
 // mesma tentativa de refresh, em vez de disparar uma renovação cada uma.
 function refreshOnce() {
   if (!inFlightRefresh) {
-    inFlightRefresh = refreshSession().finally(() => {
-      inFlightRefresh = null;
-    });
+    inFlightRefresh = refreshSessionOutcome()
+      .then((outcome) => {
+        if (outcome.status === "ended") emitSessionEnded();
+        return outcome;
+      })
+      .finally(() => {
+        inFlightRefresh = null;
+      });
   }
   return inFlightRefresh;
 }
@@ -18,8 +24,8 @@ function refreshOnce() {
 /**
  * fetch autenticado: anexa o access token e, se a resposta vier 401 (token
  * expirado), tenta renovar a sessão uma única vez e repete a requisição
- * original. Se a renovação falhar, devolve a resposta 401 original — quem
- * chamou decide o que fazer (normalmente: mandar para o login).
+ * original. Se a sessão tiver terminado, avisa o AuthProvider; falhas
+ * transitórias só devolvem a resposta 401 original.
  */
 export async function authFetch(input: string, init: RequestInit = {}): Promise<Response> {
   const doFetch = () =>
@@ -34,8 +40,8 @@ export async function authFetch(input: string, init: RequestInit = {}): Promise<
     return response;
   }
 
-  const refreshedUser = await refreshOnce();
-  if (!refreshedUser) {
+  const outcome = await refreshOnce();
+  if (outcome.status === "ended" || outcome.status === "transient") {
     return response;
   }
 
