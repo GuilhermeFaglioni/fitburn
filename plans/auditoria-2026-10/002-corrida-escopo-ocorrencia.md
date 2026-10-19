@@ -1,7 +1,7 @@
 # 002 — Corrida de escopo na edição, cancelamento e exclusão de aula
 
-- **Status**: TODO
-- **Commit**: —
+- **Status**: DONE
+- **Commit**: `b7297b4577d0d55c8aa393c58b37d8f6fb0b1ce2`
 - **Severity**: HIGH
 - **Origem**: auditoria api-logic A1
 - **Escopo estimado**: `packages/api/src/agenda/occurrences.service.ts`, `packages/api/test/occurrences.e2e-spec.ts`
@@ -43,3 +43,9 @@ A pré-checagem fora da transação pode continuar (resposta rápida e `assertNo
 
 - Testes de corrida falham antes e passam depois; suíte da API verde.
 - Commit `fix(api): revalida escopo da aula depois do lock`.
+
+## Resultado da execução
+
+- Teste de corrida red→green: editar, cancelar e excluir; spec completa de ocorrências passou (37/37).
+- Suíte API: 553/557 passaram; 4 falhas em `clients.e2e-spec.ts` e `demo-reset.e2e-spec.ts`. Reexecução isolada passou (20/20 e 27/27); registrado como flakiness ambiental durante execução concorrente de worktrees.
+- `pnpm typecheck` e `pnpm exec eslint packages/api/src/agenda/occurrences.service.ts packages/api/test/occurrences.e2e-spec.ts`: passaram.
