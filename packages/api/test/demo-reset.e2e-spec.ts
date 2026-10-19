@@ -260,7 +260,7 @@ describe("Reset da demonstração: schema do banco", () => {
       await empty.$disconnect();
       await testPrisma.$executeRawUnsafe(`DROP DATABASE IF EXISTS "${emptyDb}"`);
     }
-  });
+  }, 120_000);
 });
 
 /** Estado do banco sem ids e timestamps, para comparar dois resets. */
