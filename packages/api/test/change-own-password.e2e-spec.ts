@@ -1,7 +1,7 @@
 import type { INestApplication } from "@nestjs/common";
 import request from "supertest";
 import { REFRESH_COOKIE_NAME } from "../src/auth/refresh-cookie.js";
-import { cleanDatabase } from "./db-test-helper.js";
+import { cleanDatabase, testPrisma } from "./db-test-helper.js";
 import { createAccessProfile, createUser } from "./factories.js";
 import { createTestApp } from "./test-app.js";
 
@@ -51,6 +51,24 @@ describe("Troca da própria senha (HTTP)", () => {
     return request(app.getHttpServer())
       .get("/api/me")
       .set("Authorization", `Bearer ${accessToken}`);
+  }
+
+  async function waitForUserLockWaiters(expectedCount: number): Promise<void> {
+    const deadline = Date.now() + 10_000;
+    while (Date.now() < deadline) {
+      const [activity] = await testPrisma.$queryRaw<Array<{ count: number }>>`
+        SELECT count(*)::int AS count
+        FROM pg_stat_activity
+        WHERE datname = current_database()
+          AND pid <> pg_backend_pid()
+          AND wait_event_type = 'Lock'
+          AND query ILIKE '%FROM users%'
+          AND query ILIKE '%FOR UPDATE%'
+      `;
+      if ((activity?.count ?? 0) >= expectedCount) return;
+      await new Promise<void>((resolve) => setImmediate(resolve));
+    }
+    throw new Error(`Esperava ${expectedCount} requisição(ões) aguardando o lock do usuário.`);
   }
 
   it("troca a senha, encerra outras sessões e mantém a sessão atual", async () => {
@@ -171,16 +189,41 @@ describe("Troca da própria senha (HTTP)", () => {
 
   it("serializa troca com login e refresh concorrentes", async () => {
     const session = await createSession();
+    let changedPromise: Promise<request.Response> | undefined;
+    let loginPromise: Promise<request.Response> | undefined;
+    let refreshPromise: Promise<request.Response> | undefined;
 
+    await testPrisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM users WHERE id = ${session.user.id} FOR UPDATE`;
+
+      changedPromise = Promise.resolve(
+        request(app.getHttpServer())
+          .post("/api/auth/password")
+          .set("Authorization", `Bearer ${session.accessToken}`)
+          .send({ currentPassword: CURRENT_PASSWORD, newPassword: NEW_PASSWORD }),
+      );
+      await waitForUserLockWaiters(1);
+
+      loginPromise = Promise.resolve(
+        request(app.getHttpServer())
+          .post("/api/auth/login")
+          .send({ email: session.user.email, password: CURRENT_PASSWORD }),
+      );
+      refreshPromise = Promise.resolve(
+        request(app.getHttpServer())
+          .post("/api/auth/refresh")
+          .set("Cookie", session.refreshCookie),
+      );
+      await waitForUserLockWaiters(3);
+    });
+
+    if (!changedPromise || !loginPromise || !refreshPromise) {
+      throw new Error("As requisições concorrentes não foram iniciadas.");
+    }
     const [changed, login, refresh] = await Promise.all([
-      request(app.getHttpServer())
-        .post("/api/auth/password")
-        .set("Authorization", `Bearer ${session.accessToken}`)
-        .send({ currentPassword: CURRENT_PASSWORD, newPassword: NEW_PASSWORD }),
-      request(app.getHttpServer())
-        .post("/api/auth/login")
-        .send({ email: session.user.email, password: CURRENT_PASSWORD }),
-      request(app.getHttpServer()).post("/api/auth/refresh").set("Cookie", session.refreshCookie),
+      changedPromise,
+      loginPromise,
+      refreshPromise,
     ]);
 
     expect(changed.status).toBe(200);

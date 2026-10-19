@@ -94,10 +94,7 @@ export class AuthService {
         data: { passwordHash, tokenVersion: { increment: 1 } },
         include: { profile: true },
       });
-      await tx.refreshToken.updateMany({
-        where: { userId, revokedAt: null },
-        data: { revokedAt: new Date() },
-      });
+      await this.usersService.revokeSessions(tx, userId);
 
       return this.issueSession(tx, updatedUser);
     });
