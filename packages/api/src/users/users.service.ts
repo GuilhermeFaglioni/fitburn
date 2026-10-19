@@ -5,6 +5,7 @@ import {
   dateOnlyToLocalDate,
   ErrorCode,
   ErrorStatus,
+  gymToday,
   PermissionScope,
   SystemProfileName,
   type CreateClientRequest,
@@ -25,6 +26,29 @@ import { hashPassword } from "../auth/password.util.js";
 export type UserWithProfile = User & { profile: AccessProfile };
 
 const CLIENT_PROFILE_NAME = "Cliente";
+const CLIENT_MINIMUM_AGE = 18;
+
+function assertClientMinimumAge(birthDate: string): void {
+  const [year, month, day] = birthDate.split("-").map(Number);
+  const eligibleDate = new Date(Date.UTC(year + CLIENT_MINIMUM_AGE, month - 1, day))
+    .toISOString()
+    .slice(0, 10);
+  if (gymToday() < eligibleDate) {
+    throw new DomainError(
+      ErrorCode.CLIENT_UNDERAGE,
+      "O cliente precisa ter pelo menos 18 anos.",
+      ErrorStatus.VALIDATION,
+    );
+  }
+}
+
+function requiredClientFieldError(label: string): DomainError {
+  return new DomainError(
+    ErrorCode.VALIDATION_ERROR,
+    `O campo ${label} é obrigatório e não pode ser removido.`,
+    ErrorStatus.VALIDATION,
+  );
+}
 
 /** Nome neutro de quem foi excluído (anonimizado). */
 export const DELETED_USER_NAME = "Usuário excluído";
@@ -81,6 +105,7 @@ export class UsersService {
   }
 
   async createClient(input: CreateClientRequest): Promise<UserWithProfile> {
+    assertClientMinimumAge(input.birthDate);
     const clientProfile = await this.getSystemProfile(CLIENT_PROFILE_NAME);
     await this.assertEmailAvailable(input.email);
     await this.assertDocumentAvailable(input.document);
@@ -94,8 +119,8 @@ export class UsersService {
           fullName: input.fullName,
           phone: input.phone,
           birthDate: new Date(input.birthDate),
-          document: input.document,
-          address: input.address,
+          document: input.document ?? null,
+          address: input.address ?? null,
           profileId: clientProfile.id,
         },
         include: { profile: true },
@@ -103,7 +128,10 @@ export class UsersService {
       .catch((error: unknown) => this.rethrowUniqueViolation(error, input.email, input.document));
   }
 
-  async createStaff(input: CreateStaffRequest, requester: ProfileRequester): Promise<UserWithProfile> {
+  async createStaff(
+    input: CreateStaffRequest,
+    requester: ProfileRequester,
+  ): Promise<UserWithProfile> {
     const profile = await this.getExistingProfile(input.profileId);
     await this.permissionsService.assertCanAssignProfile(requester.profile, profile);
     await this.assertEmailAvailable(input.email);
@@ -127,6 +155,7 @@ export class UsersService {
     input: UpdateUserRequest,
     requester?: ProfileRequester,
   ): Promise<UserWithProfile> {
+    let targetProfile: AccessProfile | undefined;
     if (input.profileId !== undefined) {
       if (!requester) {
         throw new DomainError(
@@ -142,8 +171,8 @@ export class UsersService {
           ErrorStatus.FORBIDDEN,
         );
       }
-      const profile = await this.getExistingProfile(input.profileId);
-      await this.permissionsService.assertCanAssignProfile(requester.profile, profile);
+      targetProfile = await this.getExistingProfile(input.profileId);
+      await this.permissionsService.assertCanAssignProfile(requester.profile, targetProfile);
     }
     if (input.email !== undefined) {
       await this.assertEmailAvailable(input.email, id);
@@ -152,14 +181,48 @@ export class UsersService {
       await this.assertDocumentAvailable(input.document, id);
     }
 
-    return this.updateRow(id, input).catch((error: unknown) =>
+    return this.updateRow(id, input, targetProfile).catch((error: unknown) =>
       this.rethrowUniqueViolation(error, input.email, input.document, id),
     );
   }
 
-  private updateRow(id: string, input: UpdateUserRequest): Promise<UserWithProfile> {
+  private updateRow(
+    id: string,
+    input: UpdateUserRequest,
+    targetProfile?: AccessProfile,
+  ): Promise<UserWithProfile> {
     return this.prisma.$transaction(async (tx) => {
       await this.lockLiveUser(tx, id);
+      const current = await tx.user.findUniqueOrThrow({
+        where: { id },
+        select: {
+          phone: true,
+          birthDate: true,
+          profile: { select: { name: true } },
+        },
+      });
+      if ((targetProfile?.name ?? current.profile.name) === CLIENT_PROFILE_NAME) {
+        if (input.birthDate) assertClientMinimumAge(input.birthDate);
+        if (input.phone === null) throw requiredClientFieldError("telefone");
+        if (input.birthDate === null) throw requiredClientFieldError("data de nascimento");
+
+        // Mudança de perfil deve criar um cliente válido. Clientes legados
+        // incompletos continuam editáveis até que esses dados sejam corrigidos.
+        if (
+          targetProfile?.name === CLIENT_PROFILE_NAME &&
+          current.profile.name !== CLIENT_PROFILE_NAME
+        ) {
+          const phone = input.phone !== undefined ? input.phone : current.phone;
+          const birthDate =
+            input.birthDate !== undefined
+              ? input.birthDate
+              : current.birthDate
+                ? dateOnlyToLocalDate(current.birthDate)
+                : null;
+          if (phone === null) throw requiredClientFieldError("telefone");
+          if (birthDate === null) throw requiredClientFieldError("data de nascimento");
+        }
+      }
       return tx.user.update({
         where: { id },
         data: {

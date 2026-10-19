@@ -6,8 +6,8 @@ export const createClientRequestSchema = z.object({
   email: z.string().trim().email(),
   phone: z.string().trim().min(1, "Telefone é obrigatório."),
   birthDate: z.string().date("Data de nascimento inválida."),
-  document: z.string().trim().min(1, "Documento é obrigatório."),
-  address: z.string().trim().min(1, "Endereço é obrigatório."),
+  document: z.string().trim().min(1).optional(),
+  address: z.string().trim().min(1).optional(),
   password: z.string().min(8, "A senha precisa ter pelo menos 8 caracteres."),
 });
 export type CreateClientRequest = z.infer<typeof createClientRequestSchema>;

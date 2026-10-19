@@ -1,5 +1,6 @@
 import type { INestApplication } from "@nestjs/common";
 import request from "supertest";
+import { vi } from "vitest";
 import { seedGamificationRules } from "../src/gamification/default-rules.js";
 import { cleanDatabase, testPrisma } from "./db-test-helper.js";
 import {
@@ -284,6 +285,95 @@ describe("Clientes (HTTP)", () => {
       expect(names(listed.body)).toEqual(["Carla Nova"]);
     });
 
+    it("cadastra vários clientes sem documento e endereço", async () => {
+      const admin = await createAdmin();
+      const { document: _document, address: _address, ...withoutOptionalFields } = NEW_CLIENT;
+
+      const first = await post(admin.token, "", withoutOptionalFields);
+      const second = await post(admin.token, "", {
+        ...withoutOptionalFields,
+        fullName: "Bruno Sem Documento",
+        email: "bruno@fitburn.local",
+      });
+
+      expect(first.status).toBe(201);
+      expect(first.body).toMatchObject({ document: null, address: null });
+      expect(second.status).toBe(201);
+      expect(second.body).toMatchObject({ document: null, address: null });
+    });
+
+    it.each(["phone", "birthDate"])("exige %s no cadastro de cliente", async (field) => {
+      const admin = await createAdmin();
+      const { document: _document, address: _address, ...withoutOptionalFields } = NEW_CLIENT;
+      const body = { ...withoutOptionalFields } as Record<string, unknown>;
+      delete body[field];
+
+      const response = await post(admin.token, "", body);
+
+      expect(response.status).toBe(400);
+      expect(response.body.code).toBe("VALIDATION_ERROR");
+    });
+
+    it("recusa menor de 18 anos e aceita no aniversário exato e no dia seguinte em São Paulo", async () => {
+      const previousTime = new Date();
+      vi.setSystemTime(new Date("2026-10-19T02:30:00.000Z"));
+      try {
+        const admin = await createAdmin();
+        const { document: _document, address: _address, ...base } = NEW_CLIENT;
+        const underage = await post(admin.token, "", {
+          ...base,
+          birthDate: "2008-10-19",
+        });
+        const eighteenthBirthday = await post(admin.token, "", {
+          ...base,
+          email: "aniversario@fitburn.local",
+          birthDate: "2008-10-18",
+        });
+        const dayAfterBirthday = await post(admin.token, "", {
+          ...base,
+          email: "maior@fitburn.local",
+          birthDate: "2008-10-17",
+        });
+
+        expect(underage.status).toBe(400);
+        expect(underage.body).toMatchObject({
+          code: "CLIENT_UNDERAGE",
+          message: "O cliente precisa ter pelo menos 18 anos.",
+        });
+        expect(eighteenthBirthday.status).toBe(201);
+        expect(dayAfterBirthday.status).toBe(201);
+      } finally {
+        vi.setSystemTime(previousTime);
+      }
+    }, 30_000);
+
+    it("recusa nascimento de menor de 18 anos na edição da equipe e do próprio cliente", async () => {
+      const previousTime = new Date();
+      vi.setSystemTime(new Date("2026-10-19T02:30:00.000Z"));
+      try {
+        const admin = await createAdmin();
+        const client = await createClient("ana");
+
+        const staffEdit = await patch(admin.token, `/${client.user.id}`, {
+          birthDate: "2008-10-19",
+        });
+        const ownEdit = await request(app.getHttpServer())
+          .patch("/api/me")
+          .set("Authorization", `Bearer ${client.token}`)
+          .send({ birthDate: "2008-10-19" });
+
+        for (const response of [staffEdit, ownEdit]) {
+          expect(response.status).toBe(400);
+          expect(response.body).toMatchObject({
+            code: "CLIENT_UNDERAGE",
+            message: "O cliente precisa ter pelo menos 18 anos.",
+          });
+        }
+      } finally {
+        vi.setSystemTime(previousTime);
+      }
+    }, 20_000);
+
     it("recusa e-mail e documento já em uso, e dados inválidos", async () => {
       const admin = await createAdmin();
       await createClient("ana", { document: NEW_CLIENT.document });
@@ -338,7 +428,7 @@ describe("Clientes (HTTP)", () => {
       expect(stored.profileId).toBe(clientProfileId);
     });
 
-    it.each(["phone", "birthDate", "document", "address"])(
+    it.each(["phone", "birthDate"])(
       "recusa anular %s: para o cliente é obrigatório",
       async (field) => {
         const admin = await createAdmin();
@@ -365,6 +455,19 @@ describe("Clientes (HTTP)", () => {
         expect(stored[field as "phone" | "birthDate" | "document" | "address"]).not.toBeNull();
       },
     );
+
+    it("permite remover documento e endereço no cadastro do cliente", async () => {
+      const admin = await createAdmin();
+      const ana = await createClient("ana", { document: "12345678900" });
+
+      const response = await patch(admin.token, `/${ana.user.id}`, {
+        document: null,
+        address: null,
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.body).toMatchObject({ document: null, address: null });
+    });
 
     it("o professor edita só clientes do seu escopo", async () => {
       const rafael = await createTeacher("rafael");

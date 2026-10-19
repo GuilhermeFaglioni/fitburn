@@ -160,6 +160,45 @@ describe("Perfil / Minha conta", () => {
       ]);
     });
 
+    it("remove documento e endereço sem alterar telefone e nascimento", async () => {
+      const user = userEvent.setup();
+      mockSession(CLIENT_ME);
+      renderAt("/perfil");
+
+      await user.click(await screen.findByRole("button", { name: "Editar" }));
+      await user.clear(screen.getByLabelText("CPF"));
+      await user.clear(screen.getByLabelText("Endereço"));
+      await user.click(screen.getByRole("button", { name: "Salvar alterações" }));
+
+      expect(await screen.findByRole("region", { name: "Dados pessoais" })).toBeInTheDocument();
+      expect(patches).toEqual([
+        {
+          fullName: "Marina Souza",
+          email: "marina.souza@email.com",
+          phone: "31998765432",
+          birthDate: "1994-03-14",
+          document: null,
+          address: null,
+        },
+      ]);
+    });
+
+    it("impede remover telefone e data de nascimento", async () => {
+      const user = userEvent.setup();
+      mockSession(CLIENT_ME);
+      renderAt("/perfil");
+
+      await user.click(await screen.findByRole("button", { name: "Editar" }));
+      await user.clear(screen.getByLabelText("Telefone"));
+      await user.clear(screen.getByLabelText("Data de nascimento"));
+      await user.click(screen.getByRole("button", { name: "Salvar alterações" }));
+
+      expect(await screen.findByRole("alert")).toHaveTextContent(
+        "Telefone e data de nascimento são obrigatórios.",
+      );
+      expect(patches).toEqual([]);
+    });
+
     it("avisa quando o novo e-mail já está em uso e mantém a edição aberta", async () => {
       const user = userEvent.setup();
       renderAt("/perfil");
