@@ -1,6 +1,12 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Module, PermissionAction, SystemProfileName, type UserDetail } from "@fitburn/contracts";
+import {
+  Module,
+  PermissionAction,
+  SystemProfileName,
+  type UserDetail,
+  type UserResponse,
+} from "@fitburn/contracts";
 import { BlockedAction } from "../components/BlockedAction";
 import { DeleteUserDialog } from "../components/DeleteUserDialog";
 import { useAuth } from "../lib/auth/AuthContext";
@@ -23,6 +29,10 @@ function profileBadgeClass(profileName: string): string {
   }
 }
 
+function isStaffUser(user: UserResponse): user is UserDetail {
+  return user.profile !== undefined && user.profile.name !== SystemProfileName.CLIENT;
+}
+
 export function UsersPage() {
   const { can, user: currentUser } = useAuth();
   const queryClient = useQueryClient();
@@ -38,13 +48,14 @@ export function UsersPage() {
 
   const normalizedSearch = searchTerm.trim().toLowerCase();
   // Como no design, a lista é só da equipe; os clientes ficam em Clientes.
-  const filteredUsers = usersQuery.data?.filter(
-    (user) =>
-      user.profile.name !== SystemProfileName.CLIENT &&
-      (normalizedSearch === "" ||
+  const filteredUsers = usersQuery.data
+    ?.filter(isStaffUser)
+    .filter(
+      (user) =>
+        normalizedSearch === "" ||
         user.fullName.toLowerCase().includes(normalizedSearch) ||
-        user.email.toLowerCase().includes(normalizedSearch)),
-  );
+        user.email.toLowerCase().includes(normalizedSearch),
+    );
 
   function invalidateUsers() {
     return queryClient.invalidateQueries({ queryKey: ["users"] });

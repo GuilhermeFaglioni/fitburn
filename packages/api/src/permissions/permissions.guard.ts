@@ -1,6 +1,6 @@
 import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
-import { ErrorCode, ErrorStatus } from "@fitburn/contracts";
+import { ErrorCode, ErrorStatus, Module } from "@fitburn/contracts";
 import type { AuthenticatedRequest } from "../auth/jwt-auth.guard.js";
 import { DomainError } from "../common/errors/domain-error.js";
 import { PERMISSION_METADATA_KEY, type RequiredPermission } from "./require-permission.decorator.js";
@@ -57,7 +57,12 @@ export class PermissionsGuard implements CanActivate {
     }
 
     request.authProfile = profile;
-    request.authScope = await this.permissionsService.getEffectiveScope(profile, required.module);
+    const scope = await this.permissionsService.getEffectiveScope(profile, required.module);
+    request.authScope = scope;
+    request.authClientScope =
+      required.module === Module.CLIENTES
+        ? scope
+        : await this.permissionsService.getEffectiveScope(profile, Module.CLIENTES);
     return true;
   }
 }

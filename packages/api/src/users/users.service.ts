@@ -13,6 +13,7 @@ import {
   type PermissionScopeName,
   type UpdateUserRequest,
   type UserDetail,
+  type UserResponse,
 } from "@fitburn/contracts";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { lockAdvisory } from "../prisma/advisory-lock.js";
@@ -21,6 +22,7 @@ import { PermissionsService } from "../permissions/permissions.service.js";
 import type { ProfileRequester } from "../permissions/scoped-requester.js";
 import { DomainError } from "../common/errors/domain-error.js";
 import { hashPassword } from "../auth/password.util.js";
+import { projectClientForScope } from "../permissions/client-projection.js";
 
 export type UserWithProfile = User & { profile: AccessProfile };
 
@@ -319,6 +321,22 @@ export class UsersService {
       status: user.status,
       profile: { id: user.profile.id, name: user.profile.name },
     };
+  }
+
+  isClientUser(user: UserWithProfile | null): boolean {
+    return user?.profile.isSystem === true && user.profile.name === SystemProfileName.CLIENT;
+  }
+
+  toUserResponseForClientScope(
+    user: UserWithProfile,
+    clientScope: PermissionScopeName,
+    wasClient = this.isClientUser(user),
+  ): UserResponse {
+    const detail = this.toUserDetail(user);
+    if (wasClient || this.isClientUser(user)) {
+      return projectClientForScope(detail, clientScope);
+    }
+    return detail;
   }
 
   private async getSystemProfile(name: string): Promise<AccessProfile> {

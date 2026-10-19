@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import {
   Module,
   PermissionAction,
+  PermissionScope,
   type ClientListItem,
   type ClientsQuery,
 } from "@fitburn/contracts";
@@ -18,7 +19,7 @@ const NO_PLAN = "__sem_plano__";
 
 /** Clientes: busca, filtro de status, plano ativo e ações rápidas da equipe. */
 export function ClientsPage() {
-  const { can } = useAuth();
+  const { can, scopeOf } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
@@ -41,6 +42,7 @@ export function ClientsPage() {
   const canCreate = can(Module.CLIENTES, PermissionAction.CREATE);
   const canEdit = can(Module.CLIENTES, PermissionAction.EDIT);
   const canDelete = can(Module.CLIENTES, PermissionAction.DELETE);
+  const hasFullClientData = scopeOf(Module.CLIENTES) === PermissionScope.ALL;
   const loaded = clientsQuery.data;
   const planOptions = useMemo(() => {
     const names = new Set<string>();
@@ -81,8 +83,12 @@ export function ClientsPage() {
           type="search"
           className="fb-field"
           style={{ width: 280 }}
-          placeholder="Buscar por nome, e-mail ou documento"
-          aria-label="Buscar por nome, e-mail ou documento"
+          placeholder={
+            hasFullClientData ? "Buscar por nome, e-mail ou documento" : "Buscar por nome ou e-mail"
+          }
+          aria-label={
+            hasFullClientData ? "Buscar por nome, e-mail ou documento" : "Buscar por nome ou e-mail"
+          }
           value={searchTerm}
           onChange={(event) => setSearchTerm(event.target.value)}
         />
@@ -98,20 +104,22 @@ export function ClientsPage() {
           <option value="ACTIVE">Ativo</option>
           <option value="INACTIVE">Inativo</option>
         </select>
-        <select
-          className="fb-field"
-          aria-label="Plano"
-          value={planFilter}
-          onChange={(event) => setPlanFilter(event.target.value)}
-        >
-          <option value="">Plano: todos</option>
-          {planOptions.map((name) => (
-            <option key={name} value={name}>
-              {name}
-            </option>
-          ))}
-          <option value={NO_PLAN}>Sem plano ativo</option>
-        </select>
+        {hasFullClientData && (
+          <select
+            className="fb-field"
+            aria-label="Plano"
+            value={planFilter}
+            onChange={(event) => setPlanFilter(event.target.value)}
+          >
+            <option value="">Plano: todos</option>
+            {planOptions.map((name) => (
+              <option key={name} value={name}>
+                {name}
+              </option>
+            ))}
+            <option value={NO_PLAN}>Sem plano ativo</option>
+          </select>
+        )}
         {clients && (
           <span className="fb-count">
             {clients.length} {clients.length === 1 ? "cliente" : "clientes"}
@@ -152,7 +160,7 @@ export function ClientsPage() {
                 <th className="fb-th">Nome</th>
                 <th className="fb-th">E-mail</th>
                 <th className="fb-th">Telefone</th>
-                <th className="fb-th">Plano</th>
+                {hasFullClientData && <th className="fb-th">Plano</th>}
                 <th className="fb-th">Status</th>
                 <th className="fb-th" style={{ textAlign: "right" }}>
                   Ações
@@ -171,9 +179,11 @@ export function ClientsPage() {
                     </td>
                     <td className="fb-td fb-td--soft">{client.email}</td>
                     <td className="fb-td fb-td--soft">{client.phone ?? "—"}</td>
-                    <td className="fb-td">
-                      {client.activePlan ? client.activePlan.name : "Sem plano ativo"}
-                    </td>
+                    {hasFullClientData && (
+                      <td className="fb-td">
+                        {client.activePlan ? client.activePlan.name : "Sem plano ativo"}
+                      </td>
+                    )}
                     <td className="fb-td">
                       <span
                         className={`fb-badge fb-badge--spaced ${inactive ? "fb-badge--inactive" : "fb-badge--active"}`}

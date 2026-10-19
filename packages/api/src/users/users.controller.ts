@@ -25,7 +25,7 @@ import {
   type CreateStaffRequest,
   type ResetPasswordRequest,
   type UpdateUserRequest,
-  type UserDetail,
+  type UserResponse,
 } from "@fitburn/contracts";
 import type { UserStatus } from "@prisma/client";
 import { JwtAuthGuard, type AuthenticatedRequest } from "../auth/jwt-auth.guard.js";
@@ -47,7 +47,7 @@ export class UsersController {
     @Query("profileId") profileId: string | undefined,
     @Query("status") status: string | undefined,
     @Req() req: AuthenticatedRequest,
-  ): Promise<UserDetail[]> {
+  ): Promise<UserResponse[]> {
     if (status !== undefined && status !== "ACTIVE" && status !== "INACTIVE") {
       throw new DomainError(ErrorCode.VALIDATION_ERROR, "Status inválido.", ErrorStatus.VALIDATION);
     }
@@ -57,28 +57,31 @@ export class UsersController {
       req.authScope!,
       req.authUser.sub,
     );
-    return users.map((user) => this.usersService.toUserDetail(user));
+    return users.map((user) =>
+      this.usersService.toUserResponseForClientScope(user, req.authClientScope!),
+    );
   }
 
   @RequirePermission(Module.USUARIOS, PermissionAction.VIEW)
   @Get(":id")
-  async findOne(@Param("id") id: string, @Req() req: AuthenticatedRequest): Promise<UserDetail> {
+  async findOne(@Param("id") id: string, @Req() req: AuthenticatedRequest): Promise<UserResponse> {
     assertUserInScope(requesterOf(req), id);
 
     const user = await this.usersService.findById(id);
     if (!user) {
       throw new DomainError(ErrorCode.NOT_FOUND, "Usuário não encontrado.", ErrorStatus.NOT_FOUND);
     }
-    return this.usersService.toUserDetail(user);
+    return this.usersService.toUserResponseForClientScope(user, req.authClientScope!);
   }
 
   @RequirePermission(Module.USUARIOS, PermissionAction.CREATE)
   @Post("clients")
   async createClient(
     @Body(new ZodValidationPipe(createClientRequestSchema)) body: CreateClientRequest,
-  ): Promise<UserDetail> {
+    @Req() req: AuthenticatedRequest,
+  ): Promise<UserResponse> {
     const user = await this.usersService.createClient(body);
-    return this.usersService.toUserDetail(user);
+    return this.usersService.toUserResponseForClientScope(user, req.authClientScope!);
   }
 
   @RequirePermission(Module.USUARIOS, PermissionAction.CREATE)
@@ -86,9 +89,9 @@ export class UsersController {
   async createStaff(
     @Body(new ZodValidationPipe(createStaffRequestSchema)) body: CreateStaffRequest,
     @Req() req: AuthenticatedRequest,
-  ): Promise<UserDetail> {
+  ): Promise<UserResponse> {
     const user = await this.usersService.createStaff(body, requesterOf(req));
-    return this.usersService.toUserDetail(user);
+    return this.usersService.toUserResponseForClientScope(user, req.authClientScope!);
   }
 
   @RequirePermission(Module.USUARIOS, PermissionAction.EDIT)
@@ -97,19 +100,21 @@ export class UsersController {
     @Param("id") id: string,
     @Body(new ZodValidationPipe(updateUserRequestSchema)) body: UpdateUserRequest,
     @Req() req: AuthenticatedRequest,
-  ): Promise<UserDetail> {
+  ): Promise<UserResponse> {
     const requester = requesterOf(req);
     assertUserInScope(requester, id);
+    const existing = await this.usersService.findById(id);
+    const wasClient = this.usersService.isClientUser(existing);
     const user = await this.usersService.update(id, body, requester);
-    return this.usersService.toUserDetail(user);
+    return this.usersService.toUserResponseForClientScope(user, req.authClientScope!, wasClient);
   }
 
   @RequirePermission(Module.USUARIOS, PermissionAction.EDIT)
   @Post(":id/deactivate")
-  async deactivate(@Param("id") id: string, @Req() req: AuthenticatedRequest): Promise<UserDetail> {
+  async deactivate(@Param("id") id: string, @Req() req: AuthenticatedRequest): Promise<UserResponse> {
     assertUserInScope(requesterOf(req), id);
     const user = await this.usersService.deactivate(id);
-    return this.usersService.toUserDetail(user);
+    return this.usersService.toUserResponseForClientScope(user, req.authClientScope!);
   }
 
   /**
@@ -118,7 +123,7 @@ export class UsersController {
    */
   @RequirePermission(Module.USUARIOS, PermissionAction.DELETE)
   @Delete(":id")
-  async remove(@Param("id") id: string, @Req() req: AuthenticatedRequest): Promise<UserDetail> {
+  async remove(@Param("id") id: string, @Req() req: AuthenticatedRequest): Promise<UserResponse> {
     assertUserInScope(requesterOf(req), id);
     if (id === req.authUser.sub) {
       throw new DomainError(
@@ -128,15 +133,15 @@ export class UsersController {
       );
     }
     const user = await this.usersService.anonymize(id);
-    return this.usersService.toUserDetail(user);
+    return this.usersService.toUserResponseForClientScope(user, req.authClientScope!);
   }
 
   @RequirePermission(Module.USUARIOS, PermissionAction.EDIT)
   @Post(":id/reactivate")
-  async reactivate(@Param("id") id: string, @Req() req: AuthenticatedRequest): Promise<UserDetail> {
+  async reactivate(@Param("id") id: string, @Req() req: AuthenticatedRequest): Promise<UserResponse> {
     assertUserInScope(requesterOf(req), id);
     const user = await this.usersService.reactivate(id);
-    return this.usersService.toUserDetail(user);
+    return this.usersService.toUserResponseForClientScope(user, req.authClientScope!);
   }
 
   @RequirePermission(Module.USUARIOS, PermissionAction.EDIT)

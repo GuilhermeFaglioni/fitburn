@@ -195,6 +195,46 @@ describe("Clientes (HTTP)", () => {
       expect(search.body).toEqual([]);
     });
 
+    it.each(["ASSIGNED_CLIENTS", "ASSIGNED_CLASSES"] as const)(
+      "projeta clientes no escopo %s sem dados pessoais nem busca por documento",
+      async (scope) => {
+      const rafael = await createTeacher("rafael");
+      await grantModuleAccess({
+        profileId: teacherProfileId,
+        module: "CLIENTES",
+        actions: ["VIEW", "EDIT"],
+        scope,
+      });
+      const ana = await createClient("Ana Souza", { document: "123.456.789-00" });
+      await testPrisma.user.update({
+        where: { id: ana.user.id },
+        data: {
+          phone: "11999990000",
+          birthDate: new Date("1990-05-20"),
+          address: "Rua das Flores, 10",
+        },
+      });
+      await testPrisma.teacherClientAssignment.create({
+        data: { teacherId: rafael.user.id, clientId: ana.user.id },
+      });
+
+      const listed = await get(rafael.token, "");
+      const byDocument = await get(rafael.token, "?search=123.456.789-00");
+
+      expect(listed.status).toBe(200);
+      expect(listed.body).toEqual([
+        {
+          id: ana.user.id,
+          fullName: "Ana Souza",
+          email: ana.user.email,
+          phone: "11999990000",
+          status: "ACTIVE",
+        },
+      ]);
+      expect(byDocument.body).toEqual([]);
+      },
+    );
+
     it("quem não tem acesso ao módulo é recusado", async () => {
       const ana = await createClient("ana");
 
@@ -263,6 +303,42 @@ describe("Clientes (HTTP)", () => {
       expect(outOfScope.body.code).toBe("OUT_OF_SCOPE");
       expect(missing.status).toBe(404);
       expect(notAClient.status).toBe(404);
+    });
+
+    it("devolve só a projeção reduzida no detalhe e na resposta de edição do professor", async () => {
+      const rafael = await createTeacher("rafael");
+      const ana = await createClient("Ana Souza", { document: "123.456.789-00" });
+      await testPrisma.user.update({
+        where: { id: ana.user.id },
+        data: {
+          phone: "11999990000",
+          birthDate: new Date("1990-05-20"),
+          address: "Rua das Flores, 10",
+        },
+      });
+      await testPrisma.teacherClientAssignment.create({
+        data: { teacherId: rafael.user.id, clientId: ana.user.id },
+      });
+
+      const detail = await get(rafael.token, `/${ana.user.id}`);
+      const updated = await patch(rafael.token, `/${ana.user.id}`, { phone: "11988887777" });
+
+      expect(detail.status).toBe(200);
+      expect(detail.body.client).toEqual({
+        id: ana.user.id,
+        fullName: "Ana Souza",
+        email: ana.user.email,
+        phone: "11999990000",
+        status: "ACTIVE",
+      });
+      expect(updated.status).toBe(200);
+      expect(updated.body).toEqual({
+        id: ana.user.id,
+        fullName: "Ana Souza",
+        email: ana.user.email,
+        phone: "11988887777",
+        status: "ACTIVE",
+      });
     });
   });
 

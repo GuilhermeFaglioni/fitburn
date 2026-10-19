@@ -2,8 +2,8 @@ import { useId, useState, type FormEvent } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   updateClientRequestSchema,
+  type ClientUserResponse,
   type UpdateClientRequest,
-  type UserDetail,
 } from "@fitburn/contracts";
 import { ApiError } from "../../lib/auth/api";
 import { updateClientRecord } from "../../lib/clients/api";
@@ -16,7 +16,7 @@ const ERROR_MESSAGES: Record<string, string> = {
 };
 
 /** Edição dos dados pessoais de um cliente (sem perfil de acesso, status nem senha). */
-export function ClientEditForm({ client, onDone }: { client: UserDetail; onDone: () => void }) {
+export function ClientEditForm({ client, onDone }: { client: ClientUserResponse; onDone: () => void }) {
   const formId = useId();
   const queryClient = useQueryClient();
   const [fullName, setFullName] = useState(client.fullName);
@@ -25,6 +25,8 @@ export function ClientEditForm({ client, onDone }: { client: UserDetail; onDone:
   const [birthDate, setBirthDate] = useState(client.birthDate ?? "");
   const [documentNumber, setDocumentNumber] = useState(client.document ?? "");
   const [address, setAddress] = useState(client.address ?? "");
+  const canEditFullDetails =
+    client.birthDate !== undefined && client.document !== undefined && client.address !== undefined;
 
   const [validationError, setValidationError] = useState<string | null>(null);
 
@@ -38,17 +40,23 @@ export function ClientEditForm({ client, onDone }: { client: UserDetail; onDone:
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    // Para o cliente estes dados são obrigatórios: nada de campo vazio (o servidor recusa null).
-    const parsed = updateClientRequestSchema.safeParse({
+    const input: UpdateClientRequest = {
       fullName,
       email,
       phone,
-      birthDate,
-      document: documentNumber,
-      address,
-    });
+    };
+    if (canEditFullDetails) {
+      input.birthDate = birthDate;
+      input.document = documentNumber;
+      input.address = address;
+    }
+    const parsed = updateClientRequestSchema.safeParse(input);
     if (!parsed.success) {
-      setValidationError("Preencha todos os campos: todos são obrigatórios para o cliente.");
+      setValidationError(
+        canEditFullDetails
+          ? "Preencha todos os campos: todos são obrigatórios para o cliente."
+          : "Confira os campos exibidos e tente novamente.",
+      );
       return;
     }
     setValidationError(null);
@@ -68,10 +76,14 @@ export function ClientEditForm({ client, onDone }: { client: UserDetail; onDone:
     ["fullName", "Nome completo", fullName, setFullName],
     ["email", "E-mail", email, setEmail, "email"],
     ["phone", "Telefone", phone, setPhone],
-    ["birthDate", "Data de nascimento", birthDate, setBirthDate, "date"],
-    ["document", "Documento", documentNumber, setDocumentNumber],
-    ["address", "Endereço", address, setAddress],
   ];
+  if (canEditFullDetails) {
+    fields.push(
+      ["birthDate", "Data de nascimento", birthDate, setBirthDate, "date"],
+      ["document", "Documento", documentNumber, setDocumentNumber],
+      ["address", "Endereço", address, setAddress],
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} aria-label="Edição de cliente" className="fb-form">
