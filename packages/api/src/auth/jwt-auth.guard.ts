@@ -46,9 +46,17 @@ export class JwtAuthGuard implements CanActivate {
       where: { id: payload.sub },
       select: { status: true, tokenVersion: true },
     });
-    if (!user || user.status !== "ACTIVE" || user.tokenVersion !== payload.tokenVersion) {
+    if (!user) {
       throw this.unauthenticated();
     }
+    if (user.status !== "ACTIVE") {
+      throw new DomainError(
+        ErrorCode.USER_INACTIVE,
+        "Este usuário está inativo. Fale com a administração da Fitburn.",
+        ErrorStatus.UNAUTHENTICATED,
+      );
+    }
+    if (user.tokenVersion !== payload.tokenVersion) throw this.unauthenticated();
 
     request.authUser = payload;
     return true;

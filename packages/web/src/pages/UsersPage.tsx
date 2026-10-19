@@ -1,6 +1,12 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Module, PermissionAction, SystemProfileName, type UserDetail } from "@fitburn/contracts";
+import {
+  Module,
+  PermissionAction,
+  PermissionScope,
+  SystemProfileName,
+  type UserDetail,
+} from "@fitburn/contracts";
 import { BlockedAction } from "../components/BlockedAction";
 import { DeleteUserDialog } from "../components/DeleteUserDialog";
 import { ResetUserPasswordDialog } from "../components/ResetUserPasswordDialog";
@@ -25,7 +31,7 @@ function profileBadgeClass(profileName: string): string {
 }
 
 export function UsersPage() {
-  const { can, user: currentUser } = useAuth();
+  const { can, scopeOf, user: currentUser } = useAuth();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -64,6 +70,8 @@ export function UsersPage() {
 
   const canCreate = can(Module.USUARIOS, PermissionAction.CREATE);
   const canEdit = can(Module.USUARIOS, PermissionAction.EDIT);
+  const canResetOtherUsers =
+    canEdit && scopeOf(Module.USUARIOS) === PermissionScope.ALL;
   const canDelete = can(Module.USUARIOS, PermissionAction.DELETE);
 
   return (
@@ -217,7 +225,7 @@ export function UsersPage() {
                           </button>
                         )}
                       </BlockedAction>
-                      {user.id !== currentUser?.id && canEdit && (
+                      {user.id !== currentUser?.id && canResetOtherUsers && (
                         <>
                           {" "}
                           <button

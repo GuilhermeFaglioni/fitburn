@@ -437,5 +437,24 @@ describe("UsersPage", () => {
         within(row).queryByRole("button", { name: "Redefinir senha" }),
       ).not.toBeInTheDocument();
     });
+
+    it("não oferece redefinir a senha de outro usuário fora do escopo", async () => {
+      mockSuccessfulLogin("Professor", [
+        {
+          module: Module.USUARIOS,
+          actions: [PermissionAction.VIEW, PermissionAction.EDIT],
+          scope: PermissionScope.OWN,
+        },
+      ]);
+      server.use(
+        http.get("/api/users", () => HttpResponse.json([{ ...CLIENT_ATIVO, id: "user-outro" }])),
+      );
+      renderUsersPage();
+
+      const row = (await screen.findByText("Cliente Ativo")).closest("tr")!;
+      expect(
+        within(row).queryByRole("button", { name: "Redefinir senha" }),
+      ).not.toBeInTheDocument();
+    });
   });
 });

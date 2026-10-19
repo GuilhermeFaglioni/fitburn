@@ -690,6 +690,33 @@ describe("Gestão de usuários (HTTP)", () => {
         .send({ email: target.email, password: PASSWORD });
       expect(loginAttempt.status).toBe(201);
     });
+
+    it("não revalida token anterior depois de desativar e reativar a conta", async () => {
+      const { token } = await loginAsAdmin();
+      const clientProfile = await createAccessProfile({ name: "Cliente", isSystem: true });
+      const target = await createUser({
+        email: "alvo@fitburn.local",
+        password: PASSWORD,
+        profileId: clientProfile.id,
+      });
+      const oldAccessToken = await loginAndGetAccessToken(app, target.email, PASSWORD);
+
+      const deactivate = await request(app.getHttpServer())
+        .post(`/api/users/${target.id}/deactivate`)
+        .set("Authorization", `Bearer ${token}`);
+      expect(deactivate.status).toBe(201);
+
+      const reactivate = await request(app.getHttpServer())
+        .post(`/api/users/${target.id}/reactivate`)
+        .set("Authorization", `Bearer ${token}`);
+      expect(reactivate.status).toBe(201);
+
+      const oldSession = await request(app.getHttpServer())
+        .get("/api/auth/me")
+        .set("Authorization", `Bearer ${oldAccessToken}`);
+      expect(oldSession.status).toBe(401);
+      expect(oldSession.body.code).toBe("UNAUTHENTICATED");
+    });
   });
 
   describe("POST /api/users/:id/reset-password", () => {

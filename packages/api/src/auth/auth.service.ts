@@ -8,6 +8,7 @@ import { UsersService, type UserWithProfile } from "../users/users.service.js";
 import { verifyPassword } from "./password.util.js";
 import { generateOpaqueToken, hashToken } from "./token.util.js";
 import { refreshTokenTtlMs } from "./refresh-token-ttl.js";
+import { lockUserRow } from "../users/user-row-lock.js";
 
 export interface LoginResult {
   accessToken: string;
@@ -24,10 +25,7 @@ export class AuthService {
   ) {}
 
   async login(email: string, password: string): Promise<LoginResult> {
-    const credentials = await this.prisma.user.findUnique({
-      where: { email },
-      select: { id: true, email: true, passwordHash: true },
-    });
+    const credentials = await this.usersService.findByEmail(email);
     const passwordMatches = credentials
       ? await verifyPassword(password, credentials.passwordHash)
       : false;
@@ -35,7 +33,7 @@ export class AuthService {
     if (!credentials || !passwordMatches) throw this.invalidCredentials();
 
     return this.prisma.$transaction(async (tx) => {
-      await this.lockUserRow(tx, credentials.id);
+      await lockUserRow(tx, credentials.id);
       const user = await tx.user.findUnique({
         where: { id: credentials.id },
         include: { profile: true },
@@ -81,7 +79,7 @@ export class AuthService {
     const newRefreshToken = generateOpaqueToken();
     const now = new Date();
     const session = await this.prisma.$transaction(async (tx) => {
-      await this.lockUserRow(tx, existing.userId);
+      await lockUserRow(tx, existing.userId);
       const user = await tx.user.findUnique({
         where: { id: existing.userId },
         include: { profile: true },
@@ -179,12 +177,6 @@ export class AuthService {
       "Não foi possível entrar. Verifique seu e-mail e senha e tente novamente.",
       ErrorStatus.UNAUTHENTICATED,
     );
-  }
-
-  private async lockUserRow(tx: Prisma.TransactionClient, userId: string): Promise<void> {
-    await tx.$queryRaw<Array<{ id: string }>>`
-      SELECT id FROM users WHERE id = ${userId} FOR UPDATE
-    `;
   }
 
   private sessionExpired(): DomainError {

@@ -21,6 +21,7 @@ import { PermissionsService } from "../permissions/permissions.service.js";
 import type { ProfileRequester } from "../permissions/scoped-requester.js";
 import { DomainError } from "../common/errors/domain-error.js";
 import { hashPassword } from "../auth/password.util.js";
+import { lockUserRow } from "./user-row-lock.js";
 
 export type UserWithProfile = User & { profile: AccessProfile };
 
@@ -180,10 +181,13 @@ export class UsersService {
 
   async deactivate(id: string): Promise<UserWithProfile> {
     return this.prisma.$transaction(async (tx) => {
-      await this.lockLiveUser(tx, id);
+      const currentStatus = await this.lockLiveUser(tx, id);
       const user = await tx.user.update({
         where: { id },
-        data: { status: "INACTIVE" },
+        data: {
+          status: "INACTIVE",
+          ...(currentStatus === "ACTIVE" ? { tokenVersion: { increment: 1 } } : {}),
+        },
         include: { profile: true },
       });
       await this.revokeSessions(tx, id);
@@ -193,10 +197,13 @@ export class UsersService {
 
   reactivate(id: string): Promise<UserWithProfile> {
     return this.prisma.$transaction(async (tx) => {
-      await this.lockLiveUser(tx, id);
+      const currentStatus = await this.lockLiveUser(tx, id);
       return tx.user.update({
         where: { id },
-        data: { status: "ACTIVE" },
+        data: {
+          status: "ACTIVE",
+          ...(currentStatus === "INACTIVE" ? { tokenVersion: { increment: 1 } } : {}),
+        },
         include: { profile: true },
       });
     });
@@ -239,6 +246,7 @@ export class UsersService {
           document: null,
           address: null,
           status: "DELETED",
+          tokenVersion: { increment: 1 },
         },
         include: { profile: true },
       });
@@ -282,20 +290,19 @@ export class UsersService {
    * excluído: uma exclusão concorrente não pode ser desfeita por edição,
    * reativação ou troca de senha, nem duas exclusões passarem juntas.
    */
-  private async lockLiveUser(tx: Prisma.TransactionClient, id: string): Promise<void> {
-    const rows = await tx.$queryRaw<Array<{ status: string }>>`
-      SELECT status::text AS status FROM users WHERE id = ${id} FOR UPDATE
-    `;
-    if (rows.length === 0) {
+  private async lockLiveUser(tx: Prisma.TransactionClient, id: string): Promise<UserStatus> {
+    const status = await lockUserRow(tx, id);
+    if (status === null) {
       throw new DomainError(ErrorCode.NOT_FOUND, "Usuário não encontrado.", ErrorStatus.NOT_FOUND);
     }
-    if (rows[0].status === "DELETED") {
+    if (status === "DELETED") {
       throw new DomainError(
         ErrorCode.USER_ALREADY_DELETED,
         "Este usuário já foi excluído.",
         ErrorStatus.CONFLICT,
       );
     }
+    return status;
   }
 
   async toCurrentUser(user: UserWithProfile): Promise<CurrentUser> {
