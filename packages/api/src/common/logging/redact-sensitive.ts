@@ -55,6 +55,10 @@ const BEARER_TOKEN = /\bBearer\s+[\w.~+/=-]+/gi;
 // Cookie de refresh (fitburn_refresh_token=...) mesmo fora de um cabeçalho.
 const REFRESH_COOKIE_PAIR = /(\b\w*refresh_?token\w*\s*=\s*)[^\s;,}"']+/gi;
 
+// E-mail e CPF soltos no texto, fora de um par chave/valor (ex.: valor ecoado num erro).
+const BARE_EMAIL = /[\w.+-]+@[\w-]+(?:\.[\w-]+)+/g;
+const BARE_CPF = /\b\d{3}\.?\d{3}\.?\d{3}-?\d{2}\b/g;
+
 const SENSITIVE_FIELD_NAME = new RegExp(`^(?:${SENSITIVE_FIELD_PATTERN})$`, "i");
 const SENSITIVE_CONTAINER_FIELD_NAME =
   /^(?:goal|goals|exercise|exercises|workoutSheet|workoutSheets|workoutExercise|workoutExercises)$/i;
@@ -107,5 +111,7 @@ function redactText(text: string): string {
     .replace(CREDENTIAL_HEADER, `$1${MASK}`)
     .replace(BEARER_TOKEN, MASK)
     .replace(REFRESH_COOKIE_PAIR, `$1${MASK}`)
-    .replace(SENSITIVE_PAIR, `$1${MASK}`);
+    .replace(SENSITIVE_PAIR, `$1${MASK}`)
+    .replace(BARE_EMAIL, MASK)
+    .replace(BARE_CPF, MASK);
 }

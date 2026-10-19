@@ -161,4 +161,15 @@ describe("redactSensitive: cabeçalhos de autenticação", () => {
       expect(output).not.toContain(value);
     }
   });
+
+  it("mascara e-mail e CPF soltos no texto, fora de um par chave/valor", () => {
+    const output = redactSensitive(
+      "Unique constraint failed: ana.souza+fit@example.com.br já existe (CPF 12345678900 e 123.456.789-00)",
+    );
+
+    for (const value of ["ana.souza+fit@example.com.br", "12345678900", "123.456.789-00"]) {
+      expect(output).not.toContain(value);
+    }
+    expect(output).toContain("Unique constraint failed");
+  });
 });
