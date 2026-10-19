@@ -64,6 +64,37 @@ Não publique portas dos serviços `web` ou `api` fora do Traefik: só `web` dev
 3. Abra `https://fitburn.seudominio.com.br/api/health` → `{"status":"ok",...}`.
 4. Abra o app e entre com uma das contas abaixo.
 
+### Headers de segurança e HSTS
+
+O Nginx do `web` envia CSP, proteção contra framing, Referrer-Policy, nosniff e Permissions-Policy nas respostas da aplicação. O HSTS é aplicado pelo Traefik do Coolify, que termina o TLS; não configure HSTS no Nginx do `web`.
+
+No Coolify, abra **Servers → seu servidor → Proxy → Dynamic Configurations**, adicione `fitburn-hsts.yaml` e salve:
+
+```yaml
+http:
+  middlewares:
+    fitburn-hsts:
+      headers:
+        stsSeconds: 31536000
+```
+
+Isso define `max-age=31536000` (um ano). Deixe `stsIncludeSubdomains` e `stsPreload` desativados até confirmar que todos os subdomínios e requisitos de preload estão prontos. Em seguida, no recurso Compose do Fitburn, abra **General → Container labels** e mude **Label management** para **Managed manually**. Acrescente `fitburn-hsts@file` ao valor da label existente `traefik.http.routers.https-0-<resource-id>.middlewares`, preserve os middlewares já listados e faça redeploy. O sufixo `@file` aponta para o arquivo dinâmico do Traefik.
+
+Coolify documenta a criação de configuração dinâmica em [Dynamic configuration](https://coolify.io/docs/core/networking/proxy/traefik/dynamic-config) e a associação de middlewares em [Custom middlewares](https://coolify.io/docs/core/networking/proxy/traefik/custom-middlewares). A propriedade `stsSeconds` é definida pelo [middleware Headers do Traefik](https://doc.traefik.io/traefik/middlewares/http/headers/).
+
+Depois do redeploy, defina `BASE_URL` como `https://<domínio>/` e confira os headers efetivos pelo HTTPS na página, no fallback da SPA e num asset inexistente (resposta 404):
+
+```bash
+BASE_URL=https://fitburn.seudominio.com.br
+for path in / /rota-inexistente /assets/arquivo-inexistente.js; do
+  printf '\n%s\n' "$path"
+  curl -sS -D - -o /dev/null "$BASE_URL$path" \
+    | grep -Ei '^(HTTP/|content-security-policy:|x-frame-options:|referrer-policy:|x-content-type-options:|permissions-policy:|strict-transport-security:)'
+done
+```
+
+Cada resposta deve mostrar os cinco headers enviados pelo Nginx. `Strict-Transport-Security` deve mostrar `max-age=31536000`; confirme também no domínio HTTPS real antes de iniciar o piloto. Não use uma URL `http://` para validar HSTS.
+
 ### Verificação manual do IP usado no rate limit
 
 Antes de usar o rate limit como proteção no VPS, confirme que um `X-Forwarded-For` forjado não cria cotas novas. Execute o teste de um único endereço externo real, contra uma stack de teste, com `AUTH_RATE_LIMIT_MAX=10` e janela de 60 segundos. Aguarde uma janela inteira sem tentativas antes de começar; use um e-mail de teste inexistente e senha errada. Envie 11 falhas de login, mudando o `X-Forwarded-For` em cada requisição:

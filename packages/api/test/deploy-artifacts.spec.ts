@@ -19,6 +19,21 @@ const EXAMPLE_ENV_SOURCE = readFileSync(file(".env.production.example"), "utf8")
 const PROD_COMPOSE = readFileSync(file("docker-compose.prod.yml"), "utf8");
 const COOLIFY_COMPOSE = readFileSync(file("docker-compose.coolify.yml"), "utf8");
 const LOCAL_COMPOSE = readFileSync(file("docker-compose.prod.local.yml"), "utf8");
+const WEB_NGINX = readFileSync(file("docker/web/nginx.conf"), "utf8");
+
+function nginxLocations(source: string): { name: string; body: string }[] {
+  return [...source.matchAll(/^\s*location\s+([^{}]+)[{]([\s\S]*?)^\s*[}]/gm)].map(
+    ([, name, body]) => ({ name: name.trim(), body }),
+  );
+}
+
+const WEB_SECURITY_HEADERS = [
+  /^\s*add_header Content-Security-Policy "[^\n]*frame-ancestors 'none'[^\n]*" always;$/m,
+  /^\s*add_header X-Frame-Options DENY always;$/m,
+  /^\s*add_header Referrer-Policy strict-origin-when-cross-origin always;$/m,
+  /^\s*add_header X-Content-Type-Options nosniff always;$/m,
+  /^\s*add_header Permissions-Policy "[^\n]+" always;$/m,
+];
 
 /** Nomes das variáveis do bloco `x-api-environment` (lidos do YAML, sem precisar do Docker). */
 function apiEnvironmentKeysFromYaml(): string[] {
@@ -318,6 +333,43 @@ describe("artefatos do Nginx e do runbook", () => {
     for (const term of ["prisma migrate deploy", "/api/health", "pnpm demo:reset", "DOMAIN"]) {
       expect(runbook).toContain(term);
     }
+  });
+});
+
+describe("headers de segurança do Nginx web", () => {
+  const locationsWithOwnHeaders = nginxLocations(WEB_NGINX).filter(({ body }) =>
+    /^\s*add_header\s/m.test(body),
+  );
+
+  it("repete todos os headers de segurança em cada location com add_header próprio", () => {
+    expect(locationsWithOwnHeaders.map(({ name }) => name)).toEqual([
+      "/assets/",
+      "~* ^/(index\\.html|sw\\.js|registerSW\\.js|workbox-.*\\.js|manifest\\.webmanifest)$",
+      "/",
+    ]);
+
+    for (const { name, body } of locationsWithOwnHeaders) {
+      for (const header of WEB_SECURITY_HEADERS) {
+        expect(body, `${name} precisa declarar ${header.source}`).toMatch(header);
+      }
+    }
+  });
+
+  it("mantém a CSP compatível com as fontes usadas pelo app e com os artefatos da PWA", () => {
+    expect(WEB_NGINX).toContain(
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    );
+    expect(WEB_NGINX).toContain("font-src 'self' data: https://fonts.gstatic.com");
+    expect(WEB_NGINX).toContain("manifest-src 'self'");
+    expect(WEB_NGINX).toContain("worker-src 'self'");
+  });
+
+  it("documenta a ativação do HSTS no Traefik e a conferência dos headers via HTTPS", () => {
+    const coolify = readFileSync(file("docs/deploy-coolify.md"), "utf8");
+    expect(coolify).toContain("stsSeconds: 31536000");
+    expect(coolify).toContain("Strict-Transport-Security");
+    expect(coolify).toContain("curl -sS -D - -o /dev/null");
+    expect(coolify).toContain("https://<domínio>/");
   });
 });
 
