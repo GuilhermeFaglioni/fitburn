@@ -15,7 +15,7 @@ CREATE TABLE "admin_audit_events" (
   "action" "AdminAuditAction" NOT NULL,
   "targetId" TEXT NOT NULL,
   "changedFields" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
-  "createdAt" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "createdAt" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT "admin_audit_events_pkey" PRIMARY KEY ("id")
 );
 
