@@ -3,7 +3,12 @@ import { useQuery } from "@tanstack/react-query";
 import { gymToday, RankingPeriod, type GamificationSummary } from "@fitburn/contracts";
 import { formatDayMonth } from "../lib/agenda/format";
 import { useAuth } from "../lib/auth/AuthContext";
-import { getMyGamification, getRanking } from "../lib/gamification/api";
+import {
+  getMyGamification,
+  getRanking,
+  getRankingConsent,
+  rankingConsentQueryKey,
+} from "../lib/gamification/api";
 import { getMyPlan } from "../lib/plans/api";
 import { HomeReservations } from "./home/HomeReservations";
 import { formatPlanEnd } from "./home/format";
@@ -94,13 +99,19 @@ function Evolution() {
   const summaryQuery = useQuery({ queryKey: ["gamification", "me"], queryFn: getMyGamification });
   const summary = summaryQuery.data;
   const hasPoints = summary ? summary.totalPoints !== 0 || summary.history.length > 0 : false;
+  const consentQuery = useQuery({
+    queryKey: rankingConsentQueryKey,
+    queryFn: getRankingConsent,
+  });
 
   const rankingQuery = useQuery({
     queryKey: ["gamification", "ranking", RankingPeriod.WEEK],
     queryFn: () => getRanking(RankingPeriod.WEEK),
-    enabled: hasPoints,
+    enabled: hasPoints && consentQuery.data?.consented === true,
   });
-  const myEntry = rankingQuery.data?.entries.find((entry) => entry.isMe);
+  const myEntry = consentQuery.data?.consented
+    ? rankingQuery.data?.entries.find((entry) => entry.isMe)
+    : undefined;
   const badges = summary ? latestBadges(summary.badges) : [];
 
   return (
@@ -167,7 +178,12 @@ function Evolution() {
           {myEntry && (
             <span className="fb-home__note">{myEntry.position}º lugar no ranking semanal</span>
           )}
-          {rankingQuery.isSuccess && !myEntry && (
+          {consentQuery.data?.consented === false && hasPoints && (
+            <span className="fb-home__note">
+              Você não participa do ranking. Seus FitPoints continuam visíveis só para você.
+            </span>
+          )}
+          {consentQuery.data?.consented && rankingQuery.isSuccess && !myEntry && (
             <span className="fb-home__note">Você ainda não pontuou no ranking desta semana.</span>
           )}
         </div>

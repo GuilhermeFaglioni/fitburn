@@ -35,14 +35,27 @@ describe("Dashboard da equipe (HTTP)", () => {
     await app.close();
   });
 
-  async function signIn(name: string, profileId: string, fullName = name) {
+  async function signIn(
+    name: string,
+    profileId: string,
+    fullName = name,
+    consented = true,
+  ) {
     const user = await createUser({
       email: `${name}@fitburn.local`,
       password: PASSWORD,
       profileId,
       fullName,
     });
-    return { user, token: await loginAndGetAccessToken(app, user.email, PASSWORD) };
+    const token = await loginAndGetAccessToken(app, user.email, PASSWORD);
+    if (profileId === clientProfileId && consented) {
+      const consent = await request(app.getHttpServer())
+        .patch("/api/gamification/ranking/consent")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ consented: true });
+      expect(consent.status).toBe(200);
+    }
+    return { user, token };
   }
 
   function dashboard(token: string, query = "") {
@@ -91,7 +104,7 @@ describe("Dashboard da equipe (HTTP)", () => {
 
     const ana = await signIn("ana", clientProfileId, "Ana Paula Souza");
     const bruno = await signIn("bruno", clientProfileId, "Bruno Alves");
-    const carla = await signIn("carla", clientProfileId, "Carla Dias");
+    const carla = await signIn("carla", clientProfileId, "Carla Dias", false);
     ids = { ana: ana.user.id, bruno: bruno.user.id, carla: carla.user.id };
     const dora = await signIn("dora", clientProfileId, "Dora Melo");
     await testPrisma.user.update({ where: { id: dora.user.id }, data: { status: "INACTIVE" } });
@@ -170,7 +183,6 @@ describe("Dashboard da equipe (HTTP)", () => {
       top: [
         { position: 1, clientId: ids.bruno, fullName: "Bruno Alves", points: 35, attendances: 1, tied: false },
         { position: 2, clientId: ids.ana, fullName: "Ana Paula Souza", points: 20, attendances: 2, tied: false },
-        { position: 3, clientId: ids.carla, fullName: "Carla Dias", points: 10, attendances: 1, tied: false },
       ],
     });
   });
@@ -184,6 +196,10 @@ describe("Dashboard da equipe (HTTP)", () => {
     expect(month.body.period).toBe("month");
     expect(month.body.from).toBe(`${today.slice(0, 8)}01`);
     expect(month.body.gamification.pointsDistributed).toBe(75);
+    expect(month.body.gamification.top.map((entry: { clientId: string }) => entry.clientId)).toEqual([
+      ids.bruno,
+      ids.ana,
+    ]);
     // A ocupação é sempre a do dia e da semana.
     expect(month.body.occupancy.week).toHaveLength(3);
   });

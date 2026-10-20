@@ -1,6 +1,8 @@
 import { Injectable } from "@nestjs/common";
 import type { GamificationRuleKind, PointsEntry, Prisma } from "@prisma/client";
 import {
+  ErrorCode,
+  ErrorStatus,
   addDays,
   AttendanceStatus,
   gymDateTimeToUtc,
@@ -12,10 +14,17 @@ import {
   type GamificationSummary,
   type PointsHistoryItem,
   type Ranking,
+  type RankingConsentResponse,
   type RankingPeriodName,
 } from "@fitburn/contracts";
+import {
+  UserManifestationAction,
+  UserManifestationType,
+  type UserManifestation as PrismaUserManifestation,
+} from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service.js";
-import { assertClientInScope } from "../permissions/client-scope.js";
+import { DomainError } from "../common/errors/domain-error.js";
+import { ACTIVE_CLIENT_WHERE, assertClientInScope } from "../permissions/client-scope.js";
 import type { ScopedRequester } from "../permissions/scoped-requester.js";
 import { lockAdvisory } from "../prisma/advisory-lock.js";
 import {
@@ -50,6 +59,77 @@ const RECENT_HISTORY_SIZE = 20;
 @Injectable()
 export class GamificationService {
   constructor(private readonly prisma: PrismaService) {}
+
+  async rankingConsent(clientId: string): Promise<RankingConsentResponse> {
+    await this.assertClient(clientId);
+    return this.toRankingConsent(await this.latestRankingConsent(this.prisma, clientId));
+  }
+
+  async setRankingConsent(
+    clientId: string,
+    consented: boolean,
+  ): Promise<RankingConsentResponse> {
+    await this.assertClient(clientId);
+    return this.prisma.$transaction(async (tx) => {
+      await lockAdvisory(tx, `ranking-consent:${clientId}`);
+      const current = await this.latestRankingConsent(tx, clientId);
+      if ((current?.action === UserManifestationAction.GRANTED) === consented) {
+        return this.toRankingConsent(current);
+      }
+
+      const manifestation = await tx.userManifestation.create({
+        data: {
+          userId: clientId,
+          type: UserManifestationType.CONSENT_RANKING,
+          version: null,
+          action: consented ? UserManifestationAction.GRANTED : UserManifestationAction.REVOKED,
+        },
+      });
+      return this.toRankingConsent(manifestation);
+    });
+  }
+
+  private async assertClient(userId: string): Promise<void> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { profile: { select: { name: true } } },
+    });
+    if (user?.profile.name !== "Cliente") {
+      throw new DomainError(
+        ErrorCode.FORBIDDEN,
+        "A adesão ao ranking está disponível apenas para clientes.",
+        ErrorStatus.FORBIDDEN,
+      );
+    }
+  }
+
+  private latestRankingConsent(
+    prisma: PrismaService | Prisma.TransactionClient,
+    userId: string,
+  ): Promise<PrismaUserManifestation | null> {
+    return prisma.userManifestation.findFirst({
+      where: { userId, type: UserManifestationType.CONSENT_RANKING },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    });
+  }
+
+  private toRankingConsent(
+    manifestation: PrismaUserManifestation | null,
+  ): RankingConsentResponse {
+    return {
+      consented: manifestation?.action === UserManifestationAction.GRANTED,
+      manifestation: manifestation
+        ? {
+            id: manifestation.id,
+            userId: manifestation.userId,
+            type: manifestation.type,
+            version: manifestation.version,
+            action: manifestation.action,
+            createdAt: manifestation.createdAt.toISOString(),
+          }
+        : null,
+    };
+  }
 
   /** Total de pontos, histórico recente, streak e badges de um cliente. */
   async summaryOf(clientId: string): Promise<GamificationSummary> {
@@ -92,6 +172,10 @@ export class GamificationService {
    */
   async ranking(period: RankingPeriodName, viewerId: string): Promise<Ranking> {
     const window = rankingWindow(period, gymToday());
+    const consent = await this.latestRankingConsent(this.prisma, viewerId);
+    if (consent?.action !== UserManifestationAction.GRANTED) {
+      return { period, ...window, entries: [] };
+    }
     const shown = topWithViewer(await this.standings(window), RANKING_SIZE, viewerId);
     return {
       period,
@@ -118,6 +202,10 @@ export class GamificationService {
     window: { from: string; to: string },
     clientWhere: Prisma.UserWhereInput = {},
   ): Promise<RankedStanding[]> {
+    const participants = await this.rankingParticipantIds();
+    const rankedClientWhere: Prisma.UserWhereInput = {
+      AND: [clientWhere, ACTIVE_CLIENT_WHERE, { id: { in: participants } }],
+    };
     const occurredAt = {
       gte: gymDateTimeToUtc(window.from, "00:00"),
       lt: gymDateTimeToUtc(addDays(window.to, 1), "00:00"),
@@ -125,7 +213,7 @@ export class GamificationService {
     const [sums, presences] = await Promise.all([
       this.prisma.pointsEntry.groupBy({
         by: ["clientId"],
-        where: { occurredAt, client: clientWhere },
+        where: { occurredAt, client: rankedClientWhere },
         _sum: { points: true },
       }),
       this.prisma.pointsEntry.groupBy({
@@ -134,7 +222,7 @@ export class GamificationService {
           occurredAt,
           type: PointsEntryType.ATTENDANCE,
           reversedBy: null,
-          client: clientWhere,
+          client: rankedClientWhere,
         },
         _count: { _all: true },
       }),
@@ -158,6 +246,19 @@ export class GamificationService {
           attendances: attendances.get(row.clientId) ?? 0,
         })),
     );
+  }
+
+  /** IDs with a current GRANTED ranking manifestation (latest event per user). */
+  private async rankingParticipantIds(): Promise<string[]> {
+    const latest = await this.prisma.userManifestation.findMany({
+      where: { type: UserManifestationType.CONSENT_RANKING },
+      orderBy: [{ userId: "asc" }, { createdAt: "desc" }, { id: "desc" }],
+      distinct: ["userId"],
+      select: { userId: true, action: true },
+    });
+    return latest
+      .filter((manifestation) => manifestation.action === UserManifestationAction.GRANTED)
+      .map((manifestation) => manifestation.userId);
   }
 
   /** Gamificação de um cliente vista pela equipe, dentro do escopo do perfil. */

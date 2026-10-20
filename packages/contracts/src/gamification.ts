@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { userManifestationSchema } from "./onboarding.js";
 
 export const PointsEntryType = {
   ATTENDANCE: "ATTENDANCE",
@@ -98,3 +99,12 @@ export const rankingSchema = z.object({
   entries: z.array(rankingEntrySchema),
 });
 export type Ranking = z.infer<typeof rankingSchema>;
+
+export const rankingConsentRequestSchema = z.object({ consented: z.boolean() }).strict();
+export type RankingConsentRequest = z.infer<typeof rankingConsentRequestSchema>;
+
+export const rankingConsentResponseSchema = z.object({
+  consented: z.boolean(),
+  manifestation: userManifestationSchema.nullable(),
+});
+export type RankingConsentResponse = z.infer<typeof rankingConsentResponseSchema>;

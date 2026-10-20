@@ -105,6 +105,21 @@ describe("Seed da demonstração", () => {
     expect(await testPrisma.workoutSheet.count({ where: { status: "ACTIVE" } })).toBe(14);
   });
 
+  it("inclui clientes fictícios no ranking por consentimento explícito", async () => {
+    const clients = await testPrisma.user.findMany({
+      where: { profile: { name: "Cliente" } },
+      select: { id: true },
+    });
+    const consents = await testPrisma.userManifestation.findMany({
+      where: { userId: { in: clients.map((client) => client.id) }, type: "CONSENT_RANKING" },
+      select: { userId: true, action: true },
+    });
+
+    expect(clients).toHaveLength(14);
+    expect(consents).toHaveLength(14);
+    expect(consents.every((consent) => consent.action === "GRANTED")).toBe(true);
+  });
+
   it("nunca passa da capacidade e deixa ao menos uma aula futura lotada", async () => {
     const future = await testPrisma.classOccurrence.findMany({
       include: {
@@ -127,6 +142,17 @@ describe("Seed da demonstração", () => {
   });
 
   it("é idempotente: rodar de novo não cria nada", async () => {
+    const wilson = await testPrisma.user.findUniqueOrThrow({
+      where: { email: "wilson@fitburn.example" },
+    });
+    await testPrisma.userManifestation.create({
+      data: {
+        userId: wilson.id,
+        type: "CONSENT_RANKING",
+        version: null,
+        action: "REVOKED",
+      },
+    });
     const before = {
       users: await testPrisma.user.count(),
       occurrences: await testPrisma.classOccurrence.count(),
@@ -134,6 +160,7 @@ describe("Seed da demonstração", () => {
       points: await testPrisma.pointsEntry.count(),
       goals: await testPrisma.goal.count(),
       sheets: await testPrisma.workoutSheet.count(),
+      manifestations: await testPrisma.userManifestation.count(),
     };
     const again = await run();
     expect(again.reservations).toBe(0);
@@ -145,6 +172,12 @@ describe("Seed da demonstração", () => {
       points: await testPrisma.pointsEntry.count(),
       goals: await testPrisma.goal.count(),
       sheets: await testPrisma.workoutSheet.count(),
+      manifestations: await testPrisma.userManifestation.count(),
     }).toEqual(before);
+    const latestConsent = await testPrisma.userManifestation.findFirstOrThrow({
+      where: { userId: wilson.id, type: "CONSENT_RANKING" },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    });
+    expect(latestConsent.action).toBe("REVOKED");
   }, 60_000);
 });

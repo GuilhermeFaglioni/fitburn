@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { http, HttpResponse } from "msw";
@@ -75,6 +75,8 @@ describe("Perfil / Minha conta", () => {
   let passwordUrls: string[];
   let logoutCalls: number;
   let refreshCalls: number;
+  let rankingConsented: boolean;
+  let rankingConsentChanges: boolean[];
 
   function mockSession(detail: UserDetail, permissions: EffectivePermission[] = []) {
     me = { ...detail };
@@ -83,6 +85,8 @@ describe("Perfil / Minha conta", () => {
     passwordUrls = [];
     logoutCalls = 0;
     refreshCalls = 0;
+    rankingConsented = false;
+    rankingConsentChanges = [];
     const current: CurrentUser = {
       id: detail.id,
       email: detail.email,
@@ -102,6 +106,39 @@ describe("Perfil / Minha conta", () => {
         return new HttpResponse(null, { status: 204 });
       }),
       http.get("/api/me", () => HttpResponse.json(me)),
+      http.get("/api/gamification/ranking/consent", () =>
+        HttpResponse.json({
+          consented: rankingConsented,
+          manifestation: rankingConsentChanges.length
+            ? {
+                id: `ranking-consent-${rankingConsentChanges.length}`,
+                userId: detail.id,
+                type: "CONSENT_RANKING",
+                version: null,
+                action: rankingConsented ? "GRANTED" : "REVOKED",
+                createdAt: "2026-10-19T00:00:00.000Z",
+              }
+            : null,
+        }),
+      ),
+      http.patch("/api/gamification/ranking/consent", async ({ request }) => {
+        const body = (await request.json()) as { consented: boolean };
+        if (body.consented !== rankingConsented) {
+          rankingConsented = body.consented;
+          rankingConsentChanges.push(body.consented);
+        }
+        return HttpResponse.json({
+          consented: rankingConsented,
+          manifestation: {
+            id: `ranking-consent-${rankingConsentChanges.length}`,
+            userId: detail.id,
+            type: "CONSENT_RANKING",
+            version: null,
+            action: rankingConsented ? "GRANTED" : "REVOKED",
+            createdAt: "2026-10-19T00:00:00.000Z",
+          },
+        });
+      }),
       http.get("/api/plans/mine", () => HttpResponse.json({ active: null, history: [] })),
       http.patch("/api/me", async ({ request }) => {
         const body = (await request.json()) as Partial<UserDetail>;
@@ -143,6 +180,21 @@ describe("Perfil / Minha conta", () => {
       expect(within(sidebar).getByRole("link", { name: "Perfil" })).toHaveClass("active");
       const tabbar = screen.getByRole("navigation", { name: "Navegação inferior" });
       expect(within(tabbar).getByRole("link", { name: "Perfil" })).toBeInTheDocument();
+    });
+
+    it("permite aderir e sair do ranking pelo Perfil", async () => {
+      const user = userEvent.setup();
+      renderAt("/perfil");
+
+      const consent = await screen.findByRole("checkbox", { name: "Participar do ranking" });
+      expect(consent).not.toBeChecked();
+      await user.click(consent);
+      await waitFor(() => expect(consent).toBeChecked());
+      expect(rankingConsentChanges).toEqual([true]);
+
+      await user.click(consent);
+      await waitFor(() => expect(consent).not.toBeChecked());
+      expect(rankingConsentChanges).toEqual([true, false]);
     });
 
     it("edita os dados, salva e volta ao modo de visualização com os novos valores", async () => {

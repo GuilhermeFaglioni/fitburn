@@ -115,6 +115,7 @@ describe("Gamificação do cliente", () => {
     mockSuccessfulLogin("Cliente");
     rankingRequests.length = 0;
     mockRanking({ week: [], month: [] });
+    mockRankingConsent(true);
     mockGoals([]);
   });
 
@@ -141,6 +142,27 @@ describe("Gamificação do cliente", () => {
   function mockSummary(summary: GamificationSummary) {
     server.use(http.get("/api/gamification/me", () => HttpResponse.json(summary)));
   }
+
+  function mockRankingConsent(consented: boolean) {
+    server.use(
+      http.get("/api/gamification/ranking/consent", () =>
+        HttpResponse.json({ consented, manifestation: null }),
+      ),
+    );
+  }
+
+  it("explica a participação opcional e mostra o controle de adesão", async () => {
+    mockRankingConsent(false);
+    mockSummary({ ...NO_STREAK, totalPoints: 30, history: [] });
+
+    renderPage();
+
+    const consent = await screen.findByRole("checkbox", { name: "Participar do ranking" });
+    expect(consent).not.toBeChecked();
+    expect(screen.getByText(/Sua participação é opcional/)).toBeInTheDocument();
+    expect(screen.getByText(/seus pontos, histórico, sequência e marcos continuam disponíveis/))
+      .toBeInTheDocument();
+  });
 
   it("mostra o total de pontos e o histórico dos ganhos", async () => {
     mockSummary({

@@ -321,6 +321,8 @@ Prazo das metas ativas: último dia do mês da demo.
 
 **Gamificação antes do Ato 4** (todas as aulas-relâmpago na mesma semana da demo):
 
+**Adesão ao ranking:** depois do onboarding, em **Perfil**, aderir com Larissa Mendonça, Otávio Ribeiro, Marina Albuquerque, Juliana Prado, Fernando Cavalcanti e Gustavo Farias (**6 participantes**). Thiago Bastos e Beatriz Nakamura permanecem sem adesão; veem seus FitPoints, mas não posições. O ranking semanal e o topo do Dashboard incluem só os seis participantes.
+
 | Cliente | Pontos | Presenças | Streak atual |
 |---|---|---|---|
 | Larissa Mendonça | 60 (30 + 5 + 25 da meta) | 3 | 3 |
@@ -329,11 +331,11 @@ Prazo das metas ativas: último dia do mês da demo.
 | Juliana Prado | 20 | 2 | 0 |
 | Fernando Cavalcanti | 10 | 1 | 0 |
 | Gustavo Farias | 10 | 1 | 1 |
-| Thiago Bastos, Beatriz Nakamura | 0 (fora do ranking) | 0 | 0 |
+| Thiago Bastos, Beatriz Nakamura | 0 (sem adesão, fora do ranking) | 0 | 0 |
 
-Ranking semanal (tela Sua evolução de qualquer cliente): 1º Larissa M.; 2º Otávio R.; 3º Juliana P. e Marina A. (empate); 5º Fernando C. e Gustavo F. (empate). Dashboard: Pontos distribuídos no mês **155**, Streaks ativos **4**, Clientes ativos **8** (o painel de ranking mostra os 3 primeiros com "N presenças").
+Ranking semanal (tela Sua evolução de qualquer participante): 1º Larissa M.; 2º Otávio R.; 3º Juliana P. e Marina A. (empate); 5º Fernando C. e Gustavo F. (empate), entre **6 participantes**. Dashboard: Pontos distribuídos no mês **155**, Streaks ativos **4**, Clientes ativos **8** (o painel mostra os 3 primeiros entre os participantes, com "N presenças").
 
-**Depois do Ato 4** (Marina e Thiago presentes, Beatriz faltou; sem concluir a meta da Marina): Marina 35 pontos e 3 presenças (badge "Streak de 3", empate em 2º com Otávio), Thiago 10; Dashboard: Pontos distribuídos no mês **180**, Streaks ativos **5**, Clientes ativos **9** (com a Renata). Se a meta da Marina for concluída ao vivo: Marina 60 pontos, empate em 1º com a Larissa.
+**Depois do Ato 4** (Marina e Thiago presentes, Beatriz faltou; sem concluir a meta da Marina): Marina 35 pontos e 3 presenças (badge "Streak de 3", empate em 2º com Otávio), Thiago 10 pontos e sem posição porque não aderiu; Dashboard: Pontos distribuídos no mês **180**, Streaks ativos **5**, Clientes ativos **9** (com a Renata). Se a meta da Marina for concluída ao vivo: Marina 60 pontos, empate em 1º com a Larissa.
 
 O Dashboard conta o mês atual: os números acima valem enquanto as aulas-relâmpago e a demo caírem no mesmo mês. Se a semana virou, só o ranking **Semanal** dos clientes (tela Sua evolução) ficará menor.
 

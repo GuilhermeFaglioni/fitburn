@@ -126,6 +126,7 @@ interface Scenario {
   reservations?: ReservationDetail[];
   gamification?: GamificationSummary;
   ranking?: Ranking;
+  rankingConsent?: boolean;
 }
 
 function mockHome({
@@ -133,11 +134,15 @@ function mockHome({
   reservations = [],
   gamification = EMPTY_GAMIFICATION,
   ranking = weeklyRanking(null),
+  rankingConsent = true,
 }: Scenario = {}) {
   server.use(
     http.get("/api/plans/mine", () => HttpResponse.json(plan)),
     http.get("/api/reservations", () => HttpResponse.json(reservations)),
     http.get("/api/gamification/me", () => HttpResponse.json(gamification)),
+    http.get("/api/gamification/ranking/consent", () =>
+      HttpResponse.json({ consented: rankingConsent, manifestation: null }),
+    ),
     http.get("/api/gamification/ranking", () => HttpResponse.json(ranking)),
   );
 }
@@ -500,6 +505,24 @@ describe("Home do cliente", () => {
       expect(
         await within(section).findByText("Você ainda não pontuou no ranking desta semana."),
       ).toBeInTheDocument();
+    });
+
+    it("mantém os FitPoints e oculta posição quando não participa do ranking", async () => {
+      mockHome({
+        gamification: ACTIVE_GAMIFICATION,
+        ranking: weeklyRanking(null),
+        rankingConsent: false,
+      });
+      renderPage();
+
+      const section = await screen.findByRole("region", { name: "FitPoints" });
+      expect(await within(section).findByText("1.240")).toBeInTheDocument();
+      expect(
+        within(section).getByText(
+          "Você não participa do ranking. Seus FitPoints continuam visíveis só para você.",
+        ),
+      ).toBeInTheDocument();
+      expect(within(section).queryByText(/lugar no ranking semanal/)).not.toBeInTheDocument();
     });
   });
 

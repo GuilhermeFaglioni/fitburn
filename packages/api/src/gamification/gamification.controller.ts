@@ -1,8 +1,11 @@
-import { Controller, Get, Param, Query, Req, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Param, Patch, Query, Req, UseGuards } from "@nestjs/common";
 import {
   Module,
   PermissionAction,
+  rankingConsentRequestSchema,
   rankingQuerySchema,
+  type RankingConsentRequest,
+  type RankingConsentResponse,
   type GamificationSummary,
   type Ranking,
   type RankingQuery,
@@ -32,6 +35,19 @@ export class GamificationController {
     @Req() req: AuthenticatedRequest,
   ): Promise<Ranking> {
     return this.gamificationService.ranking(query.period, req.authUser.sub);
+  }
+
+  @Get("ranking/consent")
+  rankingConsent(@Req() req: AuthenticatedRequest): Promise<RankingConsentResponse> {
+    return this.gamificationService.rankingConsent(req.authUser.sub);
+  }
+
+  @Patch("ranking/consent")
+  updateRankingConsent(
+    @Body(new ZodValidationPipe(rankingConsentRequestSchema)) body: RankingConsentRequest,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<RankingConsentResponse> {
+    return this.gamificationService.setRankingConsent(req.authUser.sub, body.consented);
   }
 
   @RequirePermission(Module.GAMIFICACAO, PermissionAction.VIEW)
