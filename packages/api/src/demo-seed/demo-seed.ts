@@ -11,6 +11,7 @@ import {
   CLIENTS,
   COMPLETED_GOALS,
   DEMO_EMAIL_DOMAIN,
+  DEMO_RANKING_PARTICIPANTS,
   PERSONAL_CLASS,
   PLANS,
   PRIME_SLOTS,
@@ -170,7 +171,7 @@ export async function seedDemoData(deps: DemoSeedDeps): Promise<DemoSeedSummary>
       where: { userId: user.id, type: UserManifestationType.CONSENT_RANKING },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     });
-    if (!rankingConsent) {
+    if (!rankingConsent && DEMO_RANKING_PARTICIPANTS.has(spec.key)) {
       await prisma.userManifestation.create({
         data: {
           userId: user.id,

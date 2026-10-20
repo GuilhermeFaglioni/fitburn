@@ -120,15 +120,44 @@ describe("Ranking semanal e mensal (HTTP)", () => {
     expect(regranted.body.manifestation.id).not.toBe(revoked.body.manifestation.id);
 
     await attendance(ana.user.id, new Date(), 25);
+    const withoutConsent = await setRankingConsent(ana.token, false);
+    const noPosition = await ranking(ana.token, "week");
     const ownPoints = await request(app.getHttpServer())
       .get("/api/gamification/me")
       .set("Authorization", `Bearer ${ana.token}`);
-    const withoutConsent = await setRankingConsent(ana.token, false);
-    const noPosition = await ranking(ana.token, "week");
 
     expect(ownPoints.status).toBe(200);
     expect(ownPoints.body.totalPoints).toBe(25);
     expect(withoutConsent.body.manifestation.action).toBe("REVOKED");
+    expect(noPosition.body.entries).toEqual([]);
+  });
+
+  it("usa ordem de gravação quando manifestações compartilham o mesmo milissegundo", async () => {
+    const ana = await createClient("Ana Paula", false);
+    const createdAt = new Date("2026-01-01T12:00:00.000Z");
+    await testPrisma.userManifestation.create({
+      data: {
+        userId: ana.user.id,
+        type: "CONSENT_RANKING",
+        version: null,
+        action: "GRANTED",
+        createdAt,
+      },
+    });
+    await testPrisma.userManifestation.create({
+      data: {
+        userId: ana.user.id,
+        type: "CONSENT_RANKING",
+        version: null,
+        action: "REVOKED",
+        createdAt,
+      },
+    });
+
+    const current = await rankingConsent(ana.token);
+    const noPosition = await ranking(ana.token, "week");
+
+    expect(current.body).toMatchObject({ consented: false, manifestation: { action: "REVOKED" } });
     expect(noPosition.body.entries).toEqual([]);
   });
 

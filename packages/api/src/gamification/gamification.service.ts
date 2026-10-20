@@ -109,7 +109,7 @@ export class GamificationService {
   ): Promise<PrismaUserManifestation | null> {
     return prisma.userManifestation.findFirst({
       where: { userId, type: UserManifestationType.CONSENT_RANKING },
-      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      orderBy: { sequence: "desc" },
     });
   }
 
@@ -252,7 +252,7 @@ export class GamificationService {
   private async rankingParticipantIds(): Promise<string[]> {
     const latest = await this.prisma.userManifestation.findMany({
       where: { type: UserManifestationType.CONSENT_RANKING },
-      orderBy: [{ userId: "asc" }, { createdAt: "desc" }, { id: "desc" }],
+      orderBy: [{ userId: "asc" }, { sequence: "desc" }],
       distinct: ["userId"],
       select: { userId: true, action: true },
     });

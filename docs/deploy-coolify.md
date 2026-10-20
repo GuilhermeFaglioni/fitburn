@@ -208,6 +208,7 @@ Este é o cenário do **seed automático** (`DEMO_SEED=true`), separado da massa
 - **Uma única modalidade e aula: Personal Class** (60 min, 3 vagas), para vários professores. No mesmo horário há várias Personal Class, desde que de professores diferentes (nos horários nobres, 07h, 12h, 18h e 19h, os quatro professores atendem ao mesmo tempo). O mesmo professor nunca tem duas aulas sobrepostas.
 - Agenda de 5 semanas para trás e 3 para frente (seg-sáb), com reservas, faltas, cancelamentos e algumas aulas **lotadas** nos próximos dias.
 - Histórico de presença registrado pelo serviço real da API: pontos, ranking, streaks e badges consistentes. As aulas das últimas 3 horas ficam com presença **pendente** para demonstrar o registro ao vivo.
+- Seis clientes fictícios começam com adesão explícita ao ranking (Guilherme, Wilson, Lara, Danielle, Marina e Fernanda); os outros oito começam sem adesão. A lista vive em `DEMO_RANKING_PARTICIPANTS` e uma retirada já registrada é preservada em reexecuções do seed.
 - Planos (Performance e Essencial) com histórico, clientes atribuídos a professores, metas (ativas e concluídas) e fichas de treino.
 
 Rodar de novo (a cada deploy) é seguro: nada é duplicado, e em outro dia a agenda é completada com as datas novas. O comportamento é determinístico por cliente/dia.

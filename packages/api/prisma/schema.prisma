@@ -157,11 +157,14 @@ model UserManifestation {
   version   String?
   action    UserManifestationAction
   createdAt DateTime                 @default(now()) @db.Timestamptz(3)
+  /// Ordem de gravação para desempatar eventos no mesmo milissegundo.
+  sequence  Int                      @default(autoincrement())
 
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, type, createdAt])
+  @@index([type, userId, sequence])
   @@map("user_manifestations")
 }
 
