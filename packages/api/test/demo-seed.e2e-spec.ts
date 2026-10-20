@@ -2,6 +2,7 @@ import type { INestApplication } from "@nestjs/common";
 import request from "supertest";
 import { AttendanceService } from "../src/attendance/attendance.service.js";
 import { GoalsService } from "../src/goals/goals.service.js";
+import { DEMO_RANKING_PARTICIPANTS } from "../src/demo-seed/demo-data.js";
 import { seedDemoData } from "../src/demo-seed/demo-seed.js";
 import { cleanDatabase, testPrisma } from "./db-test-helper.js";
 import { createTestApp } from "./test-app.js";
@@ -105,6 +106,28 @@ describe("Seed da demonstração", () => {
     expect(await testPrisma.workoutSheet.count({ where: { status: "ACTIVE" } })).toBe(14);
   });
 
+  it("inclui clientes fictícios no ranking por consentimento explícito", async () => {
+    const clients = await testPrisma.user.findMany({
+      where: { profile: { name: "Cliente" } },
+      select: { id: true, email: true },
+    });
+    const consents = await testPrisma.userManifestation.findMany({
+      where: { userId: { in: clients.map((client) => client.id) }, type: "CONSENT_RANKING" },
+      select: { userId: true, action: true },
+    });
+
+    expect(clients).toHaveLength(14);
+    expect(consents).toHaveLength(DEMO_RANKING_PARTICIPANTS.size);
+    expect(consents.every((consent) => consent.action === "GRANTED")).toBe(true);
+    const participantKeys = new Set(
+      consents.map((consent) =>
+        clients.find((client) => client.id === consent.userId)?.email.split("@")[0],
+      ),
+    );
+    expect(participantKeys).toEqual(DEMO_RANKING_PARTICIPANTS);
+    expect(clients.length - consents.length).toBe(8);
+  });
+
   it("nunca passa da capacidade e deixa ao menos uma aula futura lotada", async () => {
     const future = await testPrisma.classOccurrence.findMany({
       include: {
@@ -127,6 +150,17 @@ describe("Seed da demonstração", () => {
   });
 
   it("é idempotente: rodar de novo não cria nada", async () => {
+    const wilson = await testPrisma.user.findUniqueOrThrow({
+      where: { email: "wilson@fitburn.example" },
+    });
+    await testPrisma.userManifestation.create({
+      data: {
+        userId: wilson.id,
+        type: "CONSENT_RANKING",
+        version: null,
+        action: "REVOKED",
+      },
+    });
     const before = {
       users: await testPrisma.user.count(),
       occurrences: await testPrisma.classOccurrence.count(),
@@ -134,6 +168,7 @@ describe("Seed da demonstração", () => {
       points: await testPrisma.pointsEntry.count(),
       goals: await testPrisma.goal.count(),
       sheets: await testPrisma.workoutSheet.count(),
+      manifestations: await testPrisma.userManifestation.count(),
     };
     const again = await run();
     expect(again.reservations).toBe(0);
@@ -145,6 +180,12 @@ describe("Seed da demonstração", () => {
       points: await testPrisma.pointsEntry.count(),
       goals: await testPrisma.goal.count(),
       sheets: await testPrisma.workoutSheet.count(),
+      manifestations: await testPrisma.userManifestation.count(),
     }).toEqual(before);
+    const latestConsent = await testPrisma.userManifestation.findFirstOrThrow({
+      where: { userId: wilson.id, type: "CONSENT_RANKING" },
+      orderBy: { sequence: "desc" },
+    });
+    expect(latestConsent.action).toBe("REVOKED");
   }, 60_000);
 });

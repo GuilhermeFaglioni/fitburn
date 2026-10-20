@@ -8,6 +8,7 @@ import { getMyGamification } from "../lib/gamification/api";
 import { formatHistoryWhen } from "../lib/gamification/format";
 import { GoalsSection } from "./gamification/GoalsSection";
 import { RankingSection } from "./gamification/RankingSection";
+import { RankingConsentControl } from "./gamification/RankingConsentControl";
 import { EmptyState, ErrorState, LoadingState } from "../components/states";
 
 /** Traço na cor do texto do pai (laranja no marco alcançado, esmaecido no pendente). */
@@ -234,6 +235,7 @@ export function GamificationPage() {
           )}
           <GoalsSection />
         </div>
+        <RankingConsentControl surface="gamification" />
         <RankingSection />
       </div>
     </div>

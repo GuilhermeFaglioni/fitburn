@@ -13,6 +13,7 @@ import { getMyProfile, updateMyProfile } from "../lib/profile/api";
 import { ErrorState, Feedback, LoadingState } from "../components/states";
 import { MyPlanSection } from "./plans/MyPlanSection";
 import { RequiresNetwork } from "../components/RequiresNetwork";
+import { RankingConsentControl } from "./gamification/RankingConsentControl";
 
 interface FormState {
   fullName: string;
@@ -374,6 +375,10 @@ export function ProfilePage({
             )
           )}
         </section>
+      )}
+
+      {!requiredPasswordChange && isClient && profile && (
+        <RankingConsentControl surface="profile" />
       )}
 
       {!requiredPasswordChange && !light && <MyPlanSection />}

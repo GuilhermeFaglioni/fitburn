@@ -211,6 +211,11 @@ describe("Metas individuais (HTTP)", () => {
       const { rafael, marina } = await setup();
       const created = await api(rafael.token).create({ clientId: marina.user.id, title: "Meta" });
       await api(rafael.token).complete(created.body.id);
+      const consent = await request(app.getHttpServer())
+        .patch("/api/gamification/ranking/consent")
+        .set("Authorization", `Bearer ${marina.token}`)
+        .send({ consented: true });
+      expect(consent.status).toBe(200);
 
       const ranking = await request(app.getHttpServer())
         .get("/api/gamification/ranking?period=week")

@@ -1,4 +1,5 @@
 import type { PrismaClient } from "@prisma/client";
+import { UserManifestationAction, UserManifestationType } from "@prisma/client";
 import { addDays, gymDateTimeToUtc, gymToday, weekdayOf } from "@fitburn/contracts";
 import { hashPassword } from "../auth/password.util.js";
 import { seedBaseData } from "../seed/base-seed.js";
@@ -10,6 +11,7 @@ import {
   CLIENTS,
   COMPLETED_GOALS,
   DEMO_EMAIL_DOMAIN,
+  DEMO_RANKING_PARTICIPANTS,
   PERSONAL_CLASS,
   PLANS,
   PRIME_SLOTS,
@@ -165,6 +167,20 @@ export async function seedDemoData(deps: DemoSeedDeps): Promise<DemoSeedSummary>
         profileId: clientProfile.id,
       },
     });
+    const rankingConsent = await prisma.userManifestation.findFirst({
+      where: { userId: user.id, type: UserManifestationType.CONSENT_RANKING },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    });
+    if (!rankingConsent && DEMO_RANKING_PARTICIPANTS.has(spec.key)) {
+      await prisma.userManifestation.create({
+        data: {
+          userId: user.id,
+          type: UserManifestationType.CONSENT_RANKING,
+          version: null,
+          action: UserManifestationAction.GRANTED,
+        },
+      });
+    }
     const teacher = teachers[index % teachers.length];
     await prisma.teacherClientAssignment.upsert({
       where: { teacherId_clientId: { teacherId: teacher.id, clientId: user.id } },

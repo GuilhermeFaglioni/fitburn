@@ -200,6 +200,47 @@
   font-size: 13px;
 }
 
+.fb-ranking-consent {
+  gap: 12px;
+}
+
+.fb-ranking-consent__copy {
+  max-width: 70ch;
+  margin: 0;
+  color: var(--fb-profile-muted, rgba(255, 255, 255, 0.65));
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.fb-ranking-consent__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  width: fit-content;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.fb-ranking-consent__toggle input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--color-primary-orange);
+}
+
+.fb-ranking-consent__toggle input:focus-visible {
+  outline: 2px solid var(--color-primary-orange);
+  outline-offset: 3px;
+}
+
+.fb-ranking-consent__error {
+  margin: 0;
+  color: var(--color-danger);
+  font-size: 13px;
+}
+
 .fb-profile__form .fb-profile__grid {
   gap: 12px;
 }

@@ -179,6 +179,19 @@ export const CLIENTS: Array<{
   },
 ];
 
+/**
+ * Participantes fictícios que representam adesão explícita na massa automática
+ * de demonstração. Clientes fora desta lista começam sem consentimento.
+ */
+export const DEMO_RANKING_PARTICIPANTS = new Set([
+  "guilherme",
+  "wilson",
+  "lara",
+  "danielle",
+  "marina",
+  "fernanda",
+]);
+
 /** Horários (hora local da academia) em que há Personal Class; cada uma dura 60 min. */
 export const SLOTS = [
   "06:00",

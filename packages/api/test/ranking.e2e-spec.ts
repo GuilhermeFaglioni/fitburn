@@ -32,14 +32,19 @@ describe("Ranking semanal e mensal (HTTP)", () => {
     clientProfileId = (await createAccessProfile({ name: "Cliente", isSystem: true })).id;
   });
 
-  async function createClient(name: string) {
+  async function createClient(name: string, consented = true) {
     const user = await createUser({
       email: `${name.toLowerCase().replace(/\s+/g, ".")}@fitburn.local`,
       password: PASSWORD,
       profileId: clientProfileId,
       fullName: name,
     });
-    return { user, token: await loginAndGetAccessToken(app, user.email, PASSWORD) };
+    const token = await loginAndGetAccessToken(app, user.email, PASSWORD);
+    if (consented) {
+      const response = await setRankingConsent(token, true);
+      expect(response.status).toBe(200);
+    }
+    return { user, token };
   }
 
   const today = gymToday();
@@ -70,8 +75,115 @@ describe("Ranking semanal e mensal (HTTP)", () => {
       .set("Authorization", `Bearer ${token}`);
   }
 
+  function rankingConsent(token: string) {
+    return request(app.getHttpServer())
+      .get("/api/gamification/ranking/consent")
+      .set("Authorization", `Bearer ${token}`);
+  }
+
+  function setRankingConsent(token: string, consented: boolean) {
+    return request(app.getHttpServer())
+      .patch("/api/gamification/ranking/consent")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ consented });
+  }
+
   const summary = (body: { entries: Array<{ position: number; name: string }> }) =>
     body.entries.map((entry) => [entry.position, entry.name]);
+
+  it("consentimento começa desligado e cada mudança acrescenta uma manifestação", async () => {
+    const ana = await createClient("Ana Paula", false);
+
+    const initial = await rankingConsent(ana.token);
+    expect(initial.status).toBe(200);
+    expect(initial.body).toMatchObject({ consented: false, manifestation: null });
+
+    const granted = await setRankingConsent(ana.token, true);
+    expect(granted.status).toBe(200);
+    expect(granted.body).toMatchObject({
+      consented: true,
+      manifestation: { type: "CONSENT_RANKING", version: null, action: "GRANTED" },
+    });
+
+    const repeated = await setRankingConsent(ana.token, true);
+    expect(repeated.body.manifestation.id).toBe(granted.body.manifestation.id);
+
+    const revoked = await setRankingConsent(ana.token, false);
+    expect(revoked.status).toBe(200);
+    expect(revoked.body).toMatchObject({
+      consented: false,
+      manifestation: { type: "CONSENT_RANKING", action: "REVOKED" },
+    });
+    expect(revoked.body.manifestation.id).not.toBe(granted.body.manifestation.id);
+
+    const regranted = await setRankingConsent(ana.token, true);
+    expect(regranted.body.manifestation.id).not.toBe(revoked.body.manifestation.id);
+
+    await attendance(ana.user.id, new Date(), 25);
+    const withoutConsent = await setRankingConsent(ana.token, false);
+    const noPosition = await ranking(ana.token, "week");
+    const ownPoints = await request(app.getHttpServer())
+      .get("/api/gamification/me")
+      .set("Authorization", `Bearer ${ana.token}`);
+
+    expect(ownPoints.status).toBe(200);
+    expect(ownPoints.body.totalPoints).toBe(25);
+    expect(withoutConsent.body.manifestation.action).toBe("REVOKED");
+    expect(noPosition.body.entries).toEqual([]);
+  });
+
+  it("usa ordem de gravação quando manifestações compartilham o mesmo milissegundo", async () => {
+    const ana = await createClient("Ana Paula", false);
+    const createdAt = new Date("2026-01-01T12:00:00.000Z");
+    await testPrisma.userManifestation.create({
+      data: {
+        userId: ana.user.id,
+        type: "CONSENT_RANKING",
+        version: null,
+        action: "GRANTED",
+        createdAt,
+      },
+    });
+    await testPrisma.userManifestation.create({
+      data: {
+        userId: ana.user.id,
+        type: "CONSENT_RANKING",
+        version: null,
+        action: "REVOKED",
+        createdAt,
+      },
+    });
+
+    const current = await rankingConsent(ana.token);
+    const noPosition = await ranking(ana.token, "week");
+
+    expect(current.body).toMatchObject({ consented: false, manifestation: { action: "REVOKED" } });
+    expect(noPosition.body.entries).toEqual([]);
+  });
+
+  it("calcula posição e desempate só entre participantes na semana e no mês", async () => {
+    const ana = await createClient("Ana Paula");
+    const bruno = await createClient("Bruno Alves");
+    const carla = await createClient("Carla Dias", false);
+    const now = new Date();
+    await attendance(ana.user.id, now);
+    await attendance(ana.user.id, now);
+    await attendance(bruno.user.id, now);
+    await goal(bruno.user.id, now, 10);
+    await attendance(carla.user.id, now);
+    await attendance(carla.user.id, now);
+
+    for (const period of ["week", "month"]) {
+      const visibleToAna = await ranking(ana.token, period);
+      const visibleToCarla = await ranking(carla.token, period);
+
+      expect(visibleToAna.body.entries).toMatchObject([
+        { position: 1, name: "Ana P.", points: 20, attendances: 2, tied: false },
+        { position: 2, name: "Bruno A.", points: 20, attendances: 1, tied: false },
+      ]);
+      expect(visibleToCarla.body.entries).toEqual([]);
+    }
+  });
 
   it("ordena pela soma do ledger no período e mostra só o primeiro nome e a inicial do sobrenome", async () => {
     const ana = await createClient("Ana Paula Souza");

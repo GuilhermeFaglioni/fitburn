@@ -81,6 +81,13 @@ describe("Exclusão com anonimização (HTTP)", () => {
     request(app.getHttpServer()).delete(`/api/users/${id}`).set("Authorization", `Bearer ${token}`);
   const getJson = (token: string, path: string) =>
     request(app.getHttpServer()).get(`/api${path}`).set("Authorization", `Bearer ${token}`);
+  const consentToRanking = async (token: string) => {
+    const response = await request(app.getHttpServer())
+      .patch("/api/gamification/ranking/consent")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ consented: true });
+    expect(response.status).toBe(200);
+  };
 
   describe("Cliente", () => {
     it("anonimiza os dados pessoais, marca como excluído e mantém o histórico", async () => {
@@ -410,6 +417,8 @@ describe("Exclusão com anonimização (HTTP)", () => {
       const admin = await createAdmin();
       const ana = await createClient("ana");
       const bruno = await createClient("bruno");
+      await consentToRanking(ana.token);
+      await consentToRanking(bruno.token);
       await points(ana.user.id, "ATTENDANCE", 30);
       await points(bruno.user.id, "ATTENDANCE", 10);
       await deleteClient(admin.token, ana.user.id);
@@ -442,6 +451,7 @@ describe("Exclusão com anonimização (HTTP)", () => {
       const admin = await createAdmin();
       const ana = await createClient("ana");
       const bruno = await createClient("bruno");
+      await consentToRanking(bruno.token);
       await points(ana.user.id, "ATTENDANCE", 10);
       await points(ana.user.id, "GOAL", 25);
       await points(bruno.user.id, "ATTENDANCE", 10);

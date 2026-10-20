@@ -1,7 +1,13 @@
 import { useState } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { RankingPeriod, type RankingEntry, type RankingPeriodName } from "@fitburn/contracts";
-import { getRanking } from "../../lib/gamification/api";
+import { useAuth } from "../../lib/auth/AuthContext";
+import { isClientUser } from "../../lib/auth/areas";
+import {
+  getRanking,
+  getRankingConsent,
+  rankingConsentQueryKey,
+} from "../../lib/gamification/api";
 import { EmptyState, ErrorState, LoadingState } from "../../components/states";
 
 const RANKING_TABS: Array<{ period: RankingPeriodName; label: string }> = [
@@ -33,11 +39,19 @@ function RankingRow({ entry }: { entry: RankingEntry }) {
  */
 export function RankingSection() {
   const [period, setPeriod] = useState<RankingPeriodName>(RankingPeriod.WEEK);
+  const { user } = useAuth();
+  const isClient = user ? isClientUser(user) : false;
+  const consentQuery = useQuery({
+    queryKey: rankingConsentQueryKey,
+    queryFn: getRankingConsent,
+    enabled: isClient,
+  });
   const rankingQuery = useQuery({
     queryKey: ["gamification", "ranking", period],
     queryFn: () => getRanking(period),
     // Ao trocar de período a lista anterior fica até a nova chegar: sem salto de layout.
     placeholderData: keepPreviousData,
+    enabled: isClient && consentQuery.data?.consented === true,
   });
 
   return (
@@ -65,15 +79,34 @@ export function RankingSection() {
         </div>
       </div>
 
-      {rankingQuery.isLoading && <LoadingState surface="dark" />}
-      {rankingQuery.isError && (
+      {!isClient && (
+        <EmptyState surface="dark" message="Ranking disponível para clientes participantes." />
+      )}
+      {isClient && consentQuery.isLoading && <LoadingState surface="dark" />}
+      {isClient && consentQuery.isError && (
+        <ErrorState
+          surface="dark"
+          message="Não foi possível verificar sua participação no ranking."
+          onRetry={() => void consentQuery.refetch()}
+        />
+      )}
+      {isClient && consentQuery.data && !consentQuery.data.consented && (
+        <EmptyState
+          surface="dark"
+          message="Você não participa do ranking. Seus pontos e sua sequência continuam disponíveis só para você."
+        />
+      )}
+      {isClient && consentQuery.data?.consented && rankingQuery.isLoading && (
+        <LoadingState surface="dark" />
+      )}
+      {isClient && consentQuery.data?.consented && rankingQuery.isError && (
         <ErrorState
           surface="dark"
           message="Não foi possível carregar o ranking."
           onRetry={() => void rankingQuery.refetch()}
         />
       )}
-      {rankingQuery.data &&
+      {isClient && consentQuery.data?.consented && rankingQuery.data &&
         (rankingQuery.data.entries.length === 0 ? (
           <EmptyState surface="dark" message="Ninguém pontuou neste período ainda." />
         ) : (
