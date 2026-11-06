@@ -45,11 +45,12 @@ O monorepo (`packages/contracts`, `packages/api`, `packages/web`) é gerenciado 
 - [Requisitos e restrições](docs/requirements.md)
 - [Reserva de aula](docs/critical-reservation.md)
 - [Pendências e decisões futuras](docs/open-decisions.md)
-- [Vocabulário do domínio](CONTEXT.md)
+- [Vocabulário do domínio](GLOSSARY.md)
 - [Runbook de deploy manual (demo remota)](docs/deploy-runbook.md)
 - [Roteiro da demonstração](docs/demo-script.md)
 - [Checklist da massa de dados da demonstração](docs/demo-data-checklist.md)
 - [Matriz de testes mínimos do MVP](docs/test-matrix.md)
+- [Fluxo de desenvolvimento agêntico](docs/agents/fluxo-agentico.md) (instruções para agentes em [AGENTS.md](AGENTS.md))
 
 ## Stack definida até agora
 
