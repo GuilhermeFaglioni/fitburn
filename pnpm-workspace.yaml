@@ -3,6 +3,12 @@ packages:
 overrides:
   lodash: 4.18.1
   source-map-js: 1.2.2
+  # Correções de avisos do `pnpm audit --prod` em dependências transitivas (nov/2026).
+  body-parser: ^2.4.0
+  multer: ^2.5.0
+  qs: ^6.16.1
+  ip-address: ^10.7.4
+  fast-uri: ^3.1.9
 allowBuilds:
   # argon2 precisa compilar seu binding nativo (bcrypt/argon2id) para hash de senha.
   argon2: true
