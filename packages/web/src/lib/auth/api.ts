@@ -6,6 +6,7 @@ import {
 } from "@fitburn/contracts";
 import { trackedFetch } from "../connectivity/connectivity-store";
 import { authFetch } from "./authFetch";
+import { withRefreshLock } from "./refresh-lock";
 import { tokenStore } from "./token-store";
 
 export class ApiError extends Error {
@@ -94,7 +95,13 @@ export type RefreshOutcome =
  * recusa explícita (401/403) encerra a sessão e descarta o token; qualquer
  * outra falha é transitória e não pode mandar a pessoa ao login.
  */
-export async function refreshSessionOutcome(): Promise<RefreshOutcome> {
+export function refreshSessionOutcome(): Promise<RefreshOutcome> {
+  // Entre abas, uma renovação por vez (ver refresh-lock.ts): o cookie é rotacionado
+  // e reapresentar o antigo derrubaria todas as sessões.
+  return withRefreshLock(requestRefresh);
+}
+
+async function requestRefresh(): Promise<RefreshOutcome> {
   let response: Response;
   try {
     response = await trackedFetch("/api/auth/refresh", { method: "POST", credentials: "include" });

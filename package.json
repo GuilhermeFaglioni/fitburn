@@ -25,6 +25,7 @@
     "db:down": "docker compose down",
     "design:compare": "node scripts/design-compare/run.mjs",
     "design:seed": "node scripts/design-compare/seed-demo.mjs",
+    "session:two-tabs": "node scripts/session-two-tabs/run.mjs",
     "demo:seed:guilherme": "node scripts/demo-seed/seed-demo-guilherme.mjs"
   },
   "devDependencies": {
