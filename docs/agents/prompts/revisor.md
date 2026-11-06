@@ -18,7 +18,7 @@ Tarefa:
 
 Se **reprovado**, pare aqui. Se **aprovado**:
 5. Abra o PR para `main` (ou para o branch-base, se a issue for empilhada): título em português, corpo com `Closes #<nº>`, como validar e as decisões pequenas registradas. Em PR de UI, anexe o print lado a lado, **não ative auto-merge** e aplique `ready-for-human`.
-6. Nos demais, `gh pr merge --auto --squash --delete-branch` e `gh pr checks --watch`.
+6. Nos demais, ative `gh pr merge --auto --squash --delete-branch` **imediatamente ao abrir o PR**, sem esperar a CI (a `main` exige `build-and-test`, e o GitHub mergeia quando ele passa). Confirme com `gh pr view <nº> --json autoMergeRequest,state` que o auto-merge está registrado ou que o PR já mergeou. Não use `--watch` nem polling.
 7. Falha de check: `gh run view --log-failed`, corrija, rode a suíte local e faça push. Conflito: `git rebase origin/main` (ou merge, se arriscado), suíte, `git push --force-with-lease`. Mudança de comportamento além de ajuste pontual: devolva ao planejador para nova revisão.
 
 Limites: PR que altera `.github/workflows` não recebe auto-merge (`ready-for-human`). Nunca contorne a CI, desligue checks ou faça merge manual. Nunca rode `demo:reset` ou seeds fora do banco de teste da issue.
