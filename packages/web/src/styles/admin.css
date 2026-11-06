@@ -651,6 +651,15 @@
   width: 100%;
 }
 
+.fb-export-hint {
+  margin: 0;
+  max-width: 220px;
+  font-size: 11px;
+  line-height: 16px;
+  text-align: right;
+  color: var(--color-text-muted-on-light);
+}
+
 .fb-modal__hint {
   font-size: 11px;
   color: #8a8a8a;

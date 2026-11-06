@@ -13,3 +13,20 @@ export const OCCUPANCY_EXPORT_COLUMNS = [
   "vagas_disponiveis",
   "ocupacao_percentual",
 ] as const;
+
+/**
+ * Cabeçalhos do CSV de reservas agregadas, nesta ordem. Uma linha por ocorrência;
+ * as colunas de estado contam reservas. Agregado: sem dado pessoal nem ID de reserva.
+ */
+export const RESERVATIONS_EXPORT_COLUMNS = [
+  "ocorrencia_id",
+  "aula",
+  "data_local",
+  "hora_local",
+  "situacao",
+  "confirmadas",
+  "canceladas",
+  "concluidas",
+  "nao_compareceu",
+  "vagas_ocupadas",
+] as const;

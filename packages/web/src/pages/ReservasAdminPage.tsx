@@ -14,11 +14,16 @@ import {
   type ReservationStatusName,
 } from "@fitburn/contracts";
 import { BlockedAction } from "../components/BlockedAction";
+import { ExportCsvButton } from "../components/ExportCsvButton";
 import { Modal } from "../components/Modal";
 import { formatClassDay, formatClassMoment, formatInstantHour } from "../lib/agenda/format";
 import { errorMessage } from "../lib/auth/api";
 import { useAuth } from "../lib/auth/AuthContext";
-import { cancelAdminReservation, listAdminReservations } from "../lib/reservations/admin-api";
+import {
+  cancelAdminReservation,
+  exportReservationsCsv,
+  listAdminReservations,
+} from "../lib/reservations/admin-api";
 import {
   ReservationFormModal,
   type ReservationFormMode,
@@ -99,9 +104,12 @@ export function ReservasAdminPage() {
   const [cancelling, setCancelling] = useState<AdminReservationDetail | null>(null);
   const [flash, setFlash] = useState<string | null>(null);
 
+  const range = periodRange(period);
+  // "Todas" não tem intervalo, e a exportação exige from/to.
+  const exportRange = range.from && range.to ? { from: range.from, to: range.to } : null;
   const query: AdminReservationsQuery = {
     ...(status ? { status } : {}),
-    ...periodRange(period),
+    ...range,
   };
   const reservationsQuery = useQuery({
     queryKey: ["admin-reservations", query],
@@ -150,18 +158,31 @@ export function ReservasAdminPage() {
           <span className="fb-page-eyebrow">Reservas</span>
           <h1 className="fb-page-title">Reservas administrativas</h1>
         </div>
-        <BlockedAction allowed={canCreate} reason="Você não tem permissão para criar reservas.">
-          <button
-            type="button"
-            className="fb-btn-primary"
-            onClick={() => {
-              setFlash(null);
-              setForm({ kind: "create" });
-            }}
-          >
-            + Nova reserva
-          </button>
-        </BlockedAction>
+        <div style={{ display: "flex", alignItems: "flex-start", flexWrap: "wrap", gap: 10 }}>
+          {/* Fora do artboard: exporta o período do filtro; "Todas" não tem intervalo (a API exige from/to). */}
+          <ExportCsvButton
+            label="Exportar reservas (CSV)"
+            onExport={() =>
+              exportRange
+                ? exportReservationsCsv(exportRange.from, exportRange.to)
+                : Promise.resolve()
+            }
+            disabled={exportRange === null}
+            hint={exportRange === null ? "Escolha Hoje ou Esta semana para exportar." : undefined}
+          />
+          <BlockedAction allowed={canCreate} reason="Você não tem permissão para criar reservas.">
+            <button
+              type="button"
+              className="fb-btn-primary"
+              onClick={() => {
+                setFlash(null);
+                setForm({ kind: "create" });
+              }}
+            >
+              + Nova reserva
+            </button>
+          </BlockedAction>
+        </div>
       </div>
 
       <div className="fb-toolbar fb-toolbar--filters">

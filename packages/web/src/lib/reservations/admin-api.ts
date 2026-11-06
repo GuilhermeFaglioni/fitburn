@@ -11,6 +11,7 @@ import {
   type ReservationPreviewQuery,
 } from "@fitburn/contracts";
 import { authFetch } from "../auth/authFetch";
+import { downloadCsv } from "../exports/download-csv";
 import { parseOrThrow } from "../auth/api";
 
 const BASE = "/api/admin/reservations";
@@ -90,4 +91,9 @@ export async function rescheduleAdminReservation(
     body: JSON.stringify({ occurrenceId }),
   });
   return adminReservationDetailSchema.parse(await parseOrThrow(response));
+}
+
+/** Baixa o CSV de reservas agregadas por ocorrência entre `from` e `to` (datas locais `YYYY-MM-DD`, inclusivas). */
+export function exportReservationsCsv(from: string, to: string): Promise<void> {
+  return downloadCsv("/api/exports/reservations", { from, to }, `reservas_${from}_${to}.csv`);
 }
