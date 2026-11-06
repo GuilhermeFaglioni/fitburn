@@ -4,7 +4,7 @@ Lista da massa **manual** que o administrador cadastra depois do reset do ambien
 
 Regras desta massa:
 
-- **Cadastro manual pela interface**, como o MVP define. O seed automático de Coolify é outro cenário e não é usado por este checklist. A única exceção é a criação das contas de equipe, que não tem tela (seção 7).
+- **Cadastro manual pela interface**, como o MVP define, inclusive as contas de equipe (seção 7), que se cadastram pela tela **Usuários e perfis**. O seed automático de Coolify é outro cenário e não é usado por este checklist.
 - **Tudo é fictício**, com nomes e contextos de um estúdio boutique de aulas personalizadas.
 - **Nenhuma credencial vai para o repositório**, nem de exemplo: senhas e e-mails reais das contas ficam no gerenciador de senhas da equipe. Onde este documento pede uma senha, ele mostra `<definir fora do repositório>`.
 - Datas são relativas: **D** é o dia da demonstração, **D-1** a véspera, **D+1** o dia seguinte.
@@ -43,11 +43,11 @@ O reset (`pnpm demo:reset --confirm-database=<nome do banco>`, na VPS via `docke
 - os perfis de sistema **Administrador** e **Cliente**, além de **Professor** e **Funcionário administrativo**;
 - as regras de gamificação (presença 10 pontos, meta 25, streak de 3, 5 e 10 presenças com bônus de 5, 10 e 20 pontos).
 
-Confira depois do reset: login do administrador funciona; **Usuários e perfis** lista só ele e os perfis Administrador, Cliente, Professor e Funcionário administrativo; o Dashboard mostra tudo zerado. Só então comece a seção 5.
+Confira depois do reset: login do administrador funciona; em **Usuários e perfis**, a aba **Usuários** lista só ele (a equipe é a única listada) e a aba **Perfis de acesso** mostra os perfis Administrador, Cliente, Professor e Funcionário administrativo; o Dashboard mostra tudo zerado. Só então comece a seção 5.
 
 ## 4. Contas por perfil (sem credenciais)
 
-Uma conta compartilhada por papel. E-mails seguem a convenção acima; senhas: `<definir fora do repositório>` (mínimo de 8 caracteres para clientes e equipe, 12 para o administrador inicial; use o gerenciador de senhas, uma senha distinta por conta). Como o reset apaga todas as contas, guarde as credenciais no cofre da equipe e reaproveite as mesmas ao recadastrar.
+Uma conta compartilhada por papel. E-mails seguem a convenção acima; senhas: `<definir fora do repositório>` (mínimo de 8 caracteres para clientes e equipe, 12 para o administrador inicial; use o gerenciador de senhas, uma senha distinta por conta). Como o reset apaga todas as contas, guarde as credenciais no cofre da equipe e reaproveite as mesmas ao recadastrar. Contas da equipe trocam a senha no primeiro login (seção 7): depois dessa troca, o cofre guarda a senha pessoal, não a inicial.
 
 | Perfil de acesso | Nome | E-mail | Senha | Papel na demo |
 |---|---|---|---|---|
@@ -109,32 +109,33 @@ Menu esperado do Professor: Dashboard, Clientes, Agenda, Templates & modalidades
 
 Sem **Excluir** em Clientes e sem **Criar/Editar** em Ocorrências de propósito: são os botões bloqueados do cenário de falta de permissão (roteiro 3.4). Como Clientes tem **Criar** com escopo total, o menu da Bianca também mostra "Atribuições"; é esperado. Menu esperado: Dashboard, Clientes, Agenda, Reservas, Planos, Templates & modalidades, Metas, Atribuições.
 
-## 7. Usuários da equipe (via API, não há tela)
+## 7. Usuários da equipe (pela tela Usuários e perfis)
 
-A interface só cadastra **clientes** (**+ Novo cliente**, página "Novo cliente"). Professores e funcionários se criam pela API (`POST /api/users/staff`, permissão Usuários: Criar), e não há tela para trocar o perfil de um usuário nem para redefinir senha (`PATCH /api/users/:id` com `profileId` e `POST /api/users/:id/reset-password` existem só na API). Registre isso como pendência de produto no ensaio (spec #10, item 17).
+Professores e funcionários administrativos se cadastram, se editam e têm a senha redefinida pela tela **Usuários e perfis** (menu "Usuários e perfis", rota `/usuarios`), aba **Usuários**. Não é preciso API nem terminal. Os perfis usados são os de sistema **Professor** e **Funcionário administrativo** (seção 6).
 
-Numa máquina com bash, `curl` e `jq`, digitando as credenciais sem gravá-las no histórico do shell:
+Permissões de quem opera a tela (em **Perfis de acesso**, módulo Usuários; o Administrador tem todas):
 
-```bash
-API="https://<URL da Vercel ou DOMAIN da API>/api"
-read -r  -p "E-mail do administrador: " ADMIN_EMAIL
-read -rs -p "Senha do administrador: " ADMIN_PASSWORD; echo
+| Ação | Permissão em Usuários | Se faltar |
+|---|---|---|
+| **+ Novo usuário** | Criar | botão desabilitado: "Você não tem permissão para cadastrar usuários." |
+| **Editar**, **Desativar**, **Reativar** | Editar | botão desabilitado: "Você não tem permissão para alterar usuários." |
+| **Redefinir senha** | Editar, com escopo **Todos os registros** | botão não aparece |
+| **Excluir** | Excluir | botão desabilitado: "Você não tem permissão para excluir usuários." |
 
-TOKEN=$(curl -sS -X POST "$API/auth/login" -H 'Content-Type: application/json' \
-  -d "$(jq -n --arg e "$ADMIN_EMAIL" --arg p "$ADMIN_PASSWORD" '{email:$e,password:$p}')" \
-  | jq -r .accessToken)
+**Redefinir senha** e **Excluir** não aparecem na linha da própria conta.
 
-# ids dos perfis (Professor e Funcionário administrativo, criados na seção 6)
-curl -sS "$API/profiles" -H "Authorization: Bearer $TOKEN" | jq '.[] | {id, name}'
+### Cadastro de conta da equipe
 
-# cria uma conta de equipe (repita para cada linha da tabela; a senha vem do cofre)
-read -rs -p "Senha da conta: " STAFF_PASSWORD; echo
-curl -sS -X POST "$API/users/staff" -H "Authorization: Bearer $TOKEN" \
-  -H 'Content-Type: application/json' \
-  -d "$(jq -n --arg n "Camila Andrade" --arg e "camila.andrade@demo.fitburn.example" \
-        --arg p "$STAFF_PASSWORD" --arg id "<id do perfil Professor>" \
-        '{fullName:$n,email:$e,password:$p,profileId:$id}')"
-```
+1. Entre com o **Administrador** e abra **Usuários e perfis**, aba **Usuários**.
+2. Clique em **+ Novo usuário**. No modal "Novo usuário", preencha:
+   - **Nome completo** e **E-mail** (use os da tabela abaixo);
+   - **Perfil de acesso**: escolha **Professor** ou **Funcionário administrativo** no select "Selecione um perfil" (o perfil Cliente não é oferecido aqui; cliente se cadastra em Clientes, seção 9);
+   - **Senha inicial** (mínimo de 8 caracteres): a senha do cofre, `<definir fora do repositório>`.
+3. Clique em **Criar usuário**.
+
+**Resultado:** o modal fecha e a lista recarrega com a conta nova, com o selo do perfil e **ATIVO**. Não há faixa de sucesso: a confirmação é a linha na lista. Erros possíveis: "Este e-mail já está em uso." (o e-mail é único) e "Confira os campos e tente novamente.".
+
+Cadastre cada linha da tabela abaixo.
 
 | Nome | E-mail | Perfil |
 |---|---|---|
@@ -142,7 +143,41 @@ curl -sS -X POST "$API/users/staff" -H "Authorization: Bearer $TOKEN" \
 | Rafael Nogueira | `rafael.nogueira@demo.fitburn.example` | Professor |
 | Bianca Leal | `bianca.leal@demo.fitburn.example` | Funcionário administrativo |
 
-Confira em **Usuários e perfis**, aba **Usuários**: as três contas aparecem com o selo do perfil e ATIVO. Faça o login de cada uma numa janela anônima e confira o menu esperado da seção 6. Toda a equipe ativa aparece como opção de "Professor" nas aulas (o administrador também).
+**Confira** em **Usuários e perfis**, aba **Usuários**: as três contas aparecem com o selo do perfil e ATIVO. Toda a equipe ativa aparece como opção de "Professor" nas aulas (o administrador também).
+
+**Primeiro login.** Toda conta criada na tela, e toda conta com senha redefinida, nasce com troca de senha obrigatória. Na primeira entrada aparece a tela **Troca obrigatória de senha**, com "Defina uma senha pessoal para liberar o acesso ao Fitburn."; só depois dela entram a política de privacidade e os termos de uso, se estiverem pendentes. Faça esse primeiro login de cada conta numa janela anônima dela, defina a senha pessoal e **guarde a nova senha no cofre**: a senha inicial deixa de valer para essa conta. Depois, confira o menu esperado da seção 6.
+
+### Editar e trocar o perfil de uma conta
+
+Permissão: Usuários: Editar. Serve para trocar o perfil de uma conta da equipe; o modal de edição não altera a senha.
+
+1. Na aba **Usuários**, encontre a conta (busca "Buscar por nome ou e-mail") e clique em **Editar** na linha.
+2. No modal **Editar usuário**, troque o **Perfil de acesso** (por exemplo, de **Professor** para **Funcionário administrativo**) e clique em **Salvar**.
+
+**Resultado:** o modal fecha. Não aparece faixa de sucesso, então a troca só está confirmada depois da validação abaixo.
+
+**Validação de que a troca foi salva** (obrigatória):
+
+- o selo da linha da conta mostra o perfil novo;
+- recarregue a página: o selo continua o novo. Se voltar ao antigo, a troca não foi salva: repita o passo 2 e confira se o **Salvar** foi clicado;
+- clique de novo em **Editar** na mesma linha: o select **Perfil de acesso** mostra o perfil novo. Feche com **Cancelar**;
+- opcional: entre com a conta e confira o menu do perfil novo (seção 6).
+
+**Desfazer:** edite a mesma conta, volte o **Perfil de acesso** ao original, clique em **Salvar** e repita a validação.
+
+O perfil Cliente não é oferecido no modal, então uma conta da equipe não vira cliente por essa tela.
+
+### Redefinir senha (fluxo à parte)
+
+O reset é um fluxo separado do cadastro e da edição: não cria conta, não troca perfil e só age sobre outro usuário. Use-o quando a senha de uma conta da equipe precisar ser trocada pelo administrador.
+
+Permissão: Usuários: Editar, com escopo **Todos os registros**. O botão **Redefinir senha** não aparece na linha da própria conta.
+
+1. Na aba **Usuários**, clique em **Redefinir senha** na linha da conta.
+2. No modal **Redefinir senha?**, confira o texto "A senha de {nome} ({e-mail}) será substituída. As sessões atuais serão encerradas." e preencha **Nova senha** (mínimo de 8 caracteres) com a senha do cofre, `<definir fora do repositório>`.
+3. Clique em **Confirmar redefinição** (**Cancelar** desiste sem alterar nada).
+
+**Resultado:** o modal fecha e aparece a faixa "Senha de {nome} redefinida." acima da tabela. As sessões abertas da conta são encerradas e, no próximo login, ela cai em **Troca obrigatória de senha** (ver "Primeiro login" acima). Não redefina a senha de uma conta que esteja aberta na demo: a sessão dela cai.
 
 ## 8. Templates de aula
 
@@ -308,7 +343,7 @@ Prazo das metas ativas: último dia do mês da demo.
 
 ## 16. Verificação final
 
-**Depois do cadastro (D-1) e de novo 30 minutos antes da demo.** Logins: entre com cada conta numa janela própria e confira.
+**Depois do cadastro (D-1) e de novo 30 minutos antes da demo.** Logins: entre com cada conta numa janela própria e confira. Na primeira entrada de uma conta da equipe, conclua a **Troca obrigatória de senha** (seção 7) antes de conferir o menu.
 
 | Conta | Deve ver |
 |---|---|
