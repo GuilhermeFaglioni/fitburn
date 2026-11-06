@@ -4,7 +4,7 @@
 - **Commit**: `a02d98d`
 - **Severity**: MEDIUM (classificado como Crítico/incerto pela auditoria porque docs e código divergiam)
 - **Origem**: auditoria api-logic M1, docs-conformance (Crítico: sobreposição; Médio: seed vs checklist)
-- **Escopo estimado**: `docs/requirements.md`, `docs/decisions.md`, `docs/open-decisions.md` (se aplicável), `docs/demo-script.md`, `docs/demo-data-checklist.md`, `docs/deploy-coolify.md`, `docs/test-matrix.md`, `CONTEXT.md` (se citar a regra)
+- **Escopo estimado**: `docs/requirements.md`, `docs/decisions.md`, `docs/open-decisions.md` (se aplicável), `docs/demo-script.md`, `docs/demo-data-checklist.md`, `docs/deploy-coolify.md`, `docs/test-matrix.md`, `GLOSSARY.md` (se citar a regra)
 - **Ambiente**: siga `plans/auditoria-2026-10/_ambiente.md` com slug `p006` (só documentação; não precisa de banco)
 
 ## Decisão já tomada (pelo responsável do produto)
@@ -19,14 +19,14 @@
 ## Alvo
 
 1. Registrar **D-037** em `docs/decisions.md` no formato das decisões existentes: contexto (espaço deixou de ser exclusivo; aulas simultâneas de professores diferentes), decisão, consequências (constraint por professor; conflito só para o mesmo professor; mensagens da API já dizem isso) e data 2026-10-18. Se `open-decisions.md` tiver item relacionado, marque como decidido apontando para D-037.
-2. Atualizar `requirements.md`, `demo-script.md`, `demo-data-checklist.md`, `test-matrix.md` (linha de conflito de agenda) e `CONTEXT.md` (se citar a regra) para a regra nova. No roteiro, demonstrar a recusa de duas aulas do **mesmo professor** no mesmo horário (`OCCURRENCE_OVERLAP`), que professores diferentes podem ter aula simultânea e que duas reservas sobrepostas do mesmo cliente são recusadas com `SCHEDULE_CONFLICT`. Confirme na interface (código em `packages/web/src/pages/agenda/*`) se o conflito do mesmo professor é alcançável pela UI antes de afirmar no roteiro.
+2. Atualizar `requirements.md`, `demo-script.md`, `demo-data-checklist.md`, `test-matrix.md` (linha de conflito de agenda) e `GLOSSARY.md` (se citar a regra) para a regra nova. No roteiro, demonstrar a recusa de duas aulas do **mesmo professor** no mesmo horário (`OCCURRENCE_OVERLAP`), que professores diferentes podem ter aula simultânea e que duas reservas sobrepostas do mesmo cliente são recusadas com `SCHEDULE_CONFLICT`. Confirme na interface (código em `packages/web/src/pages/agenda/*`) se o conflito do mesmo professor é alcançável pela UI antes de afirmar no roteiro.
 3. Seed: deixar explícito que existem **dois cenários**: (a) o seed automático (`DEMO_SEED=true`, Coolify) — documente o que ele cria (contas por papel sem senhas em texto, modalidade/template, professores, clientes, aulas), lendo `packages/api/src/demo-seed/*` e `packages/api/test/demo-seed.e2e-spec.ts`; e (b) a massa manual do checklist, usada pelo `demo-script.md`. Corrija a frase "não existe seed" e diga, no topo do checklist e do roteiro, qual cenário cada um pressupõe. Não altere o código do seed.
 
 ## Passos
 
 1. Leia todos os documentos citados e o código de agenda/seed referido (apenas leitura de código).
 2. Edite os documentos mantendo o tom, a língua (pt-BR) e a formatação de cada arquivo; mudanças mínimas e precisas, sem reescrever seções inteiras sem necessidade.
-3. Rode `grep -rn -i "sobrepos\|espaço exclusivo\|SCHEDULE_CONFLICT" docs CONTEXT.md` e confirme que não sobrou afirmação da regra antiga.
+3. Rode `grep -rn -i "sobrepos\|espaço exclusivo\|SCHEDULE_CONFLICT" docs GLOSSARY.md` e confirme que não sobrou afirmação da regra antiga.
 
 ## Boundaries
 
