@@ -16,10 +16,11 @@ import { BlockedAction } from "../components/BlockedAction";
 import { useAuth } from "../lib/auth/AuthContext";
 import { isOwnClass } from "../lib/attendance/roster-access";
 import { professorLabel } from "../lib/names";
-import { listOccurrences } from "../lib/agenda/api";
+import { exportOccupancyCsv, listOccurrences } from "../lib/agenda/api";
 import { formatDayLabel, formatInstantHour, formatWeekRange } from "../lib/agenda/format";
 import { OccurrenceEditModal } from "./agenda/OccurrenceEditModal";
 import { OccurrenceFormModal } from "./agenda/OccurrenceFormModal";
+import { ExportCsvButton } from "../components/ExportCsvButton";
 import { ErrorState, LoadingState } from "../components/states";
 
 type ModalState =
@@ -114,6 +115,10 @@ export function AgendaAdminPage() {
           >
             ›
           </button>
+          <ExportCsvButton
+            label="Exportar ocupação (CSV)"
+            onExport={() => exportOccupancyCsv(weekStart, weekEnd)}
+          />
           <BlockedAction allowed={canCreate} reason="Você não tem permissão para criar aulas.">
             <button
               type="button"

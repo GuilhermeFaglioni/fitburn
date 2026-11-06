@@ -12,6 +12,7 @@ import {
 } from "@fitburn/contracts";
 import { authFetch } from "../auth/authFetch";
 import { parseOrThrow } from "../auth/api";
+import { downloadCsv } from "../exports/download-csv";
 
 export async function listOccurrences(from: string, to: string): Promise<OccurrenceDetail[]> {
   const params = new URLSearchParams({ from, to });
@@ -64,4 +65,9 @@ export async function cancelOccurrence(id: string): Promise<OccurrenceDetail> {
 export async function deleteOccurrence(id: string): Promise<void> {
   const response = await authFetch(`/api/occurrences/${id}`, { method: "DELETE" });
   await parseOrThrow(response);
+}
+
+/** Baixa o CSV de ocupação das ocorrências entre `from` e `to` (datas locais `YYYY-MM-DD`, inclusivas). */
+export function exportOccupancyCsv(from: string, to: string): Promise<void> {
+  return downloadCsv("/api/exports/occupancy", { from, to }, `ocupacao_${from}_${to}.csv`);
 }
