@@ -92,14 +92,15 @@ Sem (2) ou (3), o planejador implementa em sequência, no branch da issue.
 
 ## 7. Skills relevantes
 
-Instaladas pela CLI `skills` (registro em `skills-lock.json`), em `.agents/skills/`, com symlinks em `.claude/skills/`: `code-review`, `codebase-design`, `diagnosing-bugs`, `domain-modeling`, `pr`, `to-spec`, `to-tickets`, `triage` (de `mattpocock/skills`) e `codebase-map` (de `rdilruba/codebase-map`). `implement`, `implement-spec` e `tdd` (do próprio repo) ficam no mesmo lugar.
+Instaladas pela CLI `skills` (registro em `skills-lock.json`), em `.agents/skills/`, com symlinks em `.claude/skills/`: `code-review`, `codebase-design`, `diagnosing-bugs`, `domain-modeling`, `pr`, `to-spec`, `to-tickets`, `triage` (de `mattpocock/skills`) `codebase-map` (de `rdilruba/codebase-map`) e `impeccable` (de `pbakaus/impeccable`, instalada com `npx skills@latest add pbakaus/impeccable --skill impeccable -y`). `implement`, `implement-spec` e `tdd` (do próprio repo) ficam no mesmo lugar.
 
 - **`implement`**: implementa a partir de spec ou tickets. Chama `tdd` nas fronteiras combinadas, roda typecheck e testes do arquivo com frequência, a suíte completa no fim, chama `code-review` e comita no branch atual.
 - **`tdd`**: ciclo vermelho → verde, em fatias verticais, só em *seams* combinados antes. No Fitburn, os seams padrão são: a **API HTTP contra o banco real** (`packages/api/test`) e **componentes/páginas com Testing Library + MSW** (`packages/web/test`). Sem mock de colaborador interno.
 - **`code-review`**: revisa o diff em dois eixos (padrões e spec), em sub-agentes paralelos.
 - **`implement-spec`**: orquestração de uma spec inteira com subagentes e branch de integração; no fluxo atual, esse papel é do planejador por issue.
 - **`pr`**, **`diagnosing-bugs`**, **`domain-modeling`**, **`codebase-design`**, **`to-spec`**, **`to-tickets`**, **`triage`**, **`codebase-map`**: apoio a PR, diagnóstico, planejamento, triagem e mapa do código.
-- **`github-actions-hardening`** e **`impeccable`** (UI): previstas no fluxo, **ainda não instaladas**.
+- **`impeccable`**: qualidade visual de UI, usada pelo implementador de UI. Não substitui a fidelidade ao design (seção 5): o artboard continua mandando.
+- **`github-actions-hardening`**: prevista no fluxo, **ainda não instalada** (ver seção 10).
 
 Configuração de issues e labels: [`issue-tracker.md`](issue-tracker.md) e [`triage-labels.md`](triage-labels.md). Domínio: [`domain.md`](domain.md); o glossário do Fitburn é o **`GLOSSARY.md`** da raiz e as decisões ficam em `docs/decisions.md` e `docs/open-decisions.md` (ainda não há `docs/adr/`).
 
@@ -142,7 +143,7 @@ Configuração de issues e labels: [`issue-tracker.md`](issue-tracker.md) e [`tr
 
 - **Número de reprovações:** adotado **duas** (seção 4 prevalece). Confirmar se é o oficial.
 - **Backend temporário:** o implementador de API usa Haiku 5.5 até o GPT ser conectado via Codex; conferir o estado atual antes de delegar.
-- **Skills ainda faltando:** `github-actions-hardening` e `impeccable`. As três skills locais (`implement`, `implement-spec`, `tdd`) já foram movidas para `.agents/skills/`, com symlink em `.claude/skills/`.
+- **Skill ainda faltando:** `github-actions-hardening`. A busca com `npx skills find github-actions-hardening` não achou skill com esse nome; só aparece como proposta em `github/awesome-copilot` (PR #2002) e há alternativas de terceiros (ex.: `trebaud/skills@gha-audit`). Não instalei nenhuma sem você escolher a fonte. Até lá, mudança em workflow é sempre `ready-for-human`. As três skills locais (`implement`, `implement-spec`, `tdd`) já foram movidas para `.agents/skills/`, com symlink em `.claude/skills/`.
 - **`/setup-matt-pocock-skills` não é necessário:** a skill não existe no pacote instalado, e o que ela configuraria (tracker, labels, domínio) já está em `issue-tracker.md`, `triage-labels.md` e `domain.md`.
 - **Glossário:** o antigo `CONTEXT.md` foi renomeado para `GLOSSARY.md`, que é o nome que as skills (`tdd`, `diagnosing-bugs`, `domain-modeling`) procuram. Referências antigas a `CONTEXT.md` em outros documentos foram atualizadas.
 - **Pré-requisito do auto-merge:** exige "Allow auto-merge" no repositório e, de preferência, branch protection em `main` exigindo o check `build-and-test`. Não verifiquei se está ativo.

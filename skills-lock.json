@@ -31,6 +31,12 @@
       "skillPath": "skills/engineering/domain-modeling/SKILL.md",
       "computedHash": "b3eb40152b81f0c98fd2095a023c019452dbdce56f7540cc67fece2972db8369"
     },
+    "impeccable": {
+      "source": "pbakaus/impeccable",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/impeccable/SKILL.md",
+      "computedHash": "c671292d4973a711bc857fc619f015f533ca9b49afc78c25c23d5b0811194bbf"
+    },
     "pr": {
       "source": "mattpocock/skills",
       "sourceType": "github",
