@@ -1,3 +1,6 @@
 pnpm-lock.yaml
 docs/
 GLOSSARY.md
+.agents/
+.claude/skills/
+skills-lock.json
