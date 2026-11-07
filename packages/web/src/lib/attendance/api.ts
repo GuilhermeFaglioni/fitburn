@@ -10,6 +10,7 @@ import {
 } from "@fitburn/contracts";
 import { authFetch } from "../auth/authFetch";
 import { parseOrThrow } from "../auth/api";
+import { downloadCsv } from "../exports/download-csv";
 
 export async function listAttendanceClasses(from: string, to: string): Promise<AttendanceClass[]> {
   const params = new URLSearchParams({ from, to });
@@ -32,4 +33,9 @@ export async function markAttendance(
     body: JSON.stringify({ status }),
   });
   return attendanceEntrySchema.parse(await parseOrThrow(response));
+}
+
+/** Baixa o CSV de presenças agregadas por aula entre `from` e `to` (datas locais `YYYY-MM-DD`, inclusivas). */
+export function exportAttendanceCsv(from: string, to: string): Promise<void> {
+  return downloadCsv("/api/exports/attendance", { from, to }, `presencas_${from}_${to}.csv`);
 }

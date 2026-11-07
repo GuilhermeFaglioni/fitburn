@@ -1,6 +1,6 @@
 # Exportações em CSV
 
-Contrato comum das exportações CSV da API (#82 ocupação e #83 reservas já usam a mesma base; #84 também). Código em `packages/api/src/exports/`.
+Contrato comum das exportações CSV da API (#82 ocupação, #83 reservas e #84 presenças usam a mesma base). Código em `packages/api/src/exports/`.
 
 ## Contrato comum
 
@@ -57,7 +57,25 @@ Contrato comum das exportações CSV da API (#82 ocupação e #83 reservas já u
 | `nao_compareceu` | Reservas `NO_SHOW` |
 | `vagas_ocupadas` | `confirmadas` + `concluidas` + `nao_compareceu`. Canceladas não ocupam vaga. |
 
-## Passo a passo para plugar uma nova exportação (T8)
+## Presenças (`GET /api/exports/attendance?from=YYYY-MM-DD&to=YYYY-MM-DD`)
+
+- **Permissão:** `PRESENCA:VIEW` mais `occurrenceScopeFilter`, o mesmo escopo de `GET /api/attendance/classes`. Escopo total vê todas as aulas; `ASSIGNED_CLASSES` e `OWN` veem só as aulas do próprio professor, com as contagens delas. Escopo que não se aplica a aulas (ex.: clientes atribuídos) recebe 403. Não exige escopo total, diferente de reservas: cada linha é uma aula inteira, então a contagem é completa para quem a enxerga.
+- **Arquivo:** `presencas_<from>_<to>.csv`.
+- **Linhas:** uma por ocorrência do período, inclusive canceladas e sem reservas (contagens zeradas), em ordem de início.
+- **Mapeamento:** pelo status atual da reserva, sem histórico. `CONFIRMED` é pendente (ainda sem registro) e nunca vira falta. `CANCELLED` não entra em nenhuma coluna, porque cancelamento não é ausência. Correção de presença (`COMPLETED` ↔ `NO_SHOW`) só muda o status, então o arquivo reflete o estado atual.
+
+| Coluna | Conteúdo |
+| --- | --- |
+| `ocorrencia_id` | ID da ocorrência (não de reserva nem de cliente) |
+| `aula` | Nome da aula |
+| `data_local` | Data local, `YYYY-MM-DD` |
+| `hora_local` | Hora local, `HH:mm` |
+| `situacao` | `AGENDADA` ou `CANCELADA` (situação da ocorrência) |
+| `presentes` | Reservas `COMPLETED` |
+| `faltas` | Reservas `NO_SHOW` |
+| `pendentes` | Reservas `CONFIRMED`: ainda sem presente nem falta registrados |
+
+## Passo a passo para plugar uma nova exportação
 
 Só a consulta muda. Serialização, período, resposta e escopo já existem.
 

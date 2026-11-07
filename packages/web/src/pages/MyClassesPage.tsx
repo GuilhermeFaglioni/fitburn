@@ -10,8 +10,9 @@ import {
   type AttendanceClass,
 } from "@fitburn/contracts";
 import { useAuth } from "../lib/auth/AuthContext";
-import { listAttendanceClasses } from "../lib/attendance/api";
+import { exportAttendanceCsv, listAttendanceClasses } from "../lib/attendance/api";
 import { formatDayHeading, formatInstantHour } from "../lib/agenda/format";
+import { ExportCsvButton } from "../components/ExportCsvButton";
 import { EmptyState, ErrorState, LoadingState } from "../components/states";
 
 type Tab = "today" | "week";
@@ -84,9 +85,18 @@ export function MyClassesPage() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-        <span className="fb-page-eyebrow">Presença</span>
-        <h1 className="fb-page-title">Minhas aulas</h1>
+      <div className="fb-page-header">
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          <span className="fb-page-eyebrow">Presença</span>
+          <h1 className="fb-page-title">Minhas aulas</h1>
+        </div>
+        <div style={{ display: "flex", alignItems: "flex-start", flexWrap: "wrap", gap: 10 }}>
+          {/* Fora do artboard: exporta o mesmo período da lista (Hoje = o dia; Semana = segunda a domingo). */}
+          <ExportCsvButton
+            label="Exportar presenças (CSV)"
+            onExport={() => exportAttendanceCsv(from, to)}
+          />
+        </div>
       </div>
 
       <div className="fb-tabs">
