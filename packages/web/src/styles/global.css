@@ -90,3 +90,57 @@ main:focus,
     transform: none;
   }
 }
+
+/* Superfícies do navegador no tom da marca: seleção de texto, cursor de digitação e controles nativos
+   (o checkbox do consentimento do ranking, rádios). */
+::selection {
+  background: rgba(237, 110, 52, 0.32);
+}
+
+:root {
+  accent-color: var(--color-primary-orange);
+}
+
+input,
+textarea {
+  caret-color: var(--color-primary-orange);
+}
+
+/* Números que se comparam numa coluna ou mudam no lugar (percentuais, posições, horários, contagens, datas
+   das tabelas): algarismos de largura fixa, para a coluna não dançar. Os totais grandes ficam proporcionais. */
+.fb-td,
+.fb-count,
+.fb-dash__bar-value,
+.fb-dash__ranking-pos,
+.fb-dash__ranking-count,
+.fb-chip-cls__hour,
+.fb-myclass__hour,
+.fb-att__progress-count,
+.fb-client-cell__day,
+.fb-client-cell__hour,
+.fb-daychip__day,
+.fb-class-card__time,
+.fb-reservation-card__when,
+.fb-home__reservation-when,
+.fb-home__streak-count,
+.fb-gami__streak-count,
+.fb-gami__rank-pos,
+.fb-gami__rank-info,
+.fb-gami__entry-points,
+.fb-gami__goal-meta,
+.fb-goals__card-meta {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Barras de progresso: revelam da esquerda até o valor. A opacidade só sai de 0.4 para a trilha
+   não piscar vazia; com reduced motion o recorte já começa inteiro e sobra só esse fade. */
+@keyframes fb-meter-in {
+  from {
+    clip-path: var(--meter-reveal-from);
+    opacity: 0.4;
+  }
+  to {
+    clip-path: inset(0);
+    opacity: 1;
+  }
+}

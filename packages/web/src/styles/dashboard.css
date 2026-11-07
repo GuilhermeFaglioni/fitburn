@@ -37,7 +37,7 @@
   padding: 20px 22px;
   background: #ffffff;
   border: 1px solid #e6e6e6;
-  border-radius: 5px;
+  border-radius: var(--radius-sm);
 }
 
 .fb-dash__kpi-label {
@@ -66,7 +66,7 @@
   padding: 22px 24px;
   background: #ffffff;
   border: 1px solid #e6e6e6;
-  border-radius: 5px;
+  border-radius: var(--radius-sm);
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -114,17 +114,40 @@
 
 .fb-dash__meter-track {
   height: 8px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: #eeeeee;
   overflow: hidden;
 }
 
 .fb-dash__meter-fill {
   height: 100%;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: #ed6e34;
   /* Sem texto: o color só existe para o guarda de contraste de fundos laranja. */
   color: #ffffff;
+  /* O momento do painel: as barras se revelam da esquerda até a ocupação, em ordem de leitura. */
+  animation: fb-meter-in var(--duration-meter) var(--ease-out) both;
+}
+
+/* 40ms entre linhas, com teto em 200ms: uma lista longa não fica esperando a última barra. */
+.fb-dash__bar-row:nth-child(2) .fb-dash__meter-fill {
+  animation-delay: 40ms;
+}
+
+.fb-dash__bar-row:nth-child(3) .fb-dash__meter-fill {
+  animation-delay: 80ms;
+}
+
+.fb-dash__bar-row:nth-child(4) .fb-dash__meter-fill {
+  animation-delay: 120ms;
+}
+
+.fb-dash__bar-row:nth-child(5) .fb-dash__meter-fill {
+  animation-delay: 160ms;
+}
+
+.fb-dash__bar-row:nth-child(n + 6) .fb-dash__meter-fill {
+  animation-delay: 200ms;
 }
 
 /* Gamificação: dois números em laranja, um filete e o ranking do período. */

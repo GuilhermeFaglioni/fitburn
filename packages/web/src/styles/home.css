@@ -71,7 +71,7 @@
   padding: 10px 14px;
   background: var(--color-danger-bg);
   border: 1px solid var(--color-danger-border);
-  border-radius: 5px;
+  border-radius: var(--radius-sm);
   font-size: 13px;
   color: var(--color-danger);
 }
@@ -90,7 +90,7 @@
   gap: 12px;
   padding: 14px 16px;
   background: #1a1a1a;
-  border-radius: 5px;
+  border-radius: var(--radius-sm);
 }
 
 .fb-home__plan--empty {
@@ -121,7 +121,7 @@
 .fb-home__badge {
   flex-shrink: 0;
   padding: 5px 10px;
-  border-radius: 5px;
+  border-radius: var(--radius-sm);
   background: rgba(237, 110, 52, 0.14);
   font-size: 11px;
   font-weight: 700;
@@ -146,7 +146,7 @@
   gap: 10px;
   padding: 14px 16px;
   background: #1a1a1a;
-  border-radius: 5px;
+  border-radius: var(--radius-sm);
 }
 
 .fb-home__reservation-info {
@@ -204,7 +204,7 @@
   gap: 18px;
   padding: 20px 16px;
   background: #1a1a1a;
-  border-radius: 5px;
+  border-radius: var(--radius-sm);
 }
 
 .fb-home__points-row {
@@ -242,7 +242,7 @@
 .fb-home__streak-count {
   width: 30px;
   height: 30px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: rgba(237, 110, 52, 0.14);
   display: flex;
   align-items: center;
@@ -279,7 +279,7 @@
 .fb-home__badge-disc {
   width: 36px;
   height: 36px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: #0f0f0f;
   border: 1px solid rgba(255, 255, 255, 0.12);
   display: flex;
