@@ -43,8 +43,23 @@
   --font-serif: "Cormorant", Georgia, "Times New Roman", serif;
   --font-sans: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 
-  /* Raio */
+  /* Raio. O 5px é o raio da marca (cartões, botões, campos); os demais são as exceções que o design já usa. */
   --radius-sm: 5px;
+  /* Checkbox de 18px e a barra de progresso das metas. */
+  --radius-xs: 4px;
+  /* Pílulas: chips de dia e de filtro, trilhas de barra, contadores em círculo. */
+  --radius-pill: 999px;
+  /* Bottom sheet do mobile: só os cantos de cima. */
+  --radius-sheet: 16px 16px 0 0;
+
+  /* Elevação: uma sombra por nível, com deslocamento e desfoque (nunca halo sem deslocamento). Superfícies
+     no fluxo da página não têm sombra; a borda de 1px ou o cinza elevado já as separam. */
+  /* Menus e popovers ancorados a um controle. */
+  --shadow-popover: 0 6px 18px rgba(10, 10, 10, 0.14);
+  /* Diálogos centrados sobre o scrim. */
+  --shadow-dialog: 0 16px 48px rgba(0, 0, 0, 0.5);
+  /* Bottom sheet: a sombra sobe, porque a borda de cima é a que se destaca. */
+  --shadow-sheet: 0 -8px 24px rgba(0, 0, 0, 0.4);
 
   /* Motion: curvas e deslocamentos compartilhados (os keyframes ficam em global.css). */
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);

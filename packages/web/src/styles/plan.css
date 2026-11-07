@@ -24,7 +24,7 @@
   padding: 10px 14px;
   background: var(--color-danger-bg);
   border: 1px solid var(--color-danger-border);
-  border-radius: 5px;
+  border-radius: var(--radius-sm);
   font-size: 13px;
   color: var(--color-danger);
 }
@@ -36,7 +36,7 @@
   gap: 14px;
   padding: 20px 18px;
   background: #1a1a1a;
-  border-radius: 5px;
+  border-radius: var(--radius-sm);
 }
 
 .fb-plan__card-head {
@@ -53,7 +53,7 @@
 .fb-plan__badge {
   flex-shrink: 0;
   padding: 5px 10px;
-  border-radius: 5px;
+  border-radius: var(--radius-sm);
   background: rgba(237, 110, 52, 0.14);
   font-size: 11px;
   font-weight: 700;
@@ -96,7 +96,7 @@
   padding: 24px 18px;
   background: #1a1a1a;
   border: 1px dashed rgba(255, 255, 255, 0.2);
-  border-radius: 5px;
+  border-radius: var(--radius-sm);
   text-align: center;
   /* Como no artboard: o contêiner tem a fonte padrão e só o texto (span) tem 13px/19px. */
   font-size: 16px;
@@ -144,7 +144,7 @@
   gap: 10px;
   padding: 14px 16px;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 5px;
+  border-radius: var(--radius-sm);
 }
 
 .fb-plan__history-info {

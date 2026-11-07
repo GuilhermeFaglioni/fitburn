@@ -88,7 +88,7 @@
   padding: 10px 14px;
   background: var(--color-danger-bg);
   border: 1px solid var(--color-danger-border);
-  border-radius: 5px;
+  border-radius: var(--radius-sm);
   font-size: 13px;
   color: var(--color-danger);
 }
@@ -103,7 +103,7 @@
   flex-shrink: 0;
   width: 56px;
   height: 56px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--fb-profile-card);
   display: flex;
   align-items: center;
@@ -138,7 +138,7 @@
   gap: 16px;
   padding: 18px 16px;
   background: var(--fb-profile-card);
-  border-radius: 5px;
+  border-radius: var(--radius-sm);
 }
 
 .fb-profile__card-head {
@@ -262,7 +262,7 @@
   padding: 10px 12px;
   background: var(--fb-profile-input);
   border: 1px solid var(--fb-profile-input-border);
-  border-radius: 5px;
+  border-radius: var(--radius-sm);
   color: inherit;
   font-size: 14px;
   font-family: var(--font-sans);
@@ -282,7 +282,7 @@
   flex: 1;
   box-sizing: border-box;
   padding: 11px;
-  border-radius: 5px;
+  border-radius: var(--radius-sm);
   font-family: var(--font-sans);
   font-size: 14px;
   font-weight: 700;
