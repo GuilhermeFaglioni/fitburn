@@ -127,6 +127,30 @@
   cursor: not-allowed;
 }
 
+/* Mesmo press e hover dos botões do painel (admin.css). */
+.fb-cadastro__cancel,
+.fb-cadastro__submit {
+  transition:
+    transform var(--duration-press) var(--ease-out),
+    background-color var(--duration-state) var(--ease-out),
+    filter var(--duration-state) var(--ease-out);
+}
+
+.fb-cadastro__cancel:active,
+.fb-cadastro__submit:active:not(:disabled) {
+  transform: scale(var(--press-scale));
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .fb-cadastro__submit:hover:not(:disabled) {
+    filter: brightness(1.07);
+  }
+
+  .fb-cadastro__cancel:hover {
+    background-color: #fafafa;
+  }
+}
+
 @media (max-width: 767px), (pointer: coarse) {
   .fb-cadastro__cancel,
   .fb-cadastro__submit {

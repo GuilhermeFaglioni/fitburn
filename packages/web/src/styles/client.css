@@ -995,20 +995,58 @@
   }
 }
 
-/* Feedback de toque nos controles do cliente. */
+/* Feedback de toque nos controles do cliente; a cor do estado escolhido (dia, aba, filtro) acompanha o
+   press em vez de saltar. */
 .fb-sheet-btn,
 .fb-daychip,
 .fb-client-tab-btn,
+.fb-filter-chip,
 .fb-class-card,
 .fb-client__tab {
-  transition: transform 160ms var(--ease-out);
+  transition:
+    transform var(--duration-press) var(--ease-out),
+    background-color var(--duration-state) var(--ease-out),
+    border-color var(--duration-state) var(--ease-out),
+    color var(--duration-state) var(--ease-out),
+    filter var(--duration-state) var(--ease-out);
 }
 
 .fb-sheet-btn:active:not(:disabled),
 .fb-daychip:active,
 .fb-client-tab-btn:active,
+.fb-filter-chip:active,
 .fb-client__tab:active {
   transform: scale(var(--press-scale));
+}
+
+/* Navegação e botões de ícone: só a cor muda. */
+.fb-client__nav-item,
+.fb-client-icon-btn,
+.fb-client-chip,
+.fb-back-btn,
+.fb-sheet__x,
+.fb-sheet__close {
+  transition:
+    background-color var(--duration-state) var(--ease-out),
+    color var(--duration-state) var(--ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .fb-client__nav-item:not(.active):hover,
+  .fb-back-btn:hover,
+  .fb-sheet__x:hover,
+  .fb-sheet__close:hover {
+    color: var(--color-ink-on-dark);
+  }
+
+  .fb-sheet-btn--primary:hover:not(:disabled),
+  .fb-sheet-btn--danger:hover:not(:disabled) {
+    filter: brightness(1.07);
+  }
+
+  .fb-sheet-btn--ghost:hover:not(:disabled) {
+    background-color: rgba(255, 255, 255, 0.06);
+  }
 }
 
 .fb-class-card:active {
@@ -1023,7 +1061,6 @@
 .fb-sheet-alert--success svg {
   animation: fb-check-pop 240ms var(--ease-out) 80ms both;
 }
-
 @keyframes fb-check-pop {
   from {
     opacity: 0;

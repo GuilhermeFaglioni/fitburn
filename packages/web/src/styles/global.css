@@ -90,3 +90,16 @@ main:focus,
     transform: none;
   }
 }
+
+/* Barras de progresso: revelam da esquerda até o valor. A opacidade só sai de 0.4 para a trilha
+   não piscar vazia; com reduced motion o recorte já começa inteiro e sobra só esse fade. */
+@keyframes fb-meter-in {
+  from {
+    clip-path: var(--meter-reveal-from);
+    opacity: 0.4;
+  }
+  to {
+    clip-path: inset(0);
+    opacity: 1;
+  }
+}

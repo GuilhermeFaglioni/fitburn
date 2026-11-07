@@ -417,3 +417,24 @@
     padding: 10px 22px;
   }
 }
+
+/* Mesmo press dos botões do restante do app; o campo acende a borda no foco sem saltar. */
+.fb-profile__btn {
+  transition:
+    transform var(--duration-press) var(--ease-out),
+    filter var(--duration-state) var(--ease-out);
+}
+
+.fb-profile__btn:active:not(:disabled) {
+  transform: scale(var(--press-scale));
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .fb-profile__btn--primary:hover:not(:disabled) {
+    filter: brightness(1.07);
+  }
+}
+
+.fb-profile__input {
+  transition: border-color var(--duration-state) var(--ease-out);
+}

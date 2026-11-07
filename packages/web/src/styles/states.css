@@ -92,8 +92,22 @@
   }
 }
 
-/* Retorno de uma ação entra suave; carregando e vazio ficam estáticos (vistos o tempo todo). */
+.fb-state__retry {
+  transition: background-color var(--duration-state) var(--ease-out);
+}
+
+/* Retorno de uma ação entra suave. */
 .fb-state--error,
 .fb-state--success {
   animation: fb-enter 180ms var(--ease-out) both;
+}
+
+/* "Carregando…" só aparece se a resposta demorar: uma carga rápida não pisca o texto antes do conteúdo. */
+.fb-state--loading {
+  animation: fb-fade 200ms var(--ease-out) 150ms both;
+}
+
+/* O vazio chega com o resultado da consulta: só fade, sem deslocar a página. */
+.fb-state--empty {
+  animation: fb-fade 200ms var(--ease-out) both;
 }

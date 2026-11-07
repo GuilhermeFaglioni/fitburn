@@ -47,6 +47,15 @@
   font-weight: 500;
 }
 
+/* O item ativo e o hover trocam de cor sem saltar ao navegar entre as telas. */
+.app-menu__link,
+.app-menu__account-link,
+.app-menu__logout {
+  transition:
+    background-color var(--duration-state) var(--ease-out),
+    color var(--duration-state) var(--ease-out);
+}
+
 .app-menu__account {
   box-sizing: border-box;
   padding-top: 16px;

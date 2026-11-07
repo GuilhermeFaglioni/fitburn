@@ -875,11 +875,53 @@
 }
 
 .fb-btn-primary,
-.fb-btn-secondary {
-  transition: transform 160ms var(--ease-out);
+.fb-btn-secondary,
+.fb-btn-danger,
+.fb-weekday-toggle {
+  transition:
+    transform var(--duration-press) var(--ease-out),
+    background-color var(--duration-state) var(--ease-out),
+    border-color var(--duration-state) var(--ease-out),
+    color var(--duration-state) var(--ease-out),
+    filter var(--duration-state) var(--ease-out);
 }
 
 .fb-btn-primary:active:not(:disabled),
-.fb-btn-secondary:active:not(:disabled) {
+.fb-btn-secondary:active:not(:disabled),
+.fb-btn-danger:active:not(:disabled),
+.fb-weekday-toggle:active {
   transform: scale(var(--press-scale));
+}
+
+/* Hover dos botões no desktop: o cheio clareia um pouco (sem cor nova fora dos tokens), o contornado
+   ganha o cinza de fundo que as telas já usam. */
+@media (hover: hover) and (pointer: fine) {
+  .fb-btn-primary:hover:not(:disabled),
+  .fb-btn-danger:hover:not(:disabled) {
+    filter: brightness(1.07);
+  }
+
+  .fb-btn-secondary:hover:not(:disabled) {
+    background-color: #fafafa;
+  }
+}
+
+/* Troca de estado (hover, aba ativa, perfil escolhido, marcado): a cor acompanha em vez de saltar. */
+.fb-tab-btn,
+.fb-row-btn,
+.fb-role-item,
+.fb-day-empty,
+.fb-checkbox,
+.fb-btn-dashed,
+.fb-chip-cls {
+  transition:
+    background-color var(--duration-state) var(--ease-out),
+    border-color var(--duration-state) var(--ease-out),
+    color var(--duration-state) var(--ease-out);
+}
+
+/* O aviso de ação bloqueada nasce do botão que o abriu (canto de cima à direita). */
+.fb-blocked-popover {
+  transform-origin: top right;
+  animation: fb-enter 150ms var(--ease-out) both;
 }

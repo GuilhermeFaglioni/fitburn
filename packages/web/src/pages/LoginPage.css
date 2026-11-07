@@ -244,11 +244,19 @@
 }
 
 .login-form__submit {
-  transition: transform 160ms var(--ease-out);
+  transition:
+    transform var(--duration-press) var(--ease-out),
+    filter var(--duration-state) var(--ease-out);
 }
 
 .login-form__submit:active:not(:disabled) {
   transform: scale(var(--press-scale));
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .login-form__submit:hover:not(:disabled) {
+    filter: brightness(1.07);
+  }
 }
 
 .login-form__error {

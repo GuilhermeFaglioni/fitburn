@@ -347,3 +347,23 @@
   padding-top: 8px;
   border-top: 1px solid #eeeeee;
 }
+
+/* Troca de estado: aluno escolhido, kebab aberto e item sob o ponteiro mudam de cor sem saltar. */
+.fb-goals__student,
+.fb-goals__kebab,
+.fb-goals__menu-item {
+  transition:
+    background-color var(--duration-state) var(--ease-out),
+    color var(--duration-state) var(--ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .fb-goals__student:not(.fb-goals__student--active):hover {
+    background: #f5f5f5;
+  }
+}
+
+/* A barra da meta concluída se revela da esquerda, como as do dashboard. */
+.fb-goals__bar-fill {
+  animation: fb-meter-in var(--duration-meter) var(--ease-out) both;
+}

@@ -70,6 +70,12 @@
   --enter-scale: 0.96;
   --enter-shift: 6px;
   --sheet-offset: 100%;
+  /* Durações por trabalho: troca de cor de estado (hover, aba, marcado), press e o preenchimento de barra. */
+  --duration-state: 140ms;
+  --duration-press: 160ms;
+  --duration-meter: 600ms;
+  /* A barra de progresso nasce na borda esquerda e se revela até o valor (clip-path, sem mexer no layout). */
+  --meter-reveal-from: inset(0 100% 0 0);
 }
 
 /* Reduced motion: o movimento some, o fade de opacidade fica. */
@@ -80,5 +86,7 @@
     --enter-scale: 1;
     --enter-shift: 0px;
     --sheet-offset: 0%;
+    /* A barra já nasce inteira; o fade de fb-meter-in fica. */
+    --meter-reveal-from: inset(0);
   }
 }
