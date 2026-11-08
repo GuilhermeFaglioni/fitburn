@@ -2,6 +2,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import tokensCss from "../src/styles/tokens.css?raw";
 import adminCss from "../src/styles/admin.css?raw";
+import componentsCss from "../src/styles/components.css?raw";
 import goalsCss from "../src/styles/goals.css?raw";
 import dashboardCss from "../src/styles/dashboard.css?raw";
 import clientCss from "../src/styles/client.css?raw";
@@ -286,6 +287,7 @@ function darkFailures(css: string): string[] {
 
 // DS7: a área administrativa também é escura; não há mais folha de tela clara.
 const DARK_SHEETS: [string, string][] = [
+  ["components.css", componentsCss],
   ["admin.css", adminCss],
   ["goals.css", goalsCss],
   ["dashboard.css", dashboardCss],
@@ -410,7 +412,7 @@ describe("botões primários (texto sobre o laranja da marca)", () => {
   });
 
   it("o botão primário do painel e o dia da recorrência marcado usam o par do design", () => {
-    const rules = orangeBackgrounds(adminCss);
+    const rules = orangeBackgrounds(adminCss + componentsCss);
     for (const selector of [".fb-btn-primary", '.fb-weekday-toggle[aria-pressed="true"]']) {
       const rule = rules.find((r) => r.selector === selector);
       expect(rule, selector).toBeDefined();

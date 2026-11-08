@@ -1,0 +1,148 @@
+/**
+ * Componentes base compartilhados (DS4, seção 5 do fluxo): campo, botão, badge e card.
+ * Só tokens; tema escuro único (decisão 134). O alvo de toque de 44px vale em telas de toque.
+ */
+.fb-field {
+  box-sizing: border-box;
+  padding: 9px 12px;
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-line-2);
+  border-radius: var(--radius-sm);
+  color: var(--color-ink-on-dark);
+  font-size: 13px;
+  font-family: var(--font-sans);
+}
+
+.fb-btn-primary {
+  padding: 11px 20px;
+  background: var(--gradient-cta);
+  box-shadow: var(--sh-cta);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-on-orange);
+  cursor: pointer;
+}
+
+.fb-btn-secondary {
+  padding: 10px 18px;
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-line-2);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-ink-2-on-dark);
+  cursor: pointer;
+}
+
+.fb-btn-danger {
+  padding: 10px 18px;
+  background: var(--color-flame-red);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-ink-on-dark);
+  cursor: pointer;
+}
+
+.fb-btn-danger-text {
+  padding: 10px 14px;
+  background: none;
+  border: none;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-danger);
+  cursor: pointer;
+}
+
+.fb-badge {
+  display: inline-block;
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 9px;
+  border-radius: var(--radius-sm);
+}
+
+.fb-badge--spaced {
+  letter-spacing: 0.03em;
+}
+
+.fb-badge--active {
+  color: var(--color-success);
+  background: var(--color-success-bg);
+}
+
+.fb-badge--inactive {
+  color: var(--color-text-muted-on-dark);
+  background: var(--color-surface-2);
+}
+
+.fb-badge--accent {
+  color: var(--color-brand-strong);
+  background: rgba(237, 110, 52, 0.14);
+}
+
+.fb-badge--blue {
+  color: var(--color-info);
+  background: var(--color-info-bg);
+}
+
+.fb-badge--brown {
+  color: var(--color-warn);
+  background: var(--color-warm-bg);
+}
+
+.fb-badge--neutral {
+  color: var(--color-ink-2-on-dark);
+  background: var(--color-surface-2);
+}
+
+/* Estados do campo: erro (aria-invalid) e foco. O anel de foco vem de global.css. */
+.fb-field[aria-invalid="true"] {
+  border-color: var(--color-danger);
+}
+
+.fb-field:disabled,
+.fb-btn-primary:disabled,
+.fb-btn-secondary:disabled,
+.fb-btn-danger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Carregando: o botão mantém o tamanho e não aceita um segundo envio. */
+.fb-btn-primary[aria-busy="true"],
+.fb-btn-secondary[aria-busy="true"],
+.fb-btn-danger[aria-busy="true"] {
+  cursor: progress;
+  pointer-events: none;
+}
+
+/* Card padrão e destaque (selecionado): a borda de 2px na cor de marca não muda o tamanho do cartão. */
+.fb-card {
+  box-sizing: border-box;
+  padding: 16px;
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--sh-1);
+}
+
+.fb-card--selected {
+  padding: 15px;
+  border: 2px solid var(--color-primary-orange);
+}
+
+/* Alvo de toque mínimo de 44px em telas de toque (cliente e admin em tablet ou celular). */
+@media (pointer: coarse) {
+  .fb-field,
+  .fb-btn-primary,
+  .fb-btn-secondary,
+  .fb-btn-danger,
+  .fb-btn-danger-text {
+    min-height: 44px;
+  }
+}
