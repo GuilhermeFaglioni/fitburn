@@ -36,6 +36,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  min-height: 44px;
   padding: 10px 12px;
   border-radius: var(--radius-sm);
   font-size: 14px;
@@ -43,7 +44,8 @@
   text-decoration: none;
 }
 
-.fb-client__nav-item.active {
+.fb-client__nav-item.active,
+.fb-client__nav-item[aria-current="page"] {
   background: rgba(237, 110, 52, 0.14);
   color: var(--color-primary-orange);
   font-weight: 500;

@@ -145,6 +145,15 @@ textarea {
   }
 }
 
+/* Container compartilhado (DS5): largura máxima e respiro lateral por token. */
+.fb-container {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: var(--container-max);
+  margin-inline: auto;
+  padding-inline: var(--container-gutter);
+}
+
 /* Tipografia compartilhada (DS2, decisão #135). Kicker: rótulo em caixa alta espaçada acima de títulos de seção.
    Ênfase: Cormorant só em itálico, dentro de um título em DM Sans. */
 .fb-kicker {
