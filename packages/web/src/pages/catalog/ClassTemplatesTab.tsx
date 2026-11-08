@@ -116,7 +116,7 @@ export function ClassTemplatesTab() {
                 <tr key={template.id}>
                   <td
                     className="fb-td"
-                    style={{ fontWeight: 500, color: template.isActive ? undefined : "#8a8a8a" }}
+                    style={{ fontWeight: 500, color: template.isActive ? undefined : "var(--color-text-muted-on-dark)" }}
                   >
                     {template.name}
                     {!template.isActive && (
@@ -126,13 +126,13 @@ export function ClassTemplatesTab() {
                     )}
                   </td>
                   <td className="fb-td">{template.modality.name}</td>
-                  <td className="fb-td" style={{ color: "#5a5a5a" }}>
+                  <td className="fb-td" style={{ color: "var(--color-text-muted-on-dark)" }}>
                     {template.durationMinutes} min
                   </td>
-                  <td className="fb-td" style={{ color: "#5a5a5a" }}>
+                  <td className="fb-td" style={{ color: "var(--color-text-muted-on-dark)" }}>
                     {template.capacity} vagas
                   </td>
-                  <td className="fb-td" style={{ color: "#5a5a5a" }}>
+                  <td className="fb-td" style={{ color: "var(--color-text-muted-on-dark)" }}>
                     {template.defaultInstructor
                       ? professorLabel(template.defaultInstructor.fullName, instructorNames)
                       : "—"}

@@ -41,8 +41,8 @@ main:focus,
   left: 8px;
   z-index: 100;
   padding: 10px 16px;
-  background: var(--color-surface-white);
-  color: var(--color-ink-on-light);
+  background: var(--color-surface-raised);
+  color: var(--color-ink-on-dark);
   border-radius: var(--radius-sm);
   font-size: 14px;
   font-weight: 700;

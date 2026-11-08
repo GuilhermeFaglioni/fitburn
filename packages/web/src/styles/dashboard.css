@@ -18,7 +18,7 @@
 
 .fb-dash__subtitle {
   font-size: 13px;
-  color: var(--color-text-muted-on-light);
+  color: var(--color-text-muted-on-dark);
 }
 
 /* Cartões de KPI: quatro colunas iguais (266x110 no artboard). */
@@ -35,21 +35,21 @@
   flex-direction: column;
   gap: 10px;
   padding: 20px 22px;
-  background: #ffffff;
-  border: 1px solid #e6e6e6;
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-line);
   border-radius: var(--radius-sm);
 }
 
 .fb-dash__kpi-label {
   font-size: 12px;
   font-weight: 500;
-  color: var(--color-text-muted-on-light);
+  color: var(--color-text-muted-on-dark);
 }
 
 .fb-dash__kpi-value {
   font-size: 32px;
   font-weight: 700;
-  color: var(--color-ink-on-light);
+  color: var(--color-ink-on-dark);
 }
 
 .fb-dash__panels {
@@ -64,8 +64,8 @@
   flex: 1;
   min-width: 0;
   padding: 22px 24px;
-  background: #ffffff;
-  border: 1px solid #e6e6e6;
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-line);
   border-radius: var(--radius-sm);
   display: flex;
   flex-direction: column;
@@ -76,7 +76,7 @@
   margin: 0;
   font-size: 15px;
   font-weight: 700;
-  color: var(--color-ink-on-light);
+  color: var(--color-ink-on-dark);
 }
 
 /* Ocupação por aula: nome, percentual e a barra de 8px. */
@@ -103,19 +103,19 @@
 
 .fb-dash__bar-name {
   font-size: 13px;
-  color: #333333;
+  color: var(--color-ink-2-on-dark);
 }
 
 .fb-dash__bar-value {
   font-size: 13px;
   font-weight: 700;
-  color: var(--color-ink-on-light);
+  color: var(--color-ink-on-dark);
 }
 
 .fb-dash__meter-track {
   height: 8px;
   border-radius: var(--radius-pill);
-  background: #eeeeee;
+  background: var(--color-surface-2);
   overflow: hidden;
 }
 
@@ -166,17 +166,17 @@
 .fb-dash__figure-value {
   font-size: 22px;
   font-weight: 700;
-  color: var(--color-accent-on-light);
+  color: var(--color-brand-strong);
 }
 
 .fb-dash__figure-label {
   font-size: 12px;
-  color: var(--color-text-muted-on-light);
+  color: var(--color-text-muted-on-dark);
 }
 
 .fb-dash__divider {
   height: 1px;
-  background: #eeeeee;
+  background: var(--color-surface-2);
 }
 
 .fb-dash__ranking {
@@ -189,7 +189,7 @@
   margin: 0;
   font-size: 12px;
   font-weight: 500;
-  color: var(--color-text-muted-on-light);
+  color: var(--color-text-muted-on-dark);
 }
 
 .fb-dash__ranking-list {
@@ -211,19 +211,19 @@
   width: 22px;
   font-size: 13px;
   font-weight: 700;
-  color: var(--color-text-muted-on-light);
+  color: var(--color-text-muted-on-dark);
 }
 
 .fb-dash__ranking-name {
   flex-grow: 1;
   min-width: 0;
   font-size: 13px;
-  color: var(--color-ink-on-light);
+  color: var(--color-ink-on-dark);
 }
 
 .fb-dash__ranking-count {
   font-size: 12px;
-  color: var(--color-text-muted-on-light);
+  color: var(--color-text-muted-on-dark);
 }
 
 /* Padding do conteúdo do artboard (32px 48px); no mobile vale o da casca. */
