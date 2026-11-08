@@ -54,10 +54,11 @@
 
 .login-form__title {
   margin: 0;
-  font-family: var(--font-serif);
-  font-weight: 600;
-  font-size: 28px;
-  line-height: 1.15;
+  font-family: var(--font-sans);
+  font-weight: var(--weight-bold);
+  font-size: var(--text-h1);
+  letter-spacing: var(--tracking-title);
+  line-height: var(--leading-title);
   color: var(--color-ink-on-dark);
 }
 

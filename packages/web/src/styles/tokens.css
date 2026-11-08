@@ -42,9 +42,25 @@
   --color-error-text-on-light: #b42318;
   --color-success-text-on-light: #1e6b34;
 
-  /* Tipografia */
+  /* Tipografia (DS2, decisão #135). Títulos em DM Sans 700 com tracking negativo; Cormorant só como ênfase em itálico. */
   --font-serif: "Cormorant", Georgia, "Times New Roman", serif;
   --font-sans: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  /* Escala (px, mobile primeiro): display, título de tela, seção, subtítulo, corpo, legenda e rótulo. */
+  --text-display: 40px;
+  --text-h1: 30px;
+  --text-h2: 22px;
+  --text-h3: 17px;
+  --text-body: 15px;
+  --text-small: 13px;
+  --text-caption: 12px;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-bold: 700;
+  --leading-title: 1.15;
+  --leading-body: 1.5;
+  --tracking-display: -0.045em;
+  --tracking-title: -0.03em;
+  --tracking-kicker: 0.14em;
 
   /* Raio. O 5px é o raio da marca (cartões, botões, campos); os demais são as exceções que o design já usa. */
   --radius-sm: 5px;

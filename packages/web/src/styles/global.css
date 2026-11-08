@@ -144,3 +144,21 @@ textarea {
     opacity: 1;
   }
 }
+
+/* Tipografia compartilhada (DS2, decisão #135). Kicker: rótulo em caixa alta espaçada acima de títulos de seção.
+   Ênfase: Cormorant só em itálico, dentro de um título em DM Sans. */
+.fb-kicker {
+  margin: 0;
+  font-size: var(--text-caption);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-kicker);
+  text-transform: uppercase;
+  color: var(--color-text-muted-on-dark);
+}
+
+.fb-em {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.02em;
+}
