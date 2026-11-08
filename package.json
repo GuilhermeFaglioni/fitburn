@@ -26,7 +26,8 @@
     "design:compare": "node scripts/design-compare/run.mjs",
     "design:seed": "node scripts/design-compare/seed-demo.mjs",
     "session:two-tabs": "node scripts/session-two-tabs/run.mjs",
-    "demo:seed:guilherme": "node scripts/demo-seed/seed-demo-guilherme.mjs"
+    "demo:seed:guilherme": "node scripts/demo-seed/seed-demo-guilherme.mjs",
+    "check:360": "node scripts/check-360/run.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

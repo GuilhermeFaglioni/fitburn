@@ -34,6 +34,7 @@
   --color-primary-orange: #ed6e34;
   --color-flame-red: #c23a1f;
   --color-accent-on-light: #a8401a;
+  --color-brand-strong: #f08a5a;
   /* Texto branco sobre o laranja da marca: exceção de contraste aprovada para texto grande e negrito (decisão #136). */
   --color-on-orange: #ffffff;
   --gradient-cta: linear-gradient(145deg, #f58a55 0%, #ed6e34 45%, #c23a1f 100%);
