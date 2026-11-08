@@ -106,7 +106,7 @@ export function AgendaAdminPage() {
           >
             ‹
           </button>
-          <span style={{ fontSize: 13, color: "#5a5a5a" }}>{formatWeekRange(weekStart)}</span>
+          <span style={{ fontSize: 13, color: "var(--color-text-muted-on-dark)" }}>{formatWeekRange(weekStart)}</span>
           <button
             type="button"
             className="fb-icon-btn"

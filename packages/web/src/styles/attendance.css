@@ -263,7 +263,7 @@
   margin: 0;
   font-size: 14px;
   font-weight: 700;
-  color: #4a4a4a;
+  color: var(--color-ink-2-on-dark);
 }
 
 .fb-myclass-list {
@@ -281,16 +281,16 @@
   align-items: center;
   gap: 16px;
   padding: 14px 16px;
-  background: #f7f7f7;
-  border: 1px solid #ececec;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-line);
   border-radius: var(--radius-sm);
-  color: var(--color-ink-on-light);
+  color: var(--color-ink-on-dark);
   text-decoration: none;
 }
 
 @media (hover: hover) and (pointer: fine) {
   .fb-myclass:hover {
-    background: #f2f2f2;
+    background: var(--color-surface-2);
   }
 }
 
@@ -316,7 +316,7 @@
 
 .fb-myclass__sub {
   font-size: 13px;
-  color: #5a5a5a;
+  color: var(--color-text-muted-on-dark);
 }
 
 /* "Minhas aulas": o hover acompanha em vez de saltar. */

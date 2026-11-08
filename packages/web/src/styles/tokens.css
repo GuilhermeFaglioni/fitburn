@@ -15,7 +15,7 @@
 
   --color-surface-000: #0a0a0a;
   --color-surface-raised: #161311;
-  --color-surface-white: #ffffff;
+  --color-surface-2: #1e1916;
 
   /* Texto. */
   --color-ink-on-dark: #ffffff;
@@ -45,6 +45,18 @@
   --color-danger-border: rgba(255, 109, 90, 0.35);
   --color-error-text-on-light: #b42318;
   --color-success-text-on-light: #1e6b34;
+
+  /* Admin no tema escuro (DS7): tinta secundária, faint, estados e tintas. */
+  --color-ink-2-on-dark: #e9e1dc;
+  --color-text-faint-on-dark: #857b75;
+  --color-success: #5cc98a;
+  --color-success-bg: rgba(92, 201, 138, 0.1);
+  --color-success-border: rgba(92, 201, 138, 0.35);
+  --color-warn: #f2c25c;
+  --color-warn-border: rgba(242, 194, 92, 0.35);
+  --color-info: #8fb4ea;
+  --color-info-bg: rgba(143, 180, 234, 0.12);
+  --color-warm-bg: rgba(237, 110, 52, 0.08);
 
   /* Tipografia (DS2, decisão #135). Títulos em DM Sans 700 com tracking negativo; Cormorant só como ênfase em itálico. */
   --font-serif: "Cormorant", Georgia, "Times New Roman", serif;

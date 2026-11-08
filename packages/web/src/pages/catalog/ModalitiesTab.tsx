@@ -99,7 +99,7 @@ export function ModalitiesTab() {
                 <tr key={modality.id}>
                   <td
                     className="fb-td"
-                    style={{ fontWeight: 500, color: modality.isActive ? undefined : "#8a8a8a" }}
+                    style={{ fontWeight: 500, color: modality.isActive ? undefined : "var(--color-text-muted-on-dark)" }}
                   >
                     {modality.name}
                     {!modality.isActive && (
@@ -108,10 +108,10 @@ export function ModalitiesTab() {
                       </span>
                     )}
                   </td>
-                  <td className="fb-td" style={{ color: "#5a5a5a" }}>
+                  <td className="fb-td" style={{ color: "var(--color-text-muted-on-dark)" }}>
                     {modality.description ?? "—"}
                   </td>
-                  <td className="fb-td" style={{ color: "#5a5a5a" }}>
+                  <td className="fb-td" style={{ color: "var(--color-text-muted-on-dark)" }}>
                     {modality.activeTemplateCount}
                   </td>
                   <td
