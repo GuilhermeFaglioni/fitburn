@@ -93,29 +93,6 @@
   color: var(--color-text-muted-on-dark);
 }
 
-.fb-field {
-  box-sizing: border-box;
-  padding: 9px 12px;
-  background: var(--color-surface-raised);
-  border: 1px solid var(--color-line-2);
-  border-radius: var(--radius-sm);
-  color: var(--color-ink-on-dark);
-  font-size: 13px;
-  font-family: var(--font-sans);
-}
-
-.fb-btn-primary {
-  padding: 11px 20px;
-  background: var(--gradient-cta);
-  box-shadow: var(--sh-cta);
-  border: none;
-  border-radius: var(--radius-sm);
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--color-on-orange);
-  cursor: pointer;
-}
-
 /* No design, "+ Novo cliente" é um <a> (DM Sans); os demais primários são <button> sem família (Arial). */
 .fb-btn-primary--sans {
   font-family: var(--font-sans);
@@ -279,49 +256,6 @@
 .fb-note {
   font-size: 12px;
   color: var(--color-text-muted-on-dark);
-}
-
-.fb-badge {
-  display: inline-block;
-  white-space: nowrap;
-  font-size: 11px;
-  font-weight: 700;
-  padding: 4px 9px;
-  border-radius: var(--radius-sm);
-}
-
-.fb-badge--spaced {
-  letter-spacing: 0.03em;
-}
-
-.fb-badge--active {
-  color: var(--color-success);
-  background: var(--color-success-bg);
-}
-
-.fb-badge--inactive {
-  color: var(--color-text-muted-on-dark);
-  background: var(--color-surface-2);
-}
-
-.fb-badge--accent {
-  color: var(--color-brand-strong);
-  background: rgba(237, 110, 52, 0.14);
-}
-
-.fb-badge--blue {
-  color: var(--color-info);
-  background: var(--color-info-bg);
-}
-
-.fb-badge--brown {
-  color: var(--color-warn);
-  background: var(--color-warm-bg);
-}
-
-.fb-badge--neutral {
-  color: var(--color-ink-2-on-dark);
-  background: var(--color-surface-2);
 }
 
 .fb-lock-banner {
@@ -702,17 +636,6 @@
   padding-top: 8px;
 }
 
-.fb-btn-secondary {
-  padding: 10px 18px;
-  background: var(--color-surface-raised);
-  border: 1px solid var(--color-line-2);
-  border-radius: var(--radius-sm);
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--color-ink-2-on-dark);
-  cursor: pointer;
-}
-
 .fb-btn-primary--lg {
   padding: 11px 22px;
   font-size: 15px;
@@ -779,27 +702,6 @@
   font-size: 12px;
   line-height: 18px;
   color: var(--color-ink-2-on-dark);
-}
-
-.fb-btn-danger-text {
-  padding: 10px 14px;
-  background: none;
-  border: none;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--color-danger);
-  cursor: pointer;
-}
-
-.fb-btn-danger {
-  padding: 10px 18px;
-  background: var(--color-flame-red);
-  border: none;
-  border-radius: var(--radius-sm);
-  font-size: 13px;
-  font-weight: 700;
-  color: #ffffff;
-  cursor: pointer;
 }
 
 .fb-modal__text {
