@@ -9,6 +9,10 @@
      Os tokens claros (`*-on-light`) seguem só para as superfícies claras que ainda não migraram (admin, DS7). */
 
   /* Superfícies: fundo e cartão do tema escuro; branco só para as superfícies claras (admin, até DS7). */
+  /* Bordas de 1px: linha suave e linha de controle (proposta Oratry, tema escuro). */
+  --color-line: #2a2320;
+  --color-line-2: #3a302b;
+
   --color-surface-000: #0a0a0a;
   --color-surface-raised: #161311;
   --color-surface-white: #ffffff;
@@ -33,7 +37,7 @@
   /* Texto branco sobre o laranja da marca: exceção de contraste aprovada para texto grande e negrito (decisão #136). */
   --color-on-orange: #ffffff;
   --gradient-cta: linear-gradient(145deg, #f58a55 0%, #ed6e34 45%, #c23a1f 100%);
-  --shadow-cta: 0 10px 26px rgba(237, 110, 52, 0.3);
+  --sh-cta: 0 10px 26px rgba(237, 110, 52, 0.3);
 
   /* Estados: erro (fundo e borda translúcidos sobre o escuro); sucesso e aviso entram com os badges (DS4). */
   --color-danger: #ff6d5a;
@@ -71,14 +75,13 @@
   /* Bottom sheet do mobile: só os cantos de cima. */
   --radius-sheet: 16px 16px 0 0;
 
-  /* Elevação: uma sombra por nível, com deslocamento e desfoque (nunca halo sem deslocamento). Superfícies
-     no fluxo da página não têm sombra; a borda de 1px ou o cinza elevado já as separam. */
-  /* Menus e popovers ancorados a um controle. */
-  --shadow-popover: 0 6px 18px rgba(10, 10, 10, 0.14);
-  /* Diálogos centrados sobre o scrim. */
-  --shadow-dialog: 0 16px 48px rgba(0, 0, 0, 0.5);
-  /* Bottom sheet: a sombra sobe, porque a borda de cima é a que se destaca. */
-  --shadow-sheet: 0 -8px 24px rgba(0, 0, 0, 0.4);
+  /* Elevação (DS3, proposta Oratry): sombras tingidas no tema escuro. Cards no fluxo usam --sh-1; menus e
+     popovers --sh-2; diálogos e sheets --sh-3. Não há halo sem deslocamento. */
+  --sh-1: 0 5px 14px rgba(0, 0, 0, 0.35);
+  --sh-2: 0 12px 38px rgba(0, 0, 0, 0.45);
+  --sh-3: 0 22px 60px rgba(0, 0, 0, 0.55);
+  /* Anel de foco de 3px (a cor de marca com 35% de opacidade). */
+  --sh-focus: 0 0 0 3px rgba(237, 110, 52, 0.35);
 
   /* Motion: curvas e deslocamentos compartilhados (os keyframes ficam em global.css). */
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);

@@ -240,7 +240,7 @@
   background: #ffffff;
   border: 1px solid #e6e6e6;
   border-radius: var(--radius-sm);
-  box-shadow: var(--shadow-popover);
+  box-shadow: var(--sh-2);
 }
 
 .fb-goals__menu-item {
