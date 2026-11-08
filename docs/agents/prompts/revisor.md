@@ -13,11 +13,11 @@ Contexto: branch `feat/<nº>-<slug>` na worktree `<caminho>`, base `main`. Banco
 Tarefa:
 1. Confira o diff (`git diff origin/main...HEAD`) contra os critérios de aceite da issue, as specs e as decisões registradas. Confira os riscos: permissão e escopo por perfil, corrida e idempotência de reserva, ciclo de vida de sessão, consentimento e manifestações imutáveis, perda de dados, comportamento offline, dado real ou segredo vazado. Não reabra estilo.
 2. Rode a suíte completa uma vez: `pnpm --filter @fitburn/contracts build`, `pnpm prisma:generate`, `pnpm prisma:migrate:test`, `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`.
-3. Para UI, confira o print lado a lado (`pnpm design:compare`) e as divergências declaradas.
+3. Para UI, confira componentes e estados (vazio, offline, erro, carregando) contra a issue e `docs/decisions.md`.
 4. Publique o veredito como comentário na issue: **Aprovado** ou **Reprovado** com lista objetiva (arquivo, problema, como corrigir).
 
 Se **reprovado**, pare aqui. Se **aprovado**:
-5. Abra o PR para `main` (ou para o branch-base, se a issue for empilhada): título em português, corpo com `Closes #<nº>`, como validar e as decisões pequenas registradas. Em PR de UI, anexe o print lado a lado, **não ative auto-merge** e aplique `ready-for-human`.
+5. Abra o PR para `main` (ou para o branch-base, se a issue for empilhada): título em português, corpo com `Closes #<nº>`, como validar e as decisões pequenas registradas. Em PR de UI, **não ative auto-merge** e aplique `ready-for-human`.
 6. Nos demais, ative `gh pr merge --auto --squash --delete-branch` **imediatamente ao abrir o PR**, sem esperar a CI (a `main` exige `build-and-test`, e o GitHub mergeia quando ele passa). Confirme com `gh pr view <nº> --json autoMergeRequest,state` que o auto-merge está registrado ou que o PR já mergeou. Não use `--watch` nem polling.
 7. Falha de check: `gh run view --log-failed`, corrija, rode a suíte local e faça push. Conflito: `git rebase origin/main` (ou merge, se arriscado), suíte, `git push --force-with-lease`. Mudança de comportamento além de ajuste pontual: devolva ao planejador para nova revisão.
 
