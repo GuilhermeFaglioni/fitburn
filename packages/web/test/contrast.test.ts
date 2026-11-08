@@ -63,21 +63,26 @@ describe("contraste dos tokens de texto", () => {
     expect(contrast(hex(token("color-primary-orange")), BLACK)).toBeGreaterThanOrEqual(4.5);
   });
 
-  it("exceção do design: o texto secundário das telas claras (#8a8a8a) dá 3.45:1 sobre branco", () => {
-    const muted = hex(token("color-text-muted-on-light"));
-    expect(token("color-text-muted-on-light")).toBe("#8a8a8a");
-    expect(contrast(muted, WHITE)).toBeCloseTo(3.45, 1);
+  it("o texto secundário das telas claras (#6b5d55, proposta) passa de 4.5:1 sobre branco", () => {
+    expect(token("color-text-muted-on-light")).toBe("#6b5d55");
+    expect(contrast(hex(token("color-text-muted-on-light")), WHITE)).toBeGreaterThanOrEqual(4.5);
   });
 
-  it("exceção do design: o cinza das linhas inativas (#b0b0b0) dá 2.17:1 sobre branco e só serve para linhas esmaecidas", () => {
-    expect(token("color-text-faint-on-light")).toBe("#b0b0b0");
-    expect(contrast(hex(token("color-text-faint-on-light")), WHITE)).toBeCloseTo(2.17, 1);
+  it("exceção da proposta: o cinza das linhas inativas (#8e7f76) dá 3.85:1 sobre branco e só serve para linhas esmaecidas", () => {
+    expect(token("color-text-faint-on-light")).toBe("#8e7f76");
+    expect(contrast(hex(token("color-text-faint-on-light")), WHITE)).toBeCloseTo(3.85, 1);
   });
 
-  it("exceção do design: o laranja da marca como texto das telas claras dá 3.05:1 sobre branco", () => {
+  it("o laranja de texto sobre claro é #A8401A (decisão #136) e passa de 4.5:1 sobre branco", () => {
     const accent = hex(token("color-accent-on-light"));
-    expect(token("color-accent-on-light")).toBe(token("color-primary-orange"));
-    expect(contrast(accent, WHITE)).toBeCloseTo(3.05, 1);
+    expect(token("color-accent-on-light")).toBe("#a8401a");
+    expect(contrast(accent, WHITE)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("gradiente CTA (decisão #136): o branco passa de 4.5:1 no fim do gradiente (#C23A1F, 5.36:1), mas o início (#F58A55) dá 2.43:1, abaixo de 3:1 — registrado para decisão", () => {
+    expect(token("gradient-cta")).toContain("#c23a1f");
+    expect(contrast(WHITE, hex("#c23a1f"))).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(WHITE, hex("#f58a55"))).toBeCloseTo(2.43, 1);
   });
 
   it("o texto de erro das telas claras passa de 4.5:1 sobre o fundo do aviso", () => {
@@ -90,11 +95,9 @@ describe("contraste dos tokens de texto", () => {
     expect(contrast(hex(token("color-danger")), tint)).toBeGreaterThanOrEqual(4.5);
   });
 
-  it("o texto secundário das telas escuras (branco a 60%) passa de 4.5:1 sobre o cartão elevado", () => {
-    const muted = token("color-text-muted-on-dark").match(/rgba\(255, 255, 255, ([\d.]+)\)/);
-    expect(muted).not.toBeNull();
-    const alpha = Number(muted?.[1]);
-    expect(contrast(over(WHITE, alpha, RAISED), RAISED)).toBeGreaterThanOrEqual(4.5);
+  it("o texto secundário das telas escuras (#a39a94, proposta) passa de 4.5:1 sobre o cartão elevado", () => {
+    expect(token("color-text-muted-on-dark")).toBe("#a39a94");
+    expect(contrast(hex(token("color-text-muted-on-dark")), RAISED)).toBeGreaterThanOrEqual(4.5);
   });
 
   it("níveis de texto translúcido do design: 50, 55 e 65% passam de 4.5:1; 40 e 45% são exceção do design (3.83:1 e 4.47:1)", () => {
@@ -122,9 +125,7 @@ const WHITE_ON_ORANGE_FLOOR = 3;
 
 /** Cores de texto das telas claras que o design manda usar, com o piso da razão sobre branco. */
 const LIGHT_TEXT_EXCEPTIONS: Record<string, { floor: number; why: string }> = {
-  "#8a8a8a": { floor: 3.4, why: "cinza de rótulos e legendas (3.45:1)" },
-  "#b0b0b0": { floor: 2.1, why: "cinza de linha inativa (2.17:1)" },
-  "#ed6e34": { floor: 3, why: "laranja de destaque como texto (3.05:1)" },
+  "#8e7f76": { floor: 3.8, why: "cinza de linha inativa da proposta (3.85:1), não é texto de conteúdo" },
   "#c8c8c8": { floor: 1.6, why: "travessão da coluna de ações (1.67:1, decorativo)" },
 };
 
@@ -138,6 +139,9 @@ const LIGHT_WHITE_NO_BACKGROUND = new Map<string, "orange" | "no-text">([
   [".fb-checkbox:checked::after", "orange"],
   [".fb-checkbox.fb-checkbox--fixed:disabled:checked::after", "orange"],
   [".fb-goals__form .fb-btn-primary", "orange"],
+  // Botão primário com o gradiente CTA (decisão #136): o fundo vem de var(--gradient-cta), não de um hex.
+  // O ponto mais claro do gradiente (#F58A55) fica abaixo do piso; ver o teste "gradiente CTA".
+  [".fb-btn-primary", "orange"],
   [".fb-goals__bar-fill", "no-text"],
   [".fb-dash__meter-fill", "no-text"],
 ]);
@@ -187,11 +191,22 @@ function normalize(selector: string): string {
 }
 
 /** Regras `seletor { ... color: valor; ... }` de uma folha de estilo (todas, sem escape por comentário). */
+/** `var(--token)` vira o valor do token (hex ou rgba), para a checagem ver a cor real e não o nome. */
+function resolveVar(value: string): string {
+  const name = value.match(/^var\(--([\w-]+)\)$/)?.[1];
+  if (!name) return value;
+  try {
+    return token(name);
+  } catch {
+    return value; // token que não vem de tokens.css: fica como está e não é checado
+  }
+}
+
 function textColors(css: string): { selector: string; value: string; body: string }[] {
   const found: { selector: string; value: string; body: string }[] = [];
   for (const [, selector, body] of stripComments(css).matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
     for (const [, value] of body.matchAll(/(?<![-\w])color:\s*([^;]+);/g)) {
-      found.push({ selector: normalize(selector), value: value.trim(), body });
+      found.push({ selector: normalize(selector), value: resolveVar(value.trim()), body });
     }
   }
   return found;
@@ -300,7 +315,7 @@ describe("cores de texto das folhas de estilo", () => {
   it("cinzas claros fora da lista nomeada falham nas telas claras, com ou sem /* design */", () => {
     expect(lightFailures(".x { color: #aaaaaa; /* design */ }")).toEqual([".x → #aaaaaa"]);
     expect(lightFailures(".x { color: #999999; }")).toEqual([".x → #999999"]);
-    expect(lightFailures(".x { color: #8a8a8a; }")).toEqual([]);
+    expect(lightFailures(".x { color: #8e7f76; }")).toEqual([]);
   });
 
   it("branco em tela clara só passa sobre fundo conhecido ou nos seletores nomeados", () => {
@@ -336,7 +351,7 @@ function resolveColor(value: string, bg: Rgb = ORANGE_RGB): Rgb {
 function orangeBackgrounds(css: string): { selector: string; color: string | undefined }[] {
   const found: { selector: string; color: string | undefined }[] = [];
   for (const [, selector, body] of stripComments(css).matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
-    if (!/background(-color)?:[^;]*(primary-orange|#ed6e34)/i.test(body)) continue;
+    if (!/background(-color)?:[^;]*(primary-orange|#ed6e34|gradient-cta)/i.test(body)) continue;
     found.push({
       selector: normalize(selector),
       color: body.match(/(?<![-\w])color:\s*([^;]+);/)?.[1].trim(),

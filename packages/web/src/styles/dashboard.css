@@ -18,7 +18,7 @@
 
 .fb-dash__subtitle {
   font-size: 13px;
-  color: #8a8a8a;
+  color: var(--color-text-muted-on-light);
 }
 
 /* Cartões de KPI: quatro colunas iguais (266x110 no artboard). */
@@ -43,13 +43,13 @@
 .fb-dash__kpi-label {
   font-size: 12px;
   font-weight: 500;
-  color: #8a8a8a;
+  color: var(--color-text-muted-on-light);
 }
 
 .fb-dash__kpi-value {
   font-size: 32px;
   font-weight: 700;
-  color: #0a0a0a;
+  color: var(--color-ink-on-light);
 }
 
 .fb-dash__panels {
@@ -76,7 +76,7 @@
   margin: 0;
   font-size: 15px;
   font-weight: 700;
-  color: #0a0a0a;
+  color: var(--color-ink-on-light);
 }
 
 /* Ocupação por aula: nome, percentual e a barra de 8px. */
@@ -109,7 +109,7 @@
 .fb-dash__bar-value {
   font-size: 13px;
   font-weight: 700;
-  color: #0a0a0a;
+  color: var(--color-ink-on-light);
 }
 
 .fb-dash__meter-track {
@@ -122,7 +122,7 @@
 .fb-dash__meter-fill {
   height: 100%;
   border-radius: var(--radius-pill);
-  background: #ed6e34;
+  background: var(--color-primary-orange);
   /* Sem texto: o color só existe para o guarda de contraste de fundos laranja. */
   color: #ffffff;
   /* O momento do painel: as barras se revelam da esquerda até a ocupação, em ordem de leitura. */
@@ -171,7 +171,7 @@
 
 .fb-dash__figure-label {
   font-size: 12px;
-  color: #8a8a8a;
+  color: var(--color-text-muted-on-light);
 }
 
 .fb-dash__divider {
@@ -189,7 +189,7 @@
   margin: 0;
   font-size: 12px;
   font-weight: 500;
-  color: #8a8a8a;
+  color: var(--color-text-muted-on-light);
 }
 
 .fb-dash__ranking-list {
@@ -211,19 +211,19 @@
   width: 22px;
   font-size: 13px;
   font-weight: 700;
-  color: #8a8a8a;
+  color: var(--color-text-muted-on-light);
 }
 
 .fb-dash__ranking-name {
   flex-grow: 1;
   min-width: 0;
   font-size: 13px;
-  color: #0a0a0a;
+  color: var(--color-ink-on-light);
 }
 
 .fb-dash__ranking-count {
   font-size: 12px;
-  color: #8a8a8a;
+  color: var(--color-text-muted-on-light);
 }
 
 /* Padding do conteúdo do artboard (32px 48px); no mobile vale o da casca. */

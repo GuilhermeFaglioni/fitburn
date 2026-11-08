@@ -89,7 +89,7 @@
   justify-content: space-between;
   gap: 12px;
   padding: 14px 16px;
-  background: #1a1a1a;
+  background: var(--color-surface-raised);
   border-radius: var(--radius-sm);
 }
 
@@ -145,7 +145,7 @@
   flex-direction: column;
   gap: 10px;
   padding: 14px 16px;
-  background: #1a1a1a;
+  background: var(--color-surface-raised);
   border-radius: var(--radius-sm);
 }
 
@@ -203,7 +203,7 @@
   flex-direction: column;
   gap: 18px;
   padding: 20px 16px;
-  background: #1a1a1a;
+  background: var(--color-surface-raised);
   border-radius: var(--radius-sm);
 }
 

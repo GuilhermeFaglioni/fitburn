@@ -33,21 +33,21 @@
 }
 
 .fb-sheets .fb-goals__students-title {
-  color: #8a8a8a;
+  color: var(--color-text-muted-on-light);
 }
 
 .fb-sheets .fb-goals__student--active {
-  color: #ed6e34;
+  color: var(--color-accent-on-light);
 }
 
 .fb-sheets .fb-goals__students-note {
-  color: #b0b0b0;
+  color: var(--color-text-faint-on-light);
 }
 
 .fb-sheets .fb-sheets__row-fields .fb-modal__field label {
   font-size: 11px;
   font-weight: 400;
-  color: #8a8a8a;
+  color: var(--color-text-muted-on-light);
 }
 
 /* Desktop: as colunas do exercício ficam em uma linha, na proporção 2:1:1:1:1:1:3 do artboard. */
@@ -88,7 +88,7 @@
   padding: 8px;
   background: none;
   border: none;
-  color: #c23a1f;
+  color: var(--color-flame-red);
   cursor: pointer;
   font-size: 13px;
 }
@@ -251,13 +251,13 @@
 .fb-sheets__item-title {
   font-size: 13px;
   font-weight: 500;
-  color: #1a1a1a;
+  color: var(--color-surface-raised);
   overflow-wrap: anywhere;
 }
 
 .fb-sheets__item-meta {
   font-size: 12px;
-  color: #8a8a8a;
+  color: var(--color-text-muted-on-light);
 }
 
 .fb-sheets__item-actions {
@@ -360,7 +360,7 @@
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.03em;
-  color: var(--color-primary-orange);
+  color: var(--color-accent-on-light);
 }
 
 .fb-workout__badge--closed {
@@ -401,7 +401,7 @@
   flex-direction: column;
   gap: 10px;
   padding: 14px 16px;
-  background: #1a1a1a;
+  background: var(--color-surface-raised);
   border-radius: var(--radius-sm);
 }
 

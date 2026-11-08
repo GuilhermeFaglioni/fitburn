@@ -5,39 +5,42 @@
  * — Design System, Branding e Marketing.md para o histórico da marca.
  */
 :root {
-  /* Cores */
+  /* Cores. Tema escuro único (decisão #134), com neutros quentes da proposta Oratry (decisão #132).
+     Os tokens claros (`*-on-light`) seguem só para as superfícies claras que ainda não migraram (admin, DS7). */
+
+  /* Superfícies: fundo e cartão do tema escuro; branco só para as superfícies claras (admin, até DS7). */
   --color-surface-000: #0a0a0a;
-  --color-surface-raised: #1a1a1a;
-  --color-surface-medium: #4a4a4a;
+  --color-surface-raised: #161311;
   --color-surface-white: #ffffff;
+
+  /* Texto. */
   --color-ink-on-dark: #ffffff;
-  --color-ink-on-light: #0a0a0a;
-  /* Texto sobre fundo laranja da marca: o design usa branco em negrito (~3.05:1, abaixo de 4.5:1; o tokens.json do
-     design já registra o par como marca). Exceção conhecida do design, registrada em test/contrast.test.ts. */
-  --color-on-orange: #ffffff;
-  --color-primary-orange: #ed6e34;
-  --color-flame-red: #c23a1f;
-
-  /* Não vem do tokens.json oficial: cor de erro usada de forma consistente
-     nos estados de erro do canvas de design (ex.: Login.dc.html). */
-  --color-danger: #ff6d5a;
-  --color-danger-bg: rgba(255, 109, 90, 0.1);
-  --color-danger-border: rgba(255, 109, 90, 0.35);
-
-  /* Texto secundário. O design usa cinzas e transparências que ficam abaixo de 4.5:1 (exceções conhecidas do design,
-     registradas em test/contrast.test.ts): #8a8a8a e #b0b0b0 sobre branco; branco a 40% a 55% sobre preto. */
-  --color-text-muted-on-light: #8a8a8a;
-  --color-text-faint-on-light: #b0b0b0;
-  --color-text-muted-on-dark: rgba(255, 255, 255, 0.6);
-  /* Um alpha para cada nível de texto secundário das telas escuras (o design escolhe por elemento). */
+  --color-ink-on-light: #1c1714;
+  --color-text-muted-on-dark: #a39a94;
+  --color-text-muted-on-light: #6b5d55;
+  --color-text-faint-on-light: #8e7f76;
+  /* Um alpha para cada nível de texto secundário das telas escuras que ainda não migrou para os tokens sólidos. */
   --color-on-dark-40: rgba(255, 255, 255, 0.4);
   --color-on-dark-45: rgba(255, 255, 255, 0.45);
   --color-on-dark-50: rgba(255, 255, 255, 0.5);
   --color-on-dark-55: rgba(255, 255, 255, 0.55);
   --color-on-dark-65: rgba(255, 255, 255, 0.65);
-  --color-error-text-on-light: #7a2413;
-  /* Texto e traço laranja sobre superfície clara: o design usa o laranja da marca (~3:1), exceção registrada no teste de contraste. */
-  --color-accent-on-light: #ed6e34;
+
+  /* Marca. O laranja e o vermelho-chama não mudam. O laranja de texto sobre claro é #A8401A (decisão #136). */
+  --color-primary-orange: #ed6e34;
+  --color-flame-red: #c23a1f;
+  --color-accent-on-light: #a8401a;
+  /* Texto branco sobre o laranja da marca: exceção de contraste aprovada para texto grande e negrito (decisão #136). */
+  --color-on-orange: #ffffff;
+  --gradient-cta: linear-gradient(145deg, #f58a55 0%, #ed6e34 45%, #c23a1f 100%);
+  --shadow-cta: 0 10px 26px rgba(237, 110, 52, 0.3);
+
+  /* Estados: erro (fundo e borda translúcidos sobre o escuro); sucesso e aviso entram com os badges (DS4). */
+  --color-danger: #ff6d5a;
+  --color-danger-bg: rgba(255, 109, 90, 0.1);
+  --color-danger-border: rgba(255, 109, 90, 0.35);
+  --color-error-text-on-light: #b42318;
+  --color-success-text-on-light: #1e6b34;
 
   /* Tipografia */
   --font-serif: "Cormorant", Georgia, "Times New Roman", serif;

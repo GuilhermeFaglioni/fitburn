@@ -5,7 +5,7 @@
  * página anula o padding do conteúdo administrativo para a coluna ficar
  * encostada na barra lateral, como no artboard. "Valor alvo" e a barra de
  * progresso do artboard ficam de fora até a API trazer valor alvo e progresso.
- * Cores: os valores literais do artboard (#8a8a8a, #b0b0b0, #ed6e34, branco sobre o laranja).
+ * Cores: os valores literais do artboard (var(--color-text-muted-on-light), var(--color-text-faint-on-light), var(--color-primary-orange), branco sobre o laranja).
  */
 .fb-goals {
   display: flex;
@@ -30,7 +30,7 @@
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.03em;
-  color: #8a8a8a;
+  color: var(--color-text-muted-on-light);
   padding: 0 8px;
 }
 
@@ -71,7 +71,7 @@
   padding: 6px 8px;
   font-size: 11px;
   line-height: 16px;
-  color: #b0b0b0;
+  color: var(--color-text-faint-on-light);
 }
 
 .fb-goals__main {
@@ -92,7 +92,7 @@
 }
 
 .fb-goals .fb-page-eyebrow {
-  color: #8a8a8a;
+  color: var(--color-text-muted-on-light);
 }
 
 .fb-goals__title {
@@ -165,7 +165,7 @@
 .fb-goals__card-title {
   font-size: 14px;
   font-weight: 500;
-  color: #1a1a1a;
+  color: var(--color-surface-raised);
 }
 
 .fb-goals__card .fb-badge {
@@ -176,7 +176,7 @@
   flex-shrink: 0;
   white-space: nowrap;
   font-size: 12px;
-  color: #8a8a8a;
+  color: var(--color-text-muted-on-light);
 }
 
 /* Prazo e o menu de ações da meta (o artboard não tem botões no cartão). */
@@ -202,7 +202,7 @@
   background: none;
   border: none;
   border-radius: var(--radius-sm);
-  color: #8a8a8a;
+  color: var(--color-text-muted-on-light);
   cursor: pointer;
 }
 
@@ -262,7 +262,7 @@
 }
 
 .fb-goals__menu-item--danger {
-  color: #c23a1f;
+  color: var(--color-flame-red);
 }
 
 .fb-goals__menu-item[aria-disabled="true"] {
@@ -295,7 +295,7 @@
 .fb-goals__bar-fill {
   height: 100%;
   border-radius: var(--radius-xs);
-  background: #ed6e34;
+  background: var(--color-primary-orange);
   /* Sem texto: o color só existe para o guarda de contraste de fundos laranja. */
   color: #ffffff;
 }

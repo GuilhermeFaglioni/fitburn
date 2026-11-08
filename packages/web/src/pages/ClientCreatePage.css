@@ -15,7 +15,7 @@
   border: 1px solid #bfe6c9;
   border-radius: var(--radius-sm);
   font-size: 13px;
-  color: #1e6b34;
+  color: var(--color-success-text-on-light);
 }
 
 .fb-cadastro__heading {
@@ -74,7 +74,7 @@
 }
 
 .fb-cadastro .fb-field:focus {
-  border-color: var(--color-primary-orange);
+  border-color: var(--color-accent-on-light);
 }
 
 .fb-cadastro .fb-field.fb-field-error {

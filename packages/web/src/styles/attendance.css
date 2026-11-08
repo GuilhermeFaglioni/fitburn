@@ -2,7 +2,7 @@
  * Presença do professor — PresencaMobile.dc.html no canvas de design
  * (Claude Design), https://claude.ai/artifact/VncuMf9CffiWGUEQYywLVX.
  * As regras de .fb-att* reproduzem os estilos inline do artboard (390px de
- * largura, fundo #0a0a0a); em telas maiores a coluna fica centralizada.
+ * largura, fundo var(--color-surface-000)); em telas maiores a coluna fica centralizada.
  * "Minhas aulas" (fb-myclass*) não tem artboard: usa a casca administrativa
  * clara com as cores e os espaçamentos de admin.css.
  */
@@ -53,7 +53,7 @@
   justify-content: space-between;
   box-sizing: border-box;
   padding: 10px 14px;
-  background: #1a1a1a;
+  background: var(--color-surface-raised);
   border-radius: var(--radius-sm);
 }
 
@@ -89,7 +89,7 @@
   margin: 0;
   box-sizing: border-box;
   padding: 10px 14px;
-  background: #1a1a1a;
+  background: var(--color-surface-raised);
   border-radius: var(--radius-sm);
   font-size: 13px;
   color: rgba(255, 255, 255, 0.6);
@@ -110,7 +110,7 @@
 .fb-att__empty {
   box-sizing: border-box;
   padding: 24px 16px;
-  background: #1a1a1a;
+  background: var(--color-surface-raised);
   border: 1px dashed rgba(255, 255, 255, 0.2);
   border-radius: var(--radius-sm);
   text-align: center;
@@ -134,7 +134,7 @@
   justify-content: space-between;
   gap: 10px;
   padding: 14px 16px;
-  background: #1a1a1a;
+  background: var(--color-surface-raised);
   border-radius: var(--radius-sm);
 }
 
@@ -216,14 +216,14 @@
 }
 
 .fb-seg-btn--present[aria-pressed="true"] {
-  background: #ed6e34;
-  border-color: #ed6e34;
+  background: var(--color-primary-orange);
+  border-color: var(--color-primary-orange);
   color: #ffffff;
 }
 
 .fb-seg-btn--absent[aria-pressed="true"] {
-  background: #c23a1f;
-  border-color: #c23a1f;
+  background: var(--color-flame-red);
+  border-color: var(--color-flame-red);
 }
 
 /*
