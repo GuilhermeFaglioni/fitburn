@@ -92,9 +92,11 @@
 
 .fb-client-title {
   margin: 0;
-  font-family: var(--font-serif);
-  font-weight: 700;
-  font-size: 30px;
+  font-family: var(--font-sans);
+  font-weight: var(--weight-bold);
+  font-size: var(--text-h1);
+  line-height: var(--leading-title);
+  letter-spacing: var(--tracking-title);
 }
 
 /* Coluna da agenda: AgendaDesktop usa gap 16px, AgendaMobile 20px. */

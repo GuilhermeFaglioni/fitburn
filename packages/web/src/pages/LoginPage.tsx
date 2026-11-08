@@ -63,7 +63,7 @@ export function LoginPage() {
 
         <form className="login-form" onSubmit={handleSubmit}>
           <div className="login-form__header">
-            <h1 className="login-form__title">Bem-vindo de volta</h1>
+            <h1 className="login-form__title">Bem-vindo <em className="fb-em">de volta</em></h1>
             <p className="login-form__subtitle">Entre com suas credenciais para continuar.</p>
           </div>
 

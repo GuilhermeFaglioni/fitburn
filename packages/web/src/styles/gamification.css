@@ -40,9 +40,11 @@
 
 .fb-gami__title {
   margin: 0;
-  font-family: var(--font-serif);
-  font-weight: 700;
-  font-size: 28px;
+  font-family: var(--font-sans);
+  font-weight: var(--weight-bold);
+  font-size: var(--text-h1);
+  line-height: var(--leading-title);
+  letter-spacing: var(--tracking-title);
 }
 
 .fb-gami__alert {
