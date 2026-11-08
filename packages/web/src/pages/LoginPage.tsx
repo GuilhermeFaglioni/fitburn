@@ -21,6 +21,7 @@ function resolveDestination(user: CurrentUser, from: string | undefined): string
 export function LoginPage() {
   const emailId = useId();
   const passwordId = useId();
+  const errorId = useId();
   const { login, user, isAuthenticated, isInitializing } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -68,7 +69,7 @@ export function LoginPage() {
           </div>
 
           {showError && (
-            <div className="login-form__error" role="alert">
+            <div className="login-form__error" id={errorId} role="alert">
               <svg
                 width="16"
                 height="16"
@@ -77,9 +78,9 @@ export function LoginPage() {
                 className="login-form__error-icon"
                 aria-hidden="true"
               >
-                <circle cx="8" cy="8" r="7" stroke="#ff6d5a" strokeWidth="1.4" />
-                <path d="M8 4.5V8.5" stroke="#ff6d5a" strokeWidth="1.4" strokeLinecap="round" />
-                <circle cx="8" cy="11.2" r="0.9" fill="#ff6d5a" />
+                <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.4" />
+                <path d="M8 4.5V8.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+                <circle cx="8" cy="11.2" r="0.9" fill="currentColor" />
               </svg>
               <span className="login-form__error-text">
                 Não foi possível entrar. Verifique seu e-mail e senha e tente novamente.
@@ -95,6 +96,8 @@ export function LoginPage() {
               id={emailId}
               type="email"
               className="login-form__input"
+              aria-invalid={showError || undefined}
+              aria-describedby={showError ? errorId : undefined}
               placeholder="seuemail@exemplo.com"
               autoComplete="email"
               value={email}
@@ -112,6 +115,8 @@ export function LoginPage() {
                 id={passwordId}
                 type={passwordVisible ? "text" : "password"}
                 className="login-form__input login-form__password-input"
+                aria-invalid={showError || undefined}
+                aria-describedby={showError ? errorId : undefined}
                 placeholder="••••••••"
                 autoComplete="current-password"
                 value={password}
@@ -145,7 +150,7 @@ export function LoginPage() {
                     <circle cx="8" cy="8" r="6.5" stroke="rgba(255,255,255,0.35)" strokeWidth="2" />
                     <path
                       d="M14.5 8A6.5 6.5 0 0 0 8 1.5"
-                      stroke="#ffffff"
+                      stroke="currentColor"
                       strokeWidth="2"
                       strokeLinecap="round"
                     />
