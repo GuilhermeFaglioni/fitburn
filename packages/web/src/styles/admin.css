@@ -30,7 +30,7 @@
 
 .fb-page-eyebrow {
   font-size: 13px;
-  color: #8a8a8a;
+  color: var(--color-text-muted-on-light);
 }
 
 .fb-page-title {
@@ -54,14 +54,14 @@
   border-bottom: 2px solid transparent;
   font-size: 14px;
   font-family: var(--font-sans);
-  color: #8a8a8a;
+  color: var(--color-text-muted-on-light);
   font-weight: 400;
   cursor: pointer;
 }
 
 .fb-tab-btn.active {
   color: var(--color-ink-on-light);
-  border-bottom-color: #ed6e34;
+  border-bottom-color: var(--color-accent-on-light);
   font-weight: 700;
 }
 
@@ -90,7 +90,7 @@
 .fb-count {
   margin-left: auto;
   font-size: 12px;
-  color: #8a8a8a;
+  color: var(--color-text-muted-on-light);
 }
 
 .fb-field {
@@ -106,12 +106,13 @@
 
 .fb-btn-primary {
   padding: 11px 20px;
-  background: var(--color-primary-orange);
+  background: var(--gradient-cta);
+  box-shadow: var(--shadow-cta);
   border: none;
   border-radius: var(--radius-sm);
   font-size: 14px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--color-on-orange);
   cursor: pointer;
 }
 
@@ -153,7 +154,7 @@
   border: 1px dashed #d6d6d6;
   border-radius: var(--radius-sm);
   font-size: 13px;
-  color: #8a8a8a;
+  color: var(--color-text-muted-on-light);
   cursor: pointer;
   text-align: left;
 }
@@ -176,7 +177,7 @@
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.04em;
-  color: #8a8a8a;
+  color: var(--color-text-muted-on-light);
   text-transform: uppercase;
   border-bottom: 1px solid #e6e6e6;
 }
@@ -184,7 +185,7 @@
 .fb-td {
   padding: 12px 14px;
   font-size: 13px;
-  color: #1a1a1a;
+  color: var(--color-surface-raised);
   border-bottom: 1px solid #f0f0f0;
   vertical-align: middle;
 }
@@ -202,9 +203,9 @@
   text-decoration: none;
 }
 
-/* Linha de registro inativo, esmaecida (design: nome #8a8a8a, demais #b0b0b0). */
+/* Linha de registro inativo, esmaecida (design: nome var(--color-text-muted-on-light), demais var(--color-text-faint-on-light)). */
 .fb-row--inactive .fb-td {
-  color: #b0b0b0;
+  color: var(--color-text-faint-on-light);
 }
 
 .fb-td--actions {
@@ -217,7 +218,7 @@
 }
 
 .fb-row--inactive .fb-td--name {
-  color: #8a8a8a;
+  color: var(--color-text-muted-on-light);
 }
 
 .fb-row-btn {
@@ -277,7 +278,7 @@
 
 .fb-note {
   font-size: 12px;
-  color: #8a8a8a;
+  color: var(--color-text-muted-on-light);
 }
 
 .fb-badge {
@@ -294,17 +295,17 @@
 }
 
 .fb-badge--active {
-  color: #1e6b34;
+  color: var(--color-success-text-on-light);
   background: #eaf7ee;
 }
 
 .fb-badge--inactive {
-  color: #8a8a8a;
+  color: var(--color-text-muted-on-light);
   background: #f0f0f0;
 }
 
 .fb-badge--accent {
-  color: #ed6e34;
+  color: var(--color-accent-on-light);
   background: rgba(237, 110, 52, 0.14);
 }
 
@@ -387,7 +388,7 @@
 
 .fb-role-item.active {
   background: rgba(237, 110, 52, 0.14);
-  color: #ed6e34;
+  color: var(--color-accent-on-light);
   font-weight: 700;
 }
 
@@ -408,7 +409,7 @@
 
 .fb-scope {
   font-size: 11px;
-  color: #8a8a8a;
+  color: var(--color-text-muted-on-light);
 }
 
 .fb-checkbox {
@@ -427,7 +428,7 @@
 
 .fb-checkbox:checked {
   background: var(--color-primary-orange);
-  border-color: #ed6e34;
+  border-color: var(--color-accent-on-light);
 }
 
 .fb-checkbox:checked::after {
@@ -454,8 +455,8 @@
 
 /* Matriz fixa do Administrador: no design as marcas seguem laranja. */
 .fb-checkbox.fb-checkbox--fixed:disabled:checked {
-  background: #ed6e34;
-  border-color: #ed6e34;
+  background: var(--color-primary-orange);
+  border-color: var(--color-accent-on-light);
   cursor: default;
 }
 
@@ -464,7 +465,7 @@
 }
 
 .fb-checkbox:disabled:checked::after {
-  color: #8a8a8a;
+  color: var(--color-text-muted-on-light);
 }
 
 .fb-form {
@@ -517,15 +518,15 @@
 .fb-day-head > span {
   font-size: 12px;
   font-weight: 700;
-  color: #8a8a8a;
+  color: var(--color-text-muted-on-light);
 }
 
 .fb-day-head--today {
-  border-bottom-color: #ed6e34;
+  border-bottom-color: var(--color-accent-on-light);
 }
 
 .fb-day-head--today > span {
-  color: #ed6e34;
+  color: var(--color-accent-on-light);
 }
 
 .fb-chip-cls {
@@ -541,7 +542,7 @@
   text-align: left;
   font-family: var(--font-sans);
   background: rgba(237, 110, 52, 0.12);
-  color: #ed6e34;
+  color: var(--color-accent-on-light);
 }
 
 .fb-chip-cls--full {
@@ -551,7 +552,7 @@
 
 .fb-chip-cls--cancelled {
   background: #f2f2f2;
-  color: #8a8a8a;
+  color: var(--color-text-muted-on-light);
   text-decoration: line-through;
 }
 
@@ -669,7 +670,7 @@
 
 .fb-modal__hint {
   font-size: 11px;
-  color: #8a8a8a;
+  color: var(--color-text-muted-on-light);
 }
 
 .fb-modal__form {
@@ -732,7 +733,7 @@
   box-sizing: border-box;
   padding: 12px 14px;
   background: rgba(194, 58, 31, 0.08);
-  border: 1px solid #c23a1f;
+  border: 1px solid var(--color-flame-red);
   border-radius: var(--radius-sm);
   font-size: 12px;
   line-height: 18px;
@@ -765,7 +766,7 @@
 
 .fb-weekday-toggle[aria-pressed="true"] {
   background: var(--color-primary-orange);
-  border-color: #ed6e34;
+  border-color: var(--color-accent-on-light);
   color: #ffffff;
 }
 
@@ -830,7 +831,7 @@
   border-radius: var(--radius-sm);
   font-size: 12px;
   line-height: 18px;
-  color: #1e6b34;
+  color: var(--color-success-text-on-light);
 }
 
 /* O cliente da reserva, em destaque para não reservar para a pessoa errada. */
@@ -850,7 +851,7 @@
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: #ed6e34;
+  color: var(--color-accent-on-light);
 }
 
 .fb-client-highlight__name {

@@ -48,7 +48,7 @@
 .fb-state--light.fb-state--success {
   background: #eaf7ee;
   border: 1px solid #bfe6c9;
-  color: #1e6b34;
+  color: var(--color-success-text-on-light);
 }
 
 .fb-state--dark.fb-state--loading,

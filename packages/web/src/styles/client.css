@@ -138,7 +138,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: #1a1a1a;
+  background: var(--color-surface-raised);
   border: none;
   border-radius: var(--radius-sm);
   color: #ffffff;
@@ -168,7 +168,7 @@
 
 @media (hover: hover) and (pointer: fine) {
   .fb-client-weeknav .fb-client-icon-btn:hover {
-    background: #1a1a1a;
+    background: var(--color-surface-raised);
   }
 }
 
@@ -261,7 +261,7 @@
   max-width: 100%;
   box-sizing: border-box;
   padding: 7px 9px;
-  background: #1a1a1a;
+  background: var(--color-surface-raised);
   border: none;
   border-radius: var(--radius-sm);
   text-align: left;
@@ -339,7 +339,7 @@
   justify-content: space-between;
   gap: 10px;
   padding: 16px;
-  background: #1a1a1a;
+  background: var(--color-surface-raised);
   border: none;
   border-radius: var(--radius-sm);
   text-align: left;
@@ -385,7 +385,7 @@
 .fb-client-empty {
   box-sizing: border-box;
   padding: 24px 16px;
-  background: #1a1a1a;
+  background: var(--color-surface-raised);
   border: 1px dashed rgba(255, 255, 255, 0.2);
   border-radius: var(--radius-sm);
   text-align: center;
@@ -428,7 +428,7 @@
 .fb-client-tabs {
   display: flex;
   gap: 4px;
-  background: #1a1a1a;
+  background: var(--color-surface-raised);
   border-radius: var(--radius-sm);
   padding: 4px;
 }
@@ -515,7 +515,7 @@
   justify-content: space-between;
   gap: 12px;
   padding: 14px 16px;
-  background: #1a1a1a;
+  background: var(--color-surface-raised);
   border: none;
   border-radius: var(--radius-sm);
   font-family: var(--font-sans);
@@ -583,7 +583,7 @@
   width: 460px;
   max-width: 100%;
   box-sizing: border-box;
-  background: #1a1a1a;
+  background: var(--color-surface-raised);
   color: #ffffff;
   border-radius: var(--radius-sm);
   padding: 28px;
@@ -860,7 +860,7 @@
     z-index: 10;
     box-sizing: border-box;
     height: 76px;
-    background: #1a1a1a;
+    background: var(--color-surface-raised);
     border-top: 1px solid rgba(255, 255, 255, 0.08);
     display: flex;
   }

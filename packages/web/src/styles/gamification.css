@@ -63,7 +63,7 @@
   flex-direction: column;
   gap: 18px;
   padding: 22px 18px;
-  background: #1a1a1a;
+  background: var(--color-surface-raised);
   border-radius: var(--radius-sm);
 }
 
@@ -201,7 +201,7 @@
   width: 56px;
   height: 56px;
   border-radius: var(--radius-pill);
-  background: #1a1a1a;
+  background: var(--color-surface-raised);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -236,7 +236,7 @@
 }
 
 .fb-gami .fb-gami__rank-tab[aria-pressed="true"] {
-  background: #ed6e34;
+  background: var(--color-primary-orange);
   color: #ffffff;
 }
 
@@ -262,7 +262,7 @@
   align-items: center;
   gap: 12px;
   padding: 12px 14px;
-  background: #1a1a1a;
+  background: var(--color-surface-raised);
   border-radius: var(--radius-sm);
 }
 
@@ -289,12 +289,12 @@
 
 .fb-gami__rank-row--me .fb-gami__rank-pos,
 .fb-gami__rank-row--me .fb-gami__rank-info {
-  color: #ed6e34;
+  color: var(--color-primary-orange);
 }
 
 .fb-gami__rank-row--me .fb-gami__rank-name {
   font-weight: 700;
-  color: #ed6e34;
+  color: var(--color-primary-orange);
 }
 
 /* Metas do professor (GamificacaoMobile/Desktop.dc.html): o cartão sem a barra de progresso. */
@@ -317,7 +317,7 @@
   flex-direction: column;
   gap: 8px;
   padding: 14px 16px;
-  background: #1a1a1a;
+  background: var(--color-surface-raised);
   border-radius: var(--radius-sm);
 }
 
@@ -364,7 +364,7 @@
   justify-content: space-between;
   gap: 10px;
   padding: 14px 16px;
-  background: #1a1a1a;
+  background: var(--color-surface-raised);
   border-radius: var(--radius-sm);
 }
 

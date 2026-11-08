@@ -6,7 +6,7 @@
  * (≥768px): cartão de 24px, no máximo 640px, grade de duas colunas.
  */
 .fb-profile {
-  --fb-profile-card: #1a1a1a;
+  --fb-profile-card: var(--color-surface-raised);
   --fb-profile-muted: rgba(255, 255, 255, 0.5);
   --fb-profile-label: rgba(255, 255, 255, 0.45);
   --fb-profile-logout: rgba(255, 255, 255, 0.55);

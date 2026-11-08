@@ -35,7 +35,7 @@
   flex-direction: column;
   gap: 14px;
   padding: 20px 18px;
-  background: #1a1a1a;
+  background: var(--color-surface-raised);
   border-radius: var(--radius-sm);
 }
 
@@ -94,7 +94,7 @@
 .fb-plan .fb-state--empty.fb-plan__empty {
   display: block;
   padding: 24px 18px;
-  background: #1a1a1a;
+  background: var(--color-surface-raised);
   border: 1px dashed rgba(255, 255, 255, 0.2);
   border-radius: var(--radius-sm);
   text-align: center;
