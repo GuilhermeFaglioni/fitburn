@@ -72,7 +72,7 @@
   display: flex;
   gap: 20px;
   padding-top: 10px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid var(--color-line);
 }
 
 .fb-plan__date {
@@ -95,7 +95,7 @@
   display: block;
   padding: 24px 18px;
   background: var(--color-surface-raised);
-  border: 1px dashed rgba(255, 255, 255, 0.2);
+  border: 1px dashed var(--color-line-2);
   border-radius: var(--radius-sm);
   text-align: center;
   /* Como no artboard: o contêiner tem a fonte padrão e só o texto (span) tem 13px/19px. */

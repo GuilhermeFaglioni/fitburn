@@ -95,7 +95,7 @@
 
 .fb-home__plan--empty {
   display: block;
-  border: 1px dashed rgba(255, 255, 255, 0.2);
+  border: 1px dashed var(--color-line-2);
   font-size: 13px;
   line-height: 19px;
   color: var(--color-on-dark-65);
@@ -169,7 +169,7 @@
   display: flex;
   gap: 16px;
   padding-top: 8px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid var(--color-line);
 }
 
 .fb-home__ghost-btn {
@@ -281,7 +281,7 @@
   height: 36px;
   border-radius: var(--radius-pill);
   background: #0f0f0f;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--color-line-2);
   display: flex;
   align-items: center;
   justify-content: center;
