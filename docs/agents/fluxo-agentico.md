@@ -48,11 +48,11 @@ Prevalecem sobre o fluxo em caso de conflito.
 
 ## 5. Fidelidade às telas (UI)
 
-- **Fonte da verdade:** os 27 artboards do Claude Design (artefato `https://claude.ai/artifact/VncuMf9CffiWGUEQYywLVX`) e os tokens em `ds/fitburn/tokens.json` do mesmo artefato; apoio em `docs/Fitburn Brasil — Design System, Branding e Marketing.md`. **Onde o design e o código divergem, o design vence.** Mudar uma tela exige mudar a referência antes, com aprovação do Guilherme.
-- Toda issue de UI cita o artboard de referência, os componentes reutilizados de `packages/web/src/components` e os estados (vazio, offline, erro, carregando).
+- **Fonte da verdade:** as decisões registradas em `docs/decisions.md` e as issues de UI (tokens, tipografia, componentes). Os artboards do Claude Design deixam de ser referência obrigatória e não entram em portão de PR.
+- Toda issue de UI cita os componentes reutilizados de `packages/web/src/components` e os estados (vazio, offline, erro, carregando).
 - Sem cor, raio, espaçamento ou fonte literal fora dos tokens do design system. Componente que falta entra primeiro como componente compartilhado.
 - Respeitar o que já existe: motion tokens e reduced motion (`plans/`), estados offline (`OfflineBanner`, `RequiresNetwork`), foco ao navegar (`useFocusOnNavigation`).
-- **Portão visual:** antes do PR, rodar `pnpm design:seed` (uma vez) e `pnpm design:compare` (ver `scripts/design-compare/README.md`; exige o design baixado em `tmp/design-compare/source/`, o que o agente só faz se tiver a ferramenta `Artifact`; caso contrário, o orquestrador baixa antes). Anexar ao corpo do PR o `diff/<Tela>.side.png` (design | app | diferença) da tela mexida e citar as divergências restantes de `divergences/<Tela>.md`.
+- **Sem portão visual contra o Claude Design:** `pnpm design:compare` continua disponível como ferramenta de apoio (ver `scripts/design-compare/README.md`), mas não é exigido no PR.
 - **PR de UI não usa auto-merge:** fica com `ready-for-human` até o Guilherme aprovar. API, contratos e docs seguem com auto-merge.
 
 ## 6. Como o T3 Code faz a orquestração
@@ -99,7 +99,7 @@ Instaladas pela CLI `skills` (registro em `skills-lock.json`), em `.agents/skill
 - **`code-review`**: revisa o diff em dois eixos (padrões e spec), em sub-agentes paralelos.
 - **`implement-spec`**: orquestração de uma spec inteira com subagentes e branch de integração; no fluxo atual, esse papel é do planejador por issue.
 - **`pr`**, **`diagnosing-bugs`**, **`domain-modeling`**, **`codebase-design`**, **`to-spec`**, **`to-tickets`**, **`triage`**, **`codebase-map`**: apoio a PR, diagnóstico, planejamento, triagem e mapa do código.
-- **`impeccable`**: qualidade visual de UI, usada pelo implementador de UI. Não substitui a fidelidade ao design (seção 5): o artboard continua mandando.
+- **`impeccable`**: qualidade visual de UI, usada pelo implementador de UI. Não substitui as decisões de design registradas em `docs/decisions.md` (seção 5).
 - **`github-actions-hardening`**: prevista no fluxo, **ainda não instalada** (ver seção 10).
 
 Configuração de issues e labels: [`issue-tracker.md`](issue-tracker.md) e [`triage-labels.md`](triage-labels.md). Domínio: [`domain.md`](domain.md); o glossário do Fitburn é o **`GLOSSARY.md`** da raiz e as decisões ficam em `docs/decisions.md` e `docs/open-decisions.md` (ainda não há `docs/adr/`).
