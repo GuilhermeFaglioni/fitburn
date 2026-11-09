@@ -1,4 +1,4 @@
-import { useId, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   updateClientRequestSchema,
@@ -7,7 +7,10 @@ import {
 } from "@fitburn/contracts";
 import { ApiError } from "../../lib/auth/api";
 import { updateClientRecord } from "../../lib/clients/api";
-import { Feedback } from "../../components/states";
+import { Alert } from "../../components/ui/Alert";
+import { Button } from "../../components/ui/Button";
+import { Card } from "../../components/ui/Card";
+import { Field } from "../../components/ui/Field";
 
 function blankToNull(value: string): string | null {
   const trimmed = value.trim();
@@ -20,9 +23,14 @@ const ERROR_MESSAGES: Record<string, string> = {
   VALIDATION_ERROR: "Confira os campos e tente novamente.",
 };
 
-/** Edição dos dados pessoais de um cliente (sem perfil de acesso, status nem senha). */
-export function ClientEditForm({ client, onDone }: { client: ClientUserResponse; onDone: () => void }) {
-  const formId = useId();
+/** Edição dos dados pessoais de um cliente (sem perfil de acesso, status nem senha), num `Card` com `Field`. */
+export function ClientEditForm({
+  client,
+  onDone,
+}: {
+  client: ClientUserResponse;
+  onDone: () => void;
+}) {
   const queryClient = useQueryClient();
   const [fullName, setFullName] = useState(client.fullName);
   const [email, setEmail] = useState(client.email);
@@ -43,7 +51,7 @@ export function ClientEditForm({ client, onDone }: { client: ClientUserResponse;
     },
   });
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  function handleSubmit(event: FormEvent) {
     event.preventDefault();
     const input: UpdateClientRequest = {
       fullName,
@@ -73,43 +81,64 @@ export function ClientEditForm({ client, onDone }: { client: ClientUserResponse;
         : "Não foi possível salvar o cliente."
       : null;
 
-  const fields: Array<[string, string, string, (value: string) => void, string?]> = [
-    ["fullName", "Nome completo", fullName, setFullName],
-    ["email", "E-mail", email, setEmail, "email"],
-    ["phone", "Telefone", phone, setPhone],
-  ];
-  if (canEditFullDetails) {
-    fields.push(
-      ["birthDate", "Data de nascimento", birthDate, setBirthDate, "date"],
-      ["document", "Documento", documentNumber, setDocumentNumber],
-      ["address", "Endereço", address, setAddress],
-    );
-  }
-
   return (
-    <form onSubmit={handleSubmit} aria-label="Edição de cliente" className="fb-form">
-      {errorMessage && <Feedback tone="error">{errorMessage}</Feedback>}
-      {fields.map(([name, label, value, setValue, type]) => (
-        <div key={name} style={{ display: "contents" }}>
-          <label htmlFor={`${formId}-${name}`}>{label}</label>
-          <input
-            id={`${formId}-${name}`}
-            className="fb-field"
-            type={type ?? "text"}
-            value={value}
-            onChange={(event) => setValue(event.target.value)}
-            required={name !== "document" && name !== "address"}
-          />
-        </div>
-      ))}
-      <div style={{ display: "flex", gap: 10 }}>
-        <button type="submit" className="fb-btn-primary" disabled={mutation.isPending}>
-          {mutation.isPending ? "Salvando…" : "Salvar"}
-        </button>
-        <button type="button" className="fb-row-btn" onClick={onDone}>
-          Cancelar
-        </button>
+    <Card
+      as="form"
+      className="fb-ui-card--form"
+      onSubmit={handleSubmit}
+      aria-label="Edição de cliente"
+    >
+      <div className="fb-ui-form-grid">
+        {errorMessage && <Alert className="fb-ui-field--full">{errorMessage}</Alert>}
+        <Field
+          className="fb-ui-field--full"
+          label="Nome completo"
+          value={fullName}
+          onChange={(event) => setFullName(event.target.value)}
+          required
+        />
+        <Field
+          label="E-mail"
+          type="email"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          required
+        />
+        <Field
+          label="Telefone"
+          value={phone}
+          onChange={(event) => setPhone(event.target.value)}
+          required
+        />
+        {canEditFullDetails && (
+          <>
+            <Field
+              label="Data de nascimento"
+              type="date"
+              value={birthDate}
+              onChange={(event) => setBirthDate(event.target.value)}
+              required
+            />
+            <Field
+              label="Documento"
+              value={documentNumber}
+              onChange={(event) => setDocumentNumber(event.target.value)}
+            />
+            <Field
+              className="fb-ui-field--full"
+              label="Endereço"
+              value={address}
+              onChange={(event) => setAddress(event.target.value)}
+            />
+          </>
+        )}
       </div>
-    </form>
+      <div className="fb-ui-form-actions">
+        <Button onClick={onDone}>Cancelar</Button>
+        <Button type="submit" variant="primary" busy={mutation.isPending}>
+          {mutation.isPending ? "Salvando…" : "Salvar"}
+        </Button>
+      </div>
+    </Card>
   );
 }

@@ -1,12 +1,16 @@
-import { useEffect, useId, useRef, useState, type FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { Module, PermissionAction } from "@fitburn/contracts";
 import { ApiError } from "../lib/auth/api";
 import { useAuth } from "../lib/auth/AuthContext";
 import { createClientRecord } from "../lib/clients/api";
-import { Feedback } from "../components/states";
-import "./ClientCreatePage.css";
+import { Alert } from "../components/ui/Alert";
+import { Button } from "../components/ui/Button";
+import { Card } from "../components/ui/Card";
+import { Field } from "../components/ui/Field";
+import { PageHeader } from "../components/ui/PageHeader";
+import { Select } from "../components/ui/Select";
 
 /** Quanto tempo a faixa de sucesso fica na tela antes de voltar para a lista. */
 const SUCCESS_REDIRECT_MS = 1500;
@@ -18,14 +22,14 @@ const EMAIL_TAKEN = "Este e-mail já está cadastrado.";
 const DOCUMENT_TAKEN = "Este CPF já está cadastrado.";
 
 /**
- * Cadastro de cliente em tela cheia: migalha, título e um cartão com o formulário em duas
- * colunas. Estados do design: erro de e-mail sob o campo e faixa de sucesso antes de voltar para a listagem.
+ * Cadastro de cliente em tela cheia (D-038, #156): trilha, título e um `Card` com o formulário em duas colunas.
+ * Estados: erro de e-mail e de CPF sob o campo (`aria-invalid` e `aria-describedby`), aviso geral da API e faixa de
+ * sucesso antes de voltar para a listagem.
  */
 export function ClientCreatePage() {
   const { can } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const id = useId();
   const redirectTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const [fullName, setFullName] = useState("");
@@ -45,7 +49,7 @@ export function ClientCreatePage() {
 
   const canCreate = can(Module.CLIENTES, PermissionAction.CREATE);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setEmailError(null);
     setDocumentError(null);
@@ -82,171 +86,122 @@ export function ClientCreatePage() {
   }
 
   return (
-    <div className="fb-cadastro">
+    <div className="fb-ui-page">
       {created && (
-        <div role="status" className="fb-cadastro__success">
+        <Alert tone="ok">
           Cliente cadastrado com sucesso. Voltando para a listagem de clientes…
-        </div>
+        </Alert>
       )}
 
-      <div className="fb-cadastro__heading">
-        <span className="fb-cadastro__crumb">Clientes / Novo cliente</span>
-        <h1 className="fb-cadastro__title">Novo cliente</h1>
-      </div>
+      <PageHeader
+        crumb={
+          <>
+            <Link to="/clientes" className="fb-ui-link">
+              Clientes
+            </Link>{" "}
+            / Novo cliente
+          </>
+        }
+        kicker="Cadastro"
+        title="Novo cliente"
+      />
 
-      {!canCreate && (
-        <Feedback tone="error">Você não tem permissão para cadastrar clientes.</Feedback>
-      )}
-      {formError && <Feedback tone="error">{formError}</Feedback>}
+      {!canCreate && <Alert>Você não tem permissão para cadastrar clientes.</Alert>}
+      {formError && <Alert>{formError}</Alert>}
 
-      <form className="fb-cadastro__card" aria-label="Cadastro de cliente" onSubmit={handleSubmit}>
-        <div className="fb-cadastro__grid">
-          <div className="fb-cadastro__field fb-cadastro__field--wide">
-            <label htmlFor={`${id}-fullName`}>Nome completo *</label>
-            <input
-              id={`${id}-fullName`}
-              type="text"
-              className="fb-field"
-              placeholder="Nome e sobrenome"
-              value={fullName}
-              onChange={(event) => setFullName(event.target.value)}
-              required
-            />
-          </div>
-
-          <div className="fb-cadastro__field">
-            <label htmlFor={`${id}-email`}>E-mail *</label>
-            <input
-              id={`${id}-email`}
-              type="email"
-              className={`fb-field${emailError ? " fb-field-error" : ""}`}
-              placeholder="email@exemplo.com"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              aria-invalid={emailError ? true : undefined}
-              aria-describedby={emailError ? `${id}-email-error` : undefined}
-              required
-            />
-            {emailError && (
-              <span id={`${id}-email-error`} role="alert" className="fb-cadastro__error">
-                {emailError}
-              </span>
-            )}
-          </div>
-
-          <div className="fb-cadastro__field">
-            <label htmlFor={`${id}-phone`}>Telefone *</label>
-            <input
-              id={`${id}-phone`}
-              type="tel"
-              className="fb-field"
-              placeholder="(00) 00000-0000"
-              value={phone}
-              onChange={(event) => setPhone(event.target.value)}
-              required
-            />
-          </div>
-
-          <div className="fb-cadastro__field">
-            <label htmlFor={`${id}-birthDate`}>Data de nascimento *</label>
-            <input
-              id={`${id}-birthDate`}
-              type="date"
-              className="fb-field"
-              value={birthDate}
-              onChange={(event) => setBirthDate(event.target.value)}
-              required
-            />
-          </div>
-
-          <div className="fb-cadastro__field">
-            <label htmlFor={`${id}-document`}>CPF (opcional)</label>
-            <input
-              id={`${id}-document`}
-              type="text"
-              className={`fb-field${documentError ? " fb-field-error" : ""}`}
-              placeholder="000.000.000-00"
-              value={documentNumber}
-              onChange={(event) => setDocumentNumber(event.target.value)}
-              aria-invalid={documentError ? true : undefined}
-              aria-describedby={documentError ? `${id}-document-error` : undefined}
-            />
-            {documentError && (
-              <span id={`${id}-document-error`} role="alert" className="fb-cadastro__error">
-                {documentError}
-              </span>
-            )}
-          </div>
-
-          <div className="fb-cadastro__field fb-cadastro__field--wide">
-            <label htmlFor={`${id}-address`}>Endereço (opcional)</label>
-            <input
-              id={`${id}-address`}
-              type="text"
-              className="fb-field"
-              placeholder="Rua, número, bairro, cidade"
-              value={address}
-              onChange={(event) => setAddress(event.target.value)}
-            />
-          </div>
-
-          <div className="fb-cadastro__field">
-            <label htmlFor={`${id}-profile`}>Perfil de acesso *</label>
-            {/* Este formulário só cria clientes (POST /clients): os outros perfis aparecem como no design, sem seleção. */}
-            <select
-              id={`${id}-profile`}
-              className="fb-field"
-              value="Cliente"
-              aria-describedby={`${id}-profile-hint`}
-              onChange={() => undefined}
-            >
-              {ACCESS_PROFILES.map((profile) => (
-                <option key={profile} value={profile} disabled={profile !== "Cliente"}>
-                  {profile}
-                </option>
-              ))}
-            </select>
-            <span id={`${id}-profile-hint`} className="fb-cadastro__hint">
-              Somente administradores podem alterar o perfil de acesso.
-            </span>
-          </div>
-
-          <div className="fb-cadastro__field">
-            <label htmlFor={`${id}-password`}>Senha inicial *</label>
-            <input
-              id={`${id}-password`}
-              type="password"
-              className="fb-field"
-              placeholder="••••••••"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              aria-describedby={`${id}-password-hint`}
-              required
-              minLength={8}
-            />
-            <span id={`${id}-password-hint`} className="fb-cadastro__hint">
-              Definida por você ou gerada e comunicada ao cliente fora do sistema.
-            </span>
-          </div>
-        </div>
-
-        <div className="fb-cadastro__footer">
-          <button
-            type="button"
-            className="fb-cadastro__cancel"
-            onClick={() => navigate("/clientes")}
+      <Card
+        as="form"
+        className="fb-ui-card--form"
+        aria-label="Cadastro de cliente"
+        onSubmit={handleSubmit}
+      >
+        <div className="fb-ui-form-grid">
+          <Field
+            className="fb-ui-field--full"
+            label="Nome completo *"
+            type="text"
+            placeholder="Nome e sobrenome"
+            value={fullName}
+            onChange={(event) => setFullName(event.target.value)}
+            required
+          />
+          <Field
+            label="E-mail *"
+            type="email"
+            placeholder="email@exemplo.com"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            error={emailError ?? undefined}
+            required
+          />
+          <Field
+            label="Telefone *"
+            type="tel"
+            placeholder="(00) 00000-0000"
+            value={phone}
+            onChange={(event) => setPhone(event.target.value)}
+            required
+          />
+          <Field
+            label="Data de nascimento *"
+            type="date"
+            value={birthDate}
+            onChange={(event) => setBirthDate(event.target.value)}
+            required
+          />
+          <Field
+            label="CPF (opcional)"
+            type="text"
+            placeholder="000.000.000-00"
+            value={documentNumber}
+            onChange={(event) => setDocumentNumber(event.target.value)}
+            error={documentError ?? undefined}
+          />
+          <Field
+            className="fb-ui-field--full"
+            label="Endereço (opcional)"
+            type="text"
+            placeholder="Rua, número, bairro, cidade"
+            value={address}
+            onChange={(event) => setAddress(event.target.value)}
+          />
+          {/* Este formulário só cria clientes (POST /clients): os outros perfis aparecem como no design, sem seleção. */}
+          <Select
+            label="Perfil de acesso *"
+            value="Cliente"
+            help="Somente administradores podem alterar o perfil de acesso."
+            onChange={() => undefined}
           >
-            Cancelar
-          </button>
-          <button
+            {ACCESS_PROFILES.map((profile) => (
+              <option key={profile} value={profile} disabled={profile !== "Cliente"}>
+                {profile}
+              </option>
+            ))}
+          </Select>
+          <Field
+            label="Senha inicial *"
+            type="password"
+            placeholder="••••••••"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            help="Definida por você ou gerada e comunicada ao cliente fora do sistema."
+            required
+            minLength={8}
+          />
+        </div>
+
+        <div className="fb-ui-form-actions">
+          <Button onClick={() => navigate("/clientes")}>Cancelar</Button>
+          <Button
             type="submit"
-            className="fb-cadastro__submit"
-            disabled={isSubmitting || created || !canCreate}
+            variant="primary"
+            busy={isSubmitting}
+            disabled={created || !canCreate}
           >
-            {isSubmitting ? "Salvando…" : "Salvar cliente"}
-          </button>
+            Salvar cliente
+          </Button>
         </div>
-      </form>
+      </Card>
     </div>
   );
 }

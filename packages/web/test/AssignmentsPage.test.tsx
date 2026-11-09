@@ -169,7 +169,7 @@ describe("Atribuição de clientes a professores", () => {
     const user = await selectTeacher("Rafael Andrade");
     const row = await screen.findByRole("row", { name: /Marina Souza/ });
 
-    await user.click(within(row).getByRole("button", { name: "Remover" }));
+    await user.click(within(row).getByRole("button", { name: "Remover atribuição de Marina Souza" }));
 
     await waitFor(() =>
       expect(screen.queryByRole("row", { name: /Marina Souza/ })).not.toBeInTheDocument(),
@@ -217,7 +217,7 @@ describe("Atribuição de clientes a professores", () => {
     await selectTeacher("Rafael Andrade");
     const row = await screen.findByRole("row", { name: /Marina Souza/ });
 
-    expect(within(row).getByRole("button", { name: "Remover" })).toBeDisabled();
+    expect(within(row).getByRole("button", { name: "Remover atribuição de Marina Souza" })).toBeDisabled();
     expect(screen.getByLabelText("Cliente")).toBeEnabled();
   });
 

@@ -8,6 +8,8 @@ export interface TableColumn<Row> {
   cell: (row: Row) => ReactNode;
   /** Coluna de ações: alinhada à direita e sem quebra de linha. */
   actions?: boolean;
+  /** Classe extra da coluna (cabeçalho e células), ex.: `fb-ui-table__name` para o nome do registro. */
+  className?: string;
 }
 
 export interface TableProps<Row> {
@@ -32,7 +34,7 @@ export function Table<Row>({ label, columns, rows, rowKey, empty, className }: T
         <thead>
           <tr>
             {columns.map((column) => (
-              <th key={column.key} scope="col" className={join(column.actions && "fb-ui-table__actions")}>
+              <th key={column.key} scope="col" className={join(column.actions && "fb-ui-table__actions", column.className)}>
                 {column.header}
               </th>
             ))}
@@ -49,7 +51,7 @@ export function Table<Row>({ label, columns, rows, rowKey, empty, className }: T
             rows.map((row) => (
               <tr key={rowKey(row)}>
                 {columns.map((column) => (
-                  <td key={column.key} className={join(column.actions && "fb-ui-table__actions")}>
+                  <td key={column.key} className={join(column.actions && "fb-ui-table__actions", column.className)}>
                     {column.cell(row)}
                   </td>
                 ))}

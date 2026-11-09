@@ -363,7 +363,7 @@ function allSheets(): [string, string][] {
   const sheets = readdirSync(resolve(root, "styles"))
     .filter((name) => name.endsWith(".css"))
     .map((name) => `styles/${name}`)
-    .concat(["pages/LoginPage.css", "pages/ClientCreatePage.css", "components/AppMenu.css"]);
+    .concat(["pages/LoginPage.css", "components/AppMenu.css"]);
   return sheets.map((path) => [path, readFileSync(resolve(root, path), "utf8")]);
 }
 

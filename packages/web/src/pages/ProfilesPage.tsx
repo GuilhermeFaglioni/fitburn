@@ -1,8 +1,13 @@
-import { useId, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Module, PermissionAction, SystemProfileName } from "@fitburn/contracts";
 import { BlockedAction } from "../components/BlockedAction";
-import { EmptyState, ErrorState, Feedback, LoadingState } from "../components/states";
+import { QueryBlockState } from "../components/QueryBlockState";
+import { Alert } from "../components/ui/Alert";
+import { Button } from "../components/ui/Button";
+import { Card } from "../components/ui/Card";
+import { Field } from "../components/ui/Field";
+import { EmptyState } from "../components/ui/States";
 import { errorMessage } from "../lib/auth/api";
 import { useAuth } from "../lib/auth/AuthContext";
 import {
@@ -23,7 +28,6 @@ function profileRank(profile: { name: string; isSystem: boolean }): number {
 export function ProfilesPage() {
   const { can } = useAuth();
   const queryClient = useQueryClient();
-  const formId = useId();
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -75,38 +79,25 @@ export function ProfilesPage() {
   const selectedProfile =
     profiles.find((profile) => profile.id === selectedId) ?? profiles[0] ?? null;
 
-  function handleCreateSubmit(event: FormEvent<HTMLFormElement>) {
+  function handleCreateSubmit(event: FormEvent) {
     event.preventDefault();
     createMutation.mutate();
   }
 
   return (
-    <div className="fb-matrix-layout">
-      <ul className="fb-role-list" style={{ listStyle: "none", margin: 0, padding: 0 }}>
-        {profilesQuery.isLoading && (
-          <li>
-            <LoadingState />
-          </li>
-        )}
-        {profilesQuery.isError && (
-          <li>
-            <ErrorState
-              message="Não foi possível carregar os perfis."
-              onRetry={() => void profilesQuery.refetch()}
-            />
-          </li>
-        )}
+    <div className="fb-ui-split">
+      <ul className="fb-ui-split__list" aria-label="Perfis de acesso">
         {profilesQuery.data?.length === 0 && (
           <li>
-            <EmptyState message="Nenhum perfil cadastrado." />
+            <EmptyState title="Nenhum perfil cadastrado." />
           </li>
         )}
         {profilesQuery.data?.map((profile) => (
-          <li key={profile.id} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <li key={profile.id}>
             <button
               type="button"
-              className={`fb-role-item${selectedProfile?.id === profile.id ? " active" : ""}`}
-              style={{ flexGrow: 1 }}
+              className="fb-ui-profile-item"
+              aria-pressed={selectedProfile?.id === profile.id}
               onClick={() => setSelectedId(profile.id)}
             >
               {profile.name}
@@ -115,79 +106,81 @@ export function ProfilesPage() {
             {!profile.isSystem && (
               <BlockedAction allowed={canEdit} reason="Você não tem permissão para alterar perfis.">
                 {profile.isActive ? (
-                  <button
-                    type="button"
-                    className="fb-row-btn"
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    aria-label={`Desativar perfil ${profile.name}`}
                     disabled={deactivateMutation.isPending}
                     onClick={() => deactivateMutation.mutate(profile.id)}
                   >
                     Desativar
-                  </button>
+                  </Button>
                 ) : (
-                  <button
-                    type="button"
-                    className="fb-row-btn"
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    aria-label={`Reativar perfil ${profile.name}`}
                     disabled={activateMutation.isPending}
                     onClick={() => activateMutation.mutate(profile.id)}
                   >
                     Reativar
-                  </button>
+                  </Button>
                 )}
               </BlockedAction>
             )}
           </li>
         ))}
 
-        <li style={{ marginTop: 10 }}>
+        <li>
           <BlockedAction allowed={canCreate} reason="Você não tem permissão para criar perfis.">
-            <button
-              type="button"
-              className="fb-btn-dashed"
-              onClick={() => setShowCreateForm((visible) => !visible)}
-            >
+            <Button block onClick={() => setShowCreateForm((visible) => !visible)}>
               {showCreateForm ? "Cancelar" : "+ Novo perfil"}
-            </button>
+            </Button>
           </BlockedAction>
         </li>
       </ul>
 
-      <div className="fb-matrix-content">
-        {mutationError && <Feedback tone="error">{mutationError}</Feedback>}
+      <div className="fb-ui-split__main">
+        <QueryBlockState
+          query={profilesQuery}
+          hasData={profilesQuery.data !== undefined}
+          loading="Carregando perfis…"
+          error="Não foi possível carregar os perfis."
+        />
+        {mutationError && <Alert>{mutationError}</Alert>}
 
         {showCreateForm && (
-          <form
+          <Card
+            as="form"
+            className="fb-ui-card--form fb-ui-stack"
             onSubmit={handleCreateSubmit}
             aria-label="Novo perfil de acesso"
-            className="fb-form"
           >
-            <label htmlFor={`${formId}-name`}>Nome</label>
-            <input
-              id={`${formId}-name`}
-              className="fb-field"
+            <Field
+              label="Nome"
               value={newName}
               onChange={(event) => setNewName(event.target.value)}
               required
             />
-            <label htmlFor={`${formId}-description`}>Descrição</label>
-            <input
-              id={`${formId}-description`}
-              className="fb-field"
+            <Field
+              label="Descrição"
               value={newDescription}
               onChange={(event) => setNewDescription(event.target.value)}
             />
-            <button type="submit" className="fb-btn-primary" disabled={createMutation.isPending}>
-              Criar perfil
-            </button>
-          </form>
+            <div className="fb-ui-form-actions">
+              <Button type="submit" variant="primary" size="sm" busy={createMutation.isPending}>
+                Criar perfil
+              </Button>
+            </div>
+          </Card>
         )}
 
-        {catalogQuery.isLoading && <LoadingState />}
-        {catalogQuery.isError && (
-          <ErrorState
-            message="Não foi possível carregar o catálogo de perfis."
-            onRetry={() => void catalogQuery.refetch()}
-          />
-        )}
+        <QueryBlockState
+          query={catalogQuery}
+          hasData={catalogQuery.data !== undefined}
+          loading="Carregando catálogo de perfis…"
+          error="Não foi possível carregar o catálogo de perfis."
+        />
 
         {selectedProfile && catalogQuery.data && (
           <ProfileMatrix

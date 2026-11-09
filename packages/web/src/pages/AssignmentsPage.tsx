@@ -2,6 +2,14 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Module, PermissionAction } from "@fitburn/contracts";
 import { BlockedAction } from "../components/BlockedAction";
+import { QueryBlockState } from "../components/QueryBlockState";
+import { Alert } from "../components/ui/Alert";
+import { Button } from "../components/ui/Button";
+import { Card } from "../components/ui/Card";
+import { PageHeader } from "../components/ui/PageHeader";
+import { Select } from "../components/ui/Select";
+import { EmptyState } from "../components/ui/States";
+import { Table, type TableColumn } from "../components/ui/Table";
 import { errorMessage } from "../lib/auth/api";
 import { useAuth } from "../lib/auth/AuthContext";
 import { formatInstantDate } from "../lib/agenda/format";
@@ -11,14 +19,13 @@ import {
   getAssignmentOptions,
   listAssignments,
 } from "../lib/assignments/api";
-import { ErrorState, Feedback, LoadingState } from "../components/states";
 
 /**
  * Atribuição de clientes a professores: a administração escolhe um professor,
  * vê os clientes atribuídos a ele e atribui ou remove. Junto dos clientes com
  * reserva nas aulas do professor, essas atribuições formam o escopo "clientes
- * atribuídos". Não há referência de design para esta tela: usa a casca
- * administrativa clara, como as telas de Usuários e de Templates.
+ * atribuídos". Não há tela na proposta; segue o preview do admin (D-038, #156): título, professor, tabela de
+ * atribuições e o cartão "Atribuir cliente".
  */
 export function AssignmentsPage() {
   const { can } = useAuth();
@@ -67,130 +74,120 @@ export function AssignmentsPage() {
   const canCreate = can(Module.CLIENTES, PermissionAction.CREATE);
   const canDelete = can(Module.CLIENTES, PermissionAction.DELETE);
 
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 18, height: "100%" }}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-        <span className="fb-page-eyebrow">Clientes</span>
-        <h1 className="fb-page-title">Atribuição de clientes a professores</h1>
-      </div>
+  const columns: TableColumn<(typeof assignments)[number]>[] = [
+    {
+      key: "client",
+      header: "Cliente",
+      className: "fb-ui-table__name",
+      cell: (item) => item.client.fullName,
+    },
+    {
+      key: "email",
+      header: "E-mail",
+      className: "fb-ui-table__muted",
+      cell: (item) => item.client.email,
+    },
+    {
+      key: "since",
+      header: "Atribuído em",
+      className: "fb-ui-table__muted",
+      cell: (item) => formatInstantDate(item.createdAt),
+    },
+    {
+      key: "actions",
+      header: "Ações",
+      actions: true,
+      cell: (item) => (
+        <BlockedAction
+          allowed={canDelete}
+          reason="Você não tem permissão para remover atribuições."
+        >
+          <Button
+            size="sm"
+            variant="ghost-danger"
+            aria-label={`Remover atribuição de ${item.client.fullName}`}
+            disabled={removeMutation.isPending}
+            onClick={() => removeMutation.mutate(item.id)}
+          >
+            Remover
+          </Button>
+        </BlockedAction>
+      ),
+    },
+  ];
 
-      <div className="fb-lock-banner" role="note">
+  return (
+    <div className="fb-ui-page">
+      <PageHeader kicker="Clientes" title="Atribuição de clientes a professores" />
+
+      <p role="note" className="fb-ui-note">
         Um professor acompanha os clientes que reservam as aulas dele e os que forem atribuídos
         aqui.
-      </div>
+      </p>
 
-      {optionsQuery.isLoading && <LoadingState />}
-      {(optionsQuery.isError || assignmentsQuery.isError) && (
-        <ErrorState
-          message="Não foi possível carregar as atribuições."
-          onRetry={() => {
-            void optionsQuery.refetch();
-            void assignmentsQuery.refetch();
-          }}
+      <QueryBlockState
+        query={optionsQuery}
+        hasData={options !== undefined}
+        loading="Carregando atribuições…"
+        error="Não foi possível carregar as atribuições."
+      />
+      {teacher && (
+        <QueryBlockState
+          query={assignmentsQuery}
+          hasData={assignmentsQuery.data !== undefined}
+          loading="Carregando atribuições…"
+          error="Não foi possível carregar as atribuições."
         />
       )}
-      {failure && <Feedback tone="error">{failure}</Feedback>}
+      {failure && <Alert>{failure}</Alert>}
 
       {options && (
         <>
-          <label
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              fontSize: 13,
-              color: "#4a4a4a",
+          <Select
+            className="fb-ui-field--narrow"
+            label="Professor"
+            value={teacherId}
+            onChange={(event) => {
+              setTeacherId(event.target.value);
+              setClientId("");
+              setFailure(null);
             }}
           >
-            Professor
-            <select
-              className="fb-field"
-              value={teacherId}
-              onChange={(event) => {
-                setTeacherId(event.target.value);
-                setClientId("");
-                setFailure(null);
-              }}
-            >
-              <option value="">Selecione um professor</option>
-              {options.teachers.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.fullName}
-                </option>
-              ))}
-            </select>
-          </label>
+            <option value="">Selecione um professor</option>
+            {options.teachers.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.fullName}
+              </option>
+            ))}
+          </Select>
 
           {!teacher && (
-            <p className="fb-note">Selecione um professor para ver os clientes atribuídos a ele.</p>
+            <p className="fb-ui-note">
+              Selecione um professor para ver os clientes atribuídos a ele.
+            </p>
           )}
 
           {teacher && assignmentsQuery.isSuccess && assignments.length === 0 && (
-            <p className="fb-note">Nenhum cliente atribuído manualmente a {teacher.fullName}.</p>
+            <EmptyState title={`Nenhum cliente atribuído manualmente a ${teacher.fullName}.`} />
           )}
 
           {teacher && assignments.length > 0 && (
-            <div className="fb-table-wrap" style={{ flexGrow: 0 }}>
-              <table>
-                <thead>
-                  <tr>
-                    <th className="fb-th">Cliente</th>
-                    <th className="fb-th">E-mail</th>
-                    <th className="fb-th">Atribuído em</th>
-                    <th className="fb-th" style={{ textAlign: "right" }}>
-                      Ações
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {assignments.map((item) => (
-                    <tr key={item.id}>
-                      <td className="fb-td" style={{ fontWeight: 500 }}>
-                        {item.client.fullName}
-                      </td>
-                      <td className="fb-td" style={{ color: "#5a5a5a" }}>
-                        {item.client.email}
-                      </td>
-                      <td className="fb-td" style={{ color: "#5a5a5a" }}>
-                        {formatInstantDate(item.createdAt)}
-                      </td>
-                      <td className="fb-td" style={{ textAlign: "right" }}>
-                        <BlockedAction
-                          allowed={canDelete}
-                          reason="Você não tem permissão para remover atribuições."
-                        >
-                          <button
-                            type="button"
-                            className="fb-row-btn fb-row-btn--danger"
-                            disabled={removeMutation.isPending}
-                            onClick={() => removeMutation.mutate(item.id)}
-                          >
-                            Remover
-                          </button>
-                        </BlockedAction>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <Table
+              label={`Clientes atribuídos a ${teacher.fullName}`}
+              columns={columns}
+              rows={assignments}
+              rowKey={(item) => item.id}
+            />
           )}
 
           {teacher && (
-            <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
-              <label
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  fontSize: 13,
-                  color: "#4a4a4a",
-                }}
-              >
-                Cliente
-                <select
-                  className="fb-field"
-                  style={{ minWidth: 0 }}
+            <Card className="fb-ui-stack" aria-labelledby="atribuir-cliente">
+              <h2 id="atribuir-cliente" className="fb-ui-section-title">
+                Atribuir cliente
+              </h2>
+              <div className="fb-ui-toolbar">
+                <Select
+                  label="Cliente"
                   value={clientId}
                   onChange={(event) => setClientId(event.target.value)}
                 >
@@ -200,22 +197,23 @@ export function AssignmentsPage() {
                       {client.fullName} · {client.email}
                     </option>
                   ))}
-                </select>
-              </label>
-              <BlockedAction
-                allowed={canCreate}
-                reason="Você não tem permissão para atribuir clientes."
-              >
-                <button
-                  type="button"
-                  className="fb-btn-primary"
-                  disabled={clientId === "" || createMutation.isPending}
-                  onClick={() => createMutation.mutate({ teacherId, clientId })}
+                </Select>
+                <BlockedAction
+                  allowed={canCreate}
+                  reason="Você não tem permissão para atribuir clientes."
                 >
-                  Atribuir
-                </button>
-              </BlockedAction>
-            </div>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    busy={createMutation.isPending}
+                    disabled={clientId === ""}
+                    onClick={() => createMutation.mutate({ teacherId, clientId })}
+                  >
+                    Atribuir
+                  </Button>
+                </BlockedAction>
+              </div>
+            </Card>
           )}
         </>
       )}

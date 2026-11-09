@@ -191,7 +191,7 @@ describe("UsersPage", () => {
     renderUsersPage();
     const user = userEvent.setup();
 
-    await user.click(await screen.findByRole("button", { name: "Editar Cliente Ativo" }));
+    await user.click(await screen.findByRole("button", { name: "Editar usuário Cliente Ativo" }));
     const dialog = screen.getByRole("dialog", { name: "Editar usuário" });
     const name = within(dialog).getByLabelText("Nome completo");
     await user.clear(name);
@@ -217,7 +217,7 @@ describe("UsersPage", () => {
     const user = userEvent.setup();
     const row = (await screen.findByText("Rafael Professor")).closest("tr")!;
 
-    await user.click(within(row).getByRole("button", { name: "Redefinir senha" }));
+    await user.click(within(row).getByRole("button", { name: /^Redefinir senha de / }));
     const dialog = screen.getByRole("dialog", { name: "Redefinir senha?" });
     expect(dialog).toHaveTextContent("Rafael Professor");
 
@@ -254,7 +254,7 @@ describe("UsersPage", () => {
     renderUsersPage();
     const user = userEvent.setup();
     const row = (await screen.findByText("Rafael Professor")).closest("tr")!;
-    await user.click(within(row).getByRole("button", { name: "Redefinir senha" }));
+    await user.click(within(row).getByRole("button", { name: /^Redefinir senha de / }));
     const dialog = screen.getByRole("dialog", { name: "Redefinir senha?" });
     const password = within(dialog).getByLabelText("Nova senha");
     const secret = "SenhaTemporaria456!";
@@ -292,7 +292,7 @@ describe("UsersPage", () => {
     renderUsersPage();
     const user = userEvent.setup();
     const row = (await screen.findByText("Rafael Professor")).closest("tr")!;
-    await user.click(within(row).getByRole("button", { name: "Redefinir senha" }));
+    await user.click(within(row).getByRole("button", { name: /^Redefinir senha de / }));
     const dialog = screen.getByRole("dialog", { name: "Redefinir senha?" });
     const password = within(dialog).getByLabelText("Nova senha");
     const secret = "SenhaTemporaria456!";
@@ -327,16 +327,16 @@ describe("UsersPage", () => {
     const user = userEvent.setup();
 
     const row = (await screen.findByText("Cliente Ativo")).closest("tr")!;
-    await user.click(within(row).getByRole("button", { name: "Desativar" }));
+    await user.click(within(row).getByRole("button", { name: /^Desativar usuário / }));
 
     await waitFor(() => {
-      expect(within(row).getByRole("button", { name: "Reativar" })).toBeInTheDocument();
+      expect(within(row).getByRole("button", { name: /^Reativar usuário / })).toBeInTheDocument();
     });
 
-    await user.click(within(row).getByRole("button", { name: "Reativar" }));
+    await user.click(within(row).getByRole("button", { name: /^Reativar usuário / }));
 
     await waitFor(() => {
-      expect(within(row).getByRole("button", { name: "Desativar" })).toBeInTheDocument();
+      expect(within(row).getByRole("button", { name: /^Desativar usuário / })).toBeInTheDocument();
     });
   });
   it("exclui um usuário com confirmação irreversível e ele sai da lista", async () => {
@@ -356,7 +356,7 @@ describe("UsersPage", () => {
     const user = userEvent.setup();
 
     const row = (await screen.findByText("Rafael Professor")).closest("tr")!;
-    await user.click(within(row).getByRole("button", { name: "Excluir" }));
+    await user.click(within(row).getByRole("button", { name: /^Excluir usuário / }));
     const dialog = screen.getByRole("dialog", { name: "Excluir usuário?" });
     expect(dialog).toHaveTextContent(/anonimizados/i);
     expect(dialog).toHaveTextContent(/não pode ser desfeita/i);
@@ -390,7 +390,7 @@ describe("UsersPage", () => {
     const user = userEvent.setup();
 
     const row = (await screen.findByText("Rafael Professor")).closest("tr")!;
-    await user.click(within(row).getByRole("button", { name: "Excluir" }));
+    await user.click(within(row).getByRole("button", { name: /^Excluir usuário / }));
     await user.click(
       within(screen.getByRole("dialog", { name: "Excluir usuário?" })).getByRole("button", {
         name: "Excluir e anonimizar",
@@ -409,8 +409,8 @@ describe("UsersPage", () => {
     renderUsersPage();
 
     const row = (await screen.findByText("Cliente Ativo")).closest("tr")!;
-    expect(within(row).queryByRole("button", { name: "Excluir" })).not.toBeInTheDocument();
-    expect(within(row).queryByRole("button", { name: "Redefinir senha" })).not.toBeInTheDocument();
+    expect(within(row).queryByRole("button", { name: /^Excluir usuário / })).not.toBeInTheDocument();
+    expect(within(row).queryByRole("button", { name: /^Redefinir senha de / })).not.toBeInTheDocument();
   });
 
   describe("sem permissão", () => {
@@ -427,14 +427,14 @@ describe("UsersPage", () => {
       expect(create).toBeDisabled();
       expect(create).toHaveAttribute("title", "Você não tem permissão para cadastrar usuários.");
       const row = (await screen.findByText("Cliente Ativo")).closest("tr")!;
-      const toggle = within(row).getByRole("button", { name: "Desativar" });
+      const toggle = within(row).getByRole("button", { name: /^Desativar usuário / });
       expect(toggle).toBeDisabled();
       expect(toggle).toHaveAttribute("title", "Você não tem permissão para alterar usuários.");
-      const remove = within(row).getByRole("button", { name: "Excluir" });
+      const remove = within(row).getByRole("button", { name: /^Excluir usuário / });
       expect(remove).toBeDisabled();
       expect(remove).toHaveAttribute("title", "Você não tem permissão para excluir usuários.");
       expect(
-        within(row).queryByRole("button", { name: "Redefinir senha" }),
+        within(row).queryByRole("button", { name: /^Redefinir senha de / }),
       ).not.toBeInTheDocument();
     });
 
@@ -453,7 +453,7 @@ describe("UsersPage", () => {
 
       const row = (await screen.findByText("Cliente Ativo")).closest("tr")!;
       expect(
-        within(row).queryByRole("button", { name: "Redefinir senha" }),
+        within(row).queryByRole("button", { name: /^Redefinir senha de / }),
       ).not.toBeInTheDocument();
     });
   });

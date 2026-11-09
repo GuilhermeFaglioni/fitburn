@@ -1,7 +1,7 @@
 import type { ButtonHTMLAttributes, MouseEvent, Ref } from "react";
 import { join } from "./join";
 
-export type ButtonVariant = "primary" | "secondary" | "soft" | "ghost" | "danger";
+export type ButtonVariant = "primary" | "secondary" | "soft" | "ghost" | "danger" | "ghost-danger";
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
@@ -15,7 +15,8 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 /**
- * Botão base (#156, D-038): primário com gradiente CTA, secundário, soft, ghost, perigo e pequeno.
+ * Botão base (#156, D-038): primário com gradiente CTA, secundário, soft, ghost, perigo e pequeno. `ghost-danger` é o
+ * "Excluir" discreto das linhas de tabela (texto em `--danger`, sem preenchimento).
  * Estilo em `styles/components.css` (`.fb-ui-btn`); só tokens.
  */
 export function Button({

@@ -118,7 +118,6 @@ textarea {
 /* Números que se comparam numa coluna ou mudam no lugar (percentuais, posições, horários, contagens, datas
    das tabelas): algarismos de largura fixa, para a coluna não dançar. Os totais grandes ficam proporcionais. */
 .fb-td,
-.fb-count,
 .fb-dash__bar-value,
 .fb-dash__ranking-pos,
 .fb-dash__ranking-count,

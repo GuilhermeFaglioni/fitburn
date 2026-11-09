@@ -10,6 +10,15 @@ import {
 } from "@fitburn/contracts";
 import { BlockedAction } from "../components/BlockedAction";
 import { DeleteUserDialog } from "../components/DeleteUserDialog";
+import { QueryBlockState } from "../components/QueryBlockState";
+import { Alert } from "../components/ui/Alert";
+import { Badge, type BadgeTone } from "../components/ui/Badge";
+import { Button } from "../components/ui/Button";
+import { Card } from "../components/ui/Card";
+import { DescriptionList } from "../components/ui/DescriptionList";
+import { PageHeader } from "../components/ui/PageHeader";
+import { Segmented } from "../components/ui/Segmented";
+import { EmptyState } from "../components/ui/States";
 import { formatClassDay, formatInstantDate, formatLocalDate } from "../lib/agenda/format";
 import { ApiError } from "../lib/auth/api";
 import { useAuth } from "../lib/auth/AuthContext";
@@ -19,7 +28,6 @@ import { invalidateAfterDeletion } from "../lib/invalidate-after-deletion";
 import { PlanHistoryList } from "./plans/PlanHistoryList";
 import { statusBadge } from "./workout-sheets/status";
 import { ClientEditForm } from "./clients/ClientEditForm";
-import { EmptyState, ErrorState, Feedback, LoadingState } from "../components/states";
 
 type Tab = "dados" | "plano" | "reservas" | "gamificacao" | "fichas";
 
@@ -31,10 +39,12 @@ const TABS: Array<{ id: Tab; label: string }> = [
   { id: "fichas", label: "Fichas" },
 ];
 
-const STATUS_BADGE: Record<UserDetail["status"], { label: string; className: string }> = {
-  ACTIVE: { label: "ATIVO", className: "fb-badge--active" },
-  INACTIVE: { label: "INATIVO", className: "fb-badge--inactive" },
-  DELETED: { label: "EXCLUÍDO", className: "fb-badge--neutral" },
+const TABS_OPTIONS = TABS.map((item) => ({ value: item.id, label: item.label }));
+
+const STATUS_BADGE: Record<UserDetail["status"], { label: string; tone: BadgeTone }> = {
+  ACTIVE: { label: "ATIVO", tone: "ok" },
+  INACTIVE: { label: "INATIVO", tone: "neutral" },
+  DELETED: { label: "EXCLUÍDO", tone: "neutral" },
 };
 
 const RESERVATION_LABEL: Record<ReservationDetail["status"], string> = {
@@ -49,18 +59,16 @@ function valueOrDash(value: string | null | undefined): string {
 }
 
 function ReservationRows({ items, empty }: { items: ReservationDetail[]; empty: string }) {
-  if (items.length === 0) return <EmptyState message={empty} />;
+  if (items.length === 0) return <EmptyState title={empty} />;
   return (
-    <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: 8 }}>
+    <ul className="fb-ui-rows">
       {items.map((reservation) => (
-        <li key={reservation.id} style={{ display: "flex", justifyContent: "space-between" }}>
+        <li key={reservation.id}>
           <span>
             <strong>{reservation.occurrence.name}</strong> ·{" "}
             {formatClassDay(reservation.occurrence.startsAt)}
           </span>
-          <span className="fb-badge fb-badge--neutral">
-            {RESERVATION_LABEL[reservation.status]}
-          </span>
+          <Badge>{RESERVATION_LABEL[reservation.status]}</Badge>
         </li>
       ))}
     </ul>
@@ -83,93 +91,91 @@ function TabContent({
     case "dados":
       if (editing) return <ClientEditForm client={client} onDone={() => setEditing(false)} />;
       return (
-        <div style={{ display: "grid", gap: 10 }}>
-          <dl className="fb-dl">
-            <dt>E-mail</dt>
-            <dd>{client.email}</dd>
-            <dt>Telefone</dt>
-            <dd>{valueOrDash(client.phone)}</dd>
-            {client.birthDate !== undefined && (
-              <>
-                <dt>Data de nascimento</dt>
-                <dd>{client.birthDate ? formatLocalDate(client.birthDate) : "—"}</dd>
-              </>
-            )}
-            {client.document !== undefined && (
-              <>
-                <dt>Documento</dt>
-                <dd>{valueOrDash(client.document)}</dd>
-              </>
-            )}
-            {client.address !== undefined && (
-              <>
-                <dt>Endereço</dt>
-                <dd>{valueOrDash(client.address)}</dd>
-              </>
-            )}
-          </dl>
+        <Card className="fb-ui-stack">
+          <h2 className="fb-ui-section-title">Dados pessoais</h2>
+          <DescriptionList
+            items={[
+              { term: "E-mail", detail: client.email },
+              { term: "Telefone", detail: valueOrDash(client.phone) },
+              ...(client.birthDate !== undefined
+                ? [
+                    {
+                      term: "Data de nascimento",
+                      detail: client.birthDate ? formatLocalDate(client.birthDate) : "—",
+                    },
+                  ]
+                : []),
+              ...(client.document !== undefined
+                ? [{ term: "Documento", detail: valueOrDash(client.document) }]
+                : []),
+              ...(client.address !== undefined
+                ? [{ term: "Endereço", detail: valueOrDash(client.address) }]
+                : []),
+            ]}
+          />
           {client.status !== "DELETED" && (
             <div>
               <BlockedAction
                 allowed={canEdit}
                 reason="Você não tem permissão para editar clientes."
               >
-                <button type="button" className="fb-row-btn" onClick={() => setEditing(true)}>
+                <Button size="sm" onClick={() => setEditing(true)}>
                   Editar dados
-                </button>
+                </Button>
               </BlockedAction>
             </div>
           )}
-        </div>
+        </Card>
       );
     case "plano":
       return (
-        <div style={{ display: "grid", gap: 14 }}>
+        <Card className="fb-ui-stack">
+          <h2 className="fb-ui-section-title">Plano atual</h2>
           {plan.active ? (
             <PlanHistoryList items={[plan.active]} light />
           ) : (
-            <EmptyState message="Sem plano ativo." />
+            <EmptyState title="Sem plano ativo." />
           )}
           {plan.history.length > 0 && (
             <>
-              <h3>Histórico</h3>
+              <h2 className="fb-ui-section-title">Histórico</h2>
               <PlanHistoryList items={plan.history} light />
             </>
           )}
-        </div>
+        </Card>
       );
     case "reservas":
       return (
-        <div style={{ display: "grid", gap: 14 }}>
-          <h3>Próximas reservas</h3>
+        <Card className="fb-ui-stack">
+          <h2 className="fb-ui-section-title">Próximas reservas</h2>
           <ReservationRows items={overview.upcomingReservations} empty="Nenhuma reserva próxima." />
-          <h3>Histórico de reservas</h3>
+          <h2 className="fb-ui-section-title">Histórico de reservas</h2>
           <ReservationRows items={overview.pastReservations} empty="Nenhuma reserva anterior." />
-        </div>
+        </Card>
       );
     case "gamificacao":
       return (
-        <div style={{ display: "grid", gap: 10 }}>
-          <p>
+        <Card className="fb-ui-stack">
+          <h2 className="fb-ui-section-title">FitPoints</h2>
+          <p className="fb-ui-note">
             <strong>{gamification.totalPoints} pontos</strong> · sequência de{" "}
             {gamification.streak.current} presenças
           </p>
-          <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", gap: 8 }}>
+          <ul className="fb-ui-badges" aria-label="Marcos de presença">
             {gamification.badges.map((badge) => (
-              <li
-                key={badge.milestone}
-                className={`fb-badge ${badge.earned ? "fb-badge--active" : "fb-badge--neutral"}`}
-              >
-                {badge.milestone} presenças {badge.earned ? "✓" : "🔒"}
+              <li key={badge.milestone}>
+                <Badge tone={badge.earned ? "ok" : "neutral"}>
+                  {badge.milestone} presenças {badge.earned ? "✓" : "🔒"}
+                </Badge>
               </li>
             ))}
           </ul>
           {gamification.history.length === 0 ? (
-            <EmptyState message="Nenhum ponto ainda." />
+            <EmptyState title="Nenhum ponto ainda." />
           ) : (
-            <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: 6 }}>
+            <ul className="fb-ui-rows">
               {gamification.history.map((item) => (
-                <li key={item.id} style={{ display: "flex", justifyContent: "space-between" }}>
+                <li key={item.id}>
                   <span>
                     {item.subject ?? "Pontos"} · {formatHistoryWhen(item.occurredAt)}
                   </span>
@@ -181,23 +187,27 @@ function TabContent({
               ))}
             </ul>
           )}
-        </div>
+        </Card>
       );
     case "fichas":
       return overview.workoutSheets.length === 0 ? (
-        <EmptyState message="Nenhuma ficha de treino." />
+        <Card>
+          <EmptyState title="Nenhuma ficha de treino." />
+        </Card>
       ) : (
-        <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: 8 }}>
-          {overview.workoutSheets.map((sheet) => (
-            <li key={sheet.id} style={{ display: "flex", justifyContent: "space-between" }}>
-              <span>
-                <strong>{sheet.title}</strong> · {sheet.exercises.length} exercícios · por{" "}
-                {sheet.authorName} · {formatInstantDate(sheet.updatedAt)}
-              </span>
-              <span className="fb-badge fb-badge--neutral">{statusBadge(sheet.status)}</span>
-            </li>
-          ))}
-        </ul>
+        <Card>
+          <ul className="fb-ui-rows">
+            {overview.workoutSheets.map((sheet) => (
+              <li key={sheet.id}>
+                <span>
+                  <strong>{sheet.title}</strong> · {sheet.exercises.length} exercícios · por{" "}
+                  {sheet.authorName} · {formatInstantDate(sheet.updatedAt)}
+                </span>
+                <Badge>{statusBadge(sheet.status)}</Badge>
+              </li>
+            ))}
+          </ul>
+        </Card>
       );
   }
 }
@@ -224,65 +234,77 @@ export function ClientDetailPage() {
   const canDelete = can(Module.CLIENTES, PermissionAction.DELETE);
   const overview = overviewQuery.data;
 
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 18, height: "100%" }}>
-      <Link to="/clientes" className="fb-back-link">
-        ← Clientes
-      </Link>
+  const outOfScope =
+    overviewQuery.error instanceof ApiError && overviewQuery.error.code === "OUT_OF_SCOPE";
 
-      {overviewQuery.isLoading && <LoadingState />}
-      {overviewQuery.isError && (
-        <ErrorState
-          message={
-            overviewQuery.error instanceof ApiError && overviewQuery.error.code === "OUT_OF_SCOPE"
-              ? "Este cliente está fora do seu escopo."
-              : "Não foi possível carregar o cliente."
-          }
-          onRetry={() => void overviewQuery.refetch()}
-        />
+  return (
+    <div className="fb-ui-page">
+      <QueryBlockState
+        query={overviewQuery}
+        hasData={overview !== undefined}
+        loading="Carregando cliente…"
+        error={
+          outOfScope
+            ? "Este cliente está fora do seu escopo."
+            : "Não foi possível carregar o cliente."
+        }
+      />
+      {(overviewQuery.isPending || overviewQuery.isError) && (
+        <nav aria-label="Trilha de navegação" className="fb-ui-crumb">
+          <Link to="/clientes" className="fb-ui-link">
+            ← Clientes
+          </Link>
+        </nav>
       )}
-      {toggleMutation.isError && (
-        <Feedback tone="error">Não foi possível alterar o cliente.</Feedback>
-      )}
+      {toggleMutation.isError && <Alert>Não foi possível alterar o cliente.</Alert>}
 
       {overview && (
         <>
-          <div className="fb-toolbar">
-            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              <h1 className="fb-page-title">{overview.client.fullName}</h1>
-              <span className={`fb-badge ${STATUS_BADGE[overview.client.status].className}`}>
+          <PageHeader
+            crumb={
+              <>
+                <Link to="/clientes" className="fb-ui-link">
+                  Clientes
+                </Link>{" "}
+                / {overview.client.fullName}
+              </>
+            }
+            kicker="Cliente"
+            title={overview.client.fullName}
+            badge={
+              <Badge tone={STATUS_BADGE[overview.client.status].tone} dot>
                 {STATUS_BADGE[overview.client.status].label}
-              </span>
-            </div>
-            {overview.client.status !== "DELETED" && (
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                <BlockedAction
-                  allowed={canEdit}
-                  reason="Você não tem permissão para alterar clientes."
-                >
-                  <button
-                    type="button"
-                    className="fb-row-btn"
-                    onClick={() => toggleMutation.mutate(overview.client.status !== "ACTIVE")}
+              </Badge>
+            }
+            actions={
+              overview.client.status !== "DELETED" && (
+                <>
+                  <BlockedAction
+                    allowed={canEdit}
+                    reason="Você não tem permissão para alterar clientes."
                   >
-                    {overview.client.status === "ACTIVE" ? "Desativar cliente" : "Reativar cliente"}
-                  </button>
-                </BlockedAction>
-                <BlockedAction
-                  allowed={canDelete}
-                  reason="Você não tem permissão para excluir clientes."
-                >
-                  <button
-                    type="button"
-                    className="fb-row-btn fb-row-btn--danger"
-                    onClick={() => setConfirmingDelete(true)}
+                    <Button
+                      size="sm"
+                      busy={toggleMutation.isPending}
+                      onClick={() => toggleMutation.mutate(overview.client.status !== "ACTIVE")}
+                    >
+                      {overview.client.status === "ACTIVE"
+                        ? "Desativar cliente"
+                        : "Reativar cliente"}
+                    </Button>
+                  </BlockedAction>
+                  <BlockedAction
+                    allowed={canDelete}
+                    reason="Você não tem permissão para excluir clientes."
                   >
-                    Excluir cliente
-                  </button>
-                </BlockedAction>
-              </div>
-            )}
-          </div>
+                    <Button variant="danger" size="sm" onClick={() => setConfirmingDelete(true)}>
+                      Excluir cliente
+                    </Button>
+                  </BlockedAction>
+                </>
+              )
+            }
+          />
 
           {confirmingDelete && (
             <DeleteUserDialog
@@ -297,20 +319,12 @@ export function ClientDetailPage() {
             />
           )}
 
-          <div className="fb-tabs" role="tablist">
-            {TABS.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                role="tab"
-                aria-selected={tab === item.id}
-                className={`fb-tab-btn${tab === item.id ? " active" : ""}`}
-                onClick={() => setTab(item.id)}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
+          <Segmented
+            label="Seções do cliente"
+            options={TABS_OPTIONS}
+            value={tab}
+            onChange={setTab}
+          />
 
           <TabContent tab={tab} overview={overview} canEdit={canEdit} />
         </>

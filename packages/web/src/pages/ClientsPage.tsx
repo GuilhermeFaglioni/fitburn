@@ -10,10 +10,19 @@ import {
 } from "@fitburn/contracts";
 import { BlockedAction } from "../components/BlockedAction";
 import { DeleteUserDialog } from "../components/DeleteUserDialog";
+import { QueryBlockState } from "../components/QueryBlockState";
+import { Alert } from "../components/ui/Alert";
+import { Badge } from "../components/ui/Badge";
+import { Button } from "../components/ui/Button";
+import { Field } from "../components/ui/Field";
+import { PageHeader } from "../components/ui/PageHeader";
+import { Select } from "../components/ui/Select";
+import { Table, type TableColumn } from "../components/ui/Table";
+import { Toolbar } from "../components/ui/Toolbar";
+import { EmptyState } from "../components/ui/States";
 import { useAuth } from "../lib/auth/AuthContext";
 import { invalidateAfterDeletion } from "../lib/invalidate-after-deletion";
 import { deleteClientRecord, listClients, setClientActive } from "../lib/clients/api";
-import { EmptyState, ErrorState, Feedback, LoadingState } from "../components/states";
 
 const NO_PLAN = "__sem_plano__";
 
@@ -63,37 +72,122 @@ export function ClientsPage() {
     [loaded, planFilter],
   );
 
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 18, height: "100%" }}>
-      <div className="fb-page-header">
-        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          <span className="fb-page-eyebrow">Clientes</span>
-          <h1 className="fb-page-title">Clientes</h1>
-        </div>
-        <BlockedAction allowed={canCreate} reason="Você não tem permissão para cadastrar clientes.">
-          <button
-            type="button"
-            className="fb-btn-primary fb-btn-primary--sans"
-            onClick={() => navigate("/clientes/novo")}
-          >
-            + Novo cliente
-          </button>
-        </BlockedAction>
-      </div>
+  const columns: TableColumn<ClientListItem>[] = [
+    {
+      key: "name",
+      header: "Nome",
+      className: "fb-ui-table__name",
+      cell: (client) => (
+        <Link to={`/clientes/${client.id}`} className="fb-ui-link">
+          {client.fullName}
+        </Link>
+      ),
+    },
+    {
+      key: "email",
+      header: "E-mail",
+      className: "fb-ui-table__muted",
+      cell: (client) => client.email,
+    },
+    {
+      key: "phone",
+      header: "Telefone",
+      className: "fb-ui-table__muted",
+      cell: (client) => client.phone ?? "—",
+    },
+    ...(hasFullClientData
+      ? [
+          {
+            key: "plan",
+            header: "Plano",
+            cell: (client: ClientListItem) => client.activePlan?.name ?? "Sem plano ativo",
+          },
+        ]
+      : []),
+    {
+      key: "status",
+      header: "Situação",
+      cell: (client) =>
+        client.status === "ACTIVE" ? (
+          <Badge tone="ok" dot>
+            ATIVO
+          </Badge>
+        ) : (
+          <Badge dot>INATIVO</Badge>
+        ),
+    },
+    {
+      key: "actions",
+      header: "Ações",
+      actions: true,
+      cell: (client) => {
+        const inactive = client.status !== "ACTIVE";
+        return (
+          <div className="fb-ui-row-actions">
+            <Button
+              size="sm"
+              aria-label={`Editar cliente ${client.fullName}`}
+              onClick={() => navigate(`/clientes/${client.id}`)}
+            >
+              Editar
+            </Button>
+            <BlockedAction allowed={canEdit} reason="Você não tem permissão para alterar clientes.">
+              <Button
+                size="sm"
+                aria-label={`${inactive ? "Reativar" : "Desativar"} cliente ${client.fullName}`}
+                onClick={() => toggleMutation.mutate({ id: client.id, active: inactive })}
+              >
+                {inactive ? "Reativar" : "Desativar"}
+              </Button>
+            </BlockedAction>
+            <BlockedAction
+              allowed={canDelete}
+              reason="Você não tem permissão para excluir clientes."
+            >
+              <Button
+                size="sm"
+                variant="ghost-danger"
+                aria-label={`Excluir cliente ${client.fullName}`}
+                onClick={() => setClientToDelete(client)}
+              >
+                Excluir
+              </Button>
+            </BlockedAction>
+          </div>
+        );
+      },
+    },
+  ];
 
-      <div className="fb-toolbar fb-toolbar--filters">
-        <input
+  return (
+    <div className="fb-ui-page">
+      <PageHeader
+        kicker="Clientes"
+        title="Clientes"
+        actions={
+          <BlockedAction
+            allowed={canCreate}
+            reason="Você não tem permissão para cadastrar clientes."
+          >
+            <Button variant="primary" size="sm" onClick={() => navigate("/clientes/novo")}>
+              + Novo cliente
+            </Button>
+          </BlockedAction>
+        }
+      />
+
+      <Toolbar>
+        <Field
           type="search"
-          className="fb-field"
-          style={{ width: 280 }}
+          label={searchLabel}
+          hideLabel
           placeholder={searchLabel}
-          aria-label={searchLabel}
           value={searchTerm}
           onChange={(event) => setSearchTerm(event.target.value)}
         />
-        <select
-          className="fb-field"
-          aria-label="Status"
+        <Select
+          label="Status"
+          hideLabel
           value={status ?? ""}
           onChange={(event) =>
             setStatus((event.target.value || undefined) as ClientsQuery["status"])
@@ -102,11 +196,11 @@ export function ClientsPage() {
           <option value="">Status: todos</option>
           <option value="ACTIVE">Ativo</option>
           <option value="INACTIVE">Inativo</option>
-        </select>
+        </Select>
         {hasFullClientData && (
-          <select
-            className="fb-field"
-            aria-label="Plano"
+          <Select
+            label="Plano"
+            hideLabel
             value={planFilter}
             onChange={(event) => setPlanFilter(event.target.value)}
           >
@@ -117,14 +211,14 @@ export function ClientsPage() {
               </option>
             ))}
             <option value={NO_PLAN}>Sem plano ativo</option>
-          </select>
+          </Select>
         )}
         {clients && (
-          <span className="fb-count">
+          <span className="fb-ui-toolbar__count" role="status">
             {clients.length} {clients.length === 1 ? "cliente" : "clientes"}
           </span>
         )}
-      </div>
+      </Toolbar>
 
       {clientToDelete && (
         <DeleteUserDialog
@@ -139,104 +233,17 @@ export function ClientsPage() {
         />
       )}
 
-      {clientsQuery.isLoading && <LoadingState />}
-      {clientsQuery.isError && (
-        <ErrorState
-          message="Não foi possível carregar os clientes."
-          onRetry={() => void clientsQuery.refetch()}
-        />
-      )}
-      {toggleMutation.isError && (
-        <Feedback tone="error">Não foi possível alterar o cliente.</Feedback>
-      )}
-      {clients && clients.length === 0 && <EmptyState message="Nenhum cliente encontrado." />}
+      <QueryBlockState
+        query={clientsQuery}
+        hasData={clientsQuery.data !== undefined}
+        loading="Carregando clientes…"
+        error="Não foi possível carregar os clientes."
+      />
+      {toggleMutation.isError && <Alert>Não foi possível alterar o cliente.</Alert>}
 
+      {clients && clients.length === 0 && <EmptyState title="Nenhum cliente encontrado." />}
       {clients && clients.length > 0 && (
-        <div className="fb-table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th className="fb-th">Nome</th>
-                <th className="fb-th">E-mail</th>
-                <th className="fb-th">Telefone</th>
-                {hasFullClientData && <th className="fb-th">Plano</th>}
-                <th className="fb-th">Status</th>
-                <th className="fb-th" style={{ textAlign: "right" }}>
-                  Ações
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {clients.map((client) => {
-                const inactive = client.status !== "ACTIVE";
-                return (
-                  <tr key={client.id} className={inactive ? "fb-row--inactive" : undefined}>
-                    <td className="fb-td fb-td--name">
-                      <Link to={`/clientes/${client.id}`} className="fb-name-link">
-                        {client.fullName}
-                      </Link>
-                    </td>
-                    <td className="fb-td fb-td--soft">{client.email}</td>
-                    <td className="fb-td fb-td--soft">{client.phone ?? "—"}</td>
-                    {hasFullClientData && (
-                      <td className="fb-td">
-                        {client.activePlan ? client.activePlan.name : "Sem plano ativo"}
-                      </td>
-                    )}
-                    <td className="fb-td">
-                      <span
-                        className={`fb-badge fb-badge--spaced ${inactive ? "fb-badge--inactive" : "fb-badge--active"}`}
-                      >
-                        {inactive ? "INATIVO" : "ATIVO"}
-                      </span>
-                    </td>
-                    <td className="fb-td" style={{ textAlign: "right" }}>
-                      <button
-                        type="button"
-                        className="fb-row-btn"
-                        aria-label={`Editar ${client.fullName}`}
-                        onClick={() => navigate(`/clientes/${client.id}`)}
-                      >
-                        Editar
-                      </button>{" "}
-                      <BlockedAction
-                        allowed={canEdit}
-                        reason="Você não tem permissão para alterar clientes."
-                      >
-                        <button
-                          type="button"
-                          className="fb-row-btn"
-                          aria-label={`${inactive ? "Reativar" : "Desativar"} ${client.fullName}`}
-                          onClick={() =>
-                            toggleMutation.mutate({
-                              id: client.id,
-                              active: inactive,
-                            })
-                          }
-                        >
-                          {inactive ? "Reativar" : "Desativar"}
-                        </button>
-                      </BlockedAction>{" "}
-                      <BlockedAction
-                        allowed={canDelete}
-                        reason="Você não tem permissão para excluir clientes."
-                      >
-                        <button
-                          type="button"
-                          className="fb-row-btn fb-row-btn--danger"
-                          aria-label={`Excluir ${client.fullName}`}
-                          onClick={() => setClientToDelete(client)}
-                        >
-                          Excluir
-                        </button>
-                      </BlockedAction>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        <Table label="Clientes" columns={columns} rows={clients} rowKey={(client) => client.id} />
       )}
     </div>
   );
