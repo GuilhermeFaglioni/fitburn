@@ -1,10 +1,14 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { errorMessage } from "../lib/auth/api";
 import { useAuth } from "../lib/auth/AuthContext";
 import { getLegalDocument, type LegalDocumentKey } from "../lib/onboarding/api";
-import { LoadingState } from "../components/states";
+import { QueryBlockState } from "../components/QueryBlockState";
+import { Alert } from "../components/ui/Alert";
+import { Button } from "../components/ui/Button";
+import { Card } from "../components/ui/Card";
+import { Checkbox } from "../components/ui/Checkbox";
 
 const DOCUMENTS = {
   "privacy-policy": {
@@ -39,17 +43,30 @@ function useLegalDocument(documentKey: LegalDocumentKey) {
   });
 }
 
-function LegalDocumentRequestState({ pending, error }: { pending: boolean; error: unknown }) {
-  return pending ? (
-    <LoadingState label="Carregando documento" />
-  ) : (
-    <p role="alert">{errorMessage(error, "Não foi possível carregar o documento.")}</p>
+/** Carregando, erro ou sem conexão do documento (`QueryBlockState`); some quando o texto chega. */
+function LegalDocumentRequestState({ query }: { query: ReturnType<typeof useLegalDocument> }) {
+  return (
+    <QueryBlockState
+      query={query}
+      loading="Carregando documento"
+      error={errorMessage(query.error, "Não foi possível carregar o documento.")}
+      hasData={query.data !== undefined}
+    />
+  );
+}
+
+/** Coluna de leitura das telas legais e das etapas do onboarding: sozinha na página, sem casca. */
+function LegalPageFrame({ children }: { children: ReactNode }) {
+  return (
+    <main id="conteudo" tabIndex={-1} className="fb-flow fb-legal">
+      {children}
+    </main>
   );
 }
 
 function LegalDocumentText({ content }: { content: string }) {
   return (
-    <div className="fb-profile__legal-copy">
+    <div className="fb-legal__copy">
       {content
         .split(/\n\s*\n/)
         .filter(Boolean)
@@ -71,47 +88,73 @@ function LegalDocumentContent({
 }) {
   return (
     <>
-      <p>Versão {version}</p>
-      <article className="fb-profile__card" aria-label={title}>
+      <p className="fb-legal__meta">Versão {version}</p>
+      <Card as="article" flat className="fb-legal__doc" aria-label={title}>
         <LegalDocumentText content={content} />
-      </article>
+      </Card>
     </>
   );
 }
 
-export function LegalDocumentPage({ documentKey }: { documentKey: LegalDocumentKey }) {
-  const query = useLegalDocument(documentKey);
-
-  if (query.isPending || query.isError) {
-    return (
-      <main id="conteudo" tabIndex={-1} className="fb-profile fb-legal-document">
-        <Link to="/login" className="fb-back-link">
-          Voltar ao login
-        </Link>
-        <LegalDocumentRequestState pending={query.isPending} error={query.error} />
-      </main>
-    );
-  }
-
+function BackToLogin() {
   return (
-    <main id="conteudo" tabIndex={-1} className="fb-profile fb-legal-document">
-      <Link to="/login" className="fb-back-link">
-        Voltar ao login
-      </Link>
-      <h1 className="fb-profile__title">{query.data.title}</h1>
-      <LegalDocumentContent
-        title={query.data.title}
-        version={query.data.version}
-        content={query.data.content}
-      />
-      <nav aria-label="Outros documentos legais" className="fb-legal-document__links">
-        {documentKey !== "privacy-policy" && <Link to="/privacidade">Política de privacidade</Link>}
-        {documentKey !== "terms-of-use" && <Link to="/termos">Termos de uso</Link>}
-      </nav>
-    </main>
+    <Link to="/login" className="fb-legal__back">
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 16 16"
+        fill="none"
+        aria-hidden="true"
+        focusable="false"
+      >
+        <path
+          d="M13 8H3M7 4L3 8l4 4"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+      Voltar ao login
+    </Link>
   );
 }
 
+/**
+ * Política de privacidade e Termos de uso (D-038, telas extrapoladas da base): leitura em coluna de até 65
+ * caracteres, voltar ao login, versão vigente e o link para o outro documento. O texto vem da API e não é alterado.
+ */
+export function LegalDocumentPage({ documentKey }: { documentKey: LegalDocumentKey }) {
+  const query = useLegalDocument(documentKey);
+
+  return (
+    <LegalPageFrame>
+      <BackToLogin />
+      <LegalDocumentRequestState query={query} />
+      {query.data && (
+        <>
+          <h1 className="fb-flow__title">{query.data.title}</h1>
+          <LegalDocumentContent
+            title={query.data.title}
+            version={query.data.version}
+            content={query.data.content}
+          />
+          <nav aria-label="Outros documentos legais" className="fb-legal__links">
+            {documentKey !== "privacy-policy" && (
+              <Link to="/privacidade">Política de privacidade</Link>
+            )}
+            {documentKey !== "terms-of-use" && <Link to="/termos">Termos de uso</Link>}
+          </nav>
+        </>
+      )}
+    </LegalPageFrame>
+  );
+}
+
+/**
+ * Etapa do onboarding de ciência da política ou aceite dos termos: o texto vigente, o checkbox de confirmação e o botão
+ * de avançar (desabilitado até confirmar; `aria-busy` enquanto registra). Ordem e obrigação do aceite não mudam.
+ */
 export function LegalManifestationStep({ documentKey }: { documentKey: LegalDocumentKey }) {
   const { acknowledgePrivacy, acceptTerms } = useAuth();
   const [confirmed, setConfirmed] = useState(false);
@@ -123,42 +166,38 @@ export function LegalManifestationStep({ documentKey }: { documentKey: LegalDocu
     mutationFn: actions[document.manifestationAction],
     onError: (failure) => setError(errorMessage(failure, document.failureMessage)),
   });
-  if (query.isPending || query.isError) {
-    return <LegalDocumentRequestState pending={query.isPending} error={query.error} />;
-  }
 
   return (
-    <main id="conteudo" tabIndex={-1} className="fb-profile fb-legal-document">
-      <h1 className="fb-profile__title">{document.onboardingHeading}</h1>
-      <LegalDocumentContent
-        title={query.data.title}
-        version={query.data.version}
-        content={query.data.content}
-      />
-      <label className="fb-profile__legal-confirmation">
-        <input
-          type="checkbox"
-          checked={confirmed}
-          onChange={(event) => {
-            setConfirmed(event.target.checked);
-            setError(null);
-          }}
-        />
-        {document.checkboxLabel}
-      </label>
-      {error && (
-        <p role="alert" className="fb-profile__alert">
-          {error}
-        </p>
+    <LegalPageFrame>
+      <LegalDocumentRequestState query={query} />
+      {query.data && (
+        <>
+          <h1 className="fb-flow__title">{document.onboardingHeading}</h1>
+          <LegalDocumentContent
+            title={query.data.title}
+            version={query.data.version}
+            content={query.data.content}
+          />
+          <Checkbox
+            label={document.checkboxLabel}
+            checked={confirmed}
+            onChange={(event) => {
+              setConfirmed(event.target.checked);
+              setError(null);
+            }}
+          />
+          {error && <Alert>{error}</Alert>}
+          <Button
+            variant="primary"
+            block
+            busy={mutation.isPending}
+            disabled={!confirmed}
+            onClick={() => mutation.mutate()}
+          >
+            {mutation.isPending ? "Salvando…" : document.buttonLabel}
+          </Button>
+        </>
       )}
-      <button
-        type="button"
-        className="fb-btn-primary"
-        disabled={!confirmed || mutation.isPending}
-        onClick={() => mutation.mutate()}
-      >
-        {mutation.isPending ? "Salvando…" : document.buttonLabel}
-      </button>
-    </main>
+    </LegalPageFrame>
   );
 }

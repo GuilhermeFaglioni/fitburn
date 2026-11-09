@@ -40,6 +40,17 @@ const gamificationTsx = [
   read("pages/gamification/RankingSection.tsx"),
   read("pages/gamification/icons.tsx"),
 ].join("\n");
+const profileCss = read("styles/profile.css");
+const planCss = read("styles/plan.css");
+// Só a parte do cliente: a consulta da administração (acima do marcador) segue o PR 16.
+const clientPlanCss = planCss.slice(0, planCss.indexOf("/* Consulta da administração"));
+const profileTsx = [
+  read("pages/ProfilePage.tsx"),
+  read("pages/OnboardingPage.tsx"),
+  read("pages/LegalDocumentPage.tsx"),
+  read("pages/plans/MyPlanSection.tsx"),
+  read("pages/gamification/RankingConsentControl.tsx"),
+].join("\n");
 const homeTsx = [
   read("pages/ClientHomePage.tsx"),
   read("pages/home/HomeReservations.tsx"),
@@ -218,5 +229,77 @@ describe("FitPoints do cliente (D-038, tela extrapolada da base)", () => {
 
   it("o seletor do ranking tem alvo de toque de 44px", () => {
     expect(gamificationCss).toMatch(/\.fb-gami__tabs button\s*\{[^}]*min-height:\s*44px/);
+  });
+});
+
+describe("Perfil, Onboarding, Privacidade e Termos (D-038, telas extrapoladas da base)", () => {
+  it("profile.css e a parte do cliente de plan.css só usam tokens da base: sem hex, rgba/hsla, --color-* legado nem --radius-*", () => {
+    for (const css of [profileCss, clientPlanCss]) {
+      expect(css.length).toBeGreaterThan(500);
+      expect(css.match(HEX) ?? []).toEqual([]);
+      expect(css.match(COLOR_FUNCTION) ?? []).toEqual([]);
+      expect(css).not.toMatch(/var\(--color-/);
+      expect(css).not.toMatch(/var\(--radius-/);
+      expect(css).not.toMatch(/border-radius:\s*\d/);
+      expect(css).not.toMatch(/opacity:/);
+    }
+    // Sem a variante clara do perfil: o tema decide (os tokens valem nas duas cascas).
+    expect(profileCss).not.toMatch(/fb-profile--light|--fb-profile-/);
+  });
+
+  it("a consulta da administração no fim de plan.css também não tem cor literal", () => {
+    expect(planCss.match(HEX) ?? []).toEqual([]);
+    expect(planCss.match(COLOR_FUNCTION) ?? []).toEqual([]);
+  });
+
+  it("as telas (TSX) não têm cor literal nem a prop surface; estados, card, campo, botão e selo vêm de ui/", () => {
+    expect(profileTsx.match(HEX) ?? []).toEqual([]);
+    expect(profileTsx.match(COLOR_FUNCTION) ?? []).toEqual([]);
+    expect(profileTsx).not.toMatch(/surface="(?:dark|light)"/);
+    expect(profileTsx).not.toContain('components/states"');
+    for (const component of [
+      "ui/Alert",
+      "ui/Badge",
+      "ui/Button",
+      "ui/Card",
+      "ui/Checkbox",
+      "ui/Field",
+      "ui/States",
+    ]) {
+      expect(profileTsx).toContain(`components/${component}`);
+    }
+    expect(profileTsx).toContain("QueryBlockState");
+    expect(profileTsx).not.toMatch(/fb-profile__(btn|input|field|link-btn|logout)|fb-btn-primary/);
+  });
+
+  it("a leitura dos documentos legais fica numa coluna de até 65 caracteres e quebra palavra longa (sem rolagem horizontal)", () => {
+    expect(profileCss).toMatch(/\.fb-legal__copy\s*\{[^}]*max-width:\s*65ch/);
+    expect(profileCss).toMatch(/\.fb-legal__copy\s*\{[^}]*overflow-wrap:\s*anywhere/);
+    expect(profileCss).toMatch(/\.fb-flow\s*\{[^}]*max-width:\s*40rem/);
+    expect(profileCss).toMatch(/\.fb-flow > \*\s*\{[^}]*min-width:\s*0/);
+  });
+
+  it("o voltar e os links dos documentos têm alvo de toque de 44px", () => {
+    expect(profileCss).toMatch(/\.fb-legal__back\s*\{[^}]*min-height:\s*44px/);
+    expect(profileCss).toMatch(/\.fb-legal__links a\s*\{[^}]*min-height:\s*44px/);
+  });
+
+  it("o texto legal e o do consentimento do código não mudaram", () => {
+    const legal = read("pages/LegalDocumentPage.tsx");
+    for (const text of [
+      "Li a política de privacidade",
+      "Registrar ciência",
+      "Não foi possível registrar sua ciência.",
+      "Ciência da política de privacidade",
+      "Li e aceito os termos de uso",
+      "Aceitar termos",
+      "Não foi possível registrar seu aceite.",
+      "Aceite dos termos de uso",
+    ]) {
+      expect(legal).toContain(`"${text}"`);
+    }
+    expect(read("pages/gamification/RankingConsentControl.tsx")).toContain(
+      "Sua participação é opcional.",
+    );
   });
 });

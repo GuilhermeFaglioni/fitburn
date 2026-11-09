@@ -410,6 +410,39 @@
   border: 2px solid var(--brand);
 }
 
+/* ---- Checkbox ---- */
+.fb-ui-check {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  min-height: 44px;
+  color: var(--ink-2);
+  font-size: var(--text-small);
+  font-weight: var(--weight-medium);
+  line-height: var(--leading-small);
+  cursor: pointer;
+}
+
+.fb-ui-check__input {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--brand);
+  cursor: inherit;
+}
+
+.fb-ui-check__input:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 3px;
+}
+
+.fb-ui-check__input:disabled,
+.fb-ui-check__input:disabled + .fb-ui-check__label {
+  cursor: default;
+}
+
 /* ---- Badge ---- */
 .fb-ui-badge {
   box-sizing: border-box;

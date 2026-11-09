@@ -5,14 +5,18 @@ import {
   updateOwnProfileRequestSchema,
   type UserDetail,
 } from "@fitburn/contracts";
-import { errorMessage } from "../lib/auth/api";
+import { ApiError, errorMessage } from "../lib/auth/api";
 import { useAuth } from "../lib/auth/AuthContext";
 import { isClientUser } from "../lib/auth/areas";
 import { formatLocalDate } from "../lib/agenda/format";
 import { getMyProfile, updateMyProfile } from "../lib/profile/api";
-import { ErrorState, Feedback, LoadingState } from "../components/states";
-import { MyPlanSection } from "./plans/MyPlanSection";
+import { QueryBlockState } from "../components/QueryBlockState";
 import { RequiresNetwork } from "../components/RequiresNetwork";
+import { Alert } from "../components/ui/Alert";
+import { Button } from "../components/ui/Button";
+import { Card } from "../components/ui/Card";
+import { Field } from "../components/ui/Field";
+import { MyPlanSection } from "./plans/MyPlanSection";
 import { RankingConsentControl } from "./gamification/RankingConsentControl";
 
 interface FormState {
@@ -22,6 +26,18 @@ interface FormState {
   birthDate: string;
   document: string;
   address: string;
+}
+
+type PasswordField = "currentPassword" | "newPassword";
+
+/**
+ * Problema de um formulário: a mensagem vai no campo indicado (`aria-invalid` e `aria-describedby`); sem campo, é um
+ * aviso do formulário. `alsoInvalid` marca outros campos sem repetir a mensagem (uma só mensagem anunciada).
+ */
+interface Issue<K extends string> {
+  message: string;
+  field: K | null;
+  alsoInvalid?: K[];
 }
 
 function toForm(profile: UserDetail): FormState {
@@ -68,11 +84,32 @@ function viewValue(profile: UserDetail, key: keyof FormState): string {
   return profile[key] || "—";
 }
 
+function isFormField(path: unknown): path is keyof FormState {
+  return typeof path === "string" && FIELDS.some(({ key }) => key === path);
+}
+
+function isPasswordField(path: unknown): path is PasswordField {
+  return path === "currentPassword" || path === "newPassword";
+}
+
+/** O campo de um erro da API que a tela sabe apontar; os demais ficam como aviso do formulário. */
+function profileFailure(failure: unknown): Issue<keyof FormState> {
+  const message = errorMessage(failure, "Não foi possível salvar as alterações.");
+  const onEmail = failure instanceof ApiError && failure.code === "EMAIL_ALREADY_IN_USE";
+  return { message, field: onEmail ? "email" : null };
+}
+
+function passwordFailure(failure: unknown): Issue<PasswordField> {
+  const message = errorMessage(failure, "Não foi possível alterar a senha.");
+  const onCurrent = failure instanceof ApiError && failure.code === "CURRENT_PASSWORD_INVALID";
+  return { message, field: onCurrent ? "currentPassword" : null };
+}
+
 /**
- * Perfil / Minha conta: os
- * dados pessoais e troca de senha de quem está logado, além do logout. Serve
- * ao cliente (casca escura) e à equipe (casca administrativa, clara). Perfil
- * de acesso e status não aparecem para edição.
+ * Perfil / Minha conta (D-038, tela extrapolada da base; referência: seção "Perfil" do preview): o cabeçalho com o
+ * avatar de iniciais, os dados pessoais, o plano (só cliente), a troca de senha, a participação no ranking (só
+ * cliente) e a saída. Serve ao cliente e à equipe (casca administrativa); perfil de acesso e status não aparecem para
+ * edição. Também é a etapa de troca obrigatória de senha do onboarding (`requiredPasswordChange`).
  */
 export function ProfilePage({
   requiredPasswordChange = false,
@@ -88,10 +125,10 @@ export function ProfilePage({
   });
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState<FormState | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [issue, setIssue] = useState<Issue<keyof FormState> | null>(null);
   const [changingPassword, setChangingPassword] = useState(requiredPasswordChange);
   const [passwordForm, setPasswordForm] = useState({ currentPassword: "", newPassword: "" });
-  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [passwordIssue, setPasswordIssue] = useState<Issue<PasswordField> | null>(null);
   const [passwordMessage, setPasswordMessage] = useState<string | null>(null);
 
   const saveMutation = useMutation({
@@ -101,9 +138,9 @@ export function ProfilePage({
       updateIdentity({ fullName: saved.fullName, email: saved.email });
       setEditing(false);
       setForm(null);
-      setError(null);
+      setIssue(null);
     },
-    onError: (failure) => setError(errorMessage(failure, "Não foi possível salvar as alterações.")),
+    onError: (failure) => setIssue(profileFailure(failure)),
   });
 
   const passwordMutation = useMutation({
@@ -117,12 +154,10 @@ export function ProfilePage({
     onSuccess: () => {
       setPasswordForm({ currentPassword: "", newPassword: "" });
       setChangingPassword(false);
-      setPasswordError(null);
+      setPasswordIssue(null);
       setPasswordMessage("Senha alterada com sucesso.");
     },
-    onError: (failure) => {
-      setPasswordError(errorMessage(failure, "Não foi possível alterar a senha."));
-    },
+    onError: (failure) => setPasswordIssue(passwordFailure(failure)),
   });
 
   const profile = profileQuery.data;
@@ -132,21 +167,26 @@ export function ProfilePage({
   function startEdit() {
     if (!profile) return;
     setForm(toForm(profile));
-    setError(null);
+    setIssue(null);
     setEditing(true);
   }
 
   function cancelEdit() {
     setEditing(false);
     setForm(null);
-    setError(null);
+    setIssue(null);
   }
 
   function submit(event: FormEvent) {
     event.preventDefault();
     if (!form) return;
     if (isClient && (!form.phone.trim() || !form.birthDate.trim())) {
-      setError("Telefone e data de nascimento são obrigatórios.");
+      const blank = (["phone", "birthDate"] as const).filter((key) => !form[key].trim());
+      setIssue({
+        message: "Telefone e data de nascimento são obrigatórios.",
+        field: blank[0] ?? null,
+        alsoInvalid: blank.slice(1),
+      });
       return;
     }
     const parsed = updateOwnProfileRequestSchema.safeParse({
@@ -158,23 +198,28 @@ export function ProfilePage({
       address: blankToNull(form.address),
     });
     if (!parsed.success) {
-      setError(parsed.error.issues[0]?.message ?? "Dados inválidos.");
+      const first = parsed.error.issues[0];
+      const path = first?.path[0];
+      setIssue({
+        message: first?.message ?? "Dados inválidos.",
+        field: isFormField(path) ? path : null,
+      });
       return;
     }
-    setError(null);
+    setIssue(null);
     saveMutation.mutate(parsed.data);
   }
 
   function startPasswordChange() {
     setPasswordForm({ currentPassword: "", newPassword: "" });
-    setPasswordError(null);
+    setPasswordIssue(null);
     setPasswordMessage(null);
     setChangingPassword(true);
   }
 
   function cancelPasswordChange() {
     setPasswordForm({ currentPassword: "", newPassword: "" });
-    setPasswordError(null);
+    setPasswordIssue(null);
     setChangingPassword(false);
     passwordMutation.reset();
   }
@@ -183,28 +228,43 @@ export function ProfilePage({
     event.preventDefault();
     const parsed = changeOwnPasswordRequestSchema.safeParse(passwordForm);
     if (!parsed.success) {
-      setPasswordError(parsed.error.issues[0]?.message ?? "Dados inválidos.");
+      const first = parsed.error.issues[0];
+      const path = first?.path[0];
+      setPasswordIssue({
+        message: first?.message ?? "Dados inválidos.",
+        field: isPasswordField(path) ? path : null,
+      });
       return;
     }
-    setPasswordError(null);
+    setPasswordIssue(null);
     setPasswordMessage(null);
     passwordMutation.mutate(parsed.data);
   }
 
+  const fieldError = (key: keyof FormState) => (issue?.field === key ? issue.message : undefined);
+  const fieldInvalid = (key: keyof FormState) =>
+    issue?.alsoInvalid?.includes(key) ? true : undefined;
+  const passwordFieldError = (key: PasswordField) =>
+    passwordIssue?.field === key ? passwordIssue.message : undefined;
+
   return (
-    <div className={`fb-profile${light ? " fb-profile--light" : ""}`}>
+    <div className="fb-profile">
       <h1 className="fb-profile__title">
         {requiredPasswordChange ? "Troca obrigatória de senha" : light ? "Minha conta" : "Perfil"}
       </h1>
 
-      {requiredPasswordChange && <p>Defina uma senha pessoal para liberar o acesso ao Fitburn.</p>}
+      {requiredPasswordChange && (
+        <p className="fb-profile__lead">
+          Defina uma senha pessoal para liberar o acesso ao Fitburn.
+        </p>
+      )}
 
-      {!requiredPasswordChange && profileQuery.isLoading && <LoadingState surface="dark" />}
-      {!requiredPasswordChange && profileQuery.isError && (
-        <ErrorState
-          surface="dark"
-          message="Não foi possível carregar os seus dados."
-          onRetry={() => void profileQuery.refetch()}
+      {!requiredPasswordChange && (
+        <QueryBlockState
+          query={profileQuery}
+          loading="Carregando…"
+          error="Não foi possível carregar os seus dados."
+          hasData={profile !== undefined}
         />
       )}
 
@@ -220,15 +280,15 @@ export function ProfilePage({
             </div>
           </div>
 
-          <section className="fb-profile__card" aria-labelledby="fb-profile-data">
+          <Card as="section" flat className="fb-profile__card" aria-labelledby="fb-profile-data">
             <div className="fb-profile__card-head">
               <h2 id="fb-profile-data" className="fb-profile__card-title">
                 Dados pessoais
               </h2>
               {!editing && (
-                <button type="button" className="fb-profile__link-btn" onClick={startEdit}>
+                <Button variant="soft" size="sm" onClick={startEdit}>
                   Editar
-                </button>
+                </Button>
               )}
             </div>
 
@@ -247,124 +307,97 @@ export function ProfilePage({
               <form className="fb-profile__form" onSubmit={submit} noValidate>
                 <div className="fb-profile__grid">
                   {FIELDS.map(({ key, label, type, wide, autoComplete }) => (
-                    <label
+                    <Field
                       key={key}
-                      className={`fb-profile__field${wide ? " fb-profile__wide" : ""}`}
-                    >
-                      <span className="fb-profile__field-label">{label}</span>
-                      <input
-                        id={`fb-profile-${key}`}
-                        className="fb-profile__input"
-                        type={type}
-                        autoComplete={autoComplete}
-                        required={isClient && (key === "phone" || key === "birthDate")}
-                        value={form[key]}
-                        onChange={(event) => setForm({ ...form, [key]: event.target.value })}
-                      />
-                    </label>
+                      id={`fb-profile-${key}`}
+                      className={wide ? "fb-profile__wide" : undefined}
+                      label={label}
+                      type={type}
+                      autoComplete={autoComplete}
+                      required={isClient && (key === "phone" || key === "birthDate")}
+                      value={form[key]}
+                      error={fieldError(key)}
+                      aria-invalid={fieldInvalid(key)}
+                      onChange={(event) => setForm({ ...form, [key]: event.target.value })}
+                    />
                   ))}
                 </div>
 
-                {error && (
-                  <Feedback tone="error" surface="dark">
-                    {error}
-                  </Feedback>
-                )}
+                {issue && issue.field === null && <Alert>{issue.message}</Alert>}
 
                 <div className="fb-profile__actions">
-                  <button
-                    type="button"
-                    className="fb-profile__btn fb-profile__btn--ghost"
-                    onClick={cancelEdit}
-                  >
+                  <Button variant="ghost" onClick={cancelEdit}>
                     Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    className="fb-profile__btn fb-profile__btn--primary"
-                    disabled={saveMutation.isPending}
-                  >
+                  </Button>
+                  <Button type="submit" variant="primary" busy={saveMutation.isPending}>
                     Salvar alterações
-                  </button>
+                  </Button>
                 </div>
               </form>
             )}
-          </section>
+          </Card>
         </>
       )}
 
+      {!requiredPasswordChange && !light && <MyPlanSection />}
+
       {(requiredPasswordChange || profile) && (
-        <section className="fb-profile__card" aria-labelledby="fb-profile-password">
+        <Card as="section" flat className="fb-profile__card" aria-labelledby="fb-profile-password">
           <div className="fb-profile__card-head">
             <h2 id="fb-profile-password" className="fb-profile__card-title">
               {requiredPasswordChange ? "Defina uma nova senha" : "Senha"}
             </h2>
             {!requiredPasswordChange && !changingPassword && (
-              <button type="button" className="fb-profile__link-btn" onClick={startPasswordChange}>
+              <Button variant="soft" size="sm" onClick={startPasswordChange}>
                 Alterar senha
-              </button>
+              </Button>
             )}
           </div>
 
-          {passwordMessage && (
-            <Feedback tone="success" surface="dark">
-              {passwordMessage}
-            </Feedback>
-          )}
+          {passwordMessage && <Alert tone="ok">{passwordMessage}</Alert>}
 
           {changingPassword ? (
             <form className="fb-profile__form" onSubmit={submitPasswordChange} noValidate>
               <div className="fb-profile__grid">
-                <label className="fb-profile__field">
-                  <span className="fb-profile__field-label">Senha atual</span>
-                  <input
-                    className="fb-profile__input"
-                    type="password"
-                    autoComplete="current-password"
-                    value={passwordForm.currentPassword}
-                    onChange={(event) =>
-                      setPasswordForm({ ...passwordForm, currentPassword: event.target.value })
-                    }
-                  />
-                </label>
-                <label className="fb-profile__field">
-                  <span className="fb-profile__field-label">Nova senha</span>
-                  <input
-                    className="fb-profile__input"
-                    type="password"
-                    autoComplete="new-password"
-                    value={passwordForm.newPassword}
-                    onChange={(event) =>
-                      setPasswordForm({ ...passwordForm, newPassword: event.target.value })
-                    }
-                  />
-                </label>
+                <Field
+                  label="Senha atual"
+                  type="password"
+                  autoComplete="current-password"
+                  value={passwordForm.currentPassword}
+                  error={passwordFieldError("currentPassword")}
+                  onChange={(event) =>
+                    setPasswordForm({ ...passwordForm, currentPassword: event.target.value })
+                  }
+                />
+                <Field
+                  label="Nova senha"
+                  type="password"
+                  autoComplete="new-password"
+                  value={passwordForm.newPassword}
+                  error={passwordFieldError("newPassword")}
+                  onChange={(event) =>
+                    setPasswordForm({ ...passwordForm, newPassword: event.target.value })
+                  }
+                />
               </div>
 
-              {passwordError && (
-                <Feedback tone="error" surface="dark">
-                  {passwordError}
-                </Feedback>
+              {passwordIssue && passwordIssue.field === null && (
+                <Alert>{passwordIssue.message}</Alert>
               )}
 
               <div className="fb-profile__actions">
                 {!requiredPasswordChange && (
-                  <button
-                    type="button"
-                    className="fb-profile__btn fb-profile__btn--ghost"
+                  <Button
+                    variant="ghost"
                     onClick={cancelPasswordChange}
                     disabled={passwordMutation.isPending}
                   >
                     Cancelar troca de senha
-                  </button>
+                  </Button>
                 )}
-                <button
-                  type="submit"
-                  className="fb-profile__btn fb-profile__btn--primary"
-                  disabled={passwordMutation.isPending}
-                >
+                <Button type="submit" variant="primary" busy={passwordMutation.isPending}>
                   {passwordMutation.isPending ? "Alterando…" : "Salvar nova senha"}
-                </button>
+                </Button>
               </div>
             </form>
           ) : (
@@ -374,38 +407,43 @@ export function ProfilePage({
               </p>
             )
           )}
-        </section>
+        </Card>
       )}
 
       {!requiredPasswordChange && isClient && profile && (
         <RankingConsentControl surface="profile" />
       )}
 
-      {!requiredPasswordChange && !light && <MyPlanSection />}
-
-      <div className="fb-profile__divider" aria-hidden="true" />
-
-      <RequiresNetwork>
-        <button type="button" className="fb-profile__logout" onClick={() => void logout()}>
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-            <path
-              d="M6 14H3.5C2.7 14 2 13.3 2 12.5V3.5C2 2.7 2.7 2 3.5 2H6"
-              stroke="currentColor"
-              strokeWidth="1.4"
-              strokeLinecap="round"
-            />
-            <path
-              d="M10.5 11L14 8L10.5 5"
-              stroke="currentColor"
-              strokeWidth="1.4"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-            <path d="M14 8H6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-          </svg>
-          Sair da conta
-        </button>
-      </RequiresNetwork>
+      <div className="fb-profile__exit">
+        <RequiresNetwork>
+          <Button variant="ghost" onClick={() => void logout()}>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 16 16"
+              fill="none"
+              aria-hidden="true"
+              focusable="false"
+            >
+              <path
+                d="M6 14H3.5C2.7 14 2 13.3 2 12.5V3.5C2 2.7 2.7 2 3.5 2H6"
+                stroke="currentColor"
+                strokeWidth="1.4"
+                strokeLinecap="round"
+              />
+              <path
+                d="M10.5 11L14 8L10.5 5"
+                stroke="currentColor"
+                strokeWidth="1.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path d="M14 8H6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+            </svg>
+            Sair da conta
+          </Button>
+        </RequiresNetwork>
+      </div>
     </div>
   );
 }

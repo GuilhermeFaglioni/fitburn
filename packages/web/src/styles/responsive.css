@@ -76,8 +76,6 @@
   .fb-goals__student,
   .fb-state__retry,
   .fb-weekday-toggle,
-  .fb-profile__link-btn,
-  .fb-profile__logout,
   .fb-back-link,
   .fb-workout__back,
   .login-form__input,
@@ -94,8 +92,7 @@
     padding-right: 8px;
   }
 
-  .fb-tab-btn,
-  .fb-profile__link-btn {
+  .fb-tab-btn {
     min-width: 44px;
   }
 

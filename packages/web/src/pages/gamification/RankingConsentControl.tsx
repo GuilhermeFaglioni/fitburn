@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { QueryBlockState } from "../../components/QueryBlockState";
 import { Alert } from "../../components/ui/Alert";
+import { Card } from "../../components/ui/Card";
+import { Checkbox } from "../../components/ui/Checkbox";
 import { errorMessage } from "../../lib/auth/api";
 import { useAuth } from "../../lib/auth/AuthContext";
 import { isClientUser } from "../../lib/auth/areas";
@@ -10,11 +12,7 @@ import {
   setRankingConsent,
 } from "../../lib/gamification/api";
 
-export function RankingConsentControl({
-  surface,
-}: {
-  surface: "profile" | "gamification";
-}) {
+export function RankingConsentControl({ surface }: { surface: "profile" | "gamification" }) {
   const { user } = useAuth();
   const isClient = user ? isClientUser(user) : false;
   const queryClient = useQueryClient();
@@ -33,13 +31,8 @@ export function RankingConsentControl({
 
   if (!isClient) return null;
 
-  const className =
-    surface === "profile"
-      ? "fb-profile__card fb-ranking-consent"
-      : "fb-gami__section fb-ranking-consent";
-
-  return (
-    <section className={className} aria-labelledby="fb-ranking-consent-title">
+  const content = (
+    <>
       <h2
         id="fb-ranking-consent-title"
         className={surface === "profile" ? "fb-profile__card-title" : "fb-gami__section-title"}
@@ -47,9 +40,9 @@ export function RankingConsentControl({
         Participação no ranking
       </h2>
       <p className="fb-ranking-consent__copy">
-        Sua participação é opcional. Ao aderir, outros participantes veem seu primeiro nome,
-        inicial do sobrenome, posição e presenças. Sem adesão, você não vê posições; seus pontos,
-        histórico, sequência e marcos continuam disponíveis para você.
+        Sua participação é opcional. Ao aderir, outros participantes veem seu primeiro nome, inicial
+        do sobrenome, posição e presenças. Sem adesão, você não vê posições; seus pontos, histórico,
+        sequência e marcos continuam disponíveis para você.
       </p>
 
       <QueryBlockState
@@ -59,21 +52,37 @@ export function RankingConsentControl({
         hasData={consentQuery.data !== undefined}
       />
       {consentQuery.data && (
-        <label className="fb-ranking-consent__toggle">
-          <input
-            type="checkbox"
-            checked={consentQuery.data.consented}
-            disabled={consentMutation.isPending}
-            onChange={(event) => consentMutation.mutate(event.currentTarget.checked)}
-          />
-          <span>Participar do ranking</span>
-        </label>
+        <Checkbox
+          className="fb-ranking-consent__toggle"
+          label="Participar do ranking"
+          checked={consentQuery.data.consented}
+          disabled={consentMutation.isPending}
+          onChange={(event) => consentMutation.mutate(event.currentTarget.checked)}
+        />
       )}
       {consentMutation.isError && (
         <Alert className="fb-ranking-consent__error">
           {errorMessage(consentMutation.error, "Não foi possível atualizar sua participação.")}
         </Alert>
       )}
+    </>
+  );
+
+  return surface === "profile" ? (
+    <Card
+      as="section"
+      flat
+      className="fb-profile__card fb-ranking-consent"
+      aria-labelledby="fb-ranking-consent-title"
+    >
+      {content}
+    </Card>
+  ) : (
+    <section
+      className="fb-gami__section fb-ranking-consent"
+      aria-labelledby="fb-ranking-consent-title"
+    >
+      {content}
     </section>
   );
 }

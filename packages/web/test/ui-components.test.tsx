@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Badge } from "../src/components/ui/Badge";
 import { Button } from "../src/components/ui/Button";
 import { Card } from "../src/components/ui/Card";
+import { Checkbox } from "../src/components/ui/Checkbox";
 import { Chip } from "../src/components/ui/Chip";
 import { Field } from "../src/components/ui/Field";
 import { Pill } from "../src/components/ui/Pill";
@@ -280,5 +281,52 @@ describe("Segmented (controle de período)", () => {
     expect(onChange).not.toHaveBeenCalled();
     await userEvent.click(screen.getByRole("button", { name: "Histórico" }));
     expect(onChange).toHaveBeenCalledWith("history");
+  });
+});
+
+describe("Checkbox", () => {
+  it("é um checkbox nativo com o rótulo como nome acessível; clicar no texto também marca", async () => {
+    const user = userEvent.setup();
+    render(<Checkbox label="Li os termos" />);
+
+    const box = screen.getByRole("checkbox", { name: "Li os termos" });
+    expect(box).not.toBeChecked();
+    await user.click(screen.getByText("Li os termos"));
+    expect(box).toBeChecked();
+    await user.keyboard(" ");
+    expect(box).not.toBeChecked();
+  });
+
+  it("controlado: mostra checked e avisa a mudança; desabilitado não muda", async () => {
+    const user = userEvent.setup();
+    const changes: boolean[] = [];
+    function Controlled({ disabled = false }: { disabled?: boolean }) {
+      const [checked, setChecked] = useState(false);
+      return (
+        <Checkbox
+          label="Participar"
+          checked={checked}
+          disabled={disabled}
+          onChange={(event) => {
+            changes.push(event.target.checked);
+            setChecked(event.target.checked);
+          }}
+        />
+      );
+    }
+    const { rerender } = render(<Controlled />);
+
+    await user.click(screen.getByRole("checkbox", { name: "Participar" }));
+    expect(screen.getByRole("checkbox", { name: "Participar" })).toBeChecked();
+    expect(changes).toEqual([true]);
+
+    rerender(<Controlled disabled />);
+    await user.click(screen.getByRole("checkbox", { name: "Participar" }));
+    expect(changes).toEqual([true]);
+  });
+
+  it("junta a classe do chamador à base", () => {
+    render(<Checkbox label="x" className="extra" />);
+    expect(screen.getByRole("checkbox").closest("label")).toHaveClass("fb-ui-check", "extra");
   });
 });

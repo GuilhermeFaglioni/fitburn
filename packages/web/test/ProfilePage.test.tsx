@@ -1,6 +1,6 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { onlineManager, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { http, HttpResponse } from "msw";
 import { MemoryRouter, useLocation } from "react-router-dom";
 import {
@@ -9,6 +9,7 @@ import {
   PermissionScope,
   type CurrentUser,
   type EffectivePermission,
+  type MyPlan,
   type UserDetail,
 } from "@fitburn/contracts";
 import { AppRoutes } from "../src/App";
@@ -399,6 +400,252 @@ describe("Perfil / Minha conta", () => {
       await screen.findByText("/login", { selector: "[data-testid=location]" });
       expect(logoutCalls).toBe(1);
     });
+    describe("cabeçalho, plano e títulos", () => {
+      const ACTIVE_PLAN: MyPlan = {
+        active: {
+          id: "assign-1",
+          plan: { id: "plan-1", name: "Musculação 3x por semana", description: null },
+          startDate: "2026-09-15",
+          endDate: "2026-12-15",
+          status: "ACTIVE",
+        },
+        history: [],
+      };
+
+      it("o cabeçalho mostra o avatar com as iniciais, o nome e o e-mail", async () => {
+        renderAt("/perfil");
+
+        const avatar = await screen.findByText("MS");
+        expect(avatar).toHaveAttribute("aria-hidden", "true");
+        const header = avatar.parentElement as HTMLElement;
+        expect(within(header).getByText("Marina Souza")).toBeInTheDocument();
+        expect(within(header).getByText("marina.souza@email.com")).toBeInTheDocument();
+      });
+
+      it("o plano ativo vem em cartão com o selo de situação e a validade, entre os dados e a senha", async () => {
+        server.use(http.get("/api/plans/mine", () => HttpResponse.json(ACTIVE_PLAN)));
+        renderAt("/perfil");
+
+        const plan = await screen.findByRole("region", { name: "Plano ativo" });
+        expect(within(plan).getByText("Musculação 3x por semana")).toBeInTheDocument();
+        expect(within(plan).getByText("ATIVO")).toHaveClass("fb-ui-badge");
+        expect(within(plan).getByText("Início").nextElementSibling).toHaveTextContent("15/09/2026");
+        expect(within(plan).getByText("Término").nextElementSibling).toHaveTextContent(
+          "15/12/2026",
+        );
+        const data = screen.getByRole("region", { name: "Dados pessoais" });
+        const password = screen.getByRole("region", { name: "Senha" });
+        expect(data.compareDocumentPosition(plan) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+        expect(
+          plan.compareDocumentPosition(password) & Node.DOCUMENT_POSITION_FOLLOWING,
+        ).toBeTruthy();
+      });
+
+      it("os títulos seguem a ordem, sem pular nível: h1, depois as seções em h2 e o histórico em h3", async () => {
+        renderAt("/perfil");
+
+        await screen.findByRole("checkbox", { name: "Participar do ranking" });
+        await screen.findByRole("heading", { name: "Histórico de planos" });
+        const headings = screen
+          .getAllByRole("heading")
+          .map((heading) => [Number(heading.tagName[1]), heading.textContent]);
+        expect(headings).toEqual([
+          [1, "Perfil"],
+          [2, "Dados pessoais"],
+          [2, "Meu plano"],
+          [3, "Histórico de planos"],
+          [2, "Senha"],
+          [2, "Participação no ranking"],
+        ]);
+      });
+    });
+
+    describe("erros ligados aos campos", () => {
+      function describedBy(field: HTMLElement): HTMLElement {
+        const id = field.getAttribute("aria-describedby");
+        expect(id).toBeTruthy();
+        return document.getElementById(id as string) as HTMLElement;
+      }
+
+      it("telefone e nascimento em branco: os dois campos ficam inválidos e a mensagem única liga ao primeiro", async () => {
+        const user = userEvent.setup();
+        renderAt("/perfil");
+
+        await user.click(await screen.findByRole("button", { name: "Editar" }));
+        await user.clear(screen.getByLabelText("Telefone"));
+        await user.clear(screen.getByLabelText("Data de nascimento"));
+        await user.click(screen.getByRole("button", { name: "Salvar alterações" }));
+
+        const alert = await screen.findByRole("alert");
+        expect(alert).toHaveTextContent("Telefone e data de nascimento são obrigatórios.");
+        expect(screen.getAllByRole("alert")).toHaveLength(1);
+        const phone = screen.getByLabelText("Telefone");
+        expect(phone).toHaveAttribute("aria-invalid", "true");
+        expect(describedBy(phone)).toBe(alert);
+        expect(screen.getByLabelText("Data de nascimento")).toHaveAttribute("aria-invalid", "true");
+        expect(screen.getByLabelText("Nome completo")).not.toHaveAttribute("aria-invalid");
+        expect(patches).toEqual([]);
+      });
+
+      it("e-mail inválido marca só o campo de e-mail", async () => {
+        const user = userEvent.setup();
+        renderAt("/perfil");
+
+        await user.click(await screen.findByRole("button", { name: "Editar" }));
+        const email = screen.getByLabelText("E-mail");
+        await user.clear(email);
+        await user.type(email, "isso-nao-e-email");
+        await user.click(screen.getByRole("button", { name: "Salvar alterações" }));
+
+        const alert = await screen.findByRole("alert");
+        expect(alert).toHaveTextContent("E-mail inválido.");
+        expect(email).toHaveAttribute("aria-invalid", "true");
+        expect(describedBy(email)).toBe(alert);
+        expect(screen.getByLabelText("Telefone")).not.toHaveAttribute("aria-invalid");
+      });
+
+      it("e-mail em uso volta da API apontado no campo de e-mail", async () => {
+        const user = userEvent.setup();
+        renderAt("/perfil");
+
+        await user.click(await screen.findByRole("button", { name: "Editar" }));
+        const email = screen.getByLabelText("E-mail");
+        await user.clear(email);
+        await user.type(email, "em-uso@fitburn.local");
+        await user.click(screen.getByRole("button", { name: "Salvar alterações" }));
+
+        const alert = await screen.findByRole("alert");
+        expect(alert).toHaveTextContent("Este e-mail já está em uso.");
+        expect(email).toHaveAttribute("aria-invalid", "true");
+        expect(describedBy(email)).toBe(alert);
+      });
+
+      it("enquanto salva, o botão fica com aria-busy e não envia de novo", async () => {
+        let release: () => void = () => {};
+        const gate = new Promise<void>((resolve) => {
+          release = resolve;
+        });
+        server.use(
+          http.patch("/api/me", async ({ request }) => {
+            patches.push(await request.json());
+            await gate;
+            return HttpResponse.json(me);
+          }),
+        );
+        const user = userEvent.setup();
+        renderAt("/perfil");
+
+        await user.click(await screen.findByRole("button", { name: "Editar" }));
+        const save = screen.getByRole("button", { name: "Salvar alterações" });
+        await user.click(save);
+
+        await waitFor(() => expect(save).toHaveAttribute("aria-busy", "true"));
+        await user.click(save);
+        expect(patches).toHaveLength(1);
+        release();
+        await waitFor(() =>
+          expect(screen.queryByLabelText("Nome completo")).not.toBeInTheDocument(),
+        );
+      });
+
+      it("senha nova curta e senha atual em branco: cada erro vai no campo, com aria-invalid e aria-describedby", async () => {
+        const user = userEvent.setup();
+        renderAt("/perfil");
+
+        await user.click(await screen.findByRole("button", { name: "Alterar senha" }));
+        await user.click(screen.getByRole("button", { name: "Salvar nova senha" }));
+
+        const current = screen.getByLabelText("Senha atual");
+        expect(current).toHaveAttribute("aria-invalid", "true");
+        expect(describedBy(current)).toHaveTextContent("Informe a senha atual.");
+
+        await user.type(current, "SenhaAtual123!");
+        await user.type(screen.getByLabelText("Nova senha"), "curta");
+        await user.click(screen.getByRole("button", { name: "Salvar nova senha" }));
+
+        const next = screen.getByLabelText("Nova senha");
+        expect(next).toHaveAttribute("aria-invalid", "true");
+        expect(describedBy(next)).toHaveTextContent("A senha precisa ter pelo menos 8 caracteres.");
+        expect(screen.getByLabelText("Senha atual")).not.toHaveAttribute("aria-invalid");
+        expect(passwordChanges).toEqual([]);
+      });
+
+      it("senha atual incorreta (API) marca o campo da senha atual", async () => {
+        server.use(
+          http.post("/api/auth/password", () =>
+            HttpResponse.json(
+              { code: "CURRENT_PASSWORD_INVALID", message: "A senha atual está incorreta." },
+              { status: 400 },
+            ),
+          ),
+        );
+        const user = userEvent.setup();
+        renderAt("/perfil");
+
+        await user.click(await screen.findByRole("button", { name: "Alterar senha" }));
+        await user.type(screen.getByLabelText("Senha atual"), "senha-errada");
+        await user.type(screen.getByLabelText("Nova senha"), "SenhaNova456!");
+        await user.click(screen.getByRole("button", { name: "Salvar nova senha" }));
+
+        const alert = await screen.findByRole("alert");
+        expect(alert).toHaveTextContent("A senha atual está incorreta.");
+        const current = screen.getByLabelText("Senha atual");
+        expect(current).toHaveAttribute("aria-invalid", "true");
+        expect(describedBy(current)).toBe(alert);
+      });
+    });
+
+    describe("estados da tela", () => {
+      afterEach(() => {
+        onlineManager.setOnline(true);
+      });
+
+      it("mostra o carregando, sem os cartões, enquanto os dados não chegam", async () => {
+        server.use(http.get("/api/me", () => new Promise(() => {})));
+        renderAt("/perfil");
+
+        const loading = await screen.findByText("Carregando…");
+        expect(loading.closest("[data-state=loading]")).toHaveAttribute("role", "status");
+        expect(screen.getByRole("heading", { level: 1, name: "Perfil" })).toBeInTheDocument();
+        expect(screen.queryByRole("region", { name: "Dados pessoais" })).not.toBeInTheDocument();
+      });
+
+      it("o erro é um alerta com tentar de novo, que pede os dados outra vez", async () => {
+        let requests = 0;
+        server.use(
+          http.get("/api/me", () => {
+            requests += 1;
+            return HttpResponse.json({ code: "INTERNAL_ERROR", message: "x" }, { status: 500 });
+          }),
+        );
+        const user = userEvent.setup();
+        renderAt("/perfil");
+
+        const alert = await screen.findByRole("alert");
+        expect(alert).toHaveTextContent("Não foi possível carregar os seus dados.");
+        const before = requests;
+        await user.click(within(alert).getByRole("button", { name: "Tentar novamente" }));
+
+        await waitFor(() => expect(requests).toBeGreaterThan(before));
+      });
+
+      it("sem conexão mostra o estado offline, não o erro, e o plano e a saída seguem na tela", async () => {
+        onlineManager.setOnline(false);
+        renderAt("/perfil");
+
+        const offline = await waitFor(() => {
+          const node = document.querySelector('[data-state="offline"]');
+          expect(node).not.toBeNull();
+          return node as HTMLElement;
+        });
+        expect(offline).toHaveTextContent("Sem conexão");
+        expect(
+          within(offline).getByRole("button", { name: "Tentar novamente" }),
+        ).toBeInTheDocument();
+        expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+        expect(screen.getByRole("heading", { level: 1, name: "Perfil" })).toBeInTheDocument();
+      });
+    });
   });
 
   describe("equipe", () => {
@@ -420,6 +667,27 @@ describe("Perfil / Minha conta", () => {
       // Dados opcionais ausentes aparecem como traço, na casca administrativa.
       expect(within(card).getAllByText("—")).toHaveLength(4);
       expect(screen.getByRole("navigation", { name: "Navegação principal" })).toBeInTheDocument();
+    });
+
+    it("na casca administrativa mostra Minha conta, sem plano nem ranking, com títulos em ordem", async () => {
+      renderAt("/perfil");
+
+      await screen.findByRole("region", { name: "Dados pessoais" });
+      expect(screen.getByRole("heading", { level: 1, name: "Minha conta" })).toBeInTheDocument();
+      expect(screen.queryByRole("heading", { name: "Meu plano" })).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("region", { name: "Participação no ranking" }),
+      ).not.toBeInTheDocument();
+      const headings = screen
+        .getAllByRole("heading")
+        .filter((heading) => heading.closest(".fb-profile"))
+        .map((heading) => [Number(heading.tagName[1]), heading.textContent]);
+      expect(headings).toEqual([
+        [1, "Minha conta"],
+        [2, "Dados pessoais"],
+        [2, "Senha"],
+      ]);
+      expect(screen.getByRole("button", { name: "Sair da conta" })).toBeInTheDocument();
     });
 
     it("edita o nome e o menu passa a mostrar o novo nome", async () => {
