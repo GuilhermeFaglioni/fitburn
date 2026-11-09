@@ -84,7 +84,7 @@ describe("Agenda do cliente (D-038)", () => {
     expect(agendaTsx.match(HEX) ?? []).toEqual([]);
     expect(agendaTsx.match(COLOR_FUNCTION) ?? []).toEqual([]);
     expect(agendaTsx).not.toMatch(/surface=/);
-    expect(agendaTsx).not.toContain("components/states\"");
+    expect(agendaTsx).not.toContain('components/states"');
     expect(agendaTsx).toContain("components/ui/States");
   });
 
@@ -96,13 +96,21 @@ describe("Agenda do cliente (D-038)", () => {
   });
 
   it("os grupos de dia, modalidade, visão e situação têm nome acessível", () => {
-    for (const label of ['aria-label="Dia"', 'aria-label="Modalidade"', 'aria-label="Filtrar por estado"', 'label="Visão"']) {
+    for (const label of [
+      'aria-label="Dia"',
+      'aria-label="Modalidade"',
+      'aria-label="Filtrar por estado"',
+      'label="Visão"',
+    ]) {
       expect(agendaTsx).toContain(label);
     }
   });
 
-  it("o CSS da agenda saiu de client.css (fica só a casca, o detalhe da aula e as abas do FitPoints)", () => {
-    expect(clientCss).not.toMatch(/\.fb-(daychip|class-card|filter-chip|reservation-|client-grid|client-cell|client-chip)/);
+  it("o CSS da agenda e o da folha de detalhe saíram de client.css (fica só a casca e as abas do FitPoints)", () => {
+    expect(clientCss).not.toMatch(
+      /\.fb-(daychip|class-card|filter-chip|reservation-|client-grid|client-cell|client-chip)/,
+    );
+    expect(clientCss).not.toMatch(/\.fb-sheet/);
     expect(clientCss).toContain(".fb-client-tab-btn");
   });
 });

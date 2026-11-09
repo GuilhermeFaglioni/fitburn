@@ -235,9 +235,10 @@ describe("ClientAgendaPage", () => {
     const { sheet } = await openDetail("18h00");
 
     expect(sheet).toHaveTextContent("Circuito com estímulos de força e resistência.");
-    expect(sheet).toHaveTextContent("Duração de 60 minutos");
-    expect(sheet).toHaveTextContent("3 de 12 vagas restantes");
-    expect(within(sheet).getByRole("button", { name: "Reservar" })).toBeEnabled();
+    expect(within(sheet).getByText("Duração")).toBeInTheDocument();
+    expect(sheet).toHaveTextContent("60 minutos");
+    expect(within(sheet).getByText("3 de 12 vagas")).toBeInTheDocument();
+    expect(within(sheet).getByRole("button", { name: "Reservar aula" })).toBeEnabled();
   });
 
   it("reserva a aula e confirma na hora, atualizando a agenda", async () => {
@@ -261,13 +262,13 @@ describe("ClientAgendaPage", () => {
 
     renderPage();
     const { user, sheet } = await openDetail("18h00");
-    await user.click(within(sheet).getByRole("button", { name: "Reservar" }));
+    await user.click(within(sheet).getByRole("button", { name: "Reservar aula" }));
 
     expect(
       await within(sheet).findByText("Reserva confirmada com sucesso. Bom treino!"),
     ).toBeInTheDocument();
     await waitFor(() => expect(agendaRequests).toBeGreaterThan(1));
-    expect(await within(sheet).findByText("2 de 12 vagas restantes")).toBeInTheDocument();
+    expect(await within(sheet).findByText("2 de 12 vagas")).toBeInTheDocument();
 
     await user.click(within(sheet).getByRole("button", { name: "Ver na agenda" }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
@@ -295,15 +296,15 @@ describe("ClientAgendaPage", () => {
 
     renderPage();
     const { user, sheet } = await openDetail("18h00");
-    await user.click(within(sheet).getByRole("button", { name: "Reservar" }));
+    await user.click(within(sheet).getByRole("button", { name: "Reservar aula" }));
 
     expect(await within(sheet).findByRole("alert")).toHaveTextContent(
       "Essa aula ficou lotada enquanto você confirmava. Escolha outro horário.",
     );
-    expect(await within(sheet).findByText("0 de 12 vagas restantes")).toBeInTheDocument();
+    expect(await within(sheet).findByText("0 de 12 vagas")).toBeInTheDocument();
     const day = screen.getByRole("region", { name: "Aulas do dia" });
     expect(await within(day).findByText("0/12 vagas · lotada")).toBeInTheDocument();
-    expect(within(sheet).queryByRole("button", { name: "Reservar" })).not.toBeInTheDocument();
+    expect(within(sheet).queryByRole("button", { name: "Reservar aula" })).not.toBeInTheDocument();
   });
 
   it("mostra a mensagem específica de cada recusa", async () => {
@@ -320,7 +321,7 @@ describe("ClientAgendaPage", () => {
 
     renderPage();
     const { user, sheet } = await openDetail("18h00");
-    await user.click(within(sheet).getByRole("button", { name: "Reservar" }));
+    await user.click(within(sheet).getByRole("button", { name: "Reservar aula" }));
     expect(await within(sheet).findByRole("alert")).toHaveTextContent(
       "Você já reservou esta aula. Não é possível reservar duas vezes.",
     );
@@ -332,7 +333,7 @@ describe("ClientAgendaPage", () => {
       message: "Esta aula não pode mais ser reservada: foi cancelada ou já começou.",
     };
     const reopened = await openDetail("18h00");
-    await user.click(within(reopened.sheet).getByRole("button", { name: "Reservar" }));
+    await user.click(within(reopened.sheet).getByRole("button", { name: "Reservar aula" }));
     expect(await within(reopened.sheet).findByRole("alert")).toHaveTextContent(
       "Esta aula não pode mais ser reservada: foi cancelada ou já começou.",
     );
@@ -365,7 +366,7 @@ describe("ClientAgendaPage", () => {
 
     renderPage();
     const { user, sheet } = await openDetail("18h00");
-    await user.click(within(sheet).getByRole("button", { name: "Reservar" }));
+    await user.click(within(sheet).getByRole("button", { name: "Reservar aula" }));
 
     expect(await within(sheet).findByRole("alert")).toHaveTextContent(
       "Você já tem uma reserva em Spinning às 18h00, no mesmo horário desta aula.",
@@ -389,7 +390,7 @@ describe("ClientAgendaPage", () => {
 
     renderPage();
     const { user, sheet } = await openDetail("18h00");
-    await user.click(within(sheet).getByRole("button", { name: "Reservar" }));
+    await user.click(within(sheet).getByRole("button", { name: "Reservar aula" }));
     expect(await within(sheet).findByRole("alert")).toHaveTextContent(
       "Não foi possível concluir a reserva. Tente novamente.",
     );
@@ -415,7 +416,7 @@ describe("ClientAgendaPage", () => {
 
     expect(within(sheet).getByText("RESERVA CONFIRMADA")).toBeInTheDocument();
     expect(within(sheet).getByRole("button", { name: "Cancelar reserva" })).toBeEnabled();
-    expect(within(sheet).queryByRole("button", { name: "Reservar" })).not.toBeInTheDocument();
+    expect(within(sheet).queryByRole("button", { name: "Reservar aula" })).not.toBeInTheDocument();
   });
 
   it("cancela a reserva depois de confirmar, liberando a vaga", async () => {
@@ -454,7 +455,7 @@ describe("ClientAgendaPage", () => {
     expect(await within(sheet).findByRole("status")).toHaveTextContent(
       "Reserva cancelada. A vaga foi liberada para outros clientes.",
     );
-    expect(await within(sheet).findByText("3 de 12 vagas restantes")).toBeInTheDocument();
+    expect(await within(sheet).findByText("3 de 12 vagas")).toBeInTheDocument();
   });
 
   it("cancelamento depois do início da aula mostra o motivo", async () => {
