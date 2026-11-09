@@ -154,3 +154,96 @@
     --meter-reveal-from: inset(0);
   }
 }
+
+/* Base de design aprovada (docs/design/design-system.md, D-038): tokens novos, ainda sem uso.
+   O tema segue a preferência do sistema; a alternância manual entra no PR de tema.
+   Os --color-* acima seguem até a migração das telas. */
+:root {
+  --brand: #ED6E34;
+  --flame: #C23A1F;
+  --brand-strong: #A8401A;
+  --brand-hover: #D85F28;
+  --brand-tint: #FFF4EE;
+  --brand-tint-2: #FFE8DC;
+  --brand-line: #F7CDB7;
+  --grad-cta: linear-gradient(145deg,#F58A55 0%,#ED6E34 45%,#C23A1F 100%);
+  --grad-text: linear-gradient(100deg,#C23A1F,#ED6E34 60%,#F7A274);
+  --bg: #FFFFFF;
+  --bg-soft: #FFFAF7;
+  --surface: #FFFFFF;
+  --surface-2: #FBF5F1;
+  --ink: #1C1714;
+  --ink-2: #3A302A;
+  --muted: #6B5D55;
+  --faint: #8E7F76;
+  --line: #EFE2DA;
+  --line-2: #E5D3C8;
+  --danger: #B42318;
+  --danger-bg: #FDECEA;
+  --danger-line: #F5C2BC;
+  --success: #1E6B34;
+  --success-bg: #EAF7EE;
+  --success-line: #BFE3CA;
+  --warn: #8A5A00;
+  --warn-bg: #FFF5DB;
+  --r-xs: 6px;
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 20px;
+  --r-xl: 28px;
+  --r-pill: 999px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --brand-strong: #F08A5A;
+    --brand-hover: #F58A55;
+    --brand-tint: #2A1810;
+    --brand-tint-2: #3A1F12;
+    --brand-line: #5A2E1A;
+    --grad-text: linear-gradient(100deg,#F06A3A,#ED6E34 55%,#FFB48C);
+    --bg: #0A0A0A;
+    --bg-soft: #100D0C;
+    --surface: #161311;
+    --surface-2: #1E1916;
+    --ink: #FFFFFF;
+    --ink-2: #E9E1DC;
+    --muted: #A39A94;
+    --faint: #857B75;
+    --line: #2A2320;
+    --line-2: #3A302B;
+    --danger: #FF6D5A;
+    --danger-bg: rgba(255,109,90,.1);
+    --danger-line: rgba(255,109,90,.35);
+    --success: #5CC98A;
+    --success-bg: rgba(92,201,138,.1);
+    --success-line: rgba(92,201,138,.35);
+    --warn: #F2C25C;
+    --warn-bg: rgba(242,194,92,.1);
+  }
+}
+:root[data-theme="dark"] {
+  --brand-strong: #F08A5A;
+  --brand-hover: #F58A55;
+  --brand-tint: #2A1810;
+  --brand-tint-2: #3A1F12;
+  --brand-line: #5A2E1A;
+  --grad-text: linear-gradient(100deg,#F06A3A,#ED6E34 55%,#FFB48C);
+  --bg: #0A0A0A;
+  --bg-soft: #100D0C;
+  --surface: #161311;
+  --surface-2: #1E1916;
+  --ink: #FFFFFF;
+  --ink-2: #E9E1DC;
+  --muted: #A39A94;
+  --faint: #857B75;
+  --line: #2A2320;
+  --line-2: #3A302B;
+  --danger: #FF6D5A;
+  --danger-bg: rgba(255,109,90,.1);
+  --danger-line: rgba(255,109,90,.35);
+  --success: #5CC98A;
+  --success-bg: rgba(92,201,138,.1);
+  --success-line: rgba(92,201,138,.35);
+  --warn: #F2C25C;
+  --warn-bg: rgba(242,194,92,.1);
+}
