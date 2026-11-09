@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { OfflineBanner } from "./OfflineBanner";
+import { ThemeToggle } from "./ThemeToggle";
 import { UpdateBanner } from "./UpdateBanner";
 
 /**
@@ -19,6 +20,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <a href="#conteudo" className="fb-skip-link">
         Ir para o conteúdo
       </a>
+      <ThemeToggle />
       <div className="fb-banner-stack">
         <OfflineBanner />
         <UpdateBanner />

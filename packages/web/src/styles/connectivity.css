@@ -9,7 +9,7 @@
 
 .fb-offline-banner {
   padding: 10px 16px;
-  background: #2a1512;
+  background: color-mix(in srgb, var(--danger) 10%, var(--bg));
   border-bottom: 1px solid var(--color-danger-border);
   color: var(--color-danger);
   font-family: var(--font-sans);
@@ -44,5 +44,5 @@
 }
 
 .fb-update-banner__action {
-  color: var(--color-primary-orange);
+  color: var(--color-brand-strong);
 }

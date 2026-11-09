@@ -35,7 +35,7 @@
 /* Links do conteúdo administrativo na cor da marca, em vez do azul padrão do navegador. */
 .fb-admin-content a:not([class]),
 .fb-back-link {
-  color: var(--color-ink-on-light);
+  color: var(--color-ink-on-dark);
   font-weight: 500;
   text-decoration: underline;
   text-decoration-color: var(--color-primary-orange);
@@ -220,7 +220,7 @@
     min-height: 44px;
     flex-grow: 0;
     border: 1px dashed #d6d6d6;
-    color: var(--color-text-muted-on-light);
+    color: var(--color-text-muted-on-dark);
     font-family: var(--font-sans);
     font-size: 12px;
   }

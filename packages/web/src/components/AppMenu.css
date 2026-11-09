@@ -43,7 +43,7 @@
 
 .app-menu__link.active {
   background: rgba(237, 110, 52, 0.14);
-  color: var(--color-primary-orange);
+  color: var(--color-brand-strong);
   font-weight: 500;
 }
 
@@ -101,7 +101,7 @@
 }
 
 .app-menu__account-link.active {
-  color: var(--color-primary-orange);
+  color: var(--color-brand-strong);
   font-weight: 500;
 }
 

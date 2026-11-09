@@ -49,7 +49,7 @@
 .fb-home__link {
   font-size: 13px;
   font-weight: 500;
-  color: var(--color-primary-orange);
+  color: var(--color-brand-strong);
   text-decoration: none;
 }
 
@@ -125,7 +125,7 @@
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.04em;
-  color: var(--color-primary-orange);
+  color: var(--color-brand-strong);
 }
 
 /* Próximas aulas. */
@@ -222,7 +222,7 @@
   font-size: 48px;
   font-weight: 700;
   line-height: 1;
-  color: var(--color-primary-orange);
+  color: var(--color-brand-strong);
 }
 
 .fb-home__points-label {
@@ -248,7 +248,7 @@
   justify-content: center;
   font-size: 13px;
   font-weight: 700;
-  color: var(--color-primary-orange);
+  color: var(--color-brand-strong);
 }
 
 .fb-home__streak-label {
