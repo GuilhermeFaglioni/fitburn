@@ -905,7 +905,8 @@
 
 /* Folha (variant="sheet"): barra superior, corpo que rola e rodapé fixo. No celular sobe da borda inferior; com
    reduced motion o --sheet-offset zera e sobra o fade. */
-.fb-ui-dialog--sheet {
+.fb-ui-dialog--sheet,
+.fb-ui-dialog--drawer {
   gap: 0;
   padding: 0;
   overflow: hidden;
@@ -950,6 +951,30 @@
     border-radius: var(--r-xl) var(--r-xl) 0 0;
     animation: fb-sheet-in 320ms var(--ease-drawer) both;
   }
+}
+
+/* Gaveta (variant="drawer"): painel de altura total na borda esquerda, no lugar do cartão centralizado. Entra
+   deslizando da esquerda; com reduced motion o --sheet-offset zera e sobra o fade. */
+.fb-ui-dialog-backdrop--drawer {
+  align-items: stretch;
+  justify-content: flex-start;
+  padding: 0;
+}
+
+.fb-ui-dialog--drawer {
+  width: min(280px, 85vw);
+  max-width: 85vw;
+  height: 100%;
+  border-left: 0;
+  border-radius: 0 var(--r-xl) var(--r-xl) 0;
+  animation: fb-drawer-in 280ms var(--ease-drawer) both;
+}
+
+.fb-ui-dialog--drawer .fb-ui-dialog__title {
+  color: var(--muted);
+  font-size: var(--text-kicker);
+  letter-spacing: var(--tracking-kicker);
+  text-transform: uppercase;
 }
 
 /* ---- Medidor ---- */

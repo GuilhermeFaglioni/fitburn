@@ -12,19 +12,102 @@
   display: flex;
   flex-grow: 1;
   min-height: 0;
+  /* O conteúdo repousa em --bg-soft e a barra lateral em --surface, como no preview do admin. */
+  background-color: var(--bg-soft);
+  color: var(--ink);
 }
 
-.fb-admin-content {
-  /* O respiro do conteúdo; as telas que precisam de uma coluna encostada na barra lateral o anulam. */
-  --fb-admin-pad-y: 32px;
-  --fb-admin-pad-x: 40px;
-  flex-grow: 1;
+/* Coluna à direita da barra lateral: cabeçalho (botão de tema; marca e Menu no celular) e o conteúdo. */
+.fb-admin__body {
+  flex: 1 1 0;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.fb-admin__top {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--s-3);
+  box-sizing: border-box;
+  padding: var(--s-3) var(--s-10) 0;
+}
+
+.fb-admin__top-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.fb-admin__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: 0 var(--s-3);
+  font-size: var(--text-small);
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.18em;
+  color: var(--ink);
+}
+
+.fb-admin__brand-mark {
+  width: var(--s-6);
+  height: var(--s-6);
+  flex: 0 0 auto;
+}
+
+/* No desktop a marca fica na barra lateral e o botão Menu não existe (a navegação já está à vista). */
+.fb-admin__brand--top,
+.fb-admin__menu-button {
+  display: none;
+}
+
+/* O contêiner: largura máxima do design, centrado, com o respiro lateral e de topo por token. As telas que precisam
+   de uma coluna encostada na barra lateral anulam os --fb-admin-pad-*. */
+.fb-admin-content {
+  --fb-admin-pad-y: var(--s-8);
+  --fb-admin-pad-x: var(--s-10);
+  flex-grow: 1;
+  width: 100%;
+  max-width: var(--container-max);
+  min-width: 0;
+  margin-inline: auto;
   overflow: auto;
   box-sizing: border-box;
   padding: var(--fb-admin-pad-y) var(--fb-admin-pad-x);
-  background-color: var(--color-surface-000);
-  color: var(--color-ink-on-dark);
+  color: var(--ink);
+}
+
+.fb-admin-content:focus {
+  outline: none;
+}
+
+/* Celular: a barra lateral some; o cabeçalho passa a ter a marca, o tema e o botão Menu, com o gutter do contêiner. */
+@media (max-width: 767px) {
+  .fb-admin-shell {
+    flex-direction: column;
+  }
+
+  .fb-admin__top {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    justify-content: space-between;
+    padding: var(--s-2) var(--container-gutter);
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .fb-admin__brand--top {
+    display: inline-flex;
+    padding: 0;
+  }
+
+  .fb-admin__menu-button {
+    display: inline-flex;
+    min-width: var(--s-11);
+  }
 }
 
 .fb-page-eyebrow {
@@ -35,9 +118,11 @@
 .fb-page-title {
   margin: 0;
   font-family: var(--font-sans);
-  font-weight: 700;
-  font-size: 24px;
-  color: var(--color-ink-on-dark);
+  font-weight: var(--weight-bold);
+  font-size: var(--text-h1);
+  letter-spacing: var(--tracking-title);
+  line-height: var(--leading-title);
+  color: var(--ink);
 }
 
 .fb-tabs {

@@ -12,16 +12,19 @@ export interface DialogProps {
   /** Botões do rodapé, alinhados à direita. */
   actions?: ReactNode;
   className?: string;
+  /** `id` do elemento com `role="dialog"`, para o `aria-controls` do botão que o abre. */
+  id?: string;
   /**
    * `sheet`: folha. No celular sobe da borda inferior (respeita reduced motion); no desktop é o cartão centralizado.
-   * Tem barra superior, corpo que rola e rodapé fixo (`topBar`, `eyebrow`, `footer`).
+   * `drawer`: gaveta. Painel de altura total preso à borda esquerda, que entra deslizando (a navegação do admin no celular).
+   * As duas têm barra superior, corpo que rola e rodapé fixo (`topBar`, `eyebrow`, `footer`).
    */
-  variant?: "default" | "sheet";
-  /** Folha: barra acima do título (voltar e fechar). Entra antes de tudo na ordem de foco. */
+  variant?: "default" | "sheet" | "drawer";
+  /** Folha e gaveta: barra acima do título (voltar e fechar). Entra antes de tudo na ordem de foco. */
   topBar?: ReactNode;
-  /** Folha: selo ou rótulo acima do título. */
+  /** Folha e gaveta: selo ou rótulo acima do título. */
   eyebrow?: ReactNode;
-  /** Folha: rodapé fixo, sempre visível (ex.: o botão principal em largura total). */
+  /** Folha e gaveta: rodapé fixo, sempre visível (ex.: o botão principal em largura total). */
   footer?: ReactNode;
 }
 
@@ -37,12 +40,13 @@ export function Dialog({
   children,
   actions,
   className,
+  id,
   variant = "default",
   topBar,
   eyebrow,
   footer,
 }: DialogProps) {
-  const sheet = variant === "sheet";
+  const structured = variant !== "default";
   const titleId = useId();
   const descriptionId = useId();
   const dialogRef = useDialogFocus<HTMLDivElement>(true, FOCUSABLE);
@@ -64,21 +68,31 @@ export function Dialog({
 
   return (
     <div
-      className={join("fb-ui-dialog-backdrop", sheet && "fb-ui-dialog-backdrop--sheet")}
+      className={join(
+        "fb-ui-dialog-backdrop",
+        variant === "sheet" && "fb-ui-dialog-backdrop--sheet",
+        variant === "drawer" && "fb-ui-dialog-backdrop--drawer",
+      )}
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
     >
       <div
         ref={dialogRef}
-        className={join("fb-ui-dialog", sheet && "fb-ui-dialog--sheet", className)}
+        id={id}
+        className={join(
+          "fb-ui-dialog",
+          variant === "sheet" && "fb-ui-dialog--sheet",
+          variant === "drawer" && "fb-ui-dialog--drawer",
+          className,
+        )}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={description ? descriptionId : undefined}
         tabIndex={-1}
       >
-        {sheet ? (
+        {structured ? (
           <>
             {topBar && <div className="fb-ui-dialog__topbar">{topBar}</div>}
             <div className="fb-ui-dialog__body">

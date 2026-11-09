@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, MouseEvent } from "react";
+import type { ButtonHTMLAttributes, MouseEvent, Ref } from "react";
 import { join } from "./join";
 
 export type ButtonVariant = "primary" | "secondary" | "soft" | "ghost" | "danger";
@@ -10,6 +10,8 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   block?: boolean;
   /** Carregando: `aria-busy`, spinner e nenhum clique passa. Não usa `disabled`, para o foco do teclado não se perder. */
   busy?: boolean;
+  /** Ref do `<button>` (React 19 repassa `ref` como prop): quem precisa devolver o foco ao botão o usa. */
+  ref?: Ref<HTMLButtonElement>;
 }
 
 /**

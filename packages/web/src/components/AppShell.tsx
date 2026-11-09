@@ -13,7 +13,7 @@ import { UpdateBanner } from "./UpdateBanner";
  * o Login têm cascas visuais totalmente diferentes no design.
  */
 export function AppShell({ children }: { children: ReactNode }) {
-  // A casca do cliente tem o botão de tema no cabeçalho; nesse caso o botão fixo sai.
+  // As cascas do cliente e do admin têm o botão de tema no cabeçalho; nesse caso o botão fixo sai.
   const [themeToggleHosted, setThemeToggleHosted] = useState(false);
   return (
     <div

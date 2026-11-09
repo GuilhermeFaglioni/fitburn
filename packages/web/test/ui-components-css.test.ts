@@ -41,7 +41,7 @@ describe("componentes base I: só tokens", () => {
   it("não tem border-radius, font-size nem espaçamento em px que fujam do que a proposta fixa: raio sempre por token", () => {
     expect(ui.match(/border-radius:\s*\d+px/g) ?? []).toEqual([]);
     for (const [, value] of ui.matchAll(/border-radius:\s*([^;]+);/g)) {
-      expect(value.trim(), value).toMatch(/^(var\(--r-(xs|sm|md|lg|xl|pill)\)|50%|var\(--r-xl\) var\(--r-xl\) 0 0)$/);
+      expect(value.trim(), value).toMatch(/^(var\(--r-(xs|sm|md|lg|xl|pill)\)|50%|var\(--r-xl\) var\(--r-xl\) 0 0|0 var\(--r-xl\) var\(--r-xl\) 0)$/);
     }
   });
 

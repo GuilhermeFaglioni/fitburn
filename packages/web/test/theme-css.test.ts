@@ -24,9 +24,6 @@ const indexHtml = web("index.html");
 
 const normalize = (value: string) => value.replace(/\s+/g, "").toLowerCase();
 
-/** Aprovados pelo dono (#156), mas só entram no código nos PRs que os usam: 12 (sidebar) e 17 (lista + detalhe). */
-const NOT_YET_IN_CODE = new Set(["--sidebar-w", "--list-w"]);
-
 /** Linhas `| \`--token\` | claro | escuro |` das tabelas do design system cujo cabeçalho é "Token | Claro | Escuro". */
 function themedRows(): { name: string; light: string; dark: string }[] {
   const rows: { name: string; light: string; dark: string }[] = [];
@@ -40,7 +37,7 @@ function themedRows(): { name: string; light: string; dark: string }[] {
     if (cells[0] === "Token") themed = cells[1] === "Claro" && cells[2] === "Escuro";
     else if (themed) {
       const name = cells[0].match(/^`(--[\w-]+)`$/)?.[1];
-      if (name && !NOT_YET_IN_CODE.has(name)) rows.push({ name, light: cells[1], dark: cells[2] });
+      if (name) rows.push({ name, light: cells[1], dark: cells[2] });
     }
   }
   return rows;
@@ -51,7 +48,7 @@ describe("valores dos tokens batem com a proposta (design-system.md)", () => {
 
   it("lê as tabelas de marca, superfícies, estados e sombras", () => {
     const names = rows.map((r) => r.name);
-    for (const name of ["--brand", "--bg", "--ink", "--danger", "--sh-1", "--sh-cta", "--sh-focus"]) {
+    for (const name of ["--brand", "--bg", "--ink", "--danger", "--sh-1", "--sh-cta", "--sh-focus", "--sidebar-w", "--list-w"]) {
       expect(names, name).toContain(name);
     }
   });

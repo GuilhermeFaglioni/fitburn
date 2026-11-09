@@ -368,8 +368,8 @@ function allSheets(): [string, string][] {
 }
 
 describe("dívida de migração: branco translúcido literal nas telas ainda não migradas", () => {
-  /** Quantidade medida em #156 (45 no PR 2; 43 depois da Agenda; 39 depois do Login; 19 depois da Ficha e do FitPoints). Cada PR de tela só pode reduzir; o PR 18 troca este teste por proibição. */
-  const LITERAL_WHITE_ALPHA_TEXT_CEILING = 19;
+  /** Quantidade medida em #156 (45 no PR 2; 43 depois da Agenda; 39 depois do Login; 19 depois da Ficha e do FitPoints; 10 depois da casca do admin). Cada PR de tela só pode reduzir; o PR 18 troca este teste por proibição. */
+  const LITERAL_WHITE_ALPHA_TEXT_CEILING = 10;
 
   it("não cresce: texto novo usa tokens, que seguem o tema", () => {
     const count = allSheets()

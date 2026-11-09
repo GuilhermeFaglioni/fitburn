@@ -43,7 +43,7 @@ describe("componentes base II: prefixo e só tokens", () => {
 
   it("raio, sombra e tamanho de texto vêm dos tokens", () => {
     for (const [, value] of uiCss.matchAll(/border-radius:\s*([^;]+);/g)) {
-      expect(value.trim(), value).toMatch(/^(var\(--r-(xs|sm|md|lg|xl|pill)\)|50%|var\(--r-(lg|xl)\) var\(--r-(lg|xl)\) 0 0)$/);
+      expect(value.trim(), value).toMatch(/^(var\(--r-(xs|sm|md|lg|xl|pill)\)|50%|var\(--r-(lg|xl)\) var\(--r-(lg|xl)\) 0 0|0 var\(--r-xl\) var\(--r-xl\) 0)$/);
     }
     for (const [, value] of uiCss.matchAll(/box-shadow:\s*([^;]+);/g)) {
       expect(value.trim(), value).toMatch(/^(none|var\(--sh-(1|2|3|cta|focus)\)(,\s*var\(--sh-(1|2|3|cta|focus)\))*)$/);
@@ -148,6 +148,31 @@ describe("diálogo", () => {
   it("o foco no próprio cartão não desenha contorno extra, e o rodapé alinha as ações à direita", () => {
     expect(rule(".fb-ui-dialog:focus-visible")).toMatch(/outline:\s*none/);
     expect(rule(".fb-ui-dialog__actions")).toMatch(/justify-content:\s*flex-end/);
+  });
+});
+
+describe("diálogo em variante drawer (gaveta)", () => {
+  it("o fundo alinha o painel à esquerda, sem respiro, e o painel ocupa a altura toda sem passar de 85% da largura", () => {
+    const backdrop = rule(".fb-ui-dialog-backdrop--drawer");
+    expect(backdrop).toMatch(/justify-content:\s*flex-start/);
+    expect(backdrop).toMatch(/align-items:\s*stretch/);
+    expect(backdrop).toMatch(/padding:\s*0/);
+    const drawer = rule(".fb-ui-dialog--drawer");
+    expect(drawer).toMatch(/height:\s*100%/);
+    expect(drawer).toMatch(/max-width:\s*85vw/);
+    expect(drawer).toMatch(/border-radius:\s*0 var\(--r-xl\) var\(--r-xl\) 0/);
+  });
+
+  it("entra deslizando da esquerda pela curva da gaveta, e o movimento some com reduced motion (--sheet-offset)", () => {
+    expect(rule(".fb-ui-dialog--drawer")).toMatch(/animation:\s*fb-drawer-in \d+ms var\(--ease-drawer\)/);
+    const global = readFileSync(join(process.cwd(), "src/styles/global.css"), "utf8");
+    expect(global).toMatch(/@keyframes fb-drawer-in\s*\{\s*from\s*\{\s*transform:\s*translateX\(calc\(var\(--sheet-offset\) \* -1\)\)/);
+  });
+
+  it("compartilha com a folha o miolo sem padding (barra superior, corpo que rola, rodapé fixo)", () => {
+    const sheet = clean.match(/\.fb-ui-dialog--sheet,\s*\.fb-ui-dialog--drawer\s*\{([^}]*)\}/)?.[1] ?? "";
+    expect(sheet).toMatch(/padding:\s*0/);
+    expect(sheet).toMatch(/overflow:\s*hidden/);
   });
 });
 
