@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, onlineManager } from "@tanstack/react-query";
 import { http, HttpResponse } from "msw";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import {
@@ -25,6 +25,7 @@ import { AgendaAdminPage } from "../src/pages/AgendaAdminPage";
 import { AttendancePage } from "../src/pages/AttendancePage";
 import { ClassStudentSheetPage } from "../src/pages/ClassStudentSheetPage";
 import { mockSuccessfulLogin } from "./auth-mocks";
+import { setBrowserOnline } from "./connectivity-helpers";
 import { server } from "./msw-server";
 
 /** O mesmo id que mockSuccessfulLogin dá a quem entra. */
@@ -390,6 +391,137 @@ describe("Professor: Agenda → alunos da aula → ficha de treino", () => {
 
       expect(await screen.findByRole("heading", { name: "Presença" })).toBeInTheDocument();
       expect(screen.getByLabelText("rota")).toHaveTextContent("/presenca/occ-own");
+    });
+  });
+
+  describe("Ficha do aluno: casca da Presença e fichas anteriores (nova base de design)", () => {
+    const PATH = "/presenca/occ-own/alunos/c-marina";
+
+    afterEach(() => {
+      onlineManager.setOnline(true);
+      setBrowserOnline(true);
+    });
+
+    it("o cabeçalho é o da Presença: voltar com nome, aluno no h1 e a aula no subtítulo", async () => {
+      mockSuccessfulLogin("Professor", PROFESSOR_PERMISSIONS);
+      mockApi();
+      renderAt(PATH);
+
+      expect(await screen.findByRole("heading", { level: 1, name: "Marina Costa" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Voltar" })).toHaveClass("fb-ui-btn");
+      expect(screen.getByText(/^Ficha de treino · Personal Class,/)).toBeInTheDocument();
+      expect(screen.getByRole("main")).toHaveClass("fb-ui-att", "fb-ui-att--wide");
+    });
+
+    it("as fichas anteriores usam o PreviousSheetItem: nome em link, professor, exercícios, data e situação", async () => {
+      mockSuccessfulLogin("Professor", PROFESSOR_PERMISSIONS);
+      mockApi({
+        sheets: [
+          sheet("s-active"),
+          sheet("s-old", { title: "Fase 1 — Adaptação", status: "COMPLETED" }),
+          sheet("s-arch", { title: "Fase 0 — Teste", status: "ARCHIVED" }),
+        ],
+      });
+      renderAt(PATH);
+
+      const section = (await screen.findByRole("heading", { level: 2, name: "Fichas anteriores" })).closest(
+        "section",
+      )!;
+      const items = within(section).getAllByRole("listitem");
+      expect(items).toHaveLength(2);
+
+      const completed = within(items[0]);
+      expect(completed.getByRole("link", { name: "Fase 1 — Adaptação" })).toHaveAttribute(
+        "href",
+        "/presenca/occ-own/alunos/c-marina?ficha=s-old",
+      );
+      expect(completed.getByText(/^Prof\. /)).toBeInTheDocument();
+      expect(completed.getByText("CONCLUÍDA")).toBeInTheDocument();
+      expect(within(items[1]).getByText("ARQUIVADA")).toBeInTheDocument();
+      // A ficha ativa está no corpo da tela, não na lista de anteriores.
+      expect(within(section).queryByText("Treino A — Inferiores")).toBeNull();
+    });
+
+    it("aluno só com fichas anteriores: avisa que não há ficha ativa e ainda lista as anteriores", async () => {
+      mockSuccessfulLogin("Professor", PROFESSOR_PERMISSIONS);
+      mockApi({ sheets: [sheet("s-old", { title: "Fase 1 — Adaptação", status: "COMPLETED" })] });
+      renderAt(PATH);
+
+      const empty = await screen.findByText("Nenhuma ficha ativa no momento.");
+
+      expect(empty.closest("[data-state]")).toHaveAttribute("data-state", "empty");
+      expect(screen.getByRole("link", { name: "Fase 1 — Adaptação" })).toBeInTheDocument();
+    });
+
+    it("carregando: mostra o texto da ficha, com o cabeçalho já na tela", async () => {
+      mockSuccessfulLogin("Professor", PROFESSOR_PERMISSIONS);
+      mockApi();
+      server.use(http.get("/api/workout-sheets", () => new Promise(() => {})));
+      renderAt(PATH);
+
+      const loading = await screen.findByText("Carregando a ficha de treino…");
+
+      expect(loading).toHaveAttribute("role", "status");
+      expect(screen.getByRole("button", { name: "Voltar" })).toBeInTheDocument();
+    });
+
+    it("erro: alerta com o texto da tela e tentar de novo traz a ficha", async () => {
+      mockSuccessfulLogin("Professor", PROFESSOR_PERMISSIONS);
+      mockApi();
+      let calls = 0;
+      server.use(
+        http.get("/api/workout-sheets", () => {
+          calls += 1;
+          return calls === 1
+            ? HttpResponse.json({ code: "INTERNAL_ERROR", message: "Erro." }, { status: 500 })
+            : HttpResponse.json([sheet("s-1")]);
+        }),
+      );
+      renderAt(PATH);
+      const user = userEvent.setup();
+
+      expect(await screen.findByRole("alert")).toHaveTextContent(
+        "Não foi possível carregar a ficha de treino.",
+      );
+
+      await user.click(screen.getByRole("button", { name: "Tentar novamente" }));
+
+      expect(await screen.findByText("Treino A — Inferiores")).toBeInTheDocument();
+    });
+
+    it("fora do escopo: o alerta explica e não mostra ficha de ninguém", async () => {
+      mockSuccessfulLogin("Professor", PROFESSOR_PERMISSIONS);
+      mockApi();
+      server.use(
+        http.get("/api/workout-sheets", () =>
+          HttpResponse.json({ code: ErrorCode.OUT_OF_SCOPE, message: "Fora do escopo." }, { status: 403 }),
+        ),
+      );
+      renderAt(PATH);
+
+      expect(await screen.findByRole("alert")).toHaveTextContent("Este aluno está fora do seu escopo.");
+      expect(screen.queryByRole("heading", { name: "Fichas anteriores" })).toBeNull();
+    });
+
+    it("offline: mostra o estado sem conexão (não um erro) e a ficha vem com a rede", async () => {
+      mockSuccessfulLogin("Professor", PROFESSOR_PERMISSIONS);
+      mockApi();
+      onlineManager.setOnline(false);
+      setBrowserOnline(false);
+      renderAt(PATH);
+
+      const offline = await waitFor(() => {
+        const found = document.querySelector('[data-state="offline"]');
+        expect(found).not.toBeNull();
+        return found as HTMLElement;
+      });
+      expect(offline).toHaveTextContent("Sem conexão");
+      expect(screen.queryByRole("alert")).toBeNull();
+
+      onlineManager.setOnline(true);
+      setBrowserOnline(true);
+
+      expect(await screen.findByText("Treino A — Inferiores")).toBeInTheDocument();
     });
   });
 });

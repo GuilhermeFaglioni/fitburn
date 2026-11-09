@@ -8,7 +8,9 @@ import {
   type WorkoutSheet,
 } from "@fitburn/contracts";
 import { BackIcon } from "../components/icons/BackIcon";
-import { EmptyState, ErrorState, LoadingState } from "../components/states";
+import { QueryBlockState } from "../components/QueryBlockState";
+import { Button } from "../components/ui/Button";
+import { EmptyState } from "../components/ui/States";
 import { formatClassDay, formatInstantHour } from "../lib/agenda/format";
 import { getAttendanceRoster } from "../lib/attendance/api";
 import { ApiError } from "../lib/auth/api";
@@ -28,7 +30,7 @@ function sheetsErrorMessage(error: unknown): string {
  * Ficha de treino de um aluno, aberta a partir da lista de alunos de uma aula
  * (Presença). Somente leitura: mostra a ficha ativa e, abaixo, as anteriores,
  * no mesmo visual da ficha do próprio aluno.
- * Não há tela de referência para esta rota; a casca é a da Presença.
+ * Tela extrapolada da base (#156, D-038); a casca é a da Presença (tela cheia, sem a sidebar).
  */
 export function ClassStudentSheetPage() {
   const { occurrenceId = "", clientId = "" } = useParams();
@@ -59,40 +61,38 @@ export function ClassStudentSheetPage() {
   const shown: WorkoutSheet[] = chosen ? [chosen] : active;
 
   return (
-    <main id="conteudo" tabIndex={-1} className="fb-att fb-att--wide">
-      <div className="fb-att__header">
-        <button
-          type="button"
-          className="fb-back-btn"
+    <main id="conteudo" tabIndex={-1} className="fb-ui-att fb-ui-att--wide">
+      <header className="fb-ui-att__head">
+        <Button
+          size="sm"
+          className="fb-ui-btn--icon"
           aria-label="Voltar"
           onClick={() => navigate(`/presenca/${occurrenceId}`, { state: { from } })}
         >
           <BackIcon />
-        </button>
-        <div className="fb-att__heading">
-          <h1 className="fb-att__title">{studentName ?? "Ficha de treino"}</h1>
-          <span className="fb-att__subtitle">
+        </Button>
+        <div className="fb-ui-att__heading">
+          <h1 className="fb-ui-att__title">{studentName ?? "Ficha de treino"}</h1>
+          <span className="fb-ui-att__subtitle">
             Ficha de treino
             {roster &&
               ` · ${roster.class.name}, ${formatClassDay(roster.class.startsAt)} ${formatInstantHour(roster.class.startsAt)}`}
           </span>
         </div>
-      </div>
+      </header>
 
-      {sheetsQuery.isLoading && <LoadingState surface="dark" />}
-      {sheetsQuery.isError && (
-        <ErrorState
-          surface="dark"
-          message={sheetsErrorMessage(sheetsQuery.error)}
-          onRetry={() => void sheetsQuery.refetch()}
-        />
-      )}
+      <QueryBlockState
+        query={sheetsQuery}
+        hasData={sheetsQuery.data !== undefined}
+        loading="Carregando a ficha de treino…"
+        error={sheetsErrorMessage(sheetsQuery.error)}
+      />
 
       {sheetsQuery.isSuccess && sheets.length === 0 && (
-        <EmptyState surface="dark" message="Este aluno ainda não tem ficha de treino." />
+        <EmptyState title="Este aluno ainda não tem ficha de treino." />
       )}
       {sheetsQuery.isSuccess && sheets.length > 0 && shown.length === 0 && (
-        <EmptyState surface="dark" message="Nenhuma ficha ativa no momento." />
+        <EmptyState title="Nenhuma ficha ativa no momento." />
       )}
 
       <div className="fb-workout">

@@ -146,21 +146,6 @@
   display: none;
 }
 
-/* Botão de voltar dos cabeçalhos de tela cheia (PresencaMobile / GamificacaoMobile). */
-.fb-back-btn {
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  background: transparent;
-  border: none;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  color: rgba(255, 255, 255, 0.7);
-}
-
 @media (max-width: 767px) {
   .fb-client__sidebar {
     display: none;
@@ -202,17 +187,15 @@
 
 }
 
-/* Navegação e botões de ícone: só a cor muda. */
-.fb-client__nav-item,
-.fb-back-btn {
+/* Navegação: só a cor muda. */
+.fb-client__nav-item {
   transition:
     background-color var(--duration-state) var(--ease-out),
     color var(--duration-state) var(--ease-out);
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .fb-client__nav-item:not(.active):hover,
-  .fb-back-btn:hover {
+  .fb-client__nav-item:not(.active):hover {
     color: var(--color-ink-on-dark);
   }
 }

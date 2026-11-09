@@ -6,7 +6,6 @@ import "./styles/global.css";
 import "./styles/components.css";
 import "./styles/admin.css";
 import "./styles/client.css";
-import "./styles/attendance.css";
 import "./styles/gamification.css";
 import "./styles/goals.css";
 import "./styles/plan.css";

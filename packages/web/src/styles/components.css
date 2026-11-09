@@ -2007,3 +2007,320 @@
     align-items: stretch;
   }
 }
+
+/* ==========================================================================
+   Telas do admin (issue 156, PR 15): Minhas aulas, Presença e Presença por aluno.
+   Minhas aulas é uma lista de aulas com hora, situação e o botão que abre a presença. Presença e Presença por aluno
+   são telas cheias (sem a sidebar), numa coluna de leitura; as marcações são botões de 44px. Só tokens.
+   ========================================================================== */
+
+/* ---- Minhas aulas ---- */
+.fb-ui-mc-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fb-ui-mc-day {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+.fb-ui-mc-day__title {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--text-small);
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.fb-ui-mc {
+  box-sizing: border-box;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-3) var(--s-4);
+  padding: var(--s-4);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  box-shadow: var(--sh-1);
+}
+
+.fb-ui-mc__time {
+  box-sizing: border-box;
+  flex: 0 0 64px;
+  padding: var(--s-2) 0;
+  background: var(--brand-tint);
+  color: var(--brand-strong);
+  border-radius: var(--r-sm);
+  font-size: var(--text-action);
+  font-weight: var(--weight-bold);
+  line-height: 1.1;
+  text-align: center;
+}
+
+.fb-ui-mc__meta {
+  flex: 1 1 160px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+}
+
+.fb-ui-mc__title {
+  color: var(--ink);
+  font-size: var(--text-action);
+  overflow-wrap: anywhere;
+}
+
+.fb-ui-mc__sub {
+  color: var(--muted);
+  font-size: var(--text-small);
+  overflow-wrap: anywhere;
+}
+
+.fb-ui-mc__action {
+  margin-left: auto;
+}
+
+/* ---- Presença e Presença por aluno (tela cheia) ---- */
+.fb-ui-att {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 480px;
+  min-height: 100%;
+  margin: 0 auto;
+  padding: var(--s-6) var(--s-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  font-family: var(--font-sans);
+  color: var(--ink);
+}
+
+/* Ficha de treino do aluno: mais larga que a lista de presença (a ficha tem duas colunas no desktop). */
+.fb-ui-att--wide {
+  max-width: 820px;
+}
+
+/* O botão de tema é fixo no canto superior direito: o cabeçalho deixa o espaço dele livre. */
+.fb-ui-att__head {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding-right: var(--s-13);
+}
+
+.fb-ui-att__heading {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.fb-ui-att__title {
+  margin: 0;
+  color: var(--ink);
+  font-size: var(--text-h2);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-title);
+  line-height: var(--leading-title);
+  overflow-wrap: anywhere;
+}
+
+.fb-ui-att__subtitle {
+  color: var(--muted);
+  font-size: var(--text-small);
+  overflow-wrap: anywhere;
+}
+
+/* Andamento: quantos já foram registrados e a dica de toque. */
+.fb-ui-att__progress {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-3);
+  color: var(--muted);
+  font-size: var(--text-small);
+}
+
+.fb-ui-att__count {
+  color: var(--ink);
+  font-weight: var(--weight-bold);
+}
+
+.fb-ui-att__note {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-2);
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--text-small);
+  line-height: var(--leading-small);
+}
+
+.fb-ui-att__note svg {
+  flex: 0 0 auto;
+  margin-top: var(--s-1);
+}
+
+/* Aula que ainda não começou e sem conexão: a mesma faixa tracejada dos estados vazios. */
+.fb-ui-att__hint-card {
+  box-sizing: border-box;
+  margin: 0;
+  padding: var(--s-3) var(--s-4);
+  background: var(--surface);
+  border: 1px dashed var(--line-2);
+  border-radius: var(--r-md);
+  color: var(--muted);
+  font-size: var(--text-small);
+  line-height: var(--leading-small);
+}
+
+.fb-ui-att__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fb-ui-att__row {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  padding: var(--s-3);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  box-shadow: var(--sh-1);
+}
+
+.fb-ui-att__who {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2);
+  min-width: 0;
+}
+
+.fb-ui-att__name {
+  min-width: 0;
+  color: var(--ink);
+  font-size: var(--text-action);
+  font-weight: var(--weight-bold);
+  overflow-wrap: anywhere;
+}
+
+/* O nome é o link para a ficha do aluno: alvo de 44px, sem sublinhado até o hover. */
+.fb-ui-att__name--link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  min-height: var(--s-11);
+  text-decoration: none;
+}
+
+.fb-ui-att__name--link:focus-visible {
+  outline: none;
+  border-radius: var(--r-xs);
+  box-shadow: var(--sh-focus);
+}
+
+.fb-ui-att__chevron {
+  color: var(--muted);
+  font-size: var(--text-h3);
+  line-height: 1;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .fb-ui-att__name--link:hover {
+    text-decoration: underline;
+  }
+}
+
+/* Presente | Faltou: duas colunas iguais; marcado pinta de verde (presente) ou de vermelho (faltou). */
+.fb-ui-att__marks {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s-2);
+}
+
+.fb-ui-att__mark {
+  box-sizing: border-box;
+  min-height: var(--s-11);
+  padding: 0 var(--s-4);
+  background: var(--surface);
+  color: var(--ink-2);
+  border: 1px solid var(--faint); /* borda de controle: 3:1 mínimo (WCAG 1.4.11) */
+  border-radius: var(--r-sm);
+  font-family: var(--font-sans);
+  font-size: var(--text-small);
+  font-weight: var(--weight-bold);
+  cursor: pointer;
+  transition:
+    transform var(--duration-press) var(--ease-out),
+    background-color var(--duration-state) var(--ease-out),
+    border-color var(--duration-state) var(--ease-out),
+    color var(--duration-state) var(--ease-out),
+    box-shadow var(--duration-press) var(--ease-out);
+}
+
+.fb-ui-att__mark:focus-visible {
+  outline: none;
+  box-shadow: var(--sh-focus);
+}
+
+.fb-ui-att__mark:active:not(:disabled) {
+  transform: scale(var(--press-scale));
+}
+
+.fb-ui-att__mark[aria-pressed="true"].fb-ui-att__mark--present {
+  background: var(--success-bg);
+  border-color: var(--success);
+  color: var(--success);
+}
+
+.fb-ui-att__mark[aria-pressed="true"].fb-ui-att__mark--absent {
+  background: var(--danger-bg);
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.fb-ui-att__mark:disabled {
+  cursor: not-allowed;
+}
+
+/* A opção que não vale mais (aula que não começou, sem permissão ou sem conexão) esmaece; a marcada fica inteira. */
+.fb-ui-att__mark:disabled:not([aria-pressed="true"]) {
+  opacity: 0.45;
+}
+
+/* Gravando: o grupo todo avisa que o pedido ainda não voltou. */
+.fb-ui-att__marks[aria-busy="true"] .fb-ui-att__mark {
+  cursor: progress;
+}
+
+@media (hover: hover) {
+  .fb-ui-att__mark:hover:not(:disabled):not([aria-pressed="true"]) {
+    background: var(--surface-2);
+  }
+}
+
+@media (max-width: 767px) {
+  .fb-ui-att {
+    padding: var(--s-5) var(--container-gutter);
+  }
+
+  .fb-ui-mc__action {
+    flex: 1 1 100%;
+    margin-left: 0;
+  }
+}

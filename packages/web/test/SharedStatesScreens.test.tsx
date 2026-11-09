@@ -78,6 +78,7 @@ const SCREENS: Screen[] = [
     page: <MyClassesPage />,
     url: "/api/attendance/classes",
     errorMessage: "Não foi possível carregar as aulas.",
+    loadingMessage: "Carregando as aulas…",
     empty: [],
     emptyMessage: "Nenhuma aula hoje.",
   },

@@ -16,7 +16,8 @@ function ruleBody(css: string, selector: string): string {
 
 describe("casca do cliente: tokens e sem cor literal", () => {
   it("a casca (antes das telas) não usa cor hex nem rgba literal", () => {
-    const shell = clientCss.slice(0, clientCss.indexOf("/* Botão de voltar"));
+    // A casca é o que vem antes do trecho móvel (o botão de voltar da Presença saiu em #156, PR 15).
+    const shell = base;
     expect(shell.match(/#[0-9a-fA-F]{3,8}\b/g) ?? []).toEqual([]);
     expect(shell.match(/\b(?:rgba?|hsla?)\(/g) ?? []).toEqual([]);
     expect(shell).not.toMatch(/var\(--color-/);

@@ -11,26 +11,27 @@ import {
   type AttendanceRoster,
 } from "@fitburn/contracts";
 import { BackIcon } from "../components/icons/BackIcon";
+import { QueryBlockState } from "../components/QueryBlockState";
+import { RequiresNetwork } from "../components/RequiresNetwork";
+import { Alert } from "../components/ui/Alert";
+import { Badge } from "../components/ui/Badge";
+import { Button } from "../components/ui/Button";
+import { EmptyState } from "../components/ui/States";
 import { ApiError } from "../lib/auth/api";
+import { useAuth } from "../lib/auth/AuthContext";
 import { getAttendanceRoster, markAttendance } from "../lib/attendance/api";
 import { formatClassDay, formatInstantHour } from "../lib/agenda/format";
-import { EmptyState, ErrorState, Feedback, LoadingState } from "../components/states";
-import { RequiresNetwork } from "../components/RequiresNetwork";
-import { useAuth } from "../lib/auth/AuthContext";
+import { useNetworkRequired } from "../lib/connectivity/useNetworkRequired";
 
 const NO_EXECUTE_REASON = "Você não tem permissão para registrar presença.";
 
+/** Ícone da nota: traço e preenchimento na cor do texto (`currentColor`), então segue o tema. */
 function InfoIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <circle cx="8" cy="8" r="7" stroke="rgba(255,255,255,0.35)" strokeWidth="1.3" />
-      <path
-        d="M8 7.2V11.2"
-        stroke="rgba(255,255,255,0.35)"
-        strokeWidth="1.3"
-        strokeLinecap="round"
-      />
-      <circle cx="8" cy="5" r="0.9" fill="rgba(255,255,255,0.35)" />
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true" focusable="false">
+      <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.3" />
+      <path d="M8 7.2V11.2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <circle cx="8" cy="5" r="0.9" fill="currentColor" />
     </svg>
   );
 }
@@ -80,8 +81,11 @@ interface MarkVariables {
  * reserva confirmada como presente ou faltou, com um toque; um toque no outro
  * botão corrige uma marcação errada (o servidor estorna os pontos e recalcula
  * streak e bônus). A linha muda na hora e o pedido segue em segundo plano —
- * não há botão "salvar"; se o servidor recusar, a linha volta ao que era e a
- * tela explica o motivo.
+ * não há botão "salvar" (cada toque já grava, como no desenho da tela), então
+ * não existe marcação por salvar e nada se perde ao sair; enquanto o pedido de
+ * uma linha não volta, o grupo dela fica `aria-busy`. Se o servidor recusar, a
+ * linha volta ao que era e a tela explica o motivo. Sem conexão os botões ficam
+ * desabilitados (RequiresNetwork) e o que está na tela continua lá.
  */
 export function AttendancePage() {
   const { occurrenceId = "" } = useParams();
@@ -95,6 +99,16 @@ export function AttendancePage() {
   const canSeeSheets = can(Module.FICHAS_DE_TREINO, PermissionAction.VIEW);
   const rosterKey = ["attendance-roster", occurrenceId];
   const [failure, setFailure] = useState<string | null>(null);
+  // Pedidos em andamento por linha (a contagem, porque dois toques seguidos na mesma linha geram dois pedidos).
+  const [saving, setSaving] = useState<Record<string, number>>({});
+  const { offline } = useNetworkRequired();
+
+  function trackSaving(reservationId: string, delta: 1 | -1) {
+    setSaving((current) => ({
+      ...current,
+      [reservationId]: Math.max(0, (current[reservationId] ?? 0) + delta),
+    }));
+  }
 
   const rosterQuery = useQuery({
     queryKey: rosterKey,
@@ -120,8 +134,10 @@ export function AttendancePage() {
     mutationFn: ({ entry, status }: MarkVariables) => markAttendance(entry.reservationId, status),
     onMutate: ({ entry, status }) => {
       setFailure(null);
+      trackSaving(entry.reservationId, 1);
       setEntry(entry.reservationId, (item) => ({ ...item, status }));
     },
+    onSettled: (_data, _error, { entry }) => trackSaving(entry.reservationId, -1),
     // A linha já mostra a marcação (otimista): a resposta não a sobrescreve, para
     // uma resposta atrasada não desfazer um toque mais novo na mesma linha.
     onSuccess: () => {
@@ -145,97 +161,102 @@ export function AttendancePage() {
   const registered = entries.filter((entry) => entry.status !== AttendanceStatus.PENDING).length;
 
   return (
-    <main id="conteudo" tabIndex={-1} className="fb-att">
-      <div className="fb-att__header">
-        <button
-          type="button"
-          className="fb-back-btn"
+    <main id="conteudo" tabIndex={-1} className="fb-ui-att">
+      <header className="fb-ui-att__head">
+        <Button
+          size="sm"
+          className="fb-ui-btn--icon"
           aria-label="Voltar"
           onClick={() => navigate(from)}
         >
           <BackIcon />
-        </button>
-        <div className="fb-att__heading">
-          <h1 className="fb-att__title">Presença</h1>
+        </Button>
+        <div className="fb-ui-att__heading">
+          <h1 className="fb-ui-att__title">Presença</h1>
           {roster && (
-            <span className="fb-att__subtitle">
+            <span className="fb-ui-att__subtitle">
               {roster.class.name} · {formatClassDay(roster.class.startsAt)},{" "}
               {formatInstantHour(roster.class.startsAt)}
             </span>
           )}
         </div>
-      </div>
+      </header>
 
-      {rosterQuery.isLoading && <LoadingState surface="dark" />}
-      {rosterQuery.isError && (
-        <ErrorState
-          surface="dark"
-          message="Não foi possível carregar a lista de presença."
-          onRetry={() => void rosterQuery.refetch()}
-        />
-      )}
+      <QueryBlockState
+        query={rosterQuery}
+        hasData={roster !== undefined}
+        loading="Carregando a lista de presença…"
+        error="Não foi possível carregar a lista de presença."
+      />
 
       {roster && (
         <>
-          <div className="fb-att__progress">
-            <span className="fb-att__progress-count">
+          <div className="fb-ui-att__progress">
+            <span role="status" className="fb-ui-att__count">
               {registered} de {entries.length} registrados
             </span>
-            <span className="fb-att__progress-hint">Toque para marcar</span>
+            <span className="fb-ui-att__hint">Toque para marcar</span>
           </div>
 
-          <div className="fb-att__note">
+          <p className="fb-ui-att__note">
             <InfoIcon />
-            <span className="fb-att__note-text">
-              Somente o professor atribuído a esta aula pode registrar presença.
-            </span>
-          </div>
+            <span>Somente o professor atribuído a esta aula pode registrar presença.</span>
+          </p>
+
+          {offline && (
+            <p role="status" className="fb-ui-att__hint-card">
+              Sem conexão: registrar presença volta a funcionar quando a rede voltar. As marcações já
+              feitas continuam na tela.
+            </p>
+          )}
 
           {!started && (
-            <p className="fb-att__notice">
+            <p className="fb-ui-att__hint-card">
               A presença abre no início da aula, às {formatInstantHour(roster.class.startsAt)}.
             </p>
           )}
 
-          {failure && (
-            <Feedback tone="error" surface="dark">
-              {failure}
-            </Feedback>
-          )}
+          {failure && <Alert>{failure}</Alert>}
 
           {entries.length === 0 ? (
-            <EmptyState surface="dark" message="Nenhum cliente com reserva nesta aula." />
+            <EmptyState title="Nenhum cliente com reserva nesta aula." />
           ) : (
-            <ul className="fb-att__list">
+            <ul className="fb-ui-att__list">
               {entries.map((entry) => {
                 const pending = entry.status === AttendanceStatus.PENDING;
                 return (
-                  <li key={entry.reservationId} className="fb-att__row">
-                    <div className="fb-att__who">
+                  <li key={entry.reservationId} className="fb-ui-att__row">
+                    <div className="fb-ui-att__who">
                       {canSeeSheets ? (
                         <Link
-                          className="fb-att__name fb-att__name--link"
+                          className="fb-ui-att__name fb-ui-att__name--link"
                           to={`/presenca/${occurrenceId}/alunos/${entry.client.id}`}
                           state={{ from }}
                           aria-label={`Ficha de treino de ${entry.client.fullName}`}
                         >
                           {entry.client.fullName}
-                          <span className="fb-att__chevron" aria-hidden="true">
+                          <span className="fb-ui-att__chevron" aria-hidden="true">
                             ›
                           </span>
                         </Link>
                       ) : (
-                        <span className="fb-att__name">{entry.client.fullName}</span>
+                        <span className="fb-ui-att__name">{entry.client.fullName}</span>
                       )}
-                      {pending && <span className="fb-att__pending">PENDENTE</span>}
+                      {pending && <Badge tone="warn">PENDENTE</Badge>}
                     </div>
-                    {/* Dois bloqueios independentes: sem EXECUTE o botão já nasce desabilitado, com o
-                        motivo no title, e o RequiresNetwork só soma o bloqueio por rede (não reabilita). */}
-                    <div className="fb-att__marks" role="group" aria-label={entry.client.fullName}>
+                    {/* O grupo leva o nome do aluno; cada botão, o estado (aria-pressed). Dois bloqueios
+                        independentes: sem EXECUTE o botão já nasce desabilitado, com o motivo no title, e o
+                        RequiresNetwork só soma o bloqueio por rede (não reabilita). */}
+                    <div
+                      className="fb-ui-att__marks"
+                      role="group"
+                      aria-label={entry.client.fullName}
+                      aria-busy={(saving[entry.reservationId] ?? 0) > 0 || undefined}
+                    >
                       <RequiresNetwork>
                         <button
                           type="button"
-                          className="fb-seg-btn fb-seg-btn--present"
+                          className="fb-ui-att__mark fb-ui-att__mark--present"
                           aria-pressed={entry.status === AttendanceStatus.PRESENT}
                           disabled={!started || !canExecute}
                           aria-disabled={!canExecute ? true : undefined}
@@ -248,7 +269,7 @@ export function AttendancePage() {
                       <RequiresNetwork>
                         <button
                           type="button"
-                          className="fb-seg-btn fb-seg-btn--absent"
+                          className="fb-ui-att__mark fb-ui-att__mark--absent"
                           aria-pressed={entry.status === AttendanceStatus.ABSENT}
                           disabled={!started || !canExecute}
                           aria-disabled={!canExecute ? true : undefined}
