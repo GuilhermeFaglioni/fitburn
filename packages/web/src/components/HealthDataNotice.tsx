@@ -1,7 +1,8 @@
+/** Aviso do piloto nas telas do professor que guardam texto livre sobre o aluno (fichas e metas). */
 export function HealthDataNotice() {
   return (
-    <div className="fb-lock-banner" role="note">
+    <p role="note" className="fb-ui-notice">
       Durante o piloto, não registre diagnósticos, lesões ou outros dados de saúde.
-    </div>
+    </p>
   );
 }

@@ -1,35 +1,39 @@
-import { useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useId, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Module, PermissionAction, PermissionScope, type GoalDetail } from "@fitburn/contracts";
-import { errorMessage } from "../lib/auth/api";
-import { useAuth } from "../lib/auth/AuthContext";
-import {
-  cancelGoal,
-  completeGoal,
-  createGoal,
-  listGoalClients,
-  listGoals,
-  updateGoal,
-} from "../lib/goals/api";
-import { GoalCard } from "./goals/GoalCard";
-import { GoalForm, type GoalFormValues } from "./goals/GoalForm";
-import { StudentList } from "./goals/StudentList";
-import { EmptyState, ErrorState, Feedback, LoadingState } from "../components/states";
+import { BlockedAction } from "../components/BlockedAction";
 import { HealthDataNotice } from "../components/HealthDataNotice";
+import { QueryBlockState } from "../components/QueryBlockState";
+import { Button } from "../components/ui/Button";
+import { PageHeader } from "../components/ui/PageHeader";
+import { EmptyState } from "../components/ui/States";
+import { useAuth } from "../lib/auth/AuthContext";
+import { listGoalClients, listGoals } from "../lib/goals/api";
+import { GoalCard, type GoalAction } from "./goals/GoalCard";
+import { GoalConfirmDialog } from "./goals/GoalConfirmDialog";
+import { GoalForm } from "./goals/GoalForm";
+import { StudentList } from "./goals/StudentList";
+
+/** O diálogo aberto: nova meta, edição, ou a confirmação de concluir ou cancelar. */
+type OpenDialog =
+  | { kind: "create" }
+  | { kind: "edit"; goal: GoalDetail }
+  | { kind: "complete" | "cancel"; goal: GoalDetail };
 
 /**
- * Metas individuais: à esquerda os alunos do professor
- * (o escopo "clientes atribuídos"), à direita as metas do aluno escolhido e o
- * formulário de nova meta. O tela de referência tem "valor alvo" e barra de progresso,
- * que dependem de dados que a API ainda não tem (a meta é concluída à mão pelo professor):
- * ficam de fora até o backend trazer valor alvo e progresso.
+ * Metas individuais, em lista + detalhe (D-038, #156): à esquerda os alunos do professor (coluna de `--list-w`; o
+ * escopo "clientes atribuídos" é o que a API devolve), à direita as metas do aluno escolhido. Nova meta e edição
+ * abrem um diálogo com campos; concluir e cancelar pedem confirmação em diálogo. Não há barra de progresso: a API
+ * ainda não tem valor alvo nem progresso (a meta é concluída à mão pelo professor).
  */
 export function GoalsPage() {
   const { user, can } = useAuth();
-  const queryClient = useQueryClient();
+  const listTitleId = useId();
+  const listTitleRef = useRef<HTMLHeadingElement>(null);
   const [clientId, setClientId] = useState("");
-  const [editing, setEditing] = useState<GoalDetail | null>(null);
-  const [failure, setFailure] = useState<string | null>(null);
+  const [dialog, setDialog] = useState<OpenDialog | null>(null);
+  /** Sobe quando uma meta sai da lista de ativas (o botão que abriu o diálogo some): o foco vai ao título da lista. */
+  const [refocusList, setRefocusList] = useState(0);
 
   const clientsQuery = useQuery({ queryKey: ["goal-clients"], queryFn: listGoalClients });
   const goalsQuery = useQuery({
@@ -38,41 +42,13 @@ export function GoalsPage() {
     enabled: clientId !== "",
   });
 
-  /** Uma mutação da tela: zera o aviso ao começar, recarrega as metas e mostra o motivo se falhar. */
-  function useGoalMutation<Variables>(
-    mutationFn: (variables: Variables) => Promise<unknown>,
-    fallbackMessage: string,
-    onDone?: () => void,
-  ) {
-    return useMutation({
-      mutationFn,
-      onMutate: () => setFailure(null),
-      onSuccess: () => {
-        onDone?.();
-        return queryClient.invalidateQueries({ queryKey: ["goals"] });
-      },
-      onError: (error) => setFailure(errorMessage(error, fallbackMessage)),
-    });
-  }
-
-  const createMutation = useGoalMutation(createGoal, "Não foi possível criar a meta.");
-  const updateMutation = useGoalMutation(
-    ({ id, values }: { id: string; values: GoalFormValues }) =>
-      updateGoal(id, {
-        title: values.title,
-        description: values.description || null,
-        dueDate: values.dueDate || null,
-      }),
-    "Não foi possível salvar a meta.",
-    () => setEditing(null),
-  );
-  const completeMutation = useGoalMutation(completeGoal, "Não foi possível concluir a meta.");
-  const cancelMutation = useGoalMutation(cancelGoal, "Não foi possível cancelar a meta.");
+  useEffect(() => {
+    if (refocusList > 0) listTitleRef.current?.focus();
+  }, [refocusList]);
 
   const clients = clientsQuery.data ?? [];
   const selected = clients.find((item) => item.id === clientId);
   const goals = goalsQuery.data ?? [];
-  const busy = completeMutation.isPending || cancelMutation.isPending;
 
   const canCreate = can(Module.GAMIFICACAO, PermissionAction.CREATE);
   const canEdit = can(Module.GAMIFICACAO, PermissionAction.EDIT);
@@ -82,111 +58,105 @@ export function GoalsPage() {
 
   function selectClient(id: string) {
     setClientId(id);
-    setEditing(null);
-    setFailure(null);
+    setDialog(null);
+  }
+
+  function act(goal: GoalDetail, action: GoalAction) {
+    setDialog({ kind: action, goal });
   }
 
   return (
-    <div className="fb-goals">
-      <StudentList
-        students={clients}
-        selectedId={clientId}
-        allStudents={allStudents}
-        onSelect={selectClient}
-      />
+    <div className="fb-ui-page">
+      <PageHeader kicker="Metas" title="Metas individuais" />
 
-      <div className="fb-goals__main">
-        <HealthDataNotice />
-        {clientsQuery.isLoading && <LoadingState />}
-        {clientsQuery.isError && (
-          <ErrorState
-            message="Não foi possível carregar os alunos."
-            onRetry={() => void clientsQuery.refetch()}
+      <div className="fb-ui-master">
+        <StudentList
+          students={clients}
+          selectedId={clientId}
+          allStudents={allStudents}
+          onSelect={selectClient}
+        />
+
+        <div className="fb-ui-master__detail">
+          <HealthDataNotice />
+          <QueryBlockState
+            query={clientsQuery}
+            hasData={clientsQuery.data !== undefined}
+            loading="Carregando alunos…"
+            error="Não foi possível carregar os alunos."
           />
-        )}
-        {clientsQuery.isSuccess && clients.length === 0 && (
-          <EmptyState
-            message={
-              allStudents ? "Nenhum cliente ativo." : "Você ainda não tem alunos vinculados."
-            }
-          />
-        )}
-        {clientsQuery.isSuccess && clients.length > 0 && !selected && (
-          <>
-            <h1 className="fb-goals__title">Metas individuais</h1>
-            <p className="fb-note">Selecione um aluno para ver e criar metas.</p>
-          </>
-        )}
+          {clientsQuery.isSuccess && clients.length === 0 && (
+            <EmptyState
+              title={allStudents ? "Nenhum cliente ativo." : "Você ainda não tem alunos vinculados."}
+            />
+          )}
+          {clientsQuery.isSuccess && clients.length > 0 && !selected && (
+            <EmptyState title="Selecione um aluno para ver e criar metas." />
+          )}
 
-        {selected && (
-          <>
-            <div className="fb-goals__heading">
-              <span className="fb-page-eyebrow">Metas / {selected.fullName}</span>
-              <h1 className="fb-goals__title">Metas individuais</h1>
-            </div>
-
-            <div className="fb-lock-banner fb-goals__banner" role="note">
-              <span>
+          {selected && (
+            <section aria-labelledby={listTitleId} className="fb-ui-goals">
+              <p role="note" className="fb-ui-notice">
                 A pontuação de gamificação é calculada automaticamente pelo sistema com base na
                 frequência e no progresso do cliente. Os pontos{" "}
-                <strong>não podem ser editados</strong> nesta tela — aqui você define apenas as
-                metas e marca quando são concluídas.
-              </span>
-            </div>
+                <strong>não podem ser editados</strong> nesta tela: aqui você define apenas as metas
+                e marca quando são concluídas.
+              </p>
 
-            {failure && <Feedback tone="error">{failure}</Feedback>}
-            {goalsQuery.isLoading && <LoadingState />}
-            {goalsQuery.isError && (
-              <ErrorState
-                message="Não foi possível carregar as metas."
-                onRetry={() => void goalsQuery.refetch()}
+              <div className="fb-ui-goals__head">
+                <h2 id={listTitleId} ref={listTitleRef} tabIndex={-1} className="fb-ui-goals__title">
+                  Metas de {selected.fullName}
+                </h2>
+                <BlockedAction allowed={canCreate} reason="Você não tem permissão para criar metas.">
+                  <Button size="sm" variant="soft" onClick={() => setDialog({ kind: "create" })}>
+                    + Nova meta
+                  </Button>
+                </BlockedAction>
+              </div>
+
+              <QueryBlockState
+                query={goalsQuery}
+                hasData={goalsQuery.data !== undefined}
+                loading="Carregando metas…"
+                error="Não foi possível carregar as metas."
               />
-            )}
-
-            <section className="fb-goals__section" aria-labelledby="fb-goals-list">
-              <h2 id="fb-goals-list" className="fb-goals__section-title">
-                Metas ativas
-              </h2>
               {goalsQuery.isSuccess && goals.length === 0 && (
-                <EmptyState message="Este aluno ainda não tem metas." />
+                <EmptyState title="Este aluno ainda não tem metas." />
               )}
-              <ul className="fb-goals__list">
-                {goals.map((goal) => (
-                  <GoalCard
-                    key={goal.id}
-                    goal={goal}
-                    canEdit={canEdit}
-                    busy={busy}
-                    onEdit={() => setEditing(goal)}
-                    onComplete={() => completeMutation.mutate(goal.id)}
-                    onCancel={() => cancelMutation.mutate(goal.id)}
-                  />
-                ))}
-              </ul>
+              {goals.length > 0 && (
+                <ul className="fb-ui-goals__list">
+                  {goals.map((goal) => (
+                    <GoalCard
+                      key={goal.id}
+                      goal={goal}
+                      canEdit={canEdit}
+                      onAction={(action) => act(goal, action)}
+                    />
+                  ))}
+                </ul>
+              )}
             </section>
-
-            <GoalForm
-              key={editing?.id ?? "new"}
-              editing={editing}
-              allowed={editing ? canEdit : canCreate}
-              pending={createMutation.isPending || updateMutation.isPending}
-              onCancel={() => setEditing(null)}
-              onSubmit={async (values) => {
-                if (editing) {
-                  await updateMutation.mutateAsync({ id: editing.id, values });
-                } else {
-                  await createMutation.mutateAsync({
-                    clientId,
-                    title: values.title,
-                    ...(values.description ? { description: values.description } : {}),
-                    ...(values.dueDate ? { dueDate: values.dueDate } : {}),
-                  });
-                }
-              }}
-            />
-          </>
-        )}
+          )}
+        </div>
       </div>
+
+      {dialog?.kind === "create" && (
+        <GoalForm clientId={clientId} onClose={() => setDialog(null)} />
+      )}
+      {dialog?.kind === "edit" && (
+        <GoalForm clientId={clientId} goal={dialog.goal} onClose={() => setDialog(null)} />
+      )}
+      {(dialog?.kind === "complete" || dialog?.kind === "cancel") && (
+        <GoalConfirmDialog
+          goal={dialog.goal}
+          action={dialog.kind}
+          onClose={() => setDialog(null)}
+          onDone={() => {
+            setDialog(null);
+            setRefocusList((current) => current + 1);
+          }}
+        />
+      )}
     </div>
   );
 }

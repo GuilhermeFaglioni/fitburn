@@ -44,10 +44,7 @@
   .fb-btn-secondary,
   .fb-btn-danger,
   .fb-btn-danger-text,
-  .fb-btn-dashed,
-  .fb-row-btn,
   .fb-tab-btn,
-  .fb-goals__student,
   .fb-state__retry,
   .fb-workout__back,
   .login-form__input,
@@ -151,22 +148,6 @@
   /* Tabelas: a rolagem horizontal fica dentro do quadro, com colunas que não espremem o texto. */
   .fb-table-wrap table {
     min-width: 520px;
-  }
-
-  /* Metas e Fichas: a coluna de alunos vira uma faixa acima da área principal. */
-  .fb-goals {
-    flex-direction: column;
-  }
-
-  .fb-goals__students {
-    width: 100%;
-    max-height: 260px;
-    border-right: none;
-    border-bottom: 1px solid #eeeeee;
-  }
-
-  .fb-goals__main {
-    padding: 20px 16px;
   }
 
   /* Diálogos: quase tela cheia, campos em coluna única, ações empilhadas. */
