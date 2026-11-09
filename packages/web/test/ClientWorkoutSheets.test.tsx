@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { onlineManager, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { http, HttpResponse } from "msw";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import type { WorkoutSheet } from "@fitburn/contracts";
@@ -107,6 +107,10 @@ function renderAt(path: string) {
 describe("Fichas de treino (cliente)", () => {
   const writes: string[] = [];
 
+  afterEach(() => {
+    onlineManager.setOnline(true);
+  });
+
   beforeEach(() => {
     writes.length = 0;
     mockSuccessfulLogin("Cliente");
@@ -157,6 +161,40 @@ describe("Fichas de treino (cliente)", () => {
       expect(within(rows[0]!).getByText("CONCLUÍDA")).toBeInTheDocument();
       expect(within(rows[1]!).getByText("Avaliação inicial")).toBeInTheDocument();
       expect(within(rows[1]!).getByText("ARQUIVADA")).toBeInTheDocument();
+    });
+
+    it("as fichas anteriores são uma lista de verdade, em cards com nome, professor, exercícios, data e status", async () => {
+      renderAt("/ficha-treino");
+
+      const previous = await screen.findByRole("region", { name: "Fichas anteriores" });
+      const list = within(previous).getByRole("list");
+      expect(list.tagName).toBe("UL");
+      const [fase1, avaliacao] = within(list).getAllByRole("listitem");
+      // Fase 1 não tem exercícios cadastrados no teste: a contagem aparece mesmo assim.
+      expect(within(fase1!).getByText("Prof. Rafael · 0 exercícios")).toBeInTheDocument();
+      expect(within(fase1!).getByText("01/07/2026")).toBeInTheDocument();
+      expect(within(fase1!).getByText("CONCLUÍDA")).toBeInTheDocument();
+      expect(within(avaliacao!).getByText("Prof. Rafael · 0 exercícios")).toBeInTheDocument();
+      expect(within(avaliacao!).getByText("ARQUIVADA")).toBeInTheDocument();
+      // O nome acessível do link é o da ficha; o card inteiro é o alvo (::after no CSS).
+      expect(within(fase1!).getByRole("link")).toHaveAccessibleName("Fase 1");
+    });
+
+    it("a quantidade de exercícios fica no singular quando há um só", async () => {
+      server.use(
+        http.get("/api/workout-sheets/mine", () =>
+          HttpResponse.json([
+            sheet("s-9", {
+              title: "Ficha curta",
+              status: "COMPLETED",
+              exercises: [exercise("e-9", "Remada")],
+            }),
+          ]),
+        ),
+      );
+      renderAt("/ficha-treino");
+
+      expect(await screen.findByText("Prof. Rafael · 1 exercício")).toBeInTheDocument();
     });
 
     it("as fichas anteriores levam ao detalhe; a ficha ativa já está na página", async () => {
@@ -210,6 +248,21 @@ describe("Fichas de treino (cliente)", () => {
       expect(screen.getByRole("region", { name: "Fichas anteriores" })).toBeInTheDocument();
     });
 
+    it("sem fichas, o estado vazio orienta falar com o professor e o título da tela continua", async () => {
+      server.use(http.get("/api/workout-sheets/mine", () => HttpResponse.json([])));
+      renderAt("/ficha-treino");
+
+      const empty = await waitFor(() => {
+        const node = document.querySelector('[data-state="empty"]');
+        expect(node).not.toBeNull();
+        return node as HTMLElement;
+      });
+      expect(empty).toHaveTextContent("Fale com o seu professor para receber a sua.");
+      expect(
+        screen.getByRole("heading", { level: 1, name: "Ficha de treino" }),
+      ).toBeInTheDocument();
+    });
+
     it("mostra um aviso quando não consegue carregar", async () => {
       server.use(
         http.get("/api/workout-sheets/mine", () =>
@@ -221,6 +274,80 @@ describe("Fichas de treino (cliente)", () => {
       expect(await screen.findByRole("alert")).toHaveTextContent(
         "Não foi possível carregar as suas fichas.",
       );
+    });
+
+    it("no erro, 'Tentar novamente' busca de novo e mostra as fichas", async () => {
+      const user = userEvent.setup();
+      let fail = true;
+      server.use(
+        http.get("/api/workout-sheets/mine", () =>
+          fail
+            ? HttpResponse.json({ code: "INTERNAL_ERROR", message: "Erro." }, { status: 500 })
+            : HttpResponse.json([FASE_2]),
+        ),
+      );
+      renderAt("/ficha-treino");
+      const retry = await screen.findByRole("button", { name: "Tentar novamente" });
+      fail = false;
+      await user.click(retry);
+
+      expect(await screen.findByRole("heading", { level: 2, name: "Fase 2" })).toBeInTheDocument();
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    });
+
+    it("enquanto carrega, mostra o estado de carregando com o título da tela", async () => {
+      server.use(
+        http.get("/api/workout-sheets/mine", async () => {
+          await new Promise((resolve) => setTimeout(resolve, 150));
+          return HttpResponse.json([FASE_2]);
+        }),
+      );
+      renderAt("/ficha-treino");
+
+      expect(await screen.findByText("Carregando…")).toBeInTheDocument();
+      expect(document.querySelector('[data-state="loading"]')).toHaveAttribute("role", "status");
+      expect(await screen.findByRole("heading", { level: 2, name: "Fase 2" })).toBeInTheDocument();
+      expect(screen.queryByText("Carregando…")).not.toBeInTheDocument();
+    });
+
+    it("sem rede mostra o estado offline com a ação de tentar de novo, não um erro", async () => {
+      onlineManager.setOnline(false);
+      renderAt("/ficha-treino");
+
+      const offline = await waitFor(() => {
+        const node = document.querySelector('[data-state="offline"]');
+        expect(node).not.toBeNull();
+        return node as HTMLElement;
+      });
+      expect(offline).toHaveTextContent("Sem conexão");
+      expect(within(offline).getByRole("button", { name: "Tentar novamente" })).toBeInTheDocument();
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+      expect(
+        screen.getByRole("heading", { level: 1, name: "Ficha de treino" }),
+      ).toBeInTheDocument();
+    });
+
+    it("quando a rede volta, as fichas carregam sozinhas", async () => {
+      onlineManager.setOnline(false);
+      renderAt("/ficha-treino");
+      await waitFor(() => expect(document.querySelector('[data-state="offline"]')).not.toBeNull());
+
+      onlineManager.setOnline(true);
+
+      expect(await screen.findByRole("heading", { level: 2, name: "Fase 2" })).toBeInTheDocument();
+      expect(document.querySelector('[data-state="offline"]')).toBeNull();
+    });
+
+    it("os títulos seguem a ordem: h1 da tela, h2 de cada ficha e de 'Fichas anteriores', h3 dos exercícios", async () => {
+      renderAt("/ficha-treino");
+      await screen.findByRole("heading", { level: 2, name: "Fase 2" });
+
+      const levels = screen.getAllByRole("heading").map((heading) => Number(heading.tagName[1]));
+      expect(levels.filter((level) => level === 1)).toHaveLength(1);
+      expect(levels[0]).toBe(1);
+      for (let i = 1; i < levels.length; i += 1) {
+        expect(levels[i]! - levels[i - 1]!).toBeLessThanOrEqual(1);
+      }
     });
   });
 
@@ -277,11 +404,67 @@ describe("Fichas de treino (cliente)", () => {
       );
     });
 
+    it("o link de voltar tem nome acessível que contém o texto visível", async () => {
+      renderAt("/ficha-treino/s-2");
+      await screen.findByRole("heading", { name: "Fase 2" });
+
+      const back = screen.getByRole("link", { name: "Voltar para Fichas de treino" });
+      expect(back).toHaveAttribute("href", "/ficha-treino");
+      expect(back).toHaveTextContent("Fichas de treino");
+    });
+
+    it("a ficha ativa traz o selo ATIVA em destaque (ok), com o status escrito no texto", async () => {
+      renderAt("/ficha-treino/s-2");
+      expect(await screen.findByText("ATIVA")).toHaveClass("fb-ui-badge--ok");
+    });
+
+    it("a observação geral fica depois dos exercícios", async () => {
+      renderAt("/ficha-treino/s-2");
+      const list = await screen.findByRole("list", { name: "Exercícios" });
+      const note = screen.getByText("Aquecer 10 minutos antes de começar.");
+
+      expect(list.compareDocumentPosition(note) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+
+    it("ficha sem exercícios mostra o estado vazio", async () => {
+      server.use(
+        http.get("/api/workout-sheets/mine/:id", () =>
+          HttpResponse.json(sheet("s-7", { title: "Vazia" })),
+        ),
+      );
+      renderAt("/ficha-treino/s-7");
+
+      expect(await screen.findByText("Esta ficha ainda não tem exercícios.")).toBeInTheDocument();
+      expect(screen.queryByRole("list", { name: "Exercícios" })).not.toBeInTheDocument();
+    });
+
+    it("enquanto carrega mostra o estado de carregando", async () => {
+      server.use(
+        http.get("/api/workout-sheets/mine/:id", async () => {
+          await new Promise((resolve) => setTimeout(resolve, 150));
+          return HttpResponse.json(FASE_2);
+        }),
+      );
+      renderAt("/ficha-treino/s-2");
+      expect(await screen.findByText("Carregando a ficha…")).toBeInTheDocument();
+      expect(await screen.findByRole("heading", { level: 2, name: "Fase 2" })).toBeInTheDocument();
+    });
+
+    it("sem rede mostra o estado offline e mantém o link de voltar", async () => {
+      onlineManager.setOnline(false);
+      renderAt("/ficha-treino/s-2");
+
+      await waitFor(() => expect(document.querySelector('[data-state="offline"]')).not.toBeNull());
+      expect(
+        screen.getByRole("link", { name: "Voltar para Fichas de treino" }),
+      ).toBeInTheDocument();
+    });
+
     it("uma ficha concluída ou arquivada continua legível, com o seu status", async () => {
       renderAt("/ficha-treino/s-0");
 
       expect(await screen.findByRole("heading", { name: "Avaliação inicial" })).toBeInTheDocument();
-      expect(screen.getByText("ARQUIVADA")).toBeInTheDocument();
+      expect(screen.getByText("ARQUIVADA")).toHaveClass("fb-ui-badge--neutral");
     });
 
     it("ficha inexistente mostra uma mensagem clara", async () => {

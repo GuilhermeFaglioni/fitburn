@@ -9,13 +9,13 @@ import {
 } from "@fitburn/contracts";
 import { BackIcon } from "../components/icons/BackIcon";
 import { EmptyState, ErrorState, LoadingState } from "../components/states";
-import { formatClassDay, formatInstantDate, formatInstantHour } from "../lib/agenda/format";
+import { formatClassDay, formatInstantHour } from "../lib/agenda/format";
 import { getAttendanceRoster } from "../lib/attendance/api";
 import { ApiError } from "../lib/auth/api";
 import { useAuth } from "../lib/auth/AuthContext";
 import { listWorkoutSheets } from "../lib/workout-sheets/api";
 import { ClientSheetView } from "./workout-sheets/ClientSheetView";
-import { statusBadge } from "./workout-sheets/status";
+import { PreviousSheetItem } from "./workout-sheets/PreviousSheetItem";
 
 function sheetsErrorMessage(error: unknown): string {
   if (error instanceof ApiError && error.code === ErrorCode.OUT_OF_SCOPE) {
@@ -125,24 +125,12 @@ export function ClassStudentSheetPage() {
             <ul className="fb-workout__previous">
               {previous.map((sheet) => (
                 <li key={sheet.id}>
-                  <Link
+                  <PreviousSheetItem
+                    sheet={sheet}
                     to={`?ficha=${sheet.id}`}
                     state={{ from }}
                     replace
-                    className={`fb-workout__row${
-                      sheet.status === WorkoutSheetStatus.ARCHIVED
-                        ? " fb-workout__row--archived"
-                        : ""
-                    }`}
-                  >
-                    <span className="fb-workout__row-text">
-                      <span className="fb-workout__row-title">{sheet.title}</span>
-                      <span className="fb-workout__row-date">
-                        {formatInstantDate(sheet.createdAt)}
-                      </span>
-                    </span>
-                    <span className="fb-workout__row-status">{statusBadge(sheet.status)}</span>
-                  </Link>
+                  />
                 </li>
               ))}
             </ul>
