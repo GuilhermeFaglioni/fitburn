@@ -595,6 +595,12 @@ describe("Fichas de treino (professor)", () => {
     await user.click(screen.getByRole("button", { name: "+ Adicionar exercício" }));
 
     await user.click(screen.getByRole("button", { name: "Cancelar" }));
+    await user.click(
+      within(screen.getByRole("dialog", { name: "Descartar alterações não salvas?" })).getByRole(
+        "button",
+        { name: "Descartar alterações" },
+      ),
+    );
 
     expect(screen.getByLabelText("Título")).toHaveValue("");
     expect(screen.queryByRole("group", { name: /^Exercício \d+$/ })).not.toBeInTheDocument();
@@ -605,10 +611,171 @@ describe("Fichas de treino (professor)", () => {
     await user.type(screen.getByLabelText("Título"), "Ficha da Marina");
 
     await user.click(screen.getByRole("button", { name: "Camila Ferreira" }));
+    await user.click(
+      within(screen.getByRole("dialog", { name: "Descartar alterações não salvas?" })).getByRole(
+        "button",
+        { name: "Descartar alterações" },
+      ),
+    );
 
     expect(await screen.findByRole("heading", { name: /Fichas de Camila Ferreira/ })).toBeVisible();
     expect(screen.getByLabelText("Título")).toHaveValue("");
     expect(screen.queryByRole("heading", { name: /Fichas de Marina Souza/ })).not.toBeInTheDocument();
+  });
+
+  describe("alterações não salvas no editor", () => {
+    const DISCARD = "Descartar alterações não salvas?";
+    const discardDialog = () => screen.getByRole("dialog", { name: DISCARD });
+    const noDiscardDialog = () =>
+      expect(screen.queryByRole("dialog", { name: DISCARD })).not.toBeInTheDocument();
+
+    it("trocar de aluno com o editor limpo segue direto, sem diálogo", async () => {
+      const user = await openMarina();
+
+      await user.click(screen.getByRole("button", { name: "Camila Ferreira" }));
+
+      expect(await screen.findByRole("heading", { name: /Fichas de Camila Ferreira/ })).toBeVisible();
+      noDiscardDialog();
+    });
+
+    it("trocar de aluno com rascunho pede confirmação, com o foco em 'Continuar editando'", async () => {
+      const user = await openMarina();
+      await user.type(screen.getByLabelText("Título"), "Ficha da Marina");
+
+      await user.click(screen.getByRole("button", { name: "Camila Ferreira" }));
+
+      const dialog = discardDialog();
+      expect(within(dialog).getByRole("button", { name: "Continuar editando" })).toHaveFocus();
+      // Nada foi descartado enquanto o diálogo está aberto.
+      expect(screen.getByLabelText("Título")).toHaveValue("Ficha da Marina");
+      expect(screen.getByRole("heading", { name: /Fichas de Marina Souza/ })).toBeVisible();
+    });
+
+    it("'Continuar editando' e Escape mantêm o aluno e o que foi digitado", async () => {
+      const user = await openMarina();
+      await user.type(screen.getByLabelText("Título"), "Ficha da Marina");
+      await user.click(screen.getByRole("button", { name: "+ Adicionar exercício" }));
+      await user.type(screen.getByLabelText("Exercício"), "Remo");
+
+      await user.click(screen.getByRole("button", { name: "Camila Ferreira" }));
+      await user.click(within(discardDialog()).getByRole("button", { name: "Continuar editando" }));
+      noDiscardDialog();
+      expect(screen.getByLabelText("Título")).toHaveValue("Ficha da Marina");
+      expect(screen.getByLabelText("Exercício")).toHaveValue("Remo");
+
+      await user.click(screen.getByRole("button", { name: "Camila Ferreira" }));
+      await user.keyboard("{Escape}");
+      noDiscardDialog();
+      expect(screen.getByLabelText("Título")).toHaveValue("Ficha da Marina");
+      expect(screen.getByRole("heading", { name: /Fichas de Marina Souza/ })).toBeVisible();
+    });
+
+    it("em ficha nova, mudar só o status ou só adicionar um exercício em branco já conta como alteração", async () => {
+      const user = await openMarina();
+      await user.selectOptions(screen.getByLabelText("Status"), "ARCHIVED");
+      await user.click(screen.getByRole("button", { name: "Camila Ferreira" }));
+      expect(discardDialog()).toBeVisible();
+      await user.click(within(discardDialog()).getByRole("button", { name: "Continuar editando" }));
+
+      // Voltando o status ao inicial, o editor fica limpo de novo.
+      await user.selectOptions(screen.getByLabelText("Status"), "ACTIVE");
+      await user.click(screen.getByRole("button", { name: "+ Adicionar exercício" }));
+      await user.click(screen.getByRole("button", { name: "Camila Ferreira" }));
+      expect(discardDialog()).toBeVisible();
+    });
+
+    it("voltar ao que estava antes de digitar deixa o editor limpo", async () => {
+      const user = await openMarina();
+      await user.type(screen.getByLabelText("Título"), "a");
+      await user.clear(screen.getByLabelText("Título"));
+
+      await user.click(screen.getByRole("button", { name: "Camila Ferreira" }));
+
+      expect(await screen.findByRole("heading", { name: /Fichas de Camila Ferreira/ })).toBeVisible();
+      noDiscardDialog();
+    });
+
+    it("Cancelar numa ficha nova limpa pede confirmação só quando há rascunho", async () => {
+      const user = await openMarina();
+
+      await user.click(screen.getByRole("button", { name: "Cancelar" }));
+      noDiscardDialog();
+
+      await user.type(screen.getByLabelText("Observações gerais"), "Cuidado com o joelho.");
+      await user.click(screen.getByRole("button", { name: "Cancelar" }));
+      await user.click(within(discardDialog()).getByRole("button", { name: "Continuar editando" }));
+      expect(screen.getByLabelText("Observações gerais")).toHaveValue("Cuidado com o joelho.");
+    });
+
+    it("ficha existente sem alteração: Nova ficha e Editar outra ficha seguem direto", async () => {
+      const user = await openMarina();
+      await screen.findByRole("table", { name: "Fichas de Marina Souza" });
+      await editFirstSheet(user);
+
+      await user.click(screen.getByRole("button", { name: "Editar ficha Fase 1" }));
+      expect(await screen.findByRole("heading", { name: "Editar ficha — Fase 1" })).toBeVisible();
+      noDiscardDialog();
+
+      await user.click(screen.getByRole("button", { name: "+ Nova ficha (nova fase)" }));
+      expect(screen.getByRole("heading", { name: "Nova ficha" })).toBeVisible();
+      noDiscardDialog();
+    });
+
+    it("ficha existente alterada: Nova ficha e Editar outra ficha pedem confirmação", async () => {
+      const user = await openMarina();
+      await screen.findByRole("table", { name: "Fichas de Marina Souza" });
+      await editFirstSheet(user);
+      await user.type(screen.getByLabelText("Título"), " revisada");
+
+      await user.click(screen.getByRole("button", { name: "+ Nova ficha (nova fase)" }));
+      await user.click(within(discardDialog()).getByRole("button", { name: "Continuar editando" }));
+      expect(screen.getByRole("heading", { name: "Editar ficha — Fase 2" })).toBeVisible();
+      expect(screen.getByLabelText("Título")).toHaveValue("Fase 2 revisada");
+
+      await user.click(screen.getByRole("button", { name: "Editar ficha Fase 1" }));
+      expect(discardDialog()).toBeVisible();
+      await user.click(within(discardDialog()).getByRole("button", { name: "Descartar alterações" }));
+      expect(await screen.findByRole("heading", { name: "Editar ficha — Fase 1" })).toBeVisible();
+      expect(screen.getByLabelText("Título")).toHaveValue("Fase 1");
+    });
+
+    it("remover ou reordenar exercício de uma ficha existente também conta como alteração", async () => {
+      const user = await openMarina();
+      await screen.findByRole("table", { name: "Fichas de Marina Souza" });
+      await editFirstSheet(user);
+
+      await user.click(screen.getByRole("button", { name: "Descer exercício Agachamento livre" }));
+      await user.click(screen.getByRole("button", { name: "Camila Ferreira" }));
+      expect(discardDialog()).toBeVisible();
+    });
+
+    it("depois de salvar com sucesso, trocar de aluno segue direto", async () => {
+      const user = await openMarina();
+      await user.type(screen.getByLabelText("Título"), "Fase 3");
+      await user.click(screen.getByRole("button", { name: "Salvar ficha" }));
+      await waitFor(() => expect(calls).toHaveLength(1));
+      await waitFor(() => expect(screen.getByLabelText("Título")).toHaveValue(""));
+
+      await user.click(screen.getByRole("button", { name: "Camila Ferreira" }));
+
+      expect(await screen.findByRole("heading", { name: /Fichas de Camila Ferreira/ })).toBeVisible();
+      noDiscardDialog();
+    });
+
+    it("depois de salvar uma ficha em edição, Nova ficha e trocar de aluno seguem direto", async () => {
+      const user = await openMarina();
+      await screen.findByRole("table", { name: "Fichas de Marina Souza" });
+      await editFirstSheet(user);
+      await user.type(screen.getByLabelText("Título"), " revisada");
+      await user.click(screen.getByRole("button", { name: "Salvar ficha" }));
+      await waitFor(() => expect(calls).toHaveLength(1));
+      await screen.findByRole("heading", { name: "Nova ficha" });
+
+      await user.click(screen.getByRole("button", { name: "Camila Ferreira" }));
+
+      expect(await screen.findByRole("heading", { name: /Fichas de Camila Ferreira/ })).toBeVisible();
+      noDiscardDialog();
+    });
   });
 
   it("mostra o motivo quando a API recusa o salvamento e mantém o que foi digitado", async () => {

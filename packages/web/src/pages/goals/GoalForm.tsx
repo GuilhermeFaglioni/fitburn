@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createGoalRequestSchema, type GoalDetail } from "@fitburn/contracts";
 import { Alert } from "../../components/ui/Alert";
@@ -23,6 +23,9 @@ type FieldErrors = { title?: string; description?: string; dueDate?: string };
  * (título obrigatório de até 120 caracteres, descrição de até 500) aparecem no campo, com `aria-invalid`; o foco vai
  * ao primeiro campo com erro. A recusa da API fica no aviso do próprio diálogo, que continua aberto com o que foi
  * digitado. No sucesso, as metas são recarregadas e o diálogo fecha.
+ *
+ * Idempotência: `inFlight` (ref síncrona) bloqueia o segundo envio do mesmo tick, antes de `isPending` chegar na tela,
+ * e Escape, o fundo e "Cancelar" não fecham o diálogo enquanto o envio está em voo.
  */
 export function GoalForm({ clientId, goal, onClose }: GoalFormProps) {
   const queryClient = useQueryClient();
@@ -30,6 +33,7 @@ export function GoalForm({ clientId, goal, onClose }: GoalFormProps) {
   const [description, setDescription] = useState(goal?.description ?? "");
   const [dueDate, setDueDate] = useState(goal?.dueDate ?? "");
   const [errors, setErrors] = useState<FieldErrors>({});
+  const inFlight = useRef(false);
 
   const saveMutation = useMutation({
     mutationFn: () =>
@@ -45,14 +49,23 @@ export function GoalForm({ clientId, goal, onClose }: GoalFormProps) {
             ...(description.trim() ? { description: description.trim() } : {}),
             ...(dueDate ? { dueDate } : {}),
           }),
+    onSettled: () => {
+      inFlight.current = false;
+    },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["goals"] });
       onClose();
     },
   });
 
+  function close() {
+    if (inFlight.current) return;
+    onClose();
+  }
+
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (inFlight.current) return;
     const parsed = createGoalRequestSchema.safeParse({
       clientId,
       title,
@@ -75,11 +88,12 @@ export function GoalForm({ clientId, goal, onClose }: GoalFormProps) {
       return;
     }
     setErrors({});
+    inFlight.current = true;
     saveMutation.mutate();
   }
 
   return (
-    <Dialog title={goal ? "Editar meta" : "Nova meta"} onClose={onClose}>
+    <Dialog title={goal ? "Editar meta" : "Nova meta"} onClose={close}>
       <form onSubmit={submit} noValidate aria-label="Meta" className="fb-ui-dialog__form">
         <Field
           label="Título"
@@ -114,7 +128,7 @@ export function GoalForm({ clientId, goal, onClose }: GoalFormProps) {
           </Alert>
         )}
         <div className="fb-ui-dialog__actions">
-          <Button disabled={saveMutation.isPending} onClick={onClose}>
+          <Button disabled={saveMutation.isPending} onClick={close}>
             Cancelar
           </Button>
           <Button type="submit" variant="primary" busy={saveMutation.isPending}>

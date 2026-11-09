@@ -1,4 +1,4 @@
-import { useId, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -12,6 +12,7 @@ import { Alert } from "../components/ui/Alert";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
+import { Dialog } from "../components/ui/Dialog";
 import { PageHeader } from "../components/ui/PageHeader";
 import { EmptyState } from "../components/ui/States";
 import { Table, type TableColumn } from "../components/ui/Table";
@@ -49,6 +50,10 @@ export function WorkoutSheetsPage() {
   const [failure, setFailure] = useState<string | null>(null);
   /** Sobe a cada ficha salva ou descartada: o editor recomeça em branco. */
   const [formVersion, setFormVersion] = useState(0);
+  /** O editor tem alterações não salvas? Ele avisa por `onDirtyChange`; trocar de contexto só segue direto se não. */
+  const dirtyRef = useRef(false);
+  /** A troca que espera a confirmação de descarte (trocar de aluno, abrir outra ficha, nova ficha, cancelar). */
+  const [discarding, setDiscarding] = useState<(() => void) | null>(null);
 
   const clientsQuery = useQuery({
     queryKey: ["workout-sheet-clients"],
@@ -78,6 +83,7 @@ export function WorkoutSheetsPage() {
           }),
     onMutate: () => setFailure(null),
     onSuccess: () => {
+      dirtyRef.current = false;
       setEditing(null);
       setFormVersion((current) => current + 1);
       return queryClient.invalidateQueries({ queryKey: ["workout-sheets"] });
@@ -95,17 +101,33 @@ export function WorkoutSheetsPage() {
     user?.permissions.find((permission) => permission.module === Module.FICHAS_DE_TREINO)?.scope ===
     PermissionScope.ALL;
 
+  /** Executa a troca; se o editor tem alterações não salvas, antes pede a confirmação em diálogo. */
+  function guarded(change: () => void) {
+    if (dirtyRef.current) setDiscarding(() => change);
+    else change();
+  }
+
+  function confirmDiscard() {
+    const change = discarding;
+    setDiscarding(null);
+    change?.();
+  }
+
   function selectClient(id: string) {
-    setClientId(id);
-    setEditing(null);
-    setFailure(null);
-    setFormVersion((current) => current + 1);
+    guarded(() => {
+      setClientId(id);
+      setEditing(null);
+      setFailure(null);
+      setFormVersion((current) => current + 1);
+    });
   }
 
   function edit(sheet: WorkoutSheet | null) {
-    setEditing(sheet);
-    setFailure(null);
-    setFormVersion((current) => current + 1);
+    guarded(() => {
+      setEditing(sheet);
+      setFailure(null);
+      setFormVersion((current) => current + 1);
+    });
   }
 
   const columns: TableColumn<WorkoutSheet>[] = [
@@ -198,6 +220,9 @@ export function WorkoutSheetsPage() {
                   allowed={editing ? canEdit : canCreate}
                   pending={mutation.isPending}
                   onCancel={() => edit(null)}
+                  onDirtyChange={(dirty) => {
+                    dirtyRef.current = dirty;
+                  }}
                   onSubmit={async (values) => {
                     await mutation.mutateAsync(values);
                   }}
@@ -230,6 +255,22 @@ export function WorkoutSheetsPage() {
           )}
         </div>
       </div>
+
+      {discarding && (
+        <Dialog
+          title="Descartar alterações não salvas?"
+          description="A ficha tem alterações que ainda não foram salvas. Se continuar, elas se perdem."
+          onClose={() => setDiscarding(null)}
+          actions={
+            <>
+              <Button onClick={() => setDiscarding(null)}>Continuar editando</Button>
+              <Button variant="danger" onClick={confirmDiscard}>
+                Descartar alterações
+              </Button>
+            </>
+          }
+        />
+      )}
     </div>
   );
 }

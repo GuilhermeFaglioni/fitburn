@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type FormEvent } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from "react";
 import {
   MAX_WORKOUT_EXERCISES,
   WorkoutSheetStatus,
@@ -16,6 +16,13 @@ import { Field } from "../../components/ui/Field";
 import { Select } from "../../components/ui/Select";
 import { EmptyState } from "../../components/ui/States";
 import { Textarea } from "../../components/ui/Textarea";
+import {
+  EXERCISE_FIELDS,
+  draftFromSheet,
+  isDraftDirty,
+  type ExerciseDraft,
+  type ExerciseField,
+} from "./draft";
 import { STATUS_LABEL } from "./status";
 
 export interface SheetFormValues {
@@ -26,13 +33,6 @@ export interface SheetFormValues {
   exercises: WorkoutExerciseInput[];
 }
 
-type ExerciseField = "name" | "sets" | "reps" | "load" | "duration" | "distance" | "notes";
-
-interface ExerciseDraft extends Record<ExerciseField, string> {
-  /** Identidade da linha na tela, para reordenar sem perder o que foi digitado. */
-  key: number;
-}
-
 /** Os campos curtos de cada exercício, na ordem da tela. O nome e as observações ocupam a linha toda. */
 const SHORT_FIELDS = [
   { field: "sets", label: "Séries" },
@@ -41,12 +41,6 @@ const SHORT_FIELDS = [
   { field: "duration", label: "Tempo" },
   { field: "distance", label: "Distância" },
 ] as const;
-
-const EXERCISE_FIELDS: readonly ExerciseField[] = [
-  "name",
-  ...SHORT_FIELDS.map(({ field }) => field),
-  "notes",
-];
 
 type RowErrors = Partial<Record<ExerciseField, string>>;
 
@@ -68,6 +62,8 @@ interface SheetEditorProps {
   onCancel: () => void;
   /** Rejeita se a API recusou: a tela mostra o motivo e o formulário mantém o que foi digitado. */
   onSubmit: (values: SheetFormValues) => Promise<void>;
+  /** Avisa quando o editor passa a ter (ou deixa de ter) alterações não salvas; chega `false` ao montar. */
+  onDirtyChange?: (dirty: boolean) => void;
 }
 
 function blankRow(key: number): ExerciseDraft {
@@ -92,26 +88,21 @@ function rowName(row: ExerciseDraft, index: number): string {
  * Validação com o schema do contrato (título obrigatório e os limites de tamanho): o erro aparece no campo, com
  * `aria-invalid`, e o foco vai ao primeiro campo com erro. A recusa da API fica a cargo de quem chama.
  */
-export function SheetEditor({ editing, allowed, pending, onCancel, onSubmit }: SheetEditorProps) {
+export function SheetEditor({
+  editing,
+  allowed,
+  pending,
+  onCancel,
+  onSubmit,
+  onDirtyChange,
+}: SheetEditorProps) {
   const id = useId();
-  const [nextKey, setNextKey] = useState(() => (editing?.exercises.length ?? 0) + 1);
-  const [title, setTitle] = useState(editing?.title ?? "");
-  const [notes, setNotes] = useState(editing?.notes ?? "");
-  const [status, setStatus] = useState<WorkoutSheetStatusName>(
-    editing?.status ?? WorkoutSheetStatus.ACTIVE,
-  );
-  const [rows, setRows] = useState<ExerciseDraft[]>(() =>
-    (editing?.exercises ?? []).map((exercise, index) => ({
-      key: index + 1,
-      name: exercise.name,
-      sets: exercise.sets ?? "",
-      reps: exercise.reps ?? "",
-      load: exercise.load ?? "",
-      duration: exercise.duration ?? "",
-      distance: exercise.distance ?? "",
-      notes: exercise.notes ?? "",
-    })),
-  );
+  const [initial] = useState(() => draftFromSheet(editing));
+  const [nextKey, setNextKey] = useState(initial.rows.length + 1);
+  const [title, setTitle] = useState(initial.title);
+  const [notes, setNotes] = useState(initial.notes);
+  const [status, setStatus] = useState<WorkoutSheetStatusName>(initial.status);
+  const [rows, setRows] = useState<ExerciseDraft[]>(initial.rows);
   const [errors, setErrors] = useState<FormErrors>(NO_ERRORS);
   const [removing, setRemoving] = useState<number | null>(null);
 
@@ -119,6 +110,16 @@ export function SheetEditor({ editing, allowed, pending, onCancel, onSubmit }: S
   const addRef = useRef<HTMLButtonElement>(null);
   /** Quem recebe o foco depois da próxima mudança nas linhas (adicionar, mover, remover). */
   const focusAfterRef = useRef<(() => HTMLElement | null) | null>(null);
+
+  const dirty = useMemo(
+    () => isDraftDirty(initial, { title, notes, status, rows }),
+    [initial, title, notes, status, rows],
+  );
+  const onDirtyChangeRef = useRef(onDirtyChange);
+  onDirtyChangeRef.current = onDirtyChange;
+  useEffect(() => {
+    onDirtyChangeRef.current?.(dirty);
+  }, [dirty]);
 
   useEffect(() => {
     const find = focusAfterRef.current;

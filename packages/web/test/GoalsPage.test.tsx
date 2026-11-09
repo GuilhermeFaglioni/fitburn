@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider, onlineManager } from "@tanstack/react-query";
 import { http, HttpResponse } from "msw";
@@ -425,6 +425,166 @@ describe("Metas individuais (professor)", () => {
       expect(within(card("Frequentar 12 aulas no mês")).getByText("CANCELADA")).toBeInTheDocument(),
     );
     expect(calls).toEqual([{ method: "POST", path: "/api/goals/g-1/cancel" }]);
+  });
+
+  describe("envio em voo (idempotência)", () => {
+    /** Segura a resposta da API até o teste liberar, para o envio ficar em voo. */
+    function gate() {
+      let release!: () => void;
+      const promise = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      return { promise, release };
+    }
+
+    /** Dois cliques no mesmo tick: dentro de um só `act`, sem renderizar entre um e outro. */
+    function clickTwice(button: HTMLElement) {
+      act(() => {
+        button.click();
+        button.click();
+      });
+    }
+
+    it.each([
+      ["Concluir", "Confirmar conclusão", "complete"],
+      ["Cancelar meta", "Confirmar cancelamento", "cancel"],
+    ] as const)(
+      "dois cliques rápidos em '%s' geram uma só chamada, e Escape não fecha o diálogo em voo",
+      async (menuItem, confirm, endpoint) => {
+        const held = gate();
+        server.use(
+          http.post(`/api/goals/:id/${endpoint}`, async ({ params }) => {
+            calls.push({ method: "POST", path: `/api/goals/${String(params.id)}/${endpoint}` });
+            await held.promise;
+            goals = goals.map((item) =>
+              item.id === params.id
+                ? { ...item, status: endpoint === "complete" ? "COMPLETED" : "CANCELLED" }
+                : item,
+            );
+            return HttpResponse.json(goals.find((item) => item.id === params.id));
+          }),
+        );
+        const user = await openMarina();
+        await pickAction(user, "Frequentar 12 aulas no mês", menuItem);
+        const dialog = screen.getByRole("dialog");
+
+        clickTwice(within(dialog).getByRole("button", { name: confirm }));
+
+        await waitFor(() => expect(calls).toHaveLength(1));
+        // Em voo: Escape, o fundo e "Voltar" não fecham o diálogo.
+        await user.keyboard("{Escape}");
+        fireEvent.mouseDown(dialog.parentElement!);
+        expect(screen.getByRole("dialog")).toBeInTheDocument();
+        expect(within(dialog).getByRole("button", { name: "Voltar" })).toBeDisabled();
+
+        held.release();
+        await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+        expect(calls).toHaveLength(1);
+      },
+    );
+
+    it("se a API recusa, o diálogo continua aberto e dá para tentar de novo", async () => {
+      let attempt = 0;
+      server.use(
+        http.post("/api/goals/:id/complete", ({ params }) => {
+          attempt += 1;
+          calls.push({ method: "POST", path: `/api/goals/${String(params.id)}/complete` });
+          if (attempt === 1) {
+            return HttpResponse.json({ code: "ERRO", message: "Falhou." }, { status: 409 });
+          }
+          goals = goals.map((item) =>
+            item.id === params.id ? { ...item, status: "COMPLETED" } : item,
+          );
+          return HttpResponse.json(goals.find((item) => item.id === params.id));
+        }),
+      );
+      const user = await openMarina();
+      await pickAction(user, "Frequentar 12 aulas no mês", "Concluir");
+      const dialog = screen.getByRole("dialog");
+
+      await user.click(within(dialog).getByRole("button", { name: "Confirmar conclusão" }));
+      expect(await within(dialog).findByRole("alert")).toHaveTextContent("Falhou.");
+      // Depois da recusa o envio sai de voo e o botão volta a enviar.
+      await user.click(within(dialog).getByRole("button", { name: "Confirmar conclusão" }));
+
+      await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+      expect(calls).toHaveLength(2);
+    });
+
+    it("dois envios rápidos do formulário criam uma só meta, e Escape não fecha o diálogo em voo", async () => {
+      const held = gate();
+      server.use(
+        http.post("/api/goals", async ({ request }) => {
+          const body = (await request.json()) as { clientId: string; title: string };
+          calls.push({ method: "POST", path: "/api/goals", body });
+          await held.promise;
+          const created = goal(`g-${goals.length + 1}`, { clientId: body.clientId, title: body.title });
+          goals.push(created);
+          return HttpResponse.json(created, { status: 201 });
+        }),
+      );
+      const user = await openMarina();
+      await user.click(screen.getByRole("button", { name: "+ Nova meta" }));
+      await user.type(screen.getByLabelText("Título"), "Meta nova");
+      const dialog = screen.getByRole("dialog", { name: "Nova meta" });
+
+      act(() => {
+        const form = within(dialog).getByRole("form", { name: "Meta" }) as HTMLFormElement;
+        form.requestSubmit();
+        form.requestSubmit();
+      });
+
+      await waitFor(() => expect(calls).toHaveLength(1));
+      await user.keyboard("{Escape}");
+      fireEvent.mouseDown(dialog.parentElement!);
+      expect(screen.getByRole("dialog", { name: "Nova meta" })).toBeInTheDocument();
+      expect(within(dialog).getByRole("button", { name: "Cancelar" })).toBeDisabled();
+
+      held.release();
+      await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+      expect(calls).toHaveLength(1);
+    });
+
+    it("dois envios rápidos da edição salvam uma só vez", async () => {
+      const held = gate();
+      server.use(
+        http.patch("/api/goals/:id", async ({ params, request }) => {
+          const body = (await request.json()) as Partial<GoalDetail>;
+          calls.push({ method: "PATCH", path: `/api/goals/${String(params.id)}`, body });
+          await held.promise;
+          goals = goals.map((item) => (item.id === params.id ? { ...item, ...body } : item));
+          return HttpResponse.json(goals.find((item) => item.id === params.id));
+        }),
+      );
+      const user = await openMarina();
+      await pickAction(user, "Frequentar 12 aulas no mês", "Editar");
+      const dialog = screen.getByRole("dialog", { name: "Editar meta" });
+      await user.type(within(dialog).getByLabelText("Título"), " (ajustada)");
+
+      act(() => {
+        const form = within(dialog).getByRole("form", { name: "Meta" }) as HTMLFormElement;
+        form.requestSubmit();
+        form.requestSubmit();
+      });
+
+      await waitFor(() => expect(calls).toHaveLength(1));
+      await user.keyboard("{Escape}");
+      expect(screen.getByRole("dialog", { name: "Editar meta" })).toBeInTheDocument();
+
+      held.release();
+      await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+      expect(calls).toHaveLength(1);
+    });
+
+    it("com o formulário parado (sem envio), Escape ainda fecha o diálogo", async () => {
+      const user = await openMarina();
+      await user.click(screen.getByRole("button", { name: "+ Nova meta" }));
+
+      await user.keyboard("{Escape}");
+
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+      expect(calls).toEqual([]);
+    });
   });
 
   it("a administração, com acesso a todos os clientes, vê a lista como de todos os alunos", async () => {
