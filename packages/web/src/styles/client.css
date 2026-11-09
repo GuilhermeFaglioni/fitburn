@@ -161,46 +161,6 @@
   color: rgba(255, 255, 255, 0.7);
 }
 
-/* Controle "Próximas | Histórico". */
-.fb-client-tabs {
-  display: flex;
-  gap: 4px;
-  background: var(--color-surface-raised);
-  border-radius: var(--radius-sm);
-  padding: 4px;
-}
-
-.fb-client-tab-btn {
-  box-sizing: border-box;
-  padding: 8px 18px;
-  border: none;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  font-family: var(--font-sans);
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--color-text-muted-on-dark);
-  cursor: pointer;
-}
-
-.fb-client-tab-btn[aria-pressed="true"] {
-  background: var(--color-primary-orange);
-  color: var(--color-ink-on-dark); /* design */
-}
-
-/* Abas "Próximas | Histórico": alvo de toque de 44px sem alterar o layout (o design tem 35px de altura no mobile); a
-   área clicável cresce por ::before invisível. */
-.fb-client-tabs .fb-client-tab-btn {
-  position: relative;
-  min-height: 0;
-}
-
-.fb-client-tabs .fb-client-tab-btn::before {
-  content: "";
-  position: absolute;
-  inset: -5px 0;
-}
-
 @media (max-width: 767px) {
   .fb-client__sidebar {
     display: none;
@@ -240,29 +200,6 @@
     box-shadow: var(--sh-2);
   }
 
-  .fb-client-tabs {
-    width: 100%;
-  }
-
-  .fb-client-tab-btn {
-    flex: 1;
-    padding: 9px 0;
-  }
-}
-
-/* Feedback de toque nos controles do cliente; a cor do estado escolhido (dia, aba, filtro) acompanha o
-   press em vez de saltar. */
-.fb-client-tab-btn {
-  transition:
-    transform var(--duration-press) var(--ease-out),
-    background-color var(--duration-state) var(--ease-out),
-    border-color var(--duration-state) var(--ease-out),
-    color var(--duration-state) var(--ease-out),
-    filter var(--duration-state) var(--ease-out);
-}
-
-.fb-client-tab-btn:active {
-  transform: scale(var(--press-scale));
 }
 
 /* Navegação e botões de ícone: só a cor muda. */

@@ -196,15 +196,8 @@ const DARK_ALPHA_EXCEPTIONS: Record<string, { floor: number; only?: string; why:
 };
 
 /** Pares nomeados (seletor exato, cor de texto) sobre fundo que não é o cartão elevado (tema escuro). */
-const DARK_NAMED_PAIRS: { selector: string; value: string; floor: number; bg: Rgb; why: string }[] = [
-  {
-    selector: ".fb-gami__mark--pending",
-    value: "rgba(255, 255, 255, 0.4)",
-    floor: 3,
-    bg: surfaceOf("dark"),
-    why: "marco ainda não alcançado: elemento gráfico (3:1), não texto",
-  },
-];
+// Vazia desde o FitPoints (PR 10): o único par nomeado era o marco pendente, que agora usa tokens (--muted sobre --surface-2).
+const DARK_NAMED_PAIRS: { selector: string; value: string; floor: number; bg: Rgb; why: string }[] = [];
 
 function stripComments(css: string): string {
   return css.replace(/\/\*[\s\S]*?\*\//g, "");
@@ -375,8 +368,8 @@ function allSheets(): [string, string][] {
 }
 
 describe("dívida de migração: branco translúcido literal nas telas ainda não migradas", () => {
-  /** Quantidade medida em #156 (45 no PR 2; 43 depois da Agenda; 39 depois do Login). Cada PR de tela só pode reduzir; o PR 18 troca este teste por proibição. */
-  const LITERAL_WHITE_ALPHA_TEXT_CEILING = 39;
+  /** Quantidade medida em #156 (45 no PR 2; 43 depois da Agenda; 39 depois do Login; 19 depois da Ficha e do FitPoints). Cada PR de tela só pode reduzir; o PR 18 troca este teste por proibição. */
+  const LITERAL_WHITE_ALPHA_TEXT_CEILING = 19;
 
   it("não cresce: texto novo usa tokens, que seguem o tema", () => {
     const count = allSheets()
