@@ -1,9 +1,14 @@
-import { useId, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import type { ClassTemplateDetail, InstructorSummary, ModalityDetail } from "@fitburn/contracts";
 import { ApiError } from "../../lib/auth/api";
 import { createClassTemplate, updateClassTemplate } from "../../lib/catalog/api";
-import { Feedback } from "../../components/states";
+import { Alert } from "../../components/ui/Alert";
+import { Button } from "../../components/ui/Button";
+import { Dialog } from "../../components/ui/Dialog";
+import { Field } from "../../components/ui/Field";
+import { Select } from "../../components/ui/Select";
 
+/** Criação e edição de um template de aula, em `Dialog` (D-038, #156). */
 export function ClassTemplateForm({
   template,
   modalities,
@@ -17,7 +22,6 @@ export function ClassTemplateForm({
   onSaved: () => void;
   onCancel: () => void;
 }) {
-  const formId = useId();
   const [name, setName] = useState(template?.name ?? "");
   const [description, setDescription] = useState(template?.description ?? "");
   const [modalityId, setModalityId] = useState(template?.modality.id ?? "");
@@ -77,62 +81,45 @@ export function ClassTemplateForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} aria-label="Template de aula" className="fb-form">
-      {errorMessage && <Feedback tone="error">{errorMessage}</Feedback>}
-
-      <label htmlFor={`${formId}-name`}>Nome</label>
-      <input
-        id={`${formId}-name`}
-        className="fb-field"
-        value={name}
-        onChange={(event) => setName(event.target.value)}
-        required
-      />
-
-      <label htmlFor={`${formId}-description`}>Descrição</label>
-      <input
-        id={`${formId}-description`}
-        className="fb-field"
-        value={description}
-        onChange={(event) => setDescription(event.target.value)}
-      />
-
-      <label htmlFor={`${formId}-modality`}>Modalidade</label>
-      <select
-        id={`${formId}-modality`}
-        className="fb-field"
-        value={modalityId}
-        onChange={(event) => setModalityId(event.target.value)}
-        required
-      >
-        <option value="" disabled>
-          Selecione
-        </option>
-        {modalityOptions.map((modality) => (
-          <option key={modality.id} value={modality.id}>
-            {modality.name}
+    <Dialog title={template ? "Editar template de aula" : "Novo template de aula"} onClose={onCancel}>
+      <form onSubmit={handleSubmit} aria-label="Template de aula" className="fb-ui-dialog__form">
+        <Field
+          label="Nome"
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+          required
+        />
+        <Field
+          label="Descrição"
+          value={description}
+          onChange={(event) => setDescription(event.target.value)}
+        />
+        <Select
+          label="Modalidade"
+          value={modalityId}
+          onChange={(event) => setModalityId(event.target.value)}
+          required
+        >
+          <option value="" disabled>
+            Selecione
           </option>
-        ))}
-      </select>
-
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <label htmlFor={`${formId}-duration`}>Duração (min)</label>
-          <input
-            id={`${formId}-duration`}
-            className="fb-field"
+          {modalityOptions.map((modality) => (
+            <option key={modality.id} value={modality.id}>
+              {modality.name}
+            </option>
+          ))}
+        </Select>
+        <div className="fb-ui-form-grid">
+          <Field
+            label="Duração (min)"
             type="number"
             min={1}
             value={durationMinutes}
             onChange={(event) => setDurationMinutes(event.target.value)}
             required
           />
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <label htmlFor={`${formId}-capacity`}>Capacidade</label>
-          <input
-            id={`${formId}-capacity`}
-            className="fb-field"
+          <Field
+            label="Capacidade"
             type="number"
             min={1}
             value={capacity}
@@ -140,31 +127,28 @@ export function ClassTemplateForm({
             required
           />
         </div>
-      </div>
-
-      <label htmlFor={`${formId}-instructor`}>Professor padrão</label>
-      <select
-        id={`${formId}-instructor`}
-        className="fb-field"
-        value={defaultInstructorId}
-        onChange={(event) => setDefaultInstructorId(event.target.value)}
-      >
-        <option value="">Sem professor padrão</option>
-        {instructorOptions.map((instructor) => (
-          <option key={instructor.id} value={instructor.id}>
-            {instructor.fullName}
-          </option>
-        ))}
-      </select>
-
-      <div style={{ display: "flex", gap: 10 }}>
-        <button type="submit" className="fb-btn-primary" disabled={isSubmitting}>
-          Salvar template
-        </button>
-        <button type="button" className="fb-row-btn" onClick={onCancel}>
-          Cancelar
-        </button>
-      </div>
-    </form>
+        <Select
+          label="Professor padrão"
+          value={defaultInstructorId}
+          onChange={(event) => setDefaultInstructorId(event.target.value)}
+        >
+          <option value="">Sem professor padrão</option>
+          {instructorOptions.map((instructor) => (
+            <option key={instructor.id} value={instructor.id}>
+              {instructor.fullName}
+            </option>
+          ))}
+        </Select>
+        {errorMessage && <Alert>{errorMessage}</Alert>}
+        <div className="fb-ui-dialog__actions">
+          <Button disabled={isSubmitting} onClick={onCancel}>
+            Cancelar
+          </Button>
+          <Button type="submit" variant="primary" busy={isSubmitting}>
+            Salvar template
+          </Button>
+        </div>
+      </form>
+    </Dialog>
   );
 }

@@ -1,35 +1,25 @@
 import { useState } from "react";
+import { PageHeader } from "../components/ui/PageHeader";
+import { Segmented } from "../components/ui/Segmented";
 import { ClassTemplatesTab } from "./catalog/ClassTemplatesTab";
 import { ModalitiesTab } from "./catalog/ModalitiesTab";
 
 type Tab = "templates" | "modalidades";
 
+const TABS = [
+  { value: "templates", label: "Templates de aula" },
+  { value: "modalidades", label: "Modalidades" },
+] as const;
+
+/** Templates de aula e modalidades (D-038, #156): título e a troca entre as duas tabelas. */
 export function TemplatesModalidadesPage() {
   const [activeTab, setActiveTab] = useState<Tab>("templates");
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 18, height: "100%" }}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-        <span className="fb-page-eyebrow">Templates &amp; modalidades</span>
-        <h1 className="fb-page-title">Templates de aula e modalidades</h1>
-      </div>
+    <div className="fb-ui-page">
+      <PageHeader kicker="Templates & modalidades" title="Templates de aula e modalidades" />
 
-      <div className="fb-tabs">
-        <button
-          type="button"
-          className={`fb-tab-btn${activeTab === "templates" ? " active" : ""}`}
-          onClick={() => setActiveTab("templates")}
-        >
-          Templates de aula
-        </button>
-        <button
-          type="button"
-          className={`fb-tab-btn${activeTab === "modalidades" ? " active" : ""}`}
-          onClick={() => setActiveTab("modalidades")}
-        >
-          Modalidades
-        </button>
-      </div>
+      <Segmented label="Seções" options={TABS} value={activeTab} onChange={setActiveTab} />
 
       {activeTab === "templates" ? <ClassTemplatesTab /> : <ModalitiesTab />}
     </div>

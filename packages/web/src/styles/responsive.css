@@ -51,7 +51,6 @@
   .fb-tab-btn,
   .fb-goals__student,
   .fb-state__retry,
-  .fb-weekday-toggle,
   .fb-workout__back,
   .login-form__input,
   .login-form__submit,
@@ -71,7 +70,6 @@
     min-width: 44px;
   }
 
-  .fb-icon-btn,
   .login-form__toggle,
   .fb-back-btn {
     min-width: 44px;
@@ -163,52 +161,6 @@
   /* Tabelas: a rolagem horizontal fica dentro do quadro, com colunas que não espremem o texto. */
   .fb-table-wrap table {
     min-width: 520px;
-  }
-
-  /* Agenda administrativa: a grade semanal vira uma lista de dias, um abaixo do outro. */
-  .fb-week-grid {
-    flex-direction: column;
-    gap: 14px;
-    overflow: visible;
-  }
-
-  .fb-day-col {
-    flex: none;
-  }
-
-  .fb-day-head {
-    text-align: left;
-    padding: 8px 0;
-    font-size: 13px;
-  }
-
-  .fb-day-empty {
-    min-height: 44px;
-    flex-grow: 0;
-    border: 1px dashed #d6d6d6;
-    color: var(--color-text-muted-on-dark);
-    font-family: var(--font-sans);
-    font-size: 12px;
-  }
-
-  .fb-day-empty::after {
-    content: "+ Nova aula";
-  }
-
-  .fb-chip-cls {
-    padding: 10px 12px;
-  }
-
-  .fb-chip-cls__hour {
-    font-size: 12px;
-  }
-
-  .fb-chip-cls__title {
-    font-size: 14px;
-  }
-
-  .fb-chip-cls__sub {
-    font-size: 12px;
   }
 
   /* Metas e Fichas: a coluna de alunos vira uma faixa acima da área principal. */

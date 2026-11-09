@@ -96,7 +96,8 @@ describe("TemplatesModalidadesPage", () => {
     const user = userEvent.setup();
 
     await user.click(await screen.findByRole("button", { name: "+ Novo template" }));
-    const form = screen.getByRole("form", { name: "Template de aula" });
+    const dialog = screen.getByRole("dialog", { name: "Novo template de aula" });
+    const form = within(dialog).getByRole("form", { name: "Template de aula" });
     await user.type(within(form).getByLabelText("Nome"), "Spinning 45min");
     await user.selectOptions(within(form).getByLabelText("Modalidade"), SPINNING.id);
     await user.type(within(form).getByLabelText("Duração (min)"), "45");
@@ -104,6 +105,7 @@ describe("TemplatesModalidadesPage", () => {
     await user.selectOptions(within(form).getByLabelText("Professor padrão"), "user-camila");
     await user.click(within(form).getByRole("button", { name: "Salvar template" }));
 
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
     const row = (await screen.findByText("Spinning 45min")).closest("tr")!;
     expect(within(row).getByText("45 min")).toBeInTheDocument();
     expect(within(row).getByText("15 vagas")).toBeInTheDocument();
@@ -125,8 +127,8 @@ describe("TemplatesModalidadesPage", () => {
 
     await user.click(await screen.findByRole("button", { name: "Modalidades" }));
 
-    const row = (await screen.findByText("Treino Funcional")).closest("tr")!;
-    const deleteButton = within(row).getByRole("button", { name: "Excluir" });
+    const row = (await screen.findByText("Treino Funcional", { selector: "td span" })).closest("tr")!;
+    const deleteButton = within(row).getByRole("button", { name: "Excluir modalidade Treino Funcional" });
     expect(deleteButton).toHaveAttribute("aria-disabled", "true");
     expect(
       screen.getByText(/Modalidades com templates vinculados não podem ser excluídas/),
@@ -151,14 +153,19 @@ describe("TemplatesModalidadesPage", () => {
     const user = userEvent.setup();
 
     await user.click(await screen.findByRole("button", { name: "Modalidades" }));
-    const row = (await screen.findByText("Spinning")).closest("tr")!;
-    await user.click(within(row).getByRole("button", { name: "Excluir" }));
+    const row = (await screen.findByText("Spinning", { selector: "td span" })).closest("tr")!;
+    await user.click(within(row).getByRole("button", { name: "Excluir modalidade Spinning" }));
+
+    // A exclusão pede confirmação; a recusa da API aparece no próprio diálogo, que continua aberto.
+    const dialog = screen.getByRole("dialog", { name: "Excluir modalidade Spinning?" });
+    await user.click(within(dialog).getByRole("button", { name: "Confirmar exclusão" }));
 
     await waitFor(() =>
-      expect(within(row).getByRole("alert")).toHaveTextContent(
+      expect(within(dialog).getByRole("alert")).toHaveTextContent(
         "Esta modalidade tem templates vinculados e não pode ser excluída.",
       ),
     );
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 
   describe("sem permissão", () => {
@@ -189,11 +196,13 @@ describe("TemplatesModalidadesPage", () => {
       expect(create).toBeDisabled();
       expect(create).toHaveAttribute("title", "Você não tem permissão para criar templates.");
       const row = (await screen.findByText("Spinning 45min")).closest("tr")!;
-      const edit = within(row).getByRole("button", { name: "Editar" });
+      const edit = within(row).getByRole("button", { name: "Editar template Spinning 45min" });
       expect(edit).toBeDisabled();
       expect(edit).toHaveAttribute("title", "Você não tem permissão para editar templates.");
-      expect(within(row).getByRole("button", { name: "Desativar" })).toBeDisabled();
-      const remove = within(row).getByRole("button", { name: "Excluir" });
+      expect(
+        within(row).getByRole("button", { name: "Desativar template Spinning 45min" }),
+      ).toBeDisabled();
+      const remove = within(row).getByRole("button", { name: "Excluir template Spinning 45min" });
       expect(remove).toBeDisabled();
       expect(remove).toHaveAttribute("title", "Você não tem permissão para excluir templates.");
     });
@@ -209,10 +218,12 @@ describe("TemplatesModalidadesPage", () => {
       const create = await screen.findByRole("button", { name: "+ Nova modalidade" });
       expect(create).toBeDisabled();
       expect(create).toHaveAttribute("title", "Você não tem permissão para criar modalidades.");
-      const row = (await screen.findByText("Spinning")).closest("tr")!;
-      expect(within(row).getByRole("button", { name: "Editar" })).toBeDisabled();
-      expect(within(row).getByRole("button", { name: "Desativar" })).toBeDisabled();
-      const remove = within(row).getByRole("button", { name: "Excluir" });
+      const row = (await screen.findByText("Spinning", { selector: "td span" })).closest("tr")!;
+      expect(within(row).getByRole("button", { name: "Editar modalidade Spinning" })).toBeDisabled();
+      expect(
+        within(row).getByRole("button", { name: "Desativar modalidade Spinning" }),
+      ).toBeDisabled();
+      const remove = within(row).getByRole("button", { name: "Excluir modalidade Spinning" });
       expect(remove).toBeDisabled();
       expect(remove).toHaveAttribute("title", "Você não tem permissão para excluir modalidades.");
     });

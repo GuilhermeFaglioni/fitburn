@@ -4,6 +4,7 @@ import {
   utcToGymDateTime,
   weekdayOf,
 } from "@fitburn/contracts";
+import { Alert } from "../../components/ui/Alert";
 import { ApiError } from "../../lib/auth/api";
 import { formatInstantHour, formatShortDate } from "../../lib/agenda/format";
 
@@ -16,10 +17,10 @@ export function OccurrenceErrorBox({ error }: { error: unknown }) {
       : null;
 
   return (
-    <div role="alert" className="fb-error-box">
+    <Alert>
       {message}
       {overlap?.success && overlap.data.conflicts.length > 0 && (
-        <ul>
+        <ul className="fb-ui-alert__list">
           {overlap.data.conflicts.map((conflict) => {
             const { date } = utcToGymDateTime(conflict.startsAt);
             return (
@@ -31,6 +32,6 @@ export function OccurrenceErrorBox({ error }: { error: unknown }) {
           })}
         </ul>
       )}
-    </div>
+    </Alert>
   );
 }

@@ -86,6 +86,7 @@ const SCREENS: Screen[] = [
     page: <AgendaAdminPage />,
     url: "/api/occurrences",
     errorMessage: "Não foi possível carregar a agenda.",
+    loadingMessage: "Carregando a agenda…",
     empty: [],
     emptyMessage: "",
   },
