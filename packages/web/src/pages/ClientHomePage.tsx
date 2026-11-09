@@ -14,7 +14,7 @@ import { HomeReservations } from "./home/HomeReservations";
 import { formatPlanEnd } from "./home/format";
 import { EmptyState, ErrorState, LoadingState } from "../components/states";
 
-/** Quantos badges recentes cabem na fileira da evolução (HomeDesktop.dc.html mostra três). */
+/** Quantos badges recentes cabem na fileira da evolução. */
 const MAX_BADGES = 3;
 
 /** Os badges conquistados mais recentemente (marcos de streak), do mais novo para o mais antigo. */
@@ -41,7 +41,7 @@ function CheckIcon() {
 }
 
 /**
- * Home do cliente (HomeMobile.dc.html / HomeDesktop.dc.html): saudação e plano
+ * Home do cliente: saudação e plano
  * ativo, próximas aulas e resumo da evolução, nessa ordem no mobile; no desktop,
  * coluna de 400px (saudação, plano, evolução) ao lado das aulas (grade em
  * home.css). Cada bloco carrega e falha sozinho.

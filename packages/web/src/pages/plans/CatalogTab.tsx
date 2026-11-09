@@ -10,7 +10,7 @@ import { EmptyState, ErrorState, Feedback, LoadingState } from "../../components
 
 type FormState = { mode: "closed" } | { mode: "create" } | { mode: "edit"; plan: PlanDetail };
 
-/** Catálogo de planos (PlanosAdmin.dc.html): tabela com criar, editar, ativar e desativar. */
+/** Catálogo de planos: tabela com criar, editar, ativar e desativar. */
 export function CatalogTab() {
   const { can } = useAuth();
   const queryClient = useQueryClient();

@@ -9,7 +9,7 @@ interface StudentListProps {
   onSelect: (id: string) => void;
 }
 
-/** Coluna "MEUS ALUNOS" da tela de metas (MetasAdmin.dc.html): busca e a lista dos alunos do escopo. */
+/** Coluna "MEUS ALUNOS" da tela de metas: busca e a lista dos alunos do escopo. */
 export function StudentList({ students, selectedId, allStudents, onSelect }: StudentListProps) {
   const [search, setSearch] = useState("");
   const normalized = search.trim().toLowerCase();

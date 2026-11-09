@@ -90,7 +90,7 @@ function isChangeable(reservation: AdminReservationDetail): boolean {
 }
 
 /**
- * Reservas administrativas (ReservasAdmin.dc.html): a equipe consulta as
+ * Reservas administrativas: a equipe consulta as
  * reservas e reserva, cancela ou remarca em nome do cliente. As regras são as
  * do cliente; o servidor decide e registra quem executou.
  */
@@ -159,7 +159,7 @@ export function ReservasAdminPage() {
           <h1 className="fb-page-title">Reservas administrativas</h1>
         </div>
         <div style={{ display: "flex", alignItems: "flex-start", flexWrap: "wrap", gap: 10 }}>
-          {/* Fora do artboard: exporta o período do filtro; "Todas" não tem intervalo (a API exige from/to). */}
+          {/* Fora da tela de referência: exporta o período do filtro; "Todas" não tem intervalo (a API exige from/to). */}
           <ExportCsvButton
             label="Exportar reservas (CSV)"
             onExport={() =>

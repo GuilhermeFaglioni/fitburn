@@ -6,7 +6,7 @@ import { PlanHistoryList } from "./PlanHistoryList";
 import { EmptyState, ErrorState, LoadingState } from "../../components/states";
 
 /**
- * Plano dentro do Perfil (PlanoDesktop.dc.html / PlanoMobile.dc.html): o plano ativo do
+ * Plano dentro do Perfil: o plano ativo do
  * cliente com as datas, e o histórico. Informativo: sem oferta, preço nem
  * checkout — quem quer um plano fala com a recepção.
  */

@@ -13,8 +13,8 @@ interface DeleteRowButtonProps {
 
 /**
  * "Excluir" vermelho das tabelas administrativas. Se a API recusar a
- * exclusão, a mensagem aparece no popover escuro do canvas de design
- * (TemplatesModalidades.dc.html), ancorado na célula de ações — por isso
+ * exclusão, a mensagem aparece no popover escuro do proposta de design
+ *, ancorado na célula de ações — por isso
  * a célula precisa de position: relative.
  */
 export function DeleteRowButton({

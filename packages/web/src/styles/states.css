@@ -2,7 +2,7 @@
  * Estados compartilhados (carregando, vazio, erro, feedback) — components/states.tsx.
  * Duas variantes, ambas no tema escuro único (DS7): --light (área administrativa, que
  * antes era clara; o nome fica por compatibilidade) e --dark (cliente e Presença). A faixa tracejada do vazio
- * e o vermelho do erro seguem o canvas de design (.fb-client-empty / Login).
+ * e o vermelho do erro seguem a proposta de design (.fb-client-empty / Login).
  */
 .fb-state {
   margin: 0;

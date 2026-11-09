@@ -18,7 +18,7 @@ const EMAIL_TAKEN = "Este e-mail já está cadastrado.";
 const DOCUMENT_TAKEN = "Este CPF já está cadastrado.";
 
 /**
- * Cadastro de cliente em tela cheia (Cadastro.dc.html): migalha, título e um cartão com o formulário em duas
+ * Cadastro de cliente em tela cheia: migalha, título e um cartão com o formulário em duas
  * colunas. Estados do design: erro de e-mail sob o campo e faixa de sucesso antes de voltar para a listagem.
  */
 export function ClientCreatePage() {

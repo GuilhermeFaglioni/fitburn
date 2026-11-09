@@ -27,7 +27,7 @@ export function fakeCpf(seed) {
 
 const V = ["VIEW"];
 
-/** Mesmos perfis do seed de design (`pnpm design:seed`), para os dois conviverem. */
+/** Mesmos perfis do seed de demonstração (`pnpm demo:seed`), para os dois conviverem. */
 export const PROFILES = {
   professor: {
     name: "Professor",
@@ -84,7 +84,7 @@ export const MODALITIES = [
   { name: "Muay Thai", description: "Arte marcial tailandesa, condicionamento físico" },
 ];
 
-/** Os nomes batem com os do seed de design: quem já rodou aquele seed reaproveita os templates. */
+/** Os nomes batem com os do seed de demonstração: quem já rodou aquele seed reaproveita os templates. */
 export const TEMPLATES = [
   {
     name: "Treino Funcional",

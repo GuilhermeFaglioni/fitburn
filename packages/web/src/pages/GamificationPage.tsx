@@ -61,7 +61,7 @@ function LockIcon() {
   );
 }
 
-/** O artboard mostra os 3 ganhos mais recentes. */
+/** O tela de referência mostra os 3 ganhos mais recentes. */
 const HISTORY_LIMIT = 3;
 
 function withSubject(label: string, subject: string | null): string {
@@ -91,7 +91,7 @@ function formatPoints(points: number): string {
 
 /**
  * Streak atual, a linha de marcos alcançados na sequência de agora e, quando ainda há um marco pela
- * frente, o próximo (o artboard só mostra o estado com todos os marcos alcançados: sem frase de fechamento).
+ * frente, o próximo (a tela de referência só mostra o estado com todos os marcos alcançados: sem frase de fechamento).
  */
 function StreakProgress({ streak, badges }: Pick<GamificationSummary, "streak" | "badges">) {
   return (
@@ -153,9 +153,9 @@ function Achievements({ streak, badges }: Pick<GamificationSummary, "streak" | "
 }
 
 /**
- * FitPoints (GamificacaoMobile.dc.html / GamificacaoDesktop.dc.html): o
+ * FitPoints: o
  * total de pontos em laranja com o streak e os marcos, o histórico dos ganhos
- * e as conquistas. No mobile as seções empilham na ordem do artboard; no
+ * e as conquistas. No mobile as seções empilham na ordem da tela de referência; no
  * desktop, coluna de 420px com título, pontos e conquistas, e o histórico ao
  * lado (com as metas do professor), e o ranking embaixo (ver gamification.css).
  */

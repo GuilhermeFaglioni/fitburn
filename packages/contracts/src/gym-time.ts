@@ -79,7 +79,7 @@ export function utcToGymDateTime(instant: Date | string): { date: string; time: 
   };
 }
 
-/** "07h00" — convenção de horário do canvas de design, a partir de "07:00". */
+/** "07h00" — convenção de horário, a partir de "07:00". */
 export function formatHour(time: string): string {
   return time.replace(":", "h");
 }

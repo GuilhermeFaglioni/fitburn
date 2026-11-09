@@ -16,7 +16,7 @@ import workoutCss from "../src/styles/workout.css?raw";
  * Contraste WCAG (2.x) dos pares de cor do design system e das folhas de estilo.
  * Não há navegador na suíte, então o teste lê o CSS.
  *
- * O design (Claude Design) vence: alguns pares que ele usa ficam abaixo de 4.5:1 e estão registrados aqui como
+ * O design vence: alguns pares que ele usa ficam abaixo de 4.5:1 e estão registrados aqui como
  * EXCEÇÕES CONHECIDAS DO DESIGN, cada uma com o valor de contraste medido. Todo o resto continua exigindo 4.5:1
  * (ou o mínimo da própria exceção), para o texto não deslizar para cinzas ainda mais claros:
  * - branco sobre o laranja da marca (botões, chips, abas): 3.05:1 (o preto daria 6.5:1); o design usa 700 e 13-15px;

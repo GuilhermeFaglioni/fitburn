@@ -33,7 +33,7 @@ function recurrenceSummary(dates: string[]): string {
   return `Serão criadas ${dates.length} aulas: ${shown.join(", ")}${rest > 0 ? ` e mais ${rest}` : ""}.`;
 }
 
-/** "Nova aula" — formulário do modal de AgendaAdmin.dc.html. */
+/** "Nova aula" — formulário do modal de. */
 export function OccurrenceFormModal({
   initialDate,
   onClose,

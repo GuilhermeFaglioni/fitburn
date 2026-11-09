@@ -6,7 +6,7 @@ Copie, preencha os `<...>` e passe como `task` do `delegate_task`. Modelo: Claud
 
 Você é o **implementador de UI** da subtarefa <id> da issue #<nº> do Fitburn.
 
-Leia primeiro: `AGENTS.md`, `docs/agents/fluxo-agentico.md` (seções 4, 5 e 8), `GLOSSARY.md`, o plano na issue (`gh issue view <nº> --comments`) e `docs/design-fidelity-report.md`.
+Leia primeiro: `AGENTS.md`, `docs/agents/fluxo-agentico.md` (seções 4, 5 e 8), `GLOSSARY.md`, o plano na issue (`gh issue view <nº> --comments`) e, em issue de UI, a proposta de design em `docs/design/proposta-fitburn-oratry.html`.
 
 Escopo: <descrição objetiva>. Telas e decisões de referência: <issue e docs/decisions.md>. Componentes a reutilizar: <de `packages/web/src/components`>. Estados obrigatórios: <vazio, carregando, erro, offline>. Critérios de aceite: <lista>.
 

@@ -88,7 +88,7 @@ function screenOf(pathname: string): string {
 
 /**
  * Casca do cliente: sidebar no desktop (ícones de 18px, sem "Sair": a saída é "Sair da conta" no Perfil) e barra
- * inferior no mobile (ícones de 20px), como em HomeDesktop/HomeMobile.dc.html.
+ * inferior no mobile (ícones de 20px), como em HomeDesktop/.
  */
 export function ClientLayout() {
   const mainRef = useFocusOnNavigation();

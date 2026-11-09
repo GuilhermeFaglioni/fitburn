@@ -5,7 +5,7 @@
  * `document.documentElement.scrollWidth <= clientWidth`, ou seja, sem scroll horizontal da página.
  *
  * Precisa da API (http://localhost:3333/api) e do web (http://localhost:5173) de pé, e do seed de demonstração
- * (`pnpm design:seed`) no banco de teste da issue. Não roda na CI (o projeto não tem navegador automatizado).
+ * (`pnpm demo:seed`) no banco de teste da issue. Não roda na CI (o projeto não tem navegador automatizado).
  *
  *   CHROMIUM_PATH=/caminho/do/chrome-headless-shell pnpm check:360
  */
@@ -36,7 +36,7 @@ async function apiLogin(email, secret) {
  */
 async function prepareAccount(email) {
   let token = await apiLogin(email, password);
-  if (!token) throw new Error(`login de ${email} falhou (rode o seed: pnpm design:seed)`);
+  if (!token) throw new Error(`login de ${email} falhou (rode o seed: pnpm demo:seed)`);
   let inUse = password;
   const temp = `Verifica360-${Date.now()}`;
   const change = await fetch(`${API}/auth/password`, {

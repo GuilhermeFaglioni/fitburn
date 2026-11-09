@@ -62,7 +62,7 @@ function ClassCard({ item, currentUserId }: { item: AttendanceClass; currentUser
 /**
  * Minhas aulas: as aulas do dia e da semana em que a pessoa pode registrar
  * presença (as dela; quem tem escopo mais amplo vê as de todos). Cada aula
- * abre a tela de Presença. Não há artboard para esta tela no canvas: usa a
+ * abre a tela de Presença. Não há referência de design para esta tela: usa a
  * casca administrativa clara.
  */
 export function MyClassesPage() {
@@ -91,7 +91,7 @@ export function MyClassesPage() {
           <h1 className="fb-page-title">Minhas aulas</h1>
         </div>
         <div style={{ display: "flex", alignItems: "flex-start", flexWrap: "wrap", gap: 10 }}>
-          {/* Fora do artboard: exporta o mesmo período da lista (Hoje = o dia; Semana = segunda a domingo). */}
+          {/* Fora da tela de referência: exporta o mesmo período da lista (Hoje = o dia; Semana = segunda a domingo). */}
           <ExportCsvButton
             label="Exportar presenças (CSV)"
             onExport={() => exportAttendanceCsv(from, to)}

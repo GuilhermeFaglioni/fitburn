@@ -1,7 +1,7 @@
 /**
- * Gamificação do cliente — GamificacaoMobile.dc.html e GamificacaoDesktop.dc.html
- * no canvas de design (Claude Design), https://claude.ai/artifact/VncuMf9CffiWGUEQYywLVX.
- * Mobile: uma coluna, na ordem do artboard mobile (título, pontos, histórico,
+ * Gamificação do cliente — e
+ *.
+ * Mobile: uma coluna, na ordem da tela de referência mobile (título, pontos, histórico,
  * conquistas, metas, ranking), que difere da do desktop: `order` fixa essa
  * ordem, já que os wrappers .fb-gami__left/right/row somem no mobile
  * (display: contents) e as seções viram irmãs. Cada seção nova recebe o seu
@@ -18,7 +18,7 @@
 }
 
 /*
- * Padding do conteúdo do artboard: mobile 24px 20px 108px, desktop 40px (o título fica em y=40).
+ * Padding do conteúdo da tela de referência: mobile 24px 20px 108px, desktop 40px (o título fica em y=40).
  * A casca do cliente define o padding geral; aqui só o topo, pela tela.
  */
 .fb-client__content:has(> .fb-gami) {
@@ -89,7 +89,7 @@
   color: rgba(255, 255, 255, 0.5);
 }
 
-/* Linha de streak do cartão de pontos (GamificacaoMobile.dc.html): contagem em círculo + rótulo. */
+/* Linha de streak do cartão de pontos: contagem em círculo + rótulo. */
 .fb-gami__streak {
   display: flex;
   align-items: center;
@@ -115,13 +115,13 @@
   color: rgba(255, 255, 255, 0.65);
 }
 
-/* Sem artboard: o próximo marco fecha o cartão, depois dos blocos de marco. */
+/* Sem tela de referência: o próximo marco fecha o cartão, depois dos blocos de marco. */
 .fb-gami__streak-next {
   font-size: 12px;
   color: rgba(255, 255, 255, 0.5);
 }
 
-/* Blocos de marco de streak do cartão (GamificacaoMobile.dc.html); o pendente é o mesmo bloco, esmaecido. */
+/* Blocos de marco de streak do cartão; o pendente é o mesmo bloco, esmaecido. */
 .fb-gami__marks {
   margin: 0;
   padding: 0;
@@ -197,7 +197,7 @@
   opacity: 0.4;
 }
 
-/* Conquistas (GamificacaoMobile.dc.html): disco de 56px com o check laranja, ou o cadeado se bloqueado. */
+/* Conquistas: disco de 56px com o check laranja, ou o cadeado se bloqueado. */
 .fb-gami__badge-disc {
   color: var(--color-primary-orange);
   width: 56px;
@@ -219,7 +219,7 @@
   color: rgba(255, 255, 255, 0.6);
 }
 
-/* Ranking (GamificacaoMobile/Desktop.dc.html): seletor semanal/mensal e a lista de posições. */
+/* Ranking: seletor semanal/mensal e a lista de posições. */
 .fb-gami__ranking {
   order: 6;
 }
@@ -242,7 +242,7 @@
   color: #ffffff;
 }
 
-/* A caixa fica com a altura do artboard (33px); a área de toque de 44px é invisível. */
+/* A caixa fica com a altura da tela de referência (33px); a área de toque de 44px é invisível. */
 .fb-gami__rank-tab::before {
   content: "";
   position: absolute;
@@ -299,7 +299,7 @@
   color: var(--color-primary-orange);
 }
 
-/* Metas do professor (GamificacaoMobile/Desktop.dc.html): o cartão sem a barra de progresso. */
+/* Metas do professor: o cartão sem a barra de progresso. */
 .fb-gami__goals {
   order: 5;
 }
@@ -393,12 +393,12 @@
   color: var(--color-primary-orange);
 }
 
-/* Sem artboard (o canvas só mostra ganhos): estorno em vermelho de erro. */
+/* Sem referência de design (a proposta só mostra ganhos): estorno em vermelho de erro. */
 .fb-gami__entry-points--negative {
   color: var(--color-danger);
 }
 
-/* Com a barra lateral do cliente (≥768px): os tamanhos do artboard desktop. */
+/* Com a barra lateral do cliente (≥768px): os tamanhos da tela de referência desktop. */
 @media (min-width: 768px) {
   .fb-client__content:has(> .fb-gami) {
     padding-top: 40px;
@@ -427,7 +427,7 @@
     justify-content: space-between;
   }
 
-  /* No artboard: 220px de botões mais 4px de respiro de cada lado. */
+  /* No tela de referência: 220px de botões mais 4px de respiro de cada lado. */
   .fb-gami__rank-tabs {
     width: 228px;
   }
@@ -438,7 +438,7 @@
 }
 
 /*
- * As duas colunas do artboard (420px + histórico e metas lado a lado) pedem os
+ * As duas colunas da tela de referência (420px + histórico e metas lado a lado) pedem os
  * 1440px dele: a partir de 1280px do conteúdo cabem; abaixo disso as seções
  * empilham como no mobile, sem espremer o histórico nem cortar as metas.
  */
@@ -469,7 +469,7 @@
     gap: 24px;
   }
 
-  /* Cada seção da linha ocupa metade (menos meio vão), como no artboard. */
+  /* Cada seção da linha ocupa metade (menos meio vão), como na tela de referência. */
   .fb-gami__row > * {
     flex: 0 1 calc(50% - 12px);
   }

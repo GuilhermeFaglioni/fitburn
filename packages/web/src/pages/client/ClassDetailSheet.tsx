@@ -50,7 +50,7 @@ function asApiError(error: Error, message: string): ApiError {
 }
 
 /**
- * Detalhe da aula com as ações de reserva (ReservaMobile/ReservaDesktop.dc.html):
+ * Detalhe da aula com as ações de reserva:
  * bottom sheet no mobile, cartão centralizado no desktop. O backend decide
  * cada operação; qualquer resposta atualiza a agenda e o detalhe.
  */

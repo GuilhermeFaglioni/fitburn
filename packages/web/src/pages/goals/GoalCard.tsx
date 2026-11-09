@@ -38,8 +38,8 @@ function KebabIcon() {
 }
 
 /**
- * As ações de uma meta ativa (Concluir, Editar, Cancelar meta) recolhidas sob um botão "⋯": o cartão do artboard
- * (MetasAdmin.dc.html) não mostra botões, então ficam escondidas até o professor abrir.
+ * As ações de uma meta ativa (Concluir, Editar, Cancelar meta) recolhidas sob um botão "⋯": o cartão da tela de referência
+ * não mostra botões, então ficam escondidas até o professor abrir.
  *
  * Padrão de disclosure (não é um menu ARIA): o botão tem `aria-expanded`/`aria-controls` e abre um grupo de
  * botões comuns. Aberto pelo teclado, o foco vai ao primeiro item; Esc fecha e devolve o foco ao botão; Tab para
@@ -171,7 +171,7 @@ function GoalActions({
   );
 }
 
-/** A última linha do cartão: o detalhe da meta e, se já concluída, "— concluída em dd/mm/aaaa" (artboard). */
+/** A última linha do cartão: o detalhe da meta e, se já concluída, "— concluída em dd/mm/aaaa" (tela de referência). */
 function goalDetail(goal: GoalDetail): string {
   const concluded = goal.concludedAt ? `concluída em ${formatInstantDate(goal.concludedAt)}` : "";
   if (goal.description && concluded) return `${goal.description} — ${concluded}`;
@@ -180,8 +180,8 @@ function goalDetail(goal: GoalDetail): string {
 }
 
 /**
- * Uma meta na tela do professor (MetasAdmin.dc.html): ativa, ou concluída/cancelada esmaecida. A barra
- * de progresso do artboard depende de valor alvo e progresso, que a API ainda não tem.
+ * Uma meta na tela do professor: ativa, ou concluída/cancelada esmaecida. A barra
+ * de progresso da tela de referência depende de valor alvo e progresso, que a API ainda não tem.
  */
 export function GoalCard({ goal, canEdit, busy, onEdit, onComplete, onCancel }: GoalCardProps) {
   const [asking, setAsking] = useState<keyof typeof CONFIRMATIONS | null>(null);

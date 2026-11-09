@@ -14,7 +14,7 @@ interface DeleteUserDialogProps {
 }
 
 /**
- * Confirmação da exclusão com anonimização (ClientesAdmin.dc.html): explica o
+ * Confirmação da exclusão com anonimização: explica o
  * que acontece com os dados pessoais, com o histórico e que não há volta.
  */
 export function DeleteUserDialog({

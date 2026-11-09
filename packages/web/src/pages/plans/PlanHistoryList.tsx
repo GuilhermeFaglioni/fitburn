@@ -3,7 +3,7 @@ import { formatLocalDate } from "../../lib/agenda/format";
 
 /**
  * A lista de planos de um cliente, do mais recente ao mais antigo (nome, datas
- * e situação). Serve à tela do cliente (tema escuro, PlanoDesktop.dc.html) e à
+ * e situação). Serve à tela do cliente e à
  * consulta da administração (`light`).
  */
 export function PlanHistoryList({

@@ -1,6 +1,6 @@
 /**
- * Perfil / Minha conta — PerfilDesktop.dc.html e PerfilMobile.dc.html no
- * canvas de design (Claude Design), https://claude.ai/artifact/VncuMf9CffiWGUEQYywLVX.
+ * Perfil / Minha conta — e no
+ * proposta de design.
  * Cliente: casca escura. Equipe: a mesma tela na casca administrativa clara
  * (`.fb-profile--light`). Mobile: cartão de 18px 16px, uma coluna; desktop
  * (≥768px): cartão de 24px, no máximo 640px, grade de duas colunas.
@@ -320,7 +320,7 @@
   background: none;
   border: none;
   padding: 4px 0;
-  /* Sem font-family: no artboard o botão usa a fonte padrão do navegador (não a DM Sans). */
+  /* Sem font-family: na tela de referência o botão usa a fonte padrão do navegador (não a DM Sans). */
   font-size: 14px;
   color: var(--fb-profile-logout);
   cursor: pointer;

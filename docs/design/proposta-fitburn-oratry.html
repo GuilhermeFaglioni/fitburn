@@ -1,0 +1,847 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fitburn em estilo Oratry</title>
+<meta name="description" content="Proposta de design: o sistema visual do Oratry aplicado ao app Fitburn com a paleta laranja e chama da marca.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@1,600;1,700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap" rel="stylesheet">
+<style>
+/* =========================================================
+   Tokens. Cores da marca Fitburn (tokens.css do app):
+   laranja #ED6E34 e vermelho-chama #C23A1F. Neutros tingidos
+   de quente, como o Oratry tinge os dele de azul.
+   ========================================================= */
+:root{
+  color-scheme: light;
+  --brand: #ED6E34;            /* laranja Fitburn */
+  --flame: #C23A1F;            /* vermelho-chama do logo */
+  --brand-strong: #A8401A;     /* texto/link laranja sobre claro (6,15:1) */
+  --brand-hover: #D85F28;
+  --brand-tint: #FFF4EE;       /* superfície suave */
+  --brand-tint-2: #FFE8DC;
+  --brand-line: #F7CDB7;       /* borda de controle de marca */
+  --grad-cta: linear-gradient(145deg,#F58A55 0%,#ED6E34 45%,#C23A1F 100%);
+  --grad-text: linear-gradient(100deg,#C23A1F,#ED6E34 60%,#F7A274);
+
+  --bg: #FFFFFF;
+  --bg-soft: #FFFAF7;
+  --surface: #FFFFFF;
+  --surface-2: #FBF5F1;
+  --ink: #1C1714;
+  --ink-2: #3A302A;
+  --muted: #6B5D55;
+  --faint: #8E7F76;
+  --line: #EFE2DA;
+  --line-2: #E5D3C8;
+
+  --danger: #B42318;  --danger-bg: #FDECEA;  --danger-line: #F5C2BC;
+  --success: #1E6B34; --success-bg: #EAF7EE; --success-line: #BFE3CA;
+  --warn: #8A5A00;    --warn-bg: #FFF5DB;
+
+  --font-sans: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-serif: "Cormorant", Georgia, serif;
+
+  --r-xs: 6px; --r-sm: 10px; --r-md: 14px; --r-lg: 20px; --r-xl: 28px; --r-pill: 999px;
+
+  --sh-1: 0 5px 14px rgba(120,52,20,.06);
+  --sh-2: 0 12px 38px rgba(120,52,20,.08);
+  --sh-3: 0 22px 60px rgba(120,52,20,.10);
+  --sh-cta: 0 10px 23px rgba(237,110,52,.28);
+  --sh-focus: 0 0 0 3px rgba(237,110,52,.35);
+
+  --s-1:4px; --s-2:8px; --s-3:12px; --s-4:16px; --s-5:20px; --s-6:24px; --s-8:32px; --s-12:48px; --s-16:64px; --s-24:96px;
+  --ease-out: cubic-bezier(.23,1,.32,1);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --brand-strong:#F08A5A; --brand-hover:#F58A55;
+    --brand-tint:#2A1810; --brand-tint-2:#3A1F12; --brand-line:#5A2E1A;
+    --grad-text: linear-gradient(100deg,#F06A3A,#ED6E34 55%,#FFB48C);
+    --bg:#0A0A0A; --bg-soft:#100D0C; --surface:#161311; --surface-2:#1E1916;
+    --ink:#FFFFFF; --ink-2:#E9E1DC; --muted:#A39A94; --faint:#857B75;
+    --line:#2A2320; --line-2:#3A302B;
+    --danger:#FF6D5A; --danger-bg:rgba(255,109,90,.1); --danger-line:rgba(255,109,90,.35);
+    --success:#5CC98A; --success-bg:rgba(92,201,138,.1); --success-line:rgba(92,201,138,.35);
+    --warn:#F2C25C; --warn-bg:rgba(242,194,92,.1);
+    --sh-1: 0 5px 14px rgba(0,0,0,.35);
+    --sh-2: 0 12px 38px rgba(0,0,0,.45);
+    --sh-3: 0 22px 60px rgba(0,0,0,.55);
+    --sh-cta: 0 10px 26px rgba(237,110,52,.30);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --brand-strong:#F08A5A; --brand-hover:#F58A55;
+  --brand-tint:#2A1810; --brand-tint-2:#3A1F12; --brand-line:#5A2E1A;
+  --grad-text: linear-gradient(100deg,#F06A3A,#ED6E34 55%,#FFB48C);
+  --bg:#0A0A0A; --bg-soft:#100D0C; --surface:#161311; --surface-2:#1E1916;
+  --ink:#FFFFFF; --ink-2:#E9E1DC; --muted:#A39A94; --faint:#857B75;
+  --line:#2A2320; --line-2:#3A302B;
+  --danger:#FF6D5A; --danger-bg:rgba(255,109,90,.1); --danger-line:rgba(255,109,90,.35);
+  --success:#5CC98A; --success-bg:rgba(92,201,138,.1); --success-line:rgba(92,201,138,.35);
+  --warn:#F2C25C; --warn-bg:rgba(242,194,92,.1);
+  --sh-1: 0 5px 14px rgba(0,0,0,.35);
+  --sh-2: 0 12px 38px rgba(0,0,0,.45);
+  --sh-3: 0 22px 60px rgba(0,0,0,.55);
+  --sh-cta: 0 10px 26px rgba(237,110,52,.30);
+}
+
+/* ========================= Base ========================= */
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+html,body{overflow-x:clip}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.55 var(--font-sans)}
+img,svg{display:block;max-width:100%}
+a{color:var(--brand-strong);text-decoration:none}
+a:hover{text-decoration:underline}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--brand);outline-offset:3px;border-radius:6px}
+.wrap{max-width:1240px;margin:0 auto;padding:0 clamp(16px,5vw,48px)}
+.kicker{margin:0 0 14px;font-size:11px;font-weight:700;letter-spacing:.32em;text-transform:uppercase;color:var(--brand-strong)}
+h1,h2,h3,h4{margin:0;color:var(--ink);font-weight:700}
+.h-display{font-size:clamp(38px,6.4vw,72px);line-height:1.04;letter-spacing:-.045em;text-wrap:balance}
+.h-display em,.h2 em{font-family:var(--font-serif);font-style:italic;font-weight:700;letter-spacing:-.02em;background:var(--grad-text);-webkit-background-clip:text;background-clip:text;color:transparent;padding-right:.06em}
+.h2{font-size:clamp(30px,4.2vw,52px);line-height:1.06;letter-spacing:-.045em;text-wrap:balance}
+.lead{font-size:clamp(16px,1.6vw,19px);line-height:1.6;color:var(--muted);max-width:620px;margin:20px 0 0}
+section{padding:clamp(64px,9vw,112px) 0;position:relative}
+section + section{border-top:1px solid var(--line)}
+.sec-head{max-width:760px;margin:0 0 clamp(32px,5vw,56px)}
+.sec-head.center{margin-left:auto;margin-right:auto;text-align:center}
+.sec-head.center .lead{margin-left:auto;margin-right:auto}
+.sub{font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin:40px 0 16px}
+.sub:first-child{margin-top:0}
+
+/* ========================= Header ========================= */
+.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:saturate(1.4) blur(12px);-webkit-backdrop-filter:saturate(1.4) blur(12px);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;gap:24px;height:72px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.18em;font-size:15px;color:var(--ink)}
+.brand svg{width:30px;height:30px}
+.top nav{display:flex;gap:28px;margin-left:auto}
+.top nav a{color:var(--muted);font-size:14px;font-weight:500}
+.top nav a:hover{color:var(--ink);text-decoration:none}
+.theme-btn{border:1px solid var(--line-2);background:var(--surface);border-radius:var(--r-pill);height:38px;padding:0 14px;font-size:13px;font-weight:500;color:var(--ink-2);cursor:pointer;display:flex;align-items:center;gap:8px}
+.theme-btn:hover{background:var(--surface-2)}
+@media (max-width:820px){.top nav{display:none}.theme-btn{margin-left:auto}}
+
+/* ========================= Hero ========================= */
+.hero{padding:clamp(48px,8vw,104px) 0 clamp(56px,8vw,96px);background:
+  radial-gradient(circle at 12% 20%,rgba(237,110,52,.10),transparent 32%),
+  radial-gradient(circle at 88% 70%,rgba(194,58,31,.08),transparent 34%),var(--bg)}
+.hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:48px;align-items:center}
+.hero .actions{display:flex;flex-wrap:wrap;gap:14px;margin-top:32px}
+.hero .facts{display:flex;flex-wrap:wrap;gap:24px;margin-top:40px}
+.hero .facts div{padding-left:14px;border-left:1px solid var(--line-2);font-size:13px;color:var(--muted);line-height:1.45}
+.hero .facts strong{display:block;color:var(--ink);font-size:20px;letter-spacing:-.03em}
+.orbit-scene{position:relative;aspect-ratio:1;max-width:460px;margin-inline:auto;width:100%}
+.orbit-scene::before{content:"";position:absolute;inset:10%;border-radius:50%;background:radial-gradient(circle,rgba(237,110,52,.22),rgba(237,110,52,.06) 45%,transparent 70%);filter:blur(10px)}
+.orbit-ring{position:absolute;left:4%;top:30%;width:92%;height:40%;border:1px solid var(--brand-line);border-radius:50%;transform:rotate(-20deg)}
+.orbit-flame{position:absolute;left:26%;top:26%;width:48%;height:48%;filter:drop-shadow(0 24px 40px rgba(194,58,31,.25))}
+.float{position:absolute;display:flex;gap:10px;align-items:center;padding:12px 14px;width:min(196px,48%);border-radius:var(--r-lg);background:color-mix(in srgb,var(--surface) 92%,transparent);border:1px solid var(--line);box-shadow:var(--sh-2);font-size:12px;color:var(--muted);line-height:1.35}
+.float strong{display:block;font-size:13px;color:var(--ink)}
+.float .ic{flex:0 0 34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--brand-tint);color:var(--brand-strong)}
+.f1{top:4%;left:0}.f2{top:42%;right:0}.f3{bottom:4%;left:8%}
+@media (max-width:900px){.hero-grid{grid-template-columns:1fr}.orbit-scene{max-width:380px}}
+
+/* ========================= Botões ========================= */
+.btn{--h:48px;display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:var(--h);padding:0 22px;border-radius:var(--r-md);border:1px solid transparent;font-weight:700;font-size:15px;cursor:pointer;text-decoration:none;white-space:nowrap;transition:transform .16s var(--ease-out),filter .16s var(--ease-out),background-color .14s var(--ease-out),box-shadow .16s var(--ease-out)}
+.btn:hover{text-decoration:none}
+.btn:active{transform:scale(.97)}
+.btn-primary{color:#fff;background:var(--grad-cta);border-color:#E0602A;box-shadow:var(--sh-cta)}
+.btn-primary:hover{filter:brightness(1.05);transform:translateY(-1px)}
+.btn-secondary{color:var(--ink-2);background:var(--surface);border-color:var(--line-2)}
+.btn-secondary:hover{background:var(--surface-2)}
+.btn-soft{color:var(--brand-strong);background:var(--brand-tint);border-color:var(--brand-line)}
+.btn-soft:hover{background:var(--brand-tint-2)}
+.btn-ghost{color:var(--muted);background:transparent;padding:0 6px}
+.btn-ghost:hover{color:var(--ink)}
+.btn-danger{color:#fff;background:#B42318;border-color:#B42318}
+.btn[disabled],.btn[aria-disabled="true"]{opacity:.45;cursor:not-allowed;box-shadow:none;transform:none;filter:none}
+.btn-sm{--h:38px;padding:0 14px;font-size:13px;border-radius:var(--r-sm)}
+.btn-block{width:100%}
+.btn-choice{justify-content:space-between;width:100%}
+.btn .arr{transition:transform .16s var(--ease-out)}
+.btn:hover .arr{transform:translateX(3px)}
+.spin{width:16px;height:16px;border-radius:50%;border:2px solid rgba(255,255,255,.45);border-top-color:#fff;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+
+/* ========================= Inputs ========================= */
+.field{display:flex;flex-direction:column;gap:7px;min-width:0}
+.field label{font-size:13px;font-weight:500;color:var(--ink-2)}
+.input{width:100%;min-height:52px;padding:14px 16px;border:1px solid var(--line-2);background:var(--surface);border-radius:var(--r-md);font-size:16px;color:var(--ink);box-shadow:var(--sh-1);transition:border-color .14s,box-shadow .14s}
+.input::placeholder{color:var(--faint)}
+.input:focus{outline:none;border-color:var(--brand);box-shadow:var(--sh-focus)}
+.input.is-focus{border-color:var(--brand);box-shadow:var(--sh-focus)}
+.input.is-error{border-color:var(--danger);box-shadow:0 0 0 3px var(--danger-bg)}
+.input.is-ok{border-color:var(--success)}
+.input[disabled]{background:var(--surface-2);color:var(--faint);box-shadow:none}
+.help{font-size:12.5px;color:var(--muted)}
+.help.err{color:var(--danger)}
+.help.ok{color:var(--success)}
+.check{display:flex;gap:10px;align-items:flex-start;font-size:14px;color:var(--muted)}
+.check input{width:20px;height:20px;accent-color:var(--brand);margin:1px 0 0;flex:0 0 auto}
+
+/* ========================= Cards, badges, chips ========================= */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:var(--s-6);box-shadow:var(--sh-2);min-width:0}
+.card.flat{box-shadow:none}
+.card.hl{border:2px solid var(--brand);background:linear-gradient(160deg,var(--brand-tint),var(--surface) 60%);box-shadow:0 20px 50px rgba(237,110,52,.14)}
+.badge{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:var(--r-pill);font-size:11px;font-weight:700;letter-spacing:.04em;background:var(--surface-2);color:var(--ink-2);border:1px solid var(--line);white-space:nowrap}
+.badge .dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+.badge.brand{background:var(--brand-tint);color:var(--brand-strong);border-color:var(--brand-line)}
+.badge.solid{background:var(--brand);color:#fff;border-color:var(--brand)}
+.badge.ok{background:var(--success-bg);color:var(--success);border-color:var(--success-line)}
+.badge.err{background:var(--danger-bg);color:var(--danger);border-color:var(--danger-line)}
+.badge.warn{background:var(--warn-bg);color:var(--warn);border-color:transparent}
+.chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:52px;height:60px;padding:0 10px;border-radius:var(--r-md);border:1px solid var(--line);background:var(--surface);font-size:11px;color:var(--muted);cursor:pointer}
+.chip b{font-size:17px;color:var(--ink);letter-spacing:-.02em}
+.chip[aria-pressed="true"]{background:var(--grad-cta);border-color:transparent;color:rgba(255,255,255,.85);box-shadow:var(--sh-cta)}
+.chip[aria-pressed="true"] b{color:#fff}
+.pill{flex:0 0 auto;height:34px;padding:0 14px;border-radius:var(--r-pill);border:1px solid var(--line-2);background:var(--surface);font-size:13px;font-weight:500;color:var(--ink-2);cursor:pointer}
+.pill[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.ic-circle{flex:0 0 40px;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(140deg,var(--brand-tint),var(--brand-tint-2));color:var(--brand-strong)}
+.ic-circle svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.alert{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:var(--r-md);font-size:13.5px;line-height:1.45;border:1px solid}
+.alert.err{background:var(--danger-bg);border-color:var(--danger-line);color:var(--danger)}
+.alert.ok{background:var(--success-bg);border-color:var(--success-line);color:var(--success)}
+.meter{height:8px;border-radius:var(--r-pill);background:var(--surface-2);overflow:hidden;border:1px solid var(--line)}
+.meter i{display:block;height:100%;border-radius:inherit;background:var(--grad-cta)}
+
+/* ========================= Telas (mockups) ========================= */
+.screens{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:28px;align-items:start}
+.screen-label{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:0 0 12px;font-size:13px;color:var(--muted)}
+.screen-label b{color:var(--ink);font-size:15px}
+.device{position:relative;width:100%;max-width:360px;margin:0 auto;background:var(--bg-soft);border:1px solid var(--line);border-radius:var(--r-xl);box-shadow:var(--sh-3);overflow:hidden;display:flex;flex-direction:column;min-height:640px}
+.status{display:flex;justify-content:space-between;padding:12px 20px 4px;font-size:12px;font-weight:700;color:var(--ink-2)}
+.app-top{display:flex;align-items:center;justify-content:space-between;padding:10px 18px 6px}
+.app-top .brand{font-size:12px}
+.app-top .brand svg{width:22px;height:22px}
+.avatar{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:700;background:var(--brand-tint);color:var(--brand-strong);border:1px solid var(--brand-line)}
+.app-body{flex:1;padding:8px 18px 18px;display:flex;flex-direction:column;gap:18px}
+.app-body h3{font-size:24px;letter-spacing:-.035em;line-height:1.1}
+.app-body .sec-t{display:flex;justify-content:space-between;align-items:baseline;font-size:15px;font-weight:700;letter-spacing:-.01em}
+.app-body .sec-t a{font-size:12.5px;font-weight:500}
+.plan-card{padding:18px;border-radius:var(--r-lg);background:var(--grad-cta);color:#fff;box-shadow:var(--sh-cta);position:relative;overflow:hidden}
+.plan-card::after{content:"";position:absolute;right:-30px;top:-30px;width:130px;height:130px;border-radius:50%;border:1px solid rgba(255,255,255,.28)}
+.plan-card small{font-size:10px;font-weight:700;letter-spacing:.24em;opacity:.85}
+.plan-card strong{display:block;font-size:20px;letter-spacing:-.03em;margin-top:6px}
+.plan-card span{font-size:12.5px;opacity:.9}
+.stat-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{padding:14px;border-radius:var(--r-md);background:var(--surface);border:1px solid var(--line);box-shadow:var(--sh-1)}
+.stat small{display:block;font-size:11px;color:var(--muted)}
+.stat strong{font-size:24px;letter-spacing:-.04em}
+.stat em{font-style:normal;font-size:11px;color:var(--success);font-weight:700}
+.class-item{display:flex;gap:12px;align-items:center;padding:12px;border-radius:var(--r-md);background:var(--surface);border:1px solid var(--line);box-shadow:var(--sh-1)}
+.class-item .time{flex:0 0 52px;text-align:center;padding:6px 0;border-radius:var(--r-sm);background:var(--brand-tint);color:var(--brand-strong);font-weight:700;font-size:14px;line-height:1.1}
+.class-item .time small{display:block;font-size:10px;font-weight:500;opacity:.8}
+.class-item .meta{flex:1;min-width:0}
+.class-item .meta b{display:block;font-size:14px;letter-spacing:-.01em}
+.class-item .meta span{font-size:12px;color:var(--muted)}
+.class-item .end{display:flex;flex-direction:column;align-items:flex-end;gap:4px;font-size:11px;color:var(--muted)}
+.tabbar{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line);background:var(--surface);padding:8px 6px 12px}
+.tabbar a{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10.5px;color:var(--faint);font-weight:500;padding:4px 0;border-radius:var(--r-sm)}
+.tabbar a:hover{text-decoration:none;color:var(--ink)}
+.tabbar svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.tabbar a[aria-current="page"]{color:var(--brand-strong)}
+.tabbar a[aria-current="page"] svg{stroke:var(--brand)}
+.back{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);padding:10px 18px 0}
+.hero-class{margin:0 18px;padding:20px;border-radius:var(--r-lg);background:var(--surface);border:1px solid var(--line);box-shadow:var(--sh-2)}
+.kv{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
+.kv div{font-size:12px;color:var(--muted)}
+.kv b{display:block;font-size:14px;color:var(--ink)}
+.spots{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin:14px 0 8px}
+.spots b{color:var(--ink)}
+.sticky-cta{margin-top:auto;padding:14px 18px 18px;border-top:1px solid var(--line);background:var(--surface)}
+.login-art{height:170px;position:relative;overflow:hidden;background:radial-gradient(circle at 70% 40%,rgba(237,110,52,.28),transparent 55%),radial-gradient(circle at 20% 90%,rgba(194,58,31,.18),transparent 50%),var(--bg-soft)}
+.login-art svg{position:absolute;width:96px;height:96px;left:50%;top:50%;transform:translate(-50%,-46%)}
+.login-art .orbit-ring{left:-10%;top:28%;width:120%;height:46%}
+
+/* ========================= Tokens ========================= */
+.swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,150px),1fr));gap:12px}
+.sw{border:1px solid var(--line);border-radius:var(--r-md);overflow:hidden;background:var(--surface);font-size:12px}
+.sw i{display:block;height:72px}
+.sw div{padding:10px 12px}
+.sw b{display:block;font-size:13px;color:var(--ink)}
+.sw code{font-size:11.5px;color:var(--muted)}
+.sw span{display:block;color:var(--faint);font-size:11px;margin-top:2px}
+.type-row{display:grid;grid-template-columns:130px 1fr;gap:16px;align-items:baseline;padding:14px 0;border-bottom:1px solid var(--line)}
+.type-row code{font-size:12px;color:var(--muted)}
+.type-row p{margin:0;min-width:0;overflow-wrap:anywhere}
+@media (max-width:560px){.type-row{grid-template-columns:1fr;gap:4px}}
+.space-row{display:flex;align-items:center;gap:14px;font-size:12px;color:var(--muted);padding:5px 0}
+.space-row code{width:64px;flex:0 0 auto}
+.space-row i{display:block;height:12px;border-radius:3px;background:var(--grad-cta)}
+.grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:24px}
+.grid-3{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:20px}
+.radius-demo{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:12px}
+.radius-demo div{height:84px;background:var(--brand-tint);border:1px solid var(--brand-line);display:flex;align-items:flex-end;padding:8px 10px;font-size:11.5px;color:var(--brand-strong);font-weight:500}
+.shadow-demo{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:20px}
+.shadow-demo div{height:96px;border-radius:var(--r-lg);background:var(--surface);border:1px solid var(--line);display:flex;align-items:flex-end;padding:12px;font-size:12px;color:var(--muted)}
+
+/* ========================= Componentes extras ========================= */
+.segmented{display:inline-flex;padding:4px;border-radius:var(--r-pill);background:var(--surface-2);border:1px solid var(--line);max-width:100%;overflow-x:auto}
+.segmented button{border:0;background:transparent;height:34px;padding:0 16px;border-radius:var(--r-pill);font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;white-space:nowrap}
+.segmented button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--sh-1)}
+.topnav-demo{display:flex;align-items:center;gap:20px;padding:14px 18px;border:1px solid var(--line);border-radius:var(--r-lg);background:var(--surface);flex-wrap:wrap}
+.topnav-demo a{font-size:14px;color:var(--muted);font-weight:500}
+.topnav-demo a[aria-current="page"]{color:var(--ink);position:relative}
+.topnav-demo a[aria-current="page"]::after{content:"";position:absolute;left:0;right:0;bottom:-6px;height:2px;border-radius:2px;background:var(--brand)}
+details.acc{border-bottom:1px solid var(--line)}
+details.acc:first-of-type{border-top:1px solid var(--line)}
+details.acc summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:16px;padding:18px 2px;font-weight:500;font-size:16px;letter-spacing:-.01em}
+details.acc summary::-webkit-details-marker{display:none}
+details.acc summary span{position:relative;flex:0 0 32px;height:32px;border-radius:50%;border:1px solid var(--line-2);transition:transform .3s var(--ease-out),background .2s}
+details.acc summary span::before,details.acc summary span::after{content:"";position:absolute;left:9px;right:9px;top:15px;height:2px;border-radius:2px;background:var(--brand)}
+details.acc summary span::after{transform:rotate(90deg);transition:transform .3s var(--ease-out)}
+details.acc[open] summary span{background:var(--brand);border-color:var(--brand);transform:rotate(180deg)}
+details.acc[open] summary span::before,details.acc[open] summary span::after{background:#fff}
+details.acc[open] summary span::after{transform:rotate(0)}
+details.acc p{margin:0 0 18px;color:var(--muted);font-size:14.5px;max-width:620px}
+.dialog-demo{max-width:420px;padding:28px;border-radius:24px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--sh-3)}
+.dialog-wrap{padding:28px 16px;border-radius:var(--r-xl);background:color-mix(in srgb,var(--ink) 12%,var(--bg))}
+.table-wrap{border:1px solid var(--line);border-radius:var(--r-lg);overflow-x:auto;background:var(--surface)}
+table{width:100%;border-collapse:collapse;font-size:14px;min-width:520px}
+th{text-align:left;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);font-weight:700;padding:12px 16px;background:var(--surface-2);border-bottom:1px solid var(--line)}
+td{padding:14px 16px;border-bottom:1px solid var(--line);color:var(--ink-2)}
+tr:last-child td{border-bottom:0}
+tbody tr:hover td{background:var(--bg-soft)}
+
+/* ========================= Comparativo ========================= */
+.cmp{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:20px}
+.cmp-card{border-radius:var(--r-xl);padding:24px;border:1px solid var(--line);min-width:0}
+.cmp-ora{background:#F7FBFF;color:#111827;border-color:#E0E9F7}
+.cmp-ora .k{color:#3574DA}
+.cmp-ora .btn-o{background:linear-gradient(145deg,#62A5FF,#0874FA 55%,#0855DF);color:#fff;border-radius:14px;padding:12px 18px;font-weight:700;font-size:14px;display:inline-block;font-family:Inter,var(--font-sans)}
+.cmp-ora .card-o{background:#fff;border:1px solid #E0E9F7;border-radius:25px;padding:16px;box-shadow:0 12px 38px #204B8610;font-size:13px;color:#68778E;margin-top:14px}
+.cmp-ora .card-o b{color:#111827;font-size:16px;display:block}
+.cmp-ora h3{color:#111827;font-family:Inter,var(--font-sans);letter-spacing:-.045em}
+.cmp-fb{background:var(--surface)}
+.cmp-card h3{font-size:26px;margin:6px 0 16px;line-height:1.1}
+.cmp-card .k{font-size:11px;font-weight:700;letter-spacing:.3em;text-transform:uppercase}
+.cmp-sw{display:flex;gap:6px;margin:16px 0 0}
+.cmp-sw i{width:28px;height:28px;border-radius:8px;border:1px solid rgba(0,0,0,.06)}
+.changes{margin:28px 0 0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:12px}
+.changes li{padding:14px 16px 14px 44px;position:relative;border:1px solid var(--line);border-radius:var(--r-md);background:var(--surface);font-size:14px;color:var(--muted)}
+.changes li b{color:var(--ink)}
+.changes li::before{content:"→";position:absolute;left:16px;top:13px;color:var(--brand-strong);font-weight:700}
+footer{padding:40px 0 56px;border-top:1px solid var(--line);font-size:13px;color:var(--faint)}
+
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="flame" viewBox="0 0 512 512">
+      <path fill="#C23A1F" transform="rotate(-8 210 270)" d="M210,100 C312.5,156.7 305,383.3 210,440 C115,383.3 107.5,156.7 210,100 Z"/>
+      <path fill="#ED6E34" transform="rotate(7 300 250)" d="M300,70 C436.5,132 392.5,368 300,430 C207.5,368 163.5,132 300,70 Z"/>
+    </symbol>
+  </defs>
+</svg>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#inicio" aria-label="Fitburn, início"><svg aria-hidden="true"><use href="#flame"/></svg>FITBURN</a>
+    <nav aria-label="Seções da proposta">
+      <a href="#telas">Telas</a>
+      <a href="#tokens">Design tokens</a>
+      <a href="#componentes">Componentes</a>
+      <a href="#comparativo">Comparativo</a>
+    </nav>
+    <button class="theme-btn" id="themeBtn" type="button" aria-label="Alternar tema claro e escuro">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      <span id="themeLabel">Tema</span>
+    </button>
+  </div>
+</header>
+
+<main>
+<!-- ============================ HERO ============================ -->
+<section class="hero" id="inicio">
+  <div class="wrap hero-grid">
+    <div>
+      <p class="kicker">Proposta de design · v0.1</p>
+      <h1 class="h-display">O sistema do Oratry,<br>com a <em>chama</em> da Fitburn.</h1>
+      <p class="lead">Raios generosos, sombras longas e neutros tingidos pela cor da marca. O laranja continua sendo acento, nunca fundo de área grande.</p>
+      <div class="actions">
+        <a class="btn btn-primary" href="#telas">Ver as telas <span class="arr" aria-hidden="true">→</span></a>
+        <a class="btn btn-secondary" href="#tokens">Abrir os tokens</a>
+      </div>
+      <div class="facts">
+        <div><strong>4</strong>telas de exemplo</div>
+        <div><strong>2</strong>temas: claro e escuro</div>
+        <div><strong>#ED6E34</strong>cor primária mantida</div>
+      </div>
+    </div>
+    <div class="orbit-scene" aria-hidden="true">
+      <div class="orbit-ring"></div>
+      <svg class="orbit-flame"><use href="#flame"/></svg>
+      <div class="float f1"><span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg></span><div><strong>Reserva confirmada</strong>Funcional, qui 07h00</div></div>
+      <div class="float f2"><span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 2l3 7h7l-5.5 4.5L18.5 21 12 16.5 5.5 21l2-7.5L2 9h7z"/></svg></span><div><strong>+40 FitPoints</strong>Presença registrada</div></div>
+      <div class="float f3"><span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg></span><div><strong>Meta do mês</strong>9 de 12 treinos</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ TELAS ============================ -->
+<section id="telas">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="kicker">Telas de exemplo</p>
+      <h2 class="h2">Área do cliente, <em>redesenhada</em>.</h2>
+      <p class="lead">Home, agenda, detalhe da aula e login. Dados fictícios. Use o botão de tema no topo para ver as telas no escuro, que é o padrão atual da área do cliente.</p>
+    </div>
+
+    <div class="screens">
+      <!-- HOME -->
+      <div>
+        <p class="screen-label"><b>Home</b><span>rota /</span></p>
+        <div class="device">
+          <div class="status"><span>9:41</span><span>5G ▮▮▮</span></div>
+          <div class="app-top">
+            <span class="brand"><svg aria-hidden="true"><use href="#flame"/></svg>FITBURN</span>
+            <span class="avatar" aria-label="Perfil">AC</span>
+          </div>
+          <div class="app-body">
+            <div>
+              <p class="kicker" style="margin-bottom:8px">Terça, 10 de novembro</p>
+              <h3>Bom dia, Aluno.</h3>
+            </div>
+            <div class="plan-card">
+              <small>PLANO ATIVO</small>
+              <strong>Musculação 3x por semana</strong>
+              <span>Ativo até 15/12</span>
+            </div>
+            <div class="stat-row">
+              <div class="stat"><small>FitPoints</small><strong>1.240</strong> <em>+40</em></div>
+              <div class="stat"><small>Treinos no mês</small><strong>9</strong><span style="font-size:12px;color:var(--muted)">/12</span>
+                <div class="meter" style="margin-top:8px" role="img" aria-label="75% da meta"><i style="width:75%"></i></div></div>
+            </div>
+            <div class="sec-t">Próximas aulas <a href="#telas">Ver agenda →</a></div>
+            <div class="class-item">
+              <div class="time">18h<small>Hoje</small></div>
+              <div class="meta"><b>Funcional</b><span>Prof. Exemplo · Sala 1</span></div>
+              <span class="badge ok"><span class="dot"></span>Reservada</span>
+            </div>
+            <div class="class-item">
+              <div class="time">07h<small>Qui</small></div>
+              <div class="meta"><b>Mobilidade</b><span>Prof. Modelo · Sala 2</span></div>
+              <span class="badge brand">3 vagas</span>
+            </div>
+          </div>
+          <nav class="tabbar" aria-label="Navegação do app">
+            <a href="#telas" aria-current="page"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Início</a>
+            <a href="#telas"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>Agenda</a>
+            <a href="#telas"><svg viewBox="0 0 24 24"><path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>Ficha</a>
+            <a href="#telas"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>Perfil</a>
+          </nav>
+        </div>
+      </div>
+
+      <!-- AGENDA -->
+      <div>
+        <p class="screen-label"><b>Agenda</b><span>rota /agenda</span></p>
+        <div class="device">
+          <div class="status"><span>9:41</span><span>5G ▮▮▮</span></div>
+          <div class="app-body">
+            <div>
+              <p class="kicker" style="margin-bottom:8px">Novembro</p>
+              <h3>Agenda de aulas</h3>
+            </div>
+            <div class="chips" role="group" aria-label="Dia">
+              <button class="chip" type="button">Seg<b>9</b></button>
+              <button class="chip" type="button" aria-pressed="true">Ter<b>10</b></button>
+              <button class="chip" type="button">Qua<b>11</b></button>
+              <button class="chip" type="button">Qui<b>12</b></button>
+              <button class="chip" type="button">Sex<b>13</b></button>
+              <button class="chip" type="button">Sáb<b>14</b></button>
+            </div>
+            <div class="chips" role="group" aria-label="Modalidade">
+              <button class="pill" type="button" aria-pressed="true">Todas</button>
+              <button class="pill" type="button">Funcional</button>
+              <button class="pill" type="button">Musculação</button>
+              <button class="pill" type="button">Mobilidade</button>
+            </div>
+            <div class="class-item">
+              <div class="time">06h<small>60 min</small></div>
+              <div class="meta"><b>Musculação guiada</b><span>Prof. Exemplo</span></div>
+              <div class="end"><span class="badge err">Lotada</span></div>
+            </div>
+            <div class="class-item">
+              <div class="time">07h<small>45 min</small></div>
+              <div class="meta"><b>Mobilidade</b><span>Prof. Modelo</span></div>
+              <div class="end"><span class="badge brand">3 vagas</span></div>
+            </div>
+            <div class="class-item">
+              <div class="time">12h<small>45 min</small></div>
+              <div class="meta"><b>Funcional</b><span>Prof. Exemplo</span></div>
+              <div class="end"><span class="badge warn">1 vaga</span></div>
+            </div>
+            <div class="class-item">
+              <div class="time">18h<small>60 min</small></div>
+              <div class="meta"><b>Funcional</b><span>Prof. Teste</span></div>
+              <div class="end"><span class="badge ok"><span class="dot"></span>Reservada</span></div>
+            </div>
+          </div>
+          <nav class="tabbar" aria-label="Navegação do app">
+            <a href="#telas"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Início</a>
+            <a href="#telas" aria-current="page"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>Agenda</a>
+            <a href="#telas"><svg viewBox="0 0 24 24"><path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>Ficha</a>
+            <a href="#telas"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>Perfil</a>
+          </nav>
+        </div>
+      </div>
+
+      <!-- DETALHE / RESERVA -->
+      <div>
+        <p class="screen-label"><b>Detalhe da aula</b><span>reserva</span></p>
+        <div class="device">
+          <div class="status"><span>9:41</span><span>5G ▮▮▮</span></div>
+          <a class="back" href="#telas">← Agenda</a>
+          <div class="app-body" style="padding-left:0;padding-right:0">
+            <div class="hero-class">
+              <span class="badge brand">Mobilidade</span>
+              <h3 style="margin-top:12px">Mobilidade e core</h3>
+              <p style="margin:6px 0 0;font-size:13px;color:var(--muted)">Quinta, 12/11 · 07h00 às 07h45</p>
+              <div class="kv">
+                <div>Professor<b>Prof. Modelo</b></div>
+                <div>Local<b>Sala 2</b></div>
+                <div>Nível<b>Todos</b></div>
+                <div>FitPoints<b>+40</b></div>
+              </div>
+              <div class="spots"><span>Disponibilidade</span><span><b>3</b> de 8 vagas</span></div>
+              <div class="meter" role="img" aria-label="5 de 8 vagas ocupadas"><i style="width:62.5%"></i></div>
+            </div>
+            <div style="padding:0 18px;display:flex;flex-direction:column;gap:10px">
+              <div class="alert err" role="alert">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="flex:0 0 auto"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 17h.01"/></svg>
+                <span>Conflito de reserva: você já tem uma aula neste horário. Atualize a agenda para ver as vagas atuais.</span>
+              </div>
+              <p style="margin:0;font-size:12.5px;color:var(--faint)">A disponibilidade mostrada é informativa; a confirmação depende das vagas no momento da reserva.</p>
+            </div>
+          </div>
+          <div class="sticky-cta">
+            <button class="btn btn-primary btn-block" type="button">Reservar aula <span class="arr" aria-hidden="true">→</span></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- LOGIN -->
+      <div>
+        <p class="screen-label"><b>Login</b><span>rota /login</span></p>
+        <div class="device">
+          <div class="login-art" aria-hidden="true"><div class="orbit-ring"></div><svg><use href="#flame"/></svg></div>
+          <div class="app-body" style="gap:16px">
+            <div>
+              <p class="kicker" style="margin-bottom:8px">Fitburn Brasil</p>
+              <h3>Entre e siga o seu <em style="font-family:var(--font-serif);font-style:italic;color:var(--brand-strong)">treino</em>.</h3>
+            </div>
+            <div class="field">
+              <label for="lg-email">E-mail</label>
+              <input class="input is-focus" id="lg-email" type="email" value="aluno@exemplo.com" autocomplete="off">
+            </div>
+            <div class="field">
+              <label for="lg-pass">Senha</label>
+              <input class="input is-error" id="lg-pass" type="password" value="12345" aria-describedby="lg-pass-h" aria-invalid="true">
+              <span class="help err" id="lg-pass-h">E-mail ou senha incorretos.</span>
+            </div>
+            <button class="btn btn-primary btn-block" type="button">Entrar <span class="arr" aria-hidden="true">→</span></button>
+            <a href="#telas" style="text-align:center;font-size:13.5px;font-weight:500">Esqueci minha senha</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ TOKENS ============================ -->
+<section id="tokens" style="background:var(--bg-soft)">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="kicker">Design tokens</p>
+      <h2 class="h2">A base, em <em>variáveis</em>.</h2>
+      <p class="lead">Todas as cores estão em <code>:root</code> e mudam no modo escuro. As duas cores de marca não mudam; os neutros trocam de quente-claro para o preto Fitburn.</p>
+    </div>
+
+    <h3 class="sub">Cor · marca</h3>
+    <div class="swatches">
+      <div class="sw"><i style="background:#ED6E34"></i><div><b>Laranja Fitburn</b><code>--brand #ED6E34</code><span>Primária, CTA, ativo</span></div></div>
+      <div class="sw"><i style="background:#C23A1F"></i><div><b>Vermelho-chama</b><code>--flame #C23A1F</code><span>Secundária, fim do gradiente</span></div></div>
+      <div class="sw"><i style="background:var(--grad-cta)"></i><div><b>Gradiente CTA</b><code>--grad-cta</code><span>#F58A55 → #ED6E34 → #C23A1F</span></div></div>
+      <div class="sw"><i style="background:var(--brand-strong)"></i><div><b>Laranja texto</b><code>--brand-strong</code><span>#A8401A claro · #F08A5A escuro</span></div></div>
+      <div class="sw"><i style="background:var(--brand-tint)"></i><div><b>Tint</b><code>--brand-tint</code><span>Superfícies suaves</span></div></div>
+      <div class="sw"><i style="background:var(--brand-line)"></i><div><b>Linha de marca</b><code>--brand-line</code><span>Bordas de controle</span></div></div>
+    </div>
+
+    <h3 class="sub">Cor · neutros e estados</h3>
+    <div class="swatches">
+      <div class="sw"><i style="background:var(--bg)"></i><div><b>Fundo</b><code>--bg</code><span>#FFFFFF · #0A0A0A</span></div></div>
+      <div class="sw"><i style="background:var(--surface-2)"></i><div><b>Superfície 2</b><code>--surface-2</code><span>#FBF5F1 · #1E1916</span></div></div>
+      <div class="sw"><i style="background:var(--ink)"></i><div><b>Tinta</b><code>--ink</code><span>#1C1714 · #FFFFFF</span></div></div>
+      <div class="sw"><i style="background:var(--muted)"></i><div><b>Texto secundário</b><code>--muted</code><span>#6B5D55 · #A39A94</span></div></div>
+      <div class="sw"><i style="background:var(--line-2)"></i><div><b>Linha</b><code>--line-2</code><span>#E5D3C8 · #3A302B</span></div></div>
+      <div class="sw"><i style="background:var(--danger)"></i><div><b>Erro</b><code>--danger</code><span>#B42318 · #FF6D5A</span></div></div>
+      <div class="sw"><i style="background:var(--success)"></i><div><b>Sucesso</b><code>--success</code><span>#1E6B34 · #5CC98A</span></div></div>
+      <div class="sw"><i style="background:var(--warn)"></i><div><b>Aviso</b><code>--warn</code><span>#8A5A00 · #F2C25C</span></div></div>
+    </div>
+
+    <h3 class="sub">Tipografia · DM Sans (no papel da Satoshi) + Cormorant itálico para ênfase</h3>
+    <div>
+      <div class="type-row"><code>Display 72/1.04<br>700 · -0.045em</code><p style="font-size:clamp(34px,6vw,72px);line-height:1.04;letter-spacing:-.045em;font-weight:700">Treino com <em style="font-family:var(--font-serif);color:var(--brand-strong)">método</em></p></div>
+      <div class="type-row"><code>H2 52/1.06<br>700 · -0.045em</code><p style="font-size:clamp(28px,4.2vw,52px);line-height:1.06;letter-spacing:-.045em;font-weight:700">Próximas aulas</p></div>
+      <div class="type-row"><code>H3 24/1.1<br>700 · -0.035em</code><p style="font-size:24px;line-height:1.1;letter-spacing:-.035em;font-weight:700">Mobilidade e core</p></div>
+      <div class="type-row"><code>Corpo 16/1.55<br>400</code><p>Uma reserva só existe quando a disponibilidade foi validada.</p></div>
+      <div class="type-row"><code>Pequeno 13/1.45<br>500</code><p style="font-size:13px;font-weight:500;color:var(--muted)">Prof. Exemplo · Sala 2 · 45 min</p></div>
+      <div class="type-row"><code>Kicker 11<br>700 · 0.32em</code><p class="kicker" style="margin:0">Plano ativo</p></div>
+    </div>
+
+    <div class="grid-2" style="margin-top:40px">
+      <div>
+        <h3 class="sub">Espaçamento · base 4</h3>
+        <div class="space-row"><code>--s-1 4</code><i style="width:4px"></i></div>
+        <div class="space-row"><code>--s-2 8</code><i style="width:8px"></i></div>
+        <div class="space-row"><code>--s-3 12</code><i style="width:12px"></i></div>
+        <div class="space-row"><code>--s-4 16</code><i style="width:16px"></i></div>
+        <div class="space-row"><code>--s-5 20</code><i style="width:20px"></i></div>
+        <div class="space-row"><code>--s-6 24</code><i style="width:24px"></i></div>
+        <div class="space-row"><code>--s-8 32</code><i style="width:32px"></i></div>
+        <div class="space-row"><code>--s-12 48</code><i style="width:48px"></i></div>
+        <div class="space-row"><code>--s-16 64</code><i style="width:64px"></i></div>
+        <div class="space-row"><code>--s-24 96</code><i style="width:96px"></i></div>
+        <p class="help" style="margin-top:12px">Container de 1240px com gutter de 16px no celular e até 48px no desktop. Cards: padding 24px; itens de lista: 12px.</p>
+      </div>
+      <div>
+        <h3 class="sub">Raio</h3>
+        <div class="radius-demo">
+          <div style="border-radius:var(--r-xs)">xs 6</div>
+          <div style="border-radius:var(--r-sm)">sm 10</div>
+          <div style="border-radius:var(--r-md)">md 14</div>
+          <div style="border-radius:var(--r-lg)">lg 20</div>
+          <div style="border-radius:var(--r-xl)">xl 28</div>
+          <div style="border-radius:var(--r-pill)">pill</div>
+        </div>
+        <p class="help" style="margin-top:12px">Botão sm 10 · botão e input 14 · card 20 · tela e diálogo 24 a 28.</p>
+        <h3 class="sub">Sombras · com deslocamento, tingidas</h3>
+        <div class="shadow-demo">
+          <div style="box-shadow:var(--sh-1)">--sh-1 · lista</div>
+          <div style="box-shadow:var(--sh-2)">--sh-2 · card</div>
+          <div style="box-shadow:var(--sh-3)">--sh-3 · tela, diálogo</div>
+          <div style="box-shadow:var(--sh-cta);background:var(--grad-cta);color:#fff;border-color:transparent">--sh-cta · ação</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ COMPONENTES ============================ -->
+<section id="componentes">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="kicker">Componentes</p>
+      <h2 class="h2">Peças com <em>estados</em>.</h2>
+      <p class="lead">Cada controle tem repouso, hover, foco (anel laranja de 3px), pressionado (escala 0,97), desabilitado e, quando cabe, erro e carregando.</p>
+    </div>
+
+    <h3 class="sub">Botões</h3>
+    <div class="row">
+      <button class="btn btn-primary" type="button">Reservar aula <span class="arr" aria-hidden="true">→</span></button>
+      <button class="btn btn-secondary" type="button">Cancelar</button>
+      <button class="btn btn-soft" type="button">Ver ficha</button>
+      <button class="btn btn-ghost" type="button">Agora não</button>
+      <button class="btn btn-danger" type="button">Excluir</button>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <button class="btn btn-primary" type="button" aria-busy="true"><span class="spin" aria-hidden="true"></span>Reservando…</button>
+      <button class="btn btn-primary" type="button" disabled>Aula lotada</button>
+      <button class="btn btn-primary btn-sm" type="button">Pequeno</button>
+      <button class="btn btn-secondary btn-sm" type="button">Pequeno</button>
+    </div>
+    <div class="grid-3" style="margin-top:16px">
+      <button class="btn btn-soft btn-choice" type="button">Escolher Musculação 2x <span class="arr" aria-hidden="true">→</span></button>
+      <button class="btn btn-primary btn-choice" type="button">Escolher Musculação 3x <span class="arr" aria-hidden="true">→</span></button>
+    </div>
+
+    <h3 class="sub">Campos</h3>
+    <div class="grid-3">
+      <div class="field"><label for="f1">Nome</label><input class="input" id="f1" placeholder="Como devemos te chamar"><span class="help">Repouso</span></div>
+      <div class="field"><label for="f2">E-mail</label><input class="input is-focus" id="f2" value="aluno@exemplo.com"><span class="help">Foco</span></div>
+      <div class="field"><label for="f3">Telefone</label><input class="input is-error" id="f3" value="(31) 9999" aria-invalid="true"><span class="help err">Telefone incompleto.</span></div>
+      <div class="field"><label for="f4">CPF</label><input class="input is-ok" id="f4" value="000.000.000-00"><span class="help ok">Formato válido.</span></div>
+      <div class="field"><label for="f5">Plano</label><input class="input" id="f5" value="Definido pela recepção" disabled><span class="help">Desabilitado</span></div>
+      <div class="field" style="justify-content:center"><label class="check"><input type="checkbox" checked> Li e aceito os termos de uso e a política de privacidade.</label></div>
+    </div>
+
+    <h3 class="sub">Cards</h3>
+    <div class="grid-3">
+      <div class="card">
+        <p class="kicker" style="margin-bottom:10px">Mensal</p>
+        <h3 style="font-size:24px;letter-spacing:-.04em">Musculação 2x</h3>
+        <p style="margin:8px 0 18px;font-size:14px;color:var(--muted)">Duas aulas por semana com professor dedicado.</p>
+        <p style="margin:0;font-size:36px;font-weight:700;letter-spacing:-.055em">R$ 000<small style="font-size:14px;font-weight:500;letter-spacing:0;color:var(--muted)"> /mês</small></p>
+        <ul style="list-style:none;padding:0;margin:18px 0 20px;display:grid;gap:10px;font-size:14px;color:var(--muted)">
+          <li>✓&nbsp; Ficha de treino no app</li><li>✓&nbsp; Reserva de aulas</li>
+        </ul>
+        <button class="btn btn-soft btn-choice" type="button">Ver detalhes <span class="arr" aria-hidden="true">→</span></button>
+      </div>
+      <div class="card hl" style="position:relative">
+        <span class="badge solid" style="position:absolute;top:-12px;left:20px">RECOMENDADO</span>
+        <p class="kicker" style="margin-bottom:10px">Mensal</p>
+        <h3 style="font-size:24px;letter-spacing:-.04em">Musculação 3x</h3>
+        <p style="margin:8px 0 18px;font-size:14px;color:var(--muted)">Três aulas por semana e avaliação mensal.</p>
+        <p style="margin:0;font-size:36px;font-weight:700;letter-spacing:-.055em">R$ 000<small style="font-size:14px;font-weight:500;letter-spacing:0;color:var(--muted)"> /mês</small></p>
+        <ul style="list-style:none;padding:0;margin:18px 0 20px;display:grid;gap:10px;font-size:14px;color:var(--muted)">
+          <li>✓&nbsp; Tudo do 2x</li><li>✓&nbsp; Avaliação física mensal</li>
+        </ul>
+        <button class="btn btn-primary btn-choice" type="button">Ver detalhes <span class="arr" aria-hidden="true">→</span></button>
+      </div>
+      <div class="card" style="display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;gap:12px;align-items:center">
+          <span class="ic-circle"><svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg></span>
+          <div><b style="display:block">Meta do mês</b><span style="font-size:13px;color:var(--muted)">9 de 12 treinos</span></div>
+        </div>
+        <div class="meter" role="img" aria-label="75%"><i style="width:75%"></i></div>
+        <div class="alert ok"><span>Presença registrada. +40 FitPoints.</span></div>
+      </div>
+    </div>
+
+    <h3 class="sub">Badges e chips</h3>
+    <div class="row">
+      <span class="badge">Neutro</span>
+      <span class="badge brand">3 vagas</span>
+      <span class="badge solid">Novo</span>
+      <span class="badge ok"><span class="dot"></span>Reservada</span>
+      <span class="badge warn">1 vaga</span>
+      <span class="badge err">Lotada</span>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <button class="pill" type="button" aria-pressed="true">Todas</button>
+      <button class="pill" type="button">Funcional</button>
+      <button class="pill" type="button">Musculação</button>
+      <button class="chip" type="button" aria-pressed="true">Ter<b>10</b></button>
+      <button class="chip" type="button">Qua<b>11</b></button>
+    </div>
+
+    <h3 class="sub">Navegação</h3>
+    <div class="grid-2">
+      <div style="display:flex;flex-direction:column;gap:14px;min-width:0">
+        <div class="topnav-demo" role="navigation" aria-label="Exemplo de navegação administrativa">
+          <span class="brand" style="font-size:12px"><svg aria-hidden="true" style="width:22px;height:22px"><use href="#flame"/></svg>FITBURN</span>
+          <a href="#componentes" aria-current="page">Dashboard</a>
+          <a href="#componentes">Clientes</a>
+          <a href="#componentes">Agenda</a>
+          <a href="#componentes">Planos</a>
+        </div>
+        <div class="segmented" role="group" aria-label="Período do ranking">
+          <button type="button" aria-pressed="true">Semanal</button>
+          <button type="button">Mensal</button>
+          <button type="button">Geral</button>
+        </div>
+      </div>
+      <div style="border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;max-width:380px;width:100%">
+        <nav class="tabbar" aria-label="Exemplo de barra inferior" style="border-top:0">
+          <a href="#componentes" aria-current="page"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Início</a>
+          <a href="#componentes"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>Agenda</a>
+          <a href="#componentes"><svg viewBox="0 0 24 24"><path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>Ficha</a>
+          <a href="#componentes"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>Perfil</a>
+        </nav>
+      </div>
+    </div>
+
+    <h3 class="sub">Tabela (área administrativa)</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Aula</th><th>Horário</th><th>Professor</th><th>Ocupação</th><th>Situação</th></tr></thead>
+        <tbody>
+          <tr><td>Funcional</td><td>Ter 18h00</td><td>Prof. Teste</td><td>7/8</td><td><span class="badge warn">1 vaga</span></td></tr>
+          <tr><td>Mobilidade</td><td>Qui 07h00</td><td>Prof. Modelo</td><td>5/8</td><td><span class="badge brand">3 vagas</span></td></tr>
+          <tr><td>Musculação guiada</td><td>Sex 06h00</td><td>Prof. Exemplo</td><td>8/8</td><td><span class="badge err">Lotada</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="grid-2" style="margin-top:8px">
+      <div>
+        <h3 class="sub">Acordeão</h3>
+        <details class="acc" open><summary>Posso cancelar uma reserva?<span aria-hidden="true"></span></summary><p>Sim, até o prazo definido pelo estúdio. A vaga volta para a disponibilidade da aula.</p></details>
+        <details class="acc"><summary>Como ganho FitPoints?<span aria-hidden="true"></span></summary><p>Cada presença registrada e cada meta cumprida soma pontos.</p></details>
+      </div>
+      <div>
+        <h3 class="sub">Diálogo</h3>
+        <div class="dialog-wrap">
+          <div class="dialog-demo" role="dialog" aria-labelledby="dlg-t" style="margin:0 auto">
+            <h3 id="dlg-t" style="font-size:22px;letter-spacing:-.03em">Cancelar reserva?</h3>
+            <p style="color:var(--muted);font-size:14.5px;margin:10px 0 22px">Funcional, terça às 18h00. A vaga fica livre para outro aluno.</p>
+            <div class="row" style="justify-content:flex-end">
+              <button class="btn btn-secondary btn-sm" type="button">Manter</button>
+              <button class="btn btn-danger btn-sm" type="button">Cancelar reserva</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ COMPARATIVO ============================ -->
+<section id="comparativo" style="background:var(--bg-soft)">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="kicker">Comparativo</p>
+      <h2 class="h2">Oratry original <em>vs.</em> Fitburn.</h2>
+    </div>
+    <div class="cmp">
+      <div class="cmp-card cmp-ora">
+        <p class="k">Oratry · original</p>
+        <h3>Azul, claro, arejado.</h3>
+        <a class="btn-o" href="#comparativo" style="color:#fff;text-decoration:none">Comece agora mesmo →</a>
+        <div class="card-o"><b>Starter</b>Card com raio 25px, borda #E0E9F7 e sombra azul longa.</div>
+        <div class="cmp-sw"><i style="background:#0869F5"></i><i style="background:#62A5FF"></i><i style="background:#F2F7FF"></i><i style="background:#111827"></i><i style="background:#68778E"></i></div>
+        <p style="font-size:13px;color:#68778E;margin:14px 0 0">Satoshi/Inter · só tema claro · neutros azulados</p>
+      </div>
+      <div class="cmp-card cmp-fb">
+        <p class="k" style="color:var(--brand-strong)">Fitburn · proposta</p>
+        <h3>Laranja e chama, claro <em style="font-family:var(--font-serif);color:var(--brand-strong)">e</em> escuro.</h3>
+        <a class="btn btn-primary btn-sm" href="#comparativo">Reservar aula →</a>
+        <div class="card" style="margin-top:14px;padding:16px;font-size:13px;color:var(--muted)"><b style="display:block;color:var(--ink);font-size:16px">Musculação 3x</b>Raio 20px, borda quente e sombra tingida de marrom-laranja.</div>
+        <div class="cmp-sw"><i style="background:#ED6E34"></i><i style="background:#C23A1F"></i><i style="background:var(--brand-tint)"></i><i style="background:var(--ink)"></i><i style="background:var(--muted)"></i></div>
+        <p style="font-size:13px;color:var(--muted);margin:14px 0 0">DM Sans + Cormorant itálico · claro e escuro · neutros quentes</p>
+      </div>
+    </div>
+
+    <h3 class="sub" style="margin-top:48px">O que mudou em relação ao app atual</h3>
+    <ul class="changes">
+      <li><b>Raio de 5px para 10 a 28px</b>, graduado pelo tamanho do elemento, como no Oratry.</li>
+      <li><b>Gradiente laranja → chama no CTA</b>, refazendo o próprio logo; antes era laranja sólido.</li>
+      <li><b>Sombras em cards no fluxo</b>, longas e tingidas; antes só popover, diálogo e sheet tinham sombra.</li>
+      <li><b>Neutros quentes</b> (#1C1714, #6B5D55, #EFE2DA) no lugar dos cinzas puros #8A8A8A e #B0B0B0.</li>
+      <li><b>Laranja de texto #A8401A sobre claro</b> (6,15:1); o #ED6E34 passava de 3:1 só.</li>
+      <li><b>Cormorant só como ênfase em itálico</b>; títulos em DM Sans 700 com tracking negativo.</li>
+      <li><b>Kicker em caixa alta espaçada</b> acima de cada título e seta "→" nas ações principais.</li>
+      <li><b>Tema por preferência do sistema</b>; o app hoje fixa escuro no cliente e claro no admin.</li>
+    </ul>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">Proposta exploratória. Referência visual do app até decisão em issue. Dados fictícios.</div>
+</footer>
+
+<script>
+(function(){
+  var root=document.documentElement,btn=document.getElementById('themeBtn'),lbl=document.getElementById('themeLabel');
+  function current(){var t=root.getAttribute('data-theme');if(t)return t;return window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}
+  function paint(){lbl.textContent=current()==='dark'?'Escuro':'Claro'}
+  try{var s=localStorage.getItem('fb-theme');if(s)root.setAttribute('data-theme',s)}catch(e){}
+  paint();
+  btn.addEventListener('click',function(){var n=current()==='dark'?'light':'dark';root.setAttribute('data-theme',n);try{localStorage.setItem('fb-theme',n)}catch(e){}paint()});
+})();
+</script>
+</body>
+</html>

@@ -1,11 +1,11 @@
 /**
- * Metas individuais (professor) — MetasAdmin.dc.html no canvas de design
- * (Claude Design), https://claude.ai/artifact/VncuMf9CffiWGUEQYywLVX. Casca
+ * Metas individuais (professor) —
+ *. Casca
  * administrativa clara: coluna "MEUS ALUNOS" de 240px e a área principal. A
  * página anula o padding do conteúdo administrativo para a coluna ficar
- * encostada na barra lateral, como no artboard. "Valor alvo" e a barra de
- * progresso do artboard ficam de fora até a API trazer valor alvo e progresso.
- * Cores: os valores literais do artboard (var(--color-text-muted-on-light), var(--color-text-faint-on-light), var(--color-primary-orange), branco sobre o laranja).
+ * encostada na barra lateral, como na tela de referência. "Valor alvo" e a barra de
+ * progresso da tela de referência ficam de fora até a API trazer valor alvo e progresso.
+ * Cores: os valores literais da tela de referência (var(--color-text-muted-on-light), var(--color-text-faint-on-light), var(--color-primary-orange), branco sobre o laranja).
  */
 .fb-goals {
   display: flex;
@@ -103,12 +103,12 @@
   color: var(--color-ink-on-dark);
 }
 
-/* O aviso amarelo é o .fb-lock-banner; aqui o corpo de texto menor do artboard (cores literais). */
+/* O aviso amarelo é o .fb-lock-banner; aqui o corpo de texto menor da tela de referência (cores literais). */
 .fb-goals__banner {
   display: block;
   background: var(--color-warm-bg);
   border-color: var(--color-warn-border);
-  /* O artboard põe o texto (12px/18px) num <span> dentro de um bloco de 16px: cada linha mede 21px. */
+  /* O tela de referência põe o texto (12px/18px) num <span> dentro de um bloco de 16px: cada linha mede 21px. */
   font-size: 16px;
   line-height: normal;
   color: var(--color-warn);
@@ -179,7 +179,7 @@
   color: var(--color-text-muted-on-dark);
 }
 
-/* Prazo e o menu de ações da meta (o artboard não tem botões no cartão). */
+/* Prazo e o menu de ações da meta (a tela de referência não tem botões no cartão). */
 .fb-goals__card-side {
   display: flex;
   align-items: center;
@@ -284,7 +284,7 @@
   color: var(--color-text-muted-on-dark);
 }
 
-/* Barra de progresso do artboard: só a meta concluída tem dado para isso (100%, verde). */
+/* Barra de progresso da tela de referência: só a meta concluída tem dado para isso (100%, verde). */
 .fb-goals__bar {
   height: 8px;
   border-radius: var(--radius-xs);
@@ -329,7 +329,7 @@
   gap: 12px;
 }
 
-/* Rótulo e campo do formulário sobre o cinza #fafafa; branco sobre o laranja como no artboard. */
+/* Rótulo e campo do formulário sobre o cinza #fafafa; branco sobre o laranja como na tela de referência. */
 .fb-goals__form .fb-btn-primary {
   color: #ffffff;
 }

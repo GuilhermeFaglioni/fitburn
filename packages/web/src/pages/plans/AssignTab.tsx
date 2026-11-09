@@ -10,10 +10,10 @@ import { assignPlan, getPlanAssignmentOptions, listClientPlans } from "../../lib
 import { ErrorState, Feedback, LoadingState } from "../../components/states";
 
 /**
- * "Atribuir a cliente" (PlanosAdmin.dc.html): cliente, plano e as datas de
+ * "Atribuir a cliente": cliente, plano e as datas de
  * início e término; se o cliente já tem um plano ativo, o aviso de que a nova
  * atribuição o substitui (o atual termina na véspera do início do novo).
- * Abaixo, o histórico de planos do cliente escolhido. O artboard não tem as datas (o spec as pede na atribuição).
+ * Abaixo, o histórico de planos do cliente escolhido. O tela de referência não tem as datas (o spec as pede na atribuição).
  */
 const EMPTY_FORM = { clientId: "", planId: "", startDate: "", endDate: "" };
 

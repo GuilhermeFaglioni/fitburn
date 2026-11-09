@@ -8,7 +8,7 @@ import { statusBadge } from "./workout-sheets/status";
 import { EmptyState, ErrorState, LoadingState } from "../components/states";
 
 /**
- * Ficha de treino do cliente (FichaTreinoDesktop.dc.html / FichaTreinoMobile.dc.html):
+ * Ficha de treino do cliente:
  * numa página só, a ficha ativa com os exercícios e, abaixo, "Fichas
  * anteriores" (concluídas e arquivadas), que abrem no detalhe. Somente leitura.
  */

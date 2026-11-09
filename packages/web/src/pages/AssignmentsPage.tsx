@@ -17,7 +17,7 @@ import { ErrorState, Feedback, LoadingState } from "../components/states";
  * Atribuição de clientes a professores: a administração escolhe um professor,
  * vê os clientes atribuídos a ele e atribui ou remove. Junto dos clientes com
  * reserva nas aulas do professor, essas atribuições formam o escopo "clientes
- * atribuídos". Não há artboard para esta tela no canvas: usa a casca
+ * atribuídos". Não há referência de design para esta tela: usa a casca
  * administrativa clara, como as telas de Usuários e de Templates.
  */
 export function AssignmentsPage() {

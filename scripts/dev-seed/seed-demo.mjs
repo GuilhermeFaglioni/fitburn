@@ -4,19 +4,19 @@
  *
  * Fala só com a API (o admin criado por `prisma:seed`) e pode ser rodado de
  * novo: o que já existe (por nome/e-mail) é reaproveitado. Os dados seguem os
- * textos dos artboards do Claude Design (Marina Souza, Plano Performance,
+ * dados de demonstração (Marina Souza, Plano Performance,
  * Treino Funcional 18h00, Muay Thai lotada...).
  *
  * NÃO use em produção. Todas as contas criadas usam a senha do admin inicial
  * (INITIAL_ADMIN_PASSWORD do .env), então nenhuma credencial vai para o repo.
  *
- *   pnpm design:seed            # API em http://localhost:3333/api
- *   API_URL=http://localhost:3333/api node scripts/design-compare/seed-demo.mjs
+ *   pnpm demo:seed            # API em http://localhost:3333/api
+ *   API_URL=http://localhost:3333/api node scripts/dev-seed/seed-demo.mjs
  */
 import { randomUUID } from "node:crypto";
 import { createRequire } from "node:module";
 import path from "node:path";
-import { ROOT, loadEnv, gymToday, addDays, weekdayOf, DEMO } from "./lib/env.mjs";
+import { ROOT, loadEnv, gymToday, addDays, weekdayOf, DEMO } from "../lib/env.mjs";
 
 const env = loadEnv();
 const API = process.env.API_URL ?? `http://localhost:${env.PORT ?? 3333}/api`;

@@ -4,7 +4,7 @@ import fs from "node:fs";
 import net from "node:net";
 import path from "node:path";
 import { createRequire } from "node:module";
-import { ROOT, loadEnv } from "../../design-compare/lib/env.mjs";
+import { ROOT, loadEnv } from "../../lib/env.mjs";
 
 const API_DIR = path.join(ROOT, "packages/api");
 const WEB_DIR = path.join(ROOT, "packages/web");
