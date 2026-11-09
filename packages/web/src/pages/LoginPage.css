@@ -1,266 +1,136 @@
+/* Login na base de design (D-038): coluna centralizada com o cartão do formulário. Só tokens. */
 .login-page {
+  box-sizing: border-box;
   min-height: 100%;
   flex: 1;
   display: flex;
+  flex-direction: column;
+  padding: var(--s-4) var(--container-gutter) var(--s-8);
+  gap: var(--s-6);
+}
+
+/* Cabeçalho da tela: logotipo à esquerda e o botão de tema (o mesmo da casca do cliente) à direita. */
+.login-page__top {
+  display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 24px;
+  justify-content: space-between;
+  gap: var(--s-3);
+}
+
+.login-page__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-size: var(--text-action);
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.18em;
+  color: var(--ink);
+}
+
+.login-page__brand-mark {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+}
+
+.login-page__brand-reg {
+  align-self: flex-start;
+  margin-left: calc(var(--s-1) * -1);
+  font-size: var(--text-kicker);
+  letter-spacing: 0;
+  color: var(--muted);
 }
 
 .login-page__container {
   width: 100%;
   max-width: 400px;
+  min-width: 0;
+  margin: auto;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 28px;
+  gap: var(--s-5);
 }
 
-.login-page__logo {
-  display: flex;
-  align-items: baseline;
-  gap: 2px;
-}
-
-.login-page__logo-mark {
-  font-size: 20px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  color: var(--color-ink-on-dark);
-}
-
-.login-page__logo-reg {
-  font-size: 10px;
-  color: var(--color-on-dark-40);
-  align-self: flex-start;
-}
-
-.login-form {
+.login-card {
   width: 100%;
+  min-width: 0;
   box-sizing: border-box;
-  background: var(--color-surface-raised);
-  border-radius: var(--radius-sm);
-  padding: 28px 20px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-2);
+  padding: var(--s-7) var(--s-5);
   display: flex;
   flex-direction: column;
-  gap: 22px;
+  gap: var(--s-4);
 }
 
-.login-form__header {
+.login-card__header {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--s-2);
+  margin-bottom: var(--s-2);
 }
 
-.login-form__title {
+.login-card__kicker {
+  color: var(--brand-strong);
+}
+
+.login-card__title {
   margin: 0;
   font-family: var(--font-sans);
   font-weight: var(--weight-bold);
   font-size: var(--text-h1);
   letter-spacing: var(--tracking-title);
   line-height: var(--leading-title);
-  color: var(--color-ink-on-dark);
+  color: var(--ink);
 }
 
-.login-form__subtitle {
+/* A ênfase em itálico (Cormorant, .fb-em) usa o laranja forte da marca, como no título da proposta. */
+.login-card__title .fb-em {
+  color: var(--brand-strong);
+}
+
+.login-card__subtitle {
   margin: 0;
-  font-size: 13px;
-  line-height: 19px;
-  color: var(--color-on-dark-55);
+  font-size: var(--text-small);
+  line-height: var(--leading-small);
+  color: var(--muted);
 }
 
-.login-form__error {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  padding: 12px 14px;
-  background: var(--color-danger-bg);
-  border: 1px solid var(--color-danger-border);
-  border-radius: var(--radius-sm);
+/* O botão de entrar (Button primário, largura total) já traz o estado carregando (aria-busy e spinner). */
+.login-card .fb-ui-btn--block {
+  margin-top: var(--s-2);
 }
 
-.login-form__error-icon {
-  flex-shrink: 0;
-  margin-top: 2px;
-  color: var(--color-danger);
-}
-
-.login-form__error-text {
-  font-size: 13px;
-  line-height: 18px;
-  color: var(--color-danger);
-}
-
-.login-form__field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.login-form__label {
-  font-size: 13px;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.75);
-}
-
-.login-form__input {
-  box-sizing: border-box;
-  width: 100%;
-  padding: 12px 14px;
-  background: var(--color-surface-000);
-  border: 1px solid var(--color-line-2);
-  border-radius: var(--radius-sm);
-  color: var(--color-ink-on-dark);
-  font-size: 15px;
-  font-family: var(--font-sans);
-}
-
-.login-form__input::placeholder {
-  color: rgba(255, 255, 255, 0.32);
-}
-
-.login-form__input:focus {
-  border-color: var(--color-primary-orange);
-}
-
-.login-form__password-wrapper {
-  position: relative;
-}
-
-.login-form__password-input {
-  padding-right: 44px;
-}
-
-.login-form__toggle {
-  position: absolute;
-  right: 6px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  border: none;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  color: var(--color-on-dark-55);
-}
-
-.login-form__toggle:focus-visible,
-.login-form__submit:focus-visible {
-  outline: 2px solid var(--color-primary-orange);
-  outline-offset: 2px;
-}
-
-.login-form__submit {
-  margin-top: 4px;
-  width: 100%;
-  box-sizing: border-box;
-  padding: 14px;
-  background: var(--color-primary-orange);
-  border: none;
-  border-radius: var(--radius-sm);
-  color: var(--color-on-orange);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  cursor: pointer;
-}
-
-.login-form__submit:disabled {
-  opacity: 0.8;
-  cursor: default;
-}
-
-.login-form__submit-label {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--color-on-orange);
-}
-
-.login-form__spinner {
-  animation: login-spin 0.8s linear infinite;
-}
-
-@keyframes login-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.login-page__footer {
+.login-page__note {
   margin: 0;
-  font-size: 12px;
-  color: var(--color-on-dark-40);
+  font-size: var(--text-caption);
+  color: var(--muted);
   text-align: center;
 }
 
 .login-page__legal-links {
+  display: flex;
+  flex-wrap: wrap;
   justify-content: center;
-  margin-top: 12px;
-  font-size: 12px;
+  gap: var(--s-4);
+  font-size: var(--text-caption);
 }
 
 .login-page__legal-links a {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--ink-2);
   text-underline-offset: 3px;
 }
 
 @media (min-width: 640px) {
-  .login-form__submit {
-    margin-top: 8px;
+  .login-page {
+    padding-top: var(--s-6);
   }
 
-  .login-page__container {
-    gap: 32px;
+  .login-card {
+    padding: var(--s-10) var(--s-9);
+    gap: var(--s-5);
   }
-
-  .login-page__logo-mark {
-    font-size: 22px;
-  }
-
-  .login-page__logo-reg {
-    font-size: 11px;
-  }
-
-  .login-form {
-    padding: 40px 36px;
-    gap: 24px;
-  }
-
-  .login-form__title {
-    font-size: 32px;
-  }
-
-  .login-form__subtitle {
-    font-size: 14px;
-    line-height: 20px;
-  }
-
-  .login-page__footer {
-    font-size: 13px;
-  }
-}
-
-.login-form__submit {
-  transition:
-    transform var(--duration-press) var(--ease-out),
-    filter var(--duration-state) var(--ease-out);
-}
-
-.login-form__submit:active:not(:disabled) {
-  transform: scale(var(--press-scale));
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .login-form__submit:hover:not(:disabled) {
-    filter: brightness(1.07);
-  }
-}
-
-.login-form__error {
-  animation: fb-enter 180ms var(--ease-out) both;
 }

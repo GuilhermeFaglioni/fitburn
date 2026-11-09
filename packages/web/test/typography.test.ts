@@ -91,7 +91,7 @@ describe("títulos das telas do cliente", () => {
   const titles: [string, string][] = [
     ["agenda.css", ruleBody(agendaCss, ".fb-agenda__title")],
     ["gamification.css", ruleBody(gamificationCss, ".fb-gami__title")],
-    ["LoginPage.css", ruleBody(loginCss, ".login-form__title")],
+    ["LoginPage.css", ruleBody(loginCss, ".login-card__title")],
   ];
 
   for (const [sheet, body] of titles) {
@@ -104,6 +104,16 @@ describe("títulos das telas do cliente", () => {
       expect(body).not.toMatch(/letter-spacing:\s*-?[\d.]+em/);
     });
   }
+});
+
+describe("título do login", () => {
+  it("a ênfase \"de volta\" é o .fb-em compartilhado (Cormorant itálico) e o laranja forte da marca", () => {
+    const tsx = read("../src/pages/LoginPage.tsx");
+    expect(tsx).toMatch(/<em className="fb-em">de volta<\/em>/);
+    expect(ruleBody(loginCss, ".login-card__title .fb-em")).toMatch(/color:\s*var\(--brand-strong\)/);
+    expect(ruleBody(globalCss, ".fb-em")).toContain("font-family: var(--font-serif)");
+    expect(ruleBody(globalCss, ".fb-em")).toContain("font-style: italic");
+  });
 });
 
 describe("classes compartilhadas", () => {

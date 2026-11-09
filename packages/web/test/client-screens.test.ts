@@ -30,17 +30,38 @@ const HEX = /#[0-9a-fA-F]{3,8}\b/g;
 const COLOR_FUNCTION = /\b(?:rgba?|hsla?)\(/g;
 
 describe("login: erro ligado ao campo", () => {
-  it("os dois campos marcam aria-invalid e apontam para a mensagem com aria-describedby", () => {
-    const invalid = login.match(/aria-invalid=\{showError \|\| undefined\}/g) ?? [];
-    const described = login.match(/aria-describedby=\{showError \? errorId : undefined\}/g) ?? [];
-    expect(invalid.length).toBe(2);
-    expect(described.length).toBe(2);
-    expect(login).toMatch(/id=\{errorId\}\s+role="alert"/);
+  it("a senha marca aria-invalid e aponta para a mensagem; a mensagem é o Alert compartilhado (role=alert)", () => {
+    expect(login.match(/aria-invalid=\{showError \|\| undefined\}/g) ?? []).toHaveLength(1);
+    expect(login.match(/aria-describedby=\{showError \? errorId : undefined\}/g) ?? []).toHaveLength(1);
+    expect(login).toMatch(/<Alert id=\{errorId\}>/);
+    // Alert tem role="alert" por padrão para o tom de erro (ver ui-components.test).
+    expect(read("components/ui/Alert.tsx")).toMatch(/tone === "err" \? "alert"/);
   });
 
-  it("o ícone do erro usa a cor de erro do tema, sem hex no TSX", () => {
-    expect(login).not.toMatch(/stroke="#/);
-    expect(loginCss).toMatch(/\.login-form__error-icon\s*\{[^}]*color:\s*var\(--color-danger\)/);
+  it("usa os componentes compartilhados de ui/ e não repete o CSS deles (campo, botão, estado offline)", () => {
+    expect(login).toMatch(/<Field\b/);
+    expect(login).toMatch(/<Button type="submit" variant="primary" block busy=\{isSubmitting\}>/);
+    expect(login).toMatch(/<OfflineState\b/);
+    expect(loginCss).not.toMatch(/\.login-form/);
+    expect(login).not.toMatch(/stroke="#|fill="#|rgba?\(/);
+  });
+
+  it("o CSS do login usa só tokens da base: sem rgba/hsla e sem os --color-* legados", () => {
+    expect(loginCss.match(COLOR_FUNCTION) ?? []).toEqual([]);
+    expect(loginCss).not.toMatch(/var\(--color-/);
+    expect(loginCss).not.toMatch(/border-radius:\s*\d/);
+  });
+
+  it("o cartão do formulário usa --r-lg e --sh-2, com 16px de margem lateral (--container-gutter)", () => {
+    expect(loginCss).toMatch(/\.login-card\s*\{[^}]*border-radius:\s*var\(--r-lg\)/);
+    expect(loginCss).toMatch(/\.login-card\s*\{[^}]*box-shadow:\s*var\(--sh-2\)/);
+    expect(loginCss).toMatch(/\.login-page\s*\{[^}]*padding:[^;]*var\(--container-gutter\)/);
+    expect(read("styles/tokens.css")).toMatch(/--container-gutter:\s*var\(--s-4\)/);
+  });
+
+  it("o botão de tema da tela é o ThemeToggle compartilhado, no cabeçalho da própria tela", () => {
+    expect(login).toMatch(/useHostThemeToggle\(\)/);
+    expect(login).toMatch(/<ThemeToggle inline \/>/);
   });
 });
 

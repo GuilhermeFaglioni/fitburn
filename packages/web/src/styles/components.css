@@ -357,6 +357,23 @@
   cursor: not-allowed;
 }
 
+/* Controle dentro do campo (ex.: mostrar/ocultar senha): fica sobre o canto direito do input, que reserva o espaço. */
+.fb-ui-field__control {
+  position: relative;
+}
+
+.fb-ui-field__trailing {
+  position: absolute;
+  top: 50%;
+  right: var(--s-2);
+  transform: translateY(-50%);
+  display: flex;
+}
+
+.fb-ui-input--has-trailing {
+  padding-right: var(--s-24);
+}
+
 /* Mensagem de apoio do campo: ajuda, erro e sucesso. O texto diz o estado; a cor só reforça. */
 .fb-ui-help {
   font-size: var(--text-caption);

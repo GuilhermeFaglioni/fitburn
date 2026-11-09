@@ -1,12 +1,18 @@
 import { useId, useState, type FormEvent } from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import type { CurrentUser } from "@fitburn/contracts";
-import { EyeIcon } from "../components/icons/EyeIcon";
-import { EyeOffIcon } from "../components/icons/EyeOffIcon";
+import { FlameMark } from "../components/icons/FlameMark";
+import { RequiresNetwork } from "../components/RequiresNetwork";
+import { ThemeToggle } from "../components/ThemeToggle";
+import { useHostThemeToggle } from "../components/themeToggleHost";
+import { Alert } from "../components/ui/Alert";
+import { Button } from "../components/ui/Button";
+import { Field } from "../components/ui/Field";
+import { OfflineState } from "../components/ui/States";
+import { useOnline } from "../lib/connectivity/useOnline";
 import { useAuth } from "../lib/auth/AuthContext";
 import { homeRouteFor } from "../lib/auth/areas";
 import "./LoginPage.css";
-import { RequiresNetwork } from "../components/RequiresNetwork";
 
 // "/" não conta como rota original a preservar: é só o destino genérico, e
 // cada perfil tem o seu (homeRouteFor). Uma rota mais específica (ex.:
@@ -19,12 +25,14 @@ function resolveDestination(user: CurrentUser, from: string | undefined): string
 }
 
 export function LoginPage() {
-  const emailId = useId();
-  const passwordId = useId();
   const errorId = useId();
   const { login, user, isAuthenticated, isInitializing } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const online = useOnline();
+  const offline = !online;
+  // O botão de tema fica no cabeçalho desta tela (ela não tem a casca do cliente): o AppShell não desenha o fixo.
+  useHostThemeToggle();
   const from = (location.state as { from?: string } | null)?.from;
 
   const [email, setEmail] = useState("");
@@ -42,6 +50,8 @@ export function LoginPage() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    // Clique duplo ou Enter repetido durante o envio não dispara um segundo login.
+    if (isSubmitting) return;
     setShowError(false);
     setIsSubmitting(true);
     try {
@@ -56,115 +66,71 @@ export function LoginPage() {
 
   return (
     <main id="conteudo" tabIndex={-1} className="login-page">
-      <div className="login-page__container">
-        <div className="login-page__logo">
-          <span className="login-page__logo-mark">FITBURN</span>
-          <span className="login-page__logo-reg">®</span>
-        </div>
+      <header className="login-page__top">
+        <span className="login-page__brand">
+          <FlameMark className="login-page__brand-mark" />
+          FITBURN
+          <span className="login-page__brand-reg">®</span>
+        </span>
+        <ThemeToggle inline />
+      </header>
 
-        <form className="login-form" onSubmit={handleSubmit}>
-          <div className="login-form__header">
-            <h1 className="login-form__title">Bem-vindo <em className="fb-em">de volta</em></h1>
-            <p className="login-form__subtitle">Entre com suas credenciais para continuar.</p>
+      <div className="login-page__container">
+        <form className="login-card" onSubmit={handleSubmit}>
+          <div className="login-card__header">
+            <p className="fb-kicker login-card__kicker">Fitburn Brasil</p>
+            <h1 className="login-card__title">
+              Bem-vindo <em className="fb-em">de volta</em>
+            </h1>
+            <p className="login-card__subtitle">Entre com suas credenciais para continuar.</p>
           </div>
 
           {showError && (
-            <div className="login-form__error" id={errorId} role="alert">
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 16 16"
-                fill="none"
-                className="login-form__error-icon"
-                aria-hidden="true"
-              >
-                <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.4" />
-                <path d="M8 4.5V8.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-                <circle cx="8" cy="11.2" r="0.9" fill="currentColor" />
-              </svg>
-              <span className="login-form__error-text">
-                Não foi possível entrar. Verifique seu e-mail e senha e tente novamente.
-              </span>
-            </div>
+            <Alert id={errorId}>Não foi possível entrar. Verifique seu e-mail e senha e tente novamente.</Alert>
           )}
 
-          <div className="login-form__field">
-            <label className="login-form__label" htmlFor={emailId}>
-              E-mail
-            </label>
-            <input
-              id={emailId}
-              type="email"
-              className="login-form__input"
-              aria-invalid={showError || undefined}
-              aria-describedby={showError ? errorId : undefined}
-              placeholder="seuemail@exemplo.com"
-              autoComplete="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              required
-            />
-          </div>
+          <Field
+            label="E-mail"
+            type="email"
+            placeholder="seuemail@exemplo.com"
+            autoComplete="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            required
+          />
 
-          <div className="login-form__field">
-            <label className="login-form__label" htmlFor={passwordId}>
-              Senha
-            </label>
-            <div className="login-form__password-wrapper">
-              <input
-                id={passwordId}
-                type={passwordVisible ? "text" : "password"}
-                className="login-form__input login-form__password-input"
-                aria-invalid={showError || undefined}
-                aria-describedby={showError ? errorId : undefined}
-                placeholder="••••••••"
-                autoComplete="current-password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                required
-              />
-              <button
-                type="button"
-                className="login-form__toggle"
+          <Field
+            label="Senha"
+            type={passwordVisible ? "text" : "password"}
+            placeholder="••••••••"
+            autoComplete="current-password"
+            aria-invalid={showError || undefined}
+            aria-describedby={showError ? errorId : undefined}
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            required
+            trailing={
+              <Button
+                variant="ghost"
+                size="sm"
                 aria-label={passwordVisible ? "Ocultar senha" : "Mostrar senha"}
                 onClick={() => setPasswordVisible((visible) => !visible)}
               >
-                {/* Como no design: o ícone mostra o estado atual (olho aberto = senha visível). */}
-                {passwordVisible ? <EyeIcon /> : <EyeOffIcon />}
-              </button>
-            </div>
-          </div>
+                {passwordVisible ? "Ocultar" : "Mostrar"}
+              </Button>
+            }
+          />
+
+          {offline && <OfflineState description="Entrar precisa de internet. Confira a conexão e tente de novo." />}
 
           <RequiresNetwork>
-            <button type="submit" className="login-form__submit" disabled={isSubmitting}>
-              {isSubmitting ? (
-                <>
-                  <svg
-                    className="login-form__spinner"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 16 16"
-                    fill="none"
-                    aria-hidden="true"
-                  >
-                    <circle cx="8" cy="8" r="6.5" stroke="rgba(255,255,255,0.35)" strokeWidth="2" />
-                    <path
-                      d="M14.5 8A6.5 6.5 0 0 0 8 1.5"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                  <span className="login-form__submit-label">Entrando…</span>
-                </>
-              ) : (
-                <span className="login-form__submit-label">Entrar</span>
-              )}
-            </button>
+            <Button type="submit" variant="primary" block busy={isSubmitting}>
+              {isSubmitting ? "Entrando…" : "Entrar"}
+            </Button>
           </RequiresNetwork>
         </form>
 
-        <p className="login-page__footer">Acesso restrito a alunos e equipe Fitburn.</p>
+        <p className="login-page__note">Acesso restrito a alunos e equipe Fitburn.</p>
         <nav className="login-page__legal-links" aria-label="Documentos legais">
           <Link to="/privacidade">Política de privacidade</Link>
           <Link to="/termos">Termos de uso</Link>

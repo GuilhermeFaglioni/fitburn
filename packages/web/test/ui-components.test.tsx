@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { Badge } from "../src/components/ui/Badge";
@@ -115,6 +115,36 @@ describe("Field", () => {
     expect(input).toHaveAccessibleDescription("Formato válido.");
     expect(screen.getByText("Formato válido.")).toHaveClass("fb-ui-help--ok");
     expect(input).toHaveClass("fb-ui-input--ok");
+  });
+
+  it("aria-invalid passado pelo chamador vale quando não há mensagem de erro própria (erro descrito por outro elemento)", () => {
+    render(
+      <>
+        <p id="erro-externo" role="alert">
+          Credencial recusada.
+        </p>
+        <Field label="Senha" aria-invalid aria-describedby="erro-externo" />
+      </>,
+    );
+    const input = screen.getByLabelText("Senha");
+    expect(input).toHaveAttribute("aria-invalid", "true");
+    expect(input).toHaveAccessibleDescription("Credencial recusada.");
+    expect(screen.getAllByRole("alert")).toHaveLength(1);
+  });
+
+  it("trailing: o controle fica dentro do campo, ao lado do input, e o input reserva o espaço", () => {
+    render(<Field label="Senha" trailing={<button type="button">Mostrar</button>} />);
+    const input = screen.getByLabelText("Senha");
+    expect(input).toHaveClass("fb-ui-input--has-trailing");
+    const control = input.closest(".fb-ui-field__control");
+    expect(control).not.toBeNull();
+    expect(within(control as HTMLElement).getByRole("button", { name: "Mostrar" })).toBeInTheDocument();
+  });
+
+  it("sem trailing, o input não ganha o wrapper nem o espaço reservado", () => {
+    render(<Field label="Nome" />);
+    expect(screen.getByLabelText("Nome")).not.toHaveClass("fb-ui-input--has-trailing");
+    expect(document.querySelector(".fb-ui-field__control")).toBeNull();
   });
 
   it("desabilitado é nativo", () => {
