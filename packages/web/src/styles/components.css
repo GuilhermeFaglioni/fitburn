@@ -2782,3 +2782,36 @@
   font-size: var(--text-caption);
   line-height: var(--leading-small);
 }
+
+/* ---------- Tutorial de instalação do PWA (#177) ---------- */
+.fb-ui-install .fb-ui-segmented {
+  align-self: flex-start;
+}
+
+.fb-ui-install__guide {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+.fb-ui-install__browser {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--text-small);
+  font-weight: var(--weight-medium);
+}
+
+.fb-ui-install__steps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  margin: 0;
+  padding-left: var(--s-6);
+  font-size: var(--text-body);
+  line-height: var(--leading-body);
+}
+
+.fb-ui-install__steps li::marker {
+  color: var(--muted);
+  font-weight: var(--weight-bold);
+}

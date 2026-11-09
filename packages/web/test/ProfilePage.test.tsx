@@ -456,6 +456,7 @@ describe("Perfil / Minha conta", () => {
           [3, "Histórico de planos"],
           [2, "Senha"],
           [2, "Participação no ranking"],
+          [2, "Instalar o app"],
         ]);
       });
     });
