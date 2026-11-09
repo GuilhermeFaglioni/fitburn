@@ -131,6 +131,9 @@ const SCREENS: Screen[] = [
 describe("estados compartilhados nas telas principais", () => {
   beforeEach(() => {
     mockSuccessfulLogin("Administrador");
+    // O FitPoints também pede as metas: sem este mock a requisição sem handler derruba a conexão do app e a tela
+    // mostraria o estado offline no lugar do erro que o teste exercita.
+    server.use(http.get("/api/goals/mine", () => HttpResponse.json([])));
   });
 
   describe.each(SCREENS)("$name", ({ page, url, errorMessage, empty, emptyMessage }) => {

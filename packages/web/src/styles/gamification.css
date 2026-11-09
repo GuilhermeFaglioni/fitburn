@@ -1,41 +1,20 @@
 /**
- * Gamificação do cliente — e
- *.
- * Mobile: uma coluna, na ordem da tela de referência mobile (título, pontos, histórico,
- * conquistas, metas, ranking), que difere da do desktop: `order` fixa essa
- * ordem, já que os wrappers .fb-gami__left/right/row somem no mobile
- * (display: contents) e as seções viram irmãs. Cada seção nova recebe o seu
- * `order`. Desktop (≥768px): coluna de 420px à esquerda (título, pontos,
- * conquistas) e o resto à direita (histórico e metas lado a lado, ranking
- * embaixo).
+ * FitPoints do cliente (D-038). Tela extrapolada da base (sem desenho na proposta; referência: seção "FitPoints" do
+ * preview). Só tokens: cor, raio, espaçamento e tipografia vêm do design system; vale nos dois temas.
+ *
+ * Celular: uma coluna na ordem da tela (título, pontos, marcos, conquistas, histórico, metas, ranking e a participação
+ * nele). Desktop largo (≥1100px): a coluna de pontos e conquistas (380px) fica ao lado do resto.
  */
 .fb-gami {
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: var(--s-5);
   font-family: var(--font-sans);
-  color: var(--color-ink-on-dark);
+  color: var(--ink);
 }
 
-/*
- * Padding do conteúdo da tela de referência: mobile 24px 20px 108px, desktop 40px (o título fica em y=40).
- * A casca do cliente define o padding geral; aqui só o topo, pela tela.
- */
-.fb-client__content:has(> .fb-gami) {
-  padding-top: 24px;
-}
-
-.fb-gami__left,
-.fb-gami__right,
-.fb-gami__row {
-  display: contents;
-}
-
-.fb-gami__header {
-  order: 1;
-  display: flex;
-  align-items: center;
-  gap: 12px;
+.fb-gami > * {
+  min-width: 0;
 }
 
 .fb-gami__title {
@@ -47,206 +26,340 @@
   letter-spacing: var(--tracking-title);
 }
 
-.fb-gami__alert {
-  margin: 0;
-  box-sizing: border-box;
-  padding: 10px 14px;
-  background: var(--color-danger-bg);
-  border: 1px solid var(--color-danger-border);
-  border-radius: var(--radius-sm);
-  font-size: 13px;
-  color: var(--color-danger);
-}
-
-.fb-gami__points {
-  order: 2;
-  box-sizing: border-box;
+.fb-gami__cols,
+.fb-gami__col {
   display: flex;
   flex-direction: column;
-  gap: 18px;
-  padding: 22px 18px;
-  background: var(--color-surface-raised);
-  border-radius: var(--radius-sm);
+  gap: var(--s-5);
 }
 
-.fb-gami__points-row {
-  display: flex;
-  align-items: flex-end;
-  gap: 10px;
+.fb-gami__col {
+  min-width: 0;
 }
 
-.fb-gami__points-total {
-  font-family: var(--font-sans);
-  font-weight: 700;
-  font-size: 52px;
-  line-height: 1;
-  color: var(--color-brand-strong);
-}
-
-.fb-gami__points-label {
-  padding-bottom: 8px;
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.5);
-}
-
-/* Linha de streak do cartão de pontos: contagem em círculo + rótulo. */
-.fb-gami__streak {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.fb-gami__streak-count {
-  width: 30px;
-  height: 30px;
-  flex-shrink: 0;
-  border-radius: var(--radius-pill);
-  background: rgba(237, 110, 52, 0.14);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--color-brand-strong);
-}
-
-.fb-gami__streak-label {
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.65);
-}
-
-/* Sem tela de referência: o próximo marco fecha o cartão, depois dos blocos de marco. */
-.fb-gami__streak-next {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
-}
-
-/* Blocos de marco de streak do cartão; o pendente é o mesmo bloco, esmaecido. */
-.fb-gami__marks {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: flex;
-  gap: 10px;
-}
-
-.fb-gami__mark {
-  color: var(--color-primary-orange);
-  flex: 1;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: 10px 0;
-  background: #0f0f0f;
-  border-radius: var(--radius-sm);
-}
-
-.fb-gami__mark-label {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--color-ink-on-dark);
-}
-
-.fb-gami__mark--pending {
-  color: rgba(255, 255, 255, 0.4);
-}
-
-.fb-gami__mark--pending .fb-gami__mark-label {
-  color: rgba(255, 255, 255, 0.6);
+/* Coluna sem nada dentro (o resumo ainda não chegou e nenhum bloco ocupa o lugar): não deixa vão. */
+.fb-gami__col:empty {
+  display: none;
 }
 
 .fb-gami__section {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--s-3);
 }
 
 .fb-gami__section-title {
   margin: 0;
-  font-size: 16px;
-  font-weight: 700;
+  font-size: 15px;
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.01em;
 }
 
-.fb-gami__history {
-  order: 3;
+/* Estados (vazio, erro, carregando, offline) dentro dos blocos: alinhados à esquerda e compactos. */
+.fb-gami .fb-ui-state {
+  align-items: flex-start;
+  padding: var(--s-4);
+  text-align: left;
 }
 
-.fb-gami__achievements {
-  order: 4;
+.fb-gami .fb-ui-state--loading {
+  align-items: center;
 }
 
-.fb-gami__badges {
+.fb-gami .fb-ui-state__title {
+  font-size: var(--text-small);
+  font-weight: var(--weight-medium);
+  letter-spacing: 0;
+}
+
+.fb-gami .fb-ui-state--empty .fb-ui-state__title {
+  color: var(--ink-2);
+}
+
+/* ---------- Cartão de pontos ----------
+   Gradiente CTA como o cartão do plano na Home. O branco sobre o laranja segue a exceção da base (texto em negrito);
+   as transparências saem de color-mix sobre o token de texto sobre o laranja, sem rgba literal. */
+.fb-gami__points {
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  padding: var(--s-5);
+  border-radius: var(--r-lg);
+  background: var(--grad-cta);
+  box-shadow: var(--sh-cta);
+  color: var(--color-on-orange);
+}
+
+.fb-gami__points::after {
+  content: "";
+  position: absolute;
+  right: -30px;
+  top: -30px;
+  width: 130px;
+  height: 130px;
+  border-radius: var(--r-pill);
+  border: 1px solid color-mix(in srgb, var(--color-on-orange) 28%, transparent);
+  pointer-events: none;
+}
+
+.fb-gami__points-kicker {
+  font-size: 10px;
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+}
+
+.fb-gami__points-total {
+  font-size: 34px;
+  font-weight: var(--weight-bold);
+  line-height: 1.1;
+  letter-spacing: -0.05em;
+}
+
+/* Linha do streak: contagem em círculo e o rótulo. */
+.fb-gami__streak {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin-top: var(--s-2);
+}
+
+.fb-gami__streak-count {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 var(--s-2);
+  border-radius: var(--r-pill);
+  border: 1px solid color-mix(in srgb, var(--color-on-orange) 40%, transparent);
+  background: color-mix(in srgb, var(--color-on-orange) 18%, transparent);
+  font-size: var(--text-small);
+  font-weight: var(--weight-bold);
+}
+
+.fb-gami__streak-label {
+  font-size: var(--text-small);
+  font-weight: var(--weight-bold);
+}
+
+/* ---------- Marcos de sequência ---------- */
+.fb-gami__sequence {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+.fb-gami__marks {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.fb-gami__mark {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  height: 28px;
+  padding: 0 var(--s-3);
+  border-radius: var(--r-pill);
+  background: var(--grad-cta);
+  color: var(--color-on-orange);
+  font-size: var(--text-caption);
+  font-weight: var(--weight-bold);
+}
+
+/* Pendente: neutro e sem o check, então o estado não depende só da cor. */
+.fb-gami__mark--pending {
+  background: var(--surface-2);
+  color: var(--muted);
+  border: 1px solid var(--line);
+}
+
+.fb-gami__next {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.fb-gami__next-text {
+  margin: 0;
+  font-size: var(--text-small);
+  color: var(--muted);
+}
+
+/* ---------- Conquistas ---------- */
+.fb-gami__discs {
   margin: 0;
   padding: 0;
   list-style: none;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+  gap: var(--s-4) var(--s-2);
 }
 
-.fb-gami__badge {
+.fb-gami__disc-item {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: var(--s-2);
 }
 
-.fb-gami__badge--locked {
-  opacity: 0.4;
+.fb-gami__disc {
+  width: 44px;
+  height: 44px;
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-pill);
+  background: linear-gradient(140deg, var(--brand-tint), var(--brand-tint-2));
+  border: 1px solid var(--brand-line);
+  color: var(--brand-strong);
 }
 
-/* Conquistas: disco de 56px com o check laranja, ou o cadeado se bloqueado. */
-.fb-gami__badge-disc {
-  color: var(--color-brand-strong);
-  width: 56px;
-  height: 56px;
-  border-radius: var(--radius-pill);
-  background: var(--color-surface-raised);
+.fb-gami__disc-item--locked .fb-gami__disc {
+  background: var(--surface-2);
+  border-color: var(--line);
+  color: var(--muted);
+}
+
+.fb-gami__disc-label {
+  font-size: var(--text-caption);
+  line-height: var(--leading-small);
+  text-align: center;
+  color: var(--ink-2);
+}
+
+.fb-gami__disc-item--locked .fb-gami__disc-label {
+  color: var(--muted);
+}
+
+/* ---------- Histórico recente ---------- */
+.fb-gami__history.fb-ui-card {
+  padding: var(--s-1) var(--s-4);
+  border-radius: var(--r-lg);
+}
+
+.fb-gami__entries {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fb-gami__entry {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  padding: var(--s-3) 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 13.5px;
 }
 
-.fb-gami__badge-label {
-  font-size: 11px;
-  text-align: center;
-  line-height: 14px;
+.fb-gami__entry:last-child {
+  border-bottom: 0;
 }
 
-.fb-gami__badge--locked .fb-gami__badge-label {
-  color: rgba(255, 255, 255, 0.6);
+.fb-gami__entry-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
 
-/* Ranking: seletor semanal/mensal e a lista de posições. */
-.fb-gami__ranking {
-  order: 6;
+.fb-gami__entry-title {
+  overflow-wrap: anywhere;
 }
 
-/* No mobile o cabeçalho some como caixa: título, seletor e lista empilham no mesmo vão de 12px. */
+.fb-gami__entry-when {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.fb-gami__entry-points {
+  flex-shrink: 0;
+  font-weight: var(--weight-bold);
+  color: var(--success);
+}
+
+/* Estorno: vermelho de erro, e o sinal "-" já vai no texto. */
+.fb-gami__entry-points--negative {
+  color: var(--danger);
+}
+
+/* ---------- Metas do professor ---------- */
+.fb-gami__goal-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.fb-gami__goal.fb-ui-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  padding: var(--s-3) var(--s-4);
+  border-radius: var(--r-md);
+  box-shadow: var(--sh-1);
+}
+
+/* Concluída: mais neutra, sem baixar a opacidade (o texto mantém o contraste). */
+.fb-gami__goal--done.fb-ui-card {
+  background: var(--surface-2);
+  box-shadow: none;
+}
+
+.fb-gami__goal-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.fb-gami__goal-title {
+  font-size: var(--text-small);
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+
+.fb-gami__goal-meta,
+.fb-gami__goal-desc {
+  font-size: var(--text-caption);
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.fb-gami__goal .fb-ui-badge {
+  flex-shrink: 0;
+}
+
+/* ---------- Ranking ---------- */
+/* Celular: título, seletor e lista empilham; o seletor fica à esquerda, com a largura do conteúdo. */
 .fb-gami__rank-head {
-  display: contents;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s-3);
 }
 
-/* O controle é o mesmo de "Próximas | Histórico" (.fb-client-tabs); aqui ocupa a largura toda e reparte por igual. */
-.fb-gami .fb-gami__rank-tab {
-  position: relative;
-  flex: 1;
-  min-height: 0;
-  padding: 8px 0;
-}
-
-.fb-gami .fb-gami__rank-tab[aria-pressed="true"] {
-  background: var(--color-primary-orange);
-  color: #ffffff;
-}
-
-/* A caixa fica com a altura da tela de referência (33px); a área de toque de 44px é invisível. */
-.fb-gami__rank-tab::before {
-  content: "";
-  position: absolute;
-  inset: -6px 0;
+/* Alvo de toque de 44px também com mouse (o componente só sobe nas telas de toque). */
+.fb-gami__tabs button {
+  min-height: 44px;
 }
 
 .fb-gami__rank-list {
@@ -255,222 +368,99 @@
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--s-2);
 }
 
 .fb-gami__rank-row {
   box-sizing: border-box;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
-  background: var(--color-surface-raised);
-  border-radius: var(--radius-sm);
+  gap: var(--s-3);
+  padding: 10px var(--s-3);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  font-size: 13.5px;
 }
 
 .fb-gami__rank-pos {
-  width: 20px;
-  font-size: 13px;
-  font-weight: 700;
-  color: rgba(255, 255, 255, 0.5);
+  flex: 0 0 24px;
+  font-weight: var(--weight-bold);
+  color: var(--brand-strong);
+}
+
+.fb-gami__rank-who {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .fb-gami__rank-name {
-  flex-grow: 1;
-  font-size: 14px;
+  overflow-wrap: anywhere;
 }
 
 .fb-gami__rank-info {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.45);
+  font-size: 11.5px;
+  color: var(--muted);
 }
 
+/* A minha linha: borda de marca e fundo tingido, e "(você)" no texto. */
 .fb-gami__rank-row--me {
-  background: rgba(237, 110, 52, 0.14);
-}
-
-.fb-gami__rank-row--me .fb-gami__rank-pos,
-.fb-gami__rank-row--me .fb-gami__rank-info {
-  color: var(--color-brand-strong);
+  background: var(--brand-tint);
+  border-color: var(--brand);
 }
 
 .fb-gami__rank-row--me .fb-gami__rank-name {
-  font-weight: 700;
-  color: var(--color-brand-strong);
+  font-weight: var(--weight-bold);
 }
 
-/* Metas do professor: o cartão sem a barra de progresso. */
-.fb-gami__goals {
-  order: 5;
+/* ---------- Participação no ranking ---------- */
+.fb-gami .fb-ranking-consent__copy {
+  color: var(--muted);
 }
 
-.fb-gami__goal-list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+.fb-gami .fb-ranking-consent__toggle {
+  color: var(--ink-2);
+  font-weight: var(--weight-medium);
 }
 
-.fb-gami__goal {
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 14px 16px;
-  background: var(--color-surface-raised);
-  border-radius: var(--radius-sm);
+.fb-gami .fb-ranking-consent__toggle input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--brand);
 }
 
-.fb-gami__goal--done {
-  opacity: 0.6;
+.fb-gami .fb-ranking-consent__toggle input:focus-visible {
+  outline: none;
+  box-shadow: var(--sh-focus);
 }
 
-.fb-gami__goal-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.fb-gami__goal-title {
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.fb-gami__goal-meta {
-  flex-shrink: 0;
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
-}
-
-.fb-gami__goal-text {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
-}
-
-.fb-gami__entries {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.fb-gami__entry {
-  box-sizing: border-box;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 14px 16px;
-  background: var(--color-surface-raised);
-  border-radius: var(--radius-sm);
-}
-
-.fb-gami__entry-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.fb-gami__entry-title {
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.fb-gami__entry-when {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.45);
-}
-
-.fb-gami__entry-points {
-  flex-shrink: 0;
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--color-brand-strong);
-}
-
-/* Sem referência de design (a proposta só mostra ganhos): estorno em vermelho de erro. */
-.fb-gami__entry-points--negative {
-  color: var(--color-danger);
-}
-
-/* Com a barra lateral do cliente (≥768px): os tamanhos da tela de referência desktop. */
 @media (min-width: 768px) {
-  .fb-client__content:has(> .fb-gami) {
-    padding-top: 40px;
-  }
-
-  .fb-gami__title {
-    font-size: 32px;
-  }
-
-  .fb-gami__points {
-    padding: 24px 20px;
-  }
-
-  .fb-gami__points-total {
-    font-size: 56px;
-  }
-
-  .fb-gami__badges {
-    gap: 14px;
-  }
-
-  /* Título à esquerda e o seletor à direita, na mesma linha. */
   .fb-gami__rank-head {
-    display: flex;
+    flex-direction: row;
     align-items: center;
     justify-content: space-between;
   }
 
-  /* No tela de referência: 220px de botões mais 4px de respiro de cada lado. */
-  .fb-gami__rank-tabs {
-    width: 228px;
-  }
-
-  .fb-gami__rank-pos {
-    width: 24px;
+  .fb-gami__points {
+    padding: var(--s-6);
   }
 }
 
-/*
- * As duas colunas da tela de referência (420px + histórico e metas lado a lado) pedem os
- * 1440px dele: a partir de 1280px do conteúdo cabem; abaixo disso as seções
- * empilham como no mobile, sem espremer o histórico nem cortar as metas.
- */
-@media (min-width: 1280px) {
-  .fb-gami {
+/* As duas colunas: pontos e conquistas à esquerda, o resto à direita. Abaixo disso, tudo empilha. */
+@media (min-width: 1100px) {
+  .fb-gami__cols {
     flex-direction: row;
-    gap: 40px;
+    align-items: flex-start;
+    gap: var(--s-8);
   }
 
-  .fb-gami__left {
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
-    width: 420px;
-    flex-shrink: 0;
+  .fb-gami__col--lead {
+    flex: 0 0 380px;
   }
 
-  .fb-gami__right {
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
-    flex-grow: 1;
-    min-width: 0;
-  }
-
-  .fb-gami__row {
-    display: flex;
-    gap: 24px;
-  }
-
-  /* Cada seção da linha ocupa metade (menos meio vão), como na tela de referência. */
-  .fb-gami__row > * {
-    flex: 0 1 calc(50% - 12px);
+  .fb-gami__col--rest {
+    flex: 1 1 0;
   }
 }

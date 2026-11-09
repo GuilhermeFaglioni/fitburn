@@ -8,11 +8,13 @@ import {
   getRankingConsent,
   rankingConsentQueryKey,
 } from "../../lib/gamification/api";
-import { EmptyState, ErrorState, LoadingState } from "../../components/states";
+import { QueryBlockState } from "../../components/QueryBlockState";
+import { Segmented, type SegmentedOption } from "../../components/ui/Segmented";
+import { EmptyState } from "../../components/ui/States";
 
-const RANKING_TABS: Array<{ period: RankingPeriodName; label: string }> = [
-  { period: RankingPeriod.WEEK, label: "Semanal" },
-  { period: RankingPeriod.MONTH, label: "Mensal" },
+const RANKING_TABS: SegmentedOption<RankingPeriodName>[] = [
+  { value: RankingPeriod.WEEK, label: "Semanal" },
+  { value: RankingPeriod.MONTH, label: "Mensal" },
 ];
 
 function attendancesLabel(count: number): string {
@@ -26,16 +28,17 @@ function RankingRow({ entry }: { entry: RankingEntry }) {
   return (
     <li className={`fb-gami__rank-row${entry.isMe ? " fb-gami__rank-row--me" : ""}`}>
       <span className="fb-gami__rank-pos">{entry.position}º</span>
-      <span className="fb-gami__rank-name">{name}</span>
-      <span className="fb-gami__rank-info">{info}</span>
+      <span className="fb-gami__rank-who">
+        <span className="fb-gami__rank-name">{name}</span>
+        <span className="fb-gami__rank-info">{info}</span>
+      </span>
     </li>
   );
 }
 
 /**
- * Ranking semanal e mensal da tela Sua evolução (GamificacaoMobile /
- *): pontos no período, desempate por presenças; a
- * minha posição destacada e o rótulo "empate" para quem continua empatado.
+ * Ranking semanal e mensal: pontos no período, desempate por presenças; a minha posição destacada (e com "(você)" no
+ * texto) e o rótulo "empate" para quem continua empatado. Só quem participa (consentimento) vê as posições.
  */
 export function RankingSection() {
   const [period, setPeriod] = useState<RankingPeriodName>(RankingPeriod.WEEK);
@@ -46,69 +49,57 @@ export function RankingSection() {
     queryFn: getRankingConsent,
     enabled: isClient,
   });
+  const consented = isClient && consentQuery.data?.consented === true;
   const rankingQuery = useQuery({
     queryKey: ["gamification", "ranking", period],
     queryFn: () => getRanking(period),
     // Ao trocar de período a lista anterior fica até a nova chegar: sem salto de layout.
     placeholderData: keepPreviousData,
-    enabled: isClient && consentQuery.data?.consented === true,
+    enabled: consented,
   });
 
   return (
-    <section className="fb-gami__section fb-gami__ranking" aria-labelledby="fb-gami-ranking">
+    <section className="fb-gami__section" aria-labelledby="fb-gami-ranking">
       <div className="fb-gami__rank-head">
         <h2 id="fb-gami-ranking" className="fb-gami__section-title">
           Ranking
         </h2>
-        <div
-          className="fb-client-tabs fb-gami__rank-tabs"
-          role="group"
-          aria-label="Período do ranking"
-        >
-          {RANKING_TABS.map((tab) => (
-            <button
-              key={tab.period}
-              type="button"
-              className="fb-client-tab-btn fb-gami__rank-tab"
-              aria-pressed={period === tab.period}
-              onClick={() => setPeriod(tab.period)}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+        <Segmented
+          label="Período do ranking"
+          options={RANKING_TABS}
+          value={period}
+          onChange={setPeriod}
+          className="fb-gami__tabs"
+        />
       </div>
 
-      {!isClient && (
-        <EmptyState surface="dark" message="Ranking disponível para clientes participantes." />
-      )}
-      {isClient && consentQuery.isLoading && <LoadingState surface="dark" />}
-      {isClient && consentQuery.isError && (
-        <ErrorState
-          surface="dark"
-          message="Não foi possível verificar sua participação no ranking."
-          onRetry={() => void consentQuery.refetch()}
+      {!isClient && <EmptyState title="Ranking disponível para clientes participantes." />}
+      {isClient && (
+        <QueryBlockState
+          query={consentQuery}
+          loading="Carregando…"
+          error="Não foi possível verificar sua participação no ranking."
+          hasData={consentQuery.data !== undefined}
         />
       )}
       {isClient && consentQuery.data && !consentQuery.data.consented && (
         <EmptyState
-          surface="dark"
-          message="Você não participa do ranking. Seus pontos e sua sequência continuam disponíveis só para você."
+          title="Você não participa do ranking."
+          description="Seus pontos e sua sequência continuam disponíveis só para você."
         />
       )}
-      {isClient && consentQuery.data?.consented && rankingQuery.isLoading && (
-        <LoadingState surface="dark" />
-      )}
-      {isClient && consentQuery.data?.consented && rankingQuery.isError && (
-        <ErrorState
-          surface="dark"
-          message="Não foi possível carregar o ranking."
-          onRetry={() => void rankingQuery.refetch()}
+      {consented && (
+        <QueryBlockState
+          query={rankingQuery}
+          loading="Carregando o ranking…"
+          error="Não foi possível carregar o ranking."
+          hasData={rankingQuery.data !== undefined}
         />
       )}
-      {isClient && consentQuery.data?.consented && rankingQuery.data &&
+      {consented &&
+        rankingQuery.data &&
         (rankingQuery.data.entries.length === 0 ? (
-          <EmptyState surface="dark" message="Ninguém pontuou neste período ainda." />
+          <EmptyState title="Ninguém pontuou neste período ainda." />
         ) : (
           <ul className="fb-gami__rank-list">
             {rankingQuery.data.entries.map((entry, index) => (

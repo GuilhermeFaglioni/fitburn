@@ -2,9 +2,12 @@ import { useQuery } from "@tanstack/react-query";
 import { GoalStatus, type GoalDetail } from "@fitburn/contracts";
 import { formatInstantDate, formatLocalDate } from "../../lib/agenda/format";
 import { listMyGoals } from "../../lib/goals/api";
-import { EmptyState, ErrorState, LoadingState } from "../../components/states";
+import { QueryBlockState } from "../../components/QueryBlockState";
+import { Badge } from "../../components/ui/Badge";
+import { Card } from "../../components/ui/Card";
+import { EmptyState } from "../../components/ui/States";
 
-/** À direita do título da meta: a data de conclusão, ou o prazo se ainda está ativa. */
+/** Abaixo do título da meta: a data de conclusão, ou o prazo se ainda está ativa. */
 function goalMeta(goal: GoalDetail): string {
   if (goal.status === GoalStatus.COMPLETED && goal.concludedAt) {
     return `Concluída em ${formatInstantDate(goal.concludedAt)}`;
@@ -16,41 +19,42 @@ function GoalItem({ goal }: { goal: GoalDetail }) {
   const done = goal.status === GoalStatus.COMPLETED;
   const meta = goalMeta(goal);
   return (
-    <li className={`fb-gami__goal${done ? " fb-gami__goal--done" : ""}`}>
-      <div className="fb-gami__goal-head">
+    <Card as="li" flat className={`fb-gami__goal${done ? " fb-gami__goal--done" : ""}`}>
+      <div className="fb-gami__goal-text">
         <span className="fb-gami__goal-title">{goal.title}</span>
         {meta && <span className="fb-gami__goal-meta">{meta}</span>}
+        {goal.description && <span className="fb-gami__goal-desc">{goal.description}</span>}
       </div>
-      {goal.description && <span className="fb-gami__goal-text">{goal.description}</span>}
-    </li>
+      {done && (
+        <Badge tone="ok" dot>
+          Concluída
+        </Badge>
+      )}
+    </Card>
   );
 }
 
 /**
- * "Metas do professor" da tela Sua evolução:
- * as metas ativas e as concluídas do cliente. O tela de referência mostra "3/4" e uma
- * barra de progresso, que o spec não prevê (a meta é concluída à mão pelo
- * professor): cada meta mostra o prazo ou a data de conclusão.
+ * "Metas do professor": as metas ativas e as concluídas do cliente, cada uma num cartão com o prazo ou a data de
+ * conclusão. A meta não tem progresso parcial na API (o professor a conclui à mão), então não há barra aqui.
  */
 export function GoalsSection() {
   const goalsQuery = useQuery({ queryKey: ["goals", "mine"], queryFn: listMyGoals });
 
   return (
-    <section className="fb-gami__section fb-gami__goals" aria-labelledby="fb-gami-goals">
+    <section className="fb-gami__section" aria-labelledby="fb-gami-goals">
       <h2 id="fb-gami-goals" className="fb-gami__section-title">
         Metas do professor
       </h2>
-      {goalsQuery.isLoading && <LoadingState surface="dark" />}
-      {goalsQuery.isError && (
-        <ErrorState
-          surface="dark"
-          message="Não foi possível carregar as metas."
-          onRetry={() => void goalsQuery.refetch()}
-        />
-      )}
+      <QueryBlockState
+        query={goalsQuery}
+        loading="Carregando metas…"
+        error="Não foi possível carregar as metas."
+        hasData={goalsQuery.data !== undefined}
+      />
       {goalsQuery.isSuccess &&
         (goalsQuery.data.length === 0 ? (
-          <EmptyState surface="dark" message="Nenhuma meta no momento." />
+          <EmptyState title="Nenhuma meta no momento." />
         ) : (
           <ul className="fb-gami__goal-list">
             {goalsQuery.data.map((goal) => (

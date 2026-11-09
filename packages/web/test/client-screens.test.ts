@@ -20,6 +20,7 @@ const agendaTsx = [
   read("pages/client/ReservationHistory.tsx"),
   read("components/QueryBlockState.tsx"),
 ].join("\n");
+const gamificationCss = read("styles/gamification.css");
 const workoutCss = read("styles/workout.css");
 // Só a parte do cliente: o editor do professor (acima do marcador) ainda usa os --color-* legados (PR 17).
 const clientWorkoutCss = workoutCss.slice(workoutCss.indexOf("/* ---------- Cliente: ficha ativa"));
@@ -28,6 +29,16 @@ const workoutTsx = [
   read("pages/ClientWorkoutSheetPage.tsx"),
   read("pages/workout-sheets/ClientSheetView.tsx"),
   read("pages/workout-sheets/PreviousSheetItem.tsx"),
+].join("\n");
+const gamificationTsx = [
+  read("pages/GamificationPage.tsx"),
+  read("pages/gamification/Achievements.tsx"),
+  read("pages/gamification/GoalsSection.tsx"),
+  read("pages/gamification/HistorySection.tsx"),
+  read("pages/gamification/PointsCard.tsx"),
+  read("pages/gamification/RankingConsentControl.tsx"),
+  read("pages/gamification/RankingSection.tsx"),
+  read("pages/gamification/icons.tsx"),
 ].join("\n");
 const homeTsx = [
   read("pages/ClientHomePage.tsx"),
@@ -138,12 +149,12 @@ describe("Agenda do cliente (D-038)", () => {
     }
   });
 
-  it("o CSS da agenda e o da folha de detalhe saíram de client.css (fica só a casca e as abas do FitPoints)", () => {
+  it("o CSS da agenda e o da folha de detalhe saíram de client.css (fica só a casca; as abas do FitPoints viraram o Segmented)", () => {
     expect(clientCss).not.toMatch(
       /\.fb-(daychip|class-card|filter-chip|reservation-|client-grid|client-cell|client-chip)/,
     );
     expect(clientCss).not.toMatch(/\.fb-sheet/);
-    expect(clientCss).toContain(".fb-client-tab-btn");
+    expect(clientCss).not.toMatch(/\.fb-client-tab/);
   });
 });
 
@@ -171,5 +182,41 @@ describe("Ficha de treino do cliente (D-038, tela extrapolada da base)", () => {
   it("o alvo de toque do voltar tem 44px e o card da ficha anterior não baixa a opacidade (contraste)", () => {
     expect(clientWorkoutCss).toMatch(/\.fb-workout__back\s*\{[^}]*min-height:\s*44px/);
     expect(clientWorkoutCss).not.toMatch(/opacity:/);
+  });
+});
+
+describe("FitPoints do cliente (D-038, tela extrapolada da base)", () => {
+  it("gamification.css só usa tokens da base: sem hex, rgba/hsla, --color-* legado nem --radius-*", () => {
+    expect(gamificationCss.length).toBeGreaterThan(500);
+    expect(gamificationCss.match(HEX) ?? []).toEqual([]);
+    expect(gamificationCss.match(COLOR_FUNCTION) ?? []).toEqual([]);
+    // O branco sobre o laranja é o token --color-on-orange (exceção da base); nenhum outro --color-*.
+    expect(gamificationCss).not.toMatch(/var\(--color-(?!on-orange)/);
+    expect(gamificationCss).not.toMatch(/var\(--radius-/);
+    expect(gamificationCss).not.toMatch(/border-radius:\s*\d/);
+    expect(gamificationCss).not.toMatch(/opacity:/);
+  });
+
+  it("a tela (TSX) não tem cor literal nem a prop surface; estados e controles vêm de ui/", () => {
+    expect(gamificationTsx.match(HEX) ?? []).toEqual([]);
+    expect(gamificationTsx.match(COLOR_FUNCTION) ?? []).toEqual([]);
+    // `surface` do RankingConsentControl é a variante da tela, não o tema dos estados legados ("dark" | "light").
+    expect(gamificationTsx).not.toMatch(/surface="(?:dark|light)"/);
+    expect(gamificationTsx).not.toContain('components/states"');
+    for (const component of ["ui/States", "ui/Card", "ui/Badge", "ui/Meter", "ui/Segmented"]) {
+      expect(gamificationTsx).toContain(`components/${component}`);
+    }
+    expect(gamificationTsx).toContain("QueryBlockState");
+    expect(gamificationTsx).not.toMatch(/fb-client-tab/);
+  });
+
+  it("o ícone de cadeado e o de check usam currentColor, sem rgba nem hex", () => {
+    const icons = read("pages/gamification/icons.tsx");
+    expect(icons).toContain('stroke: "currentColor"');
+    expect(icons.match(COLOR_FUNCTION) ?? []).toEqual([]);
+  });
+
+  it("o seletor do ranking tem alvo de toque de 44px", () => {
+    expect(gamificationCss).toMatch(/\.fb-gami__tabs button\s*\{[^}]*min-height:\s*44px/);
   });
 });

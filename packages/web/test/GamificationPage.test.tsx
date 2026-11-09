@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { onlineManager, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { http, HttpResponse } from "msw";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import {
@@ -101,9 +101,9 @@ function renderPage() {
   );
 }
 
-/** A linha do total de pontos (o número grande e o rótulo "pontos totais"). */
-function totalRow() {
-  return screen.getByText("pontos totais").parentElement!;
+/** O cartão de pontos (região "Pontos"): o total em destaque, o rótulo "pontos totais" e a linha do streak. */
+async function pointsCard() {
+  return screen.findByRole("region", { name: "Pontos" });
 }
 
 describe("Gamificação do cliente", () => {
@@ -120,6 +120,7 @@ describe("Gamificação do cliente", () => {
   });
 
   afterEach(() => {
+    onlineManager.setOnline(true);
     vi.useRealTimers();
   });
 
@@ -226,7 +227,7 @@ describe("Gamificação do cliente", () => {
       within(items[1]).getByText("Correção de presença · Treino Funcional"),
     ).toBeInTheDocument();
     expect(within(items[1]).getByText("-10")).toBeInTheDocument();
-    expect(within(totalRow()).getByText("0")).toBeInTheDocument();
+    expect((await pointsCard()).querySelector("strong")?.textContent).toBe("0");
   });
 
   it("mostra o streak atual, os marcos alcançados e o próximo marco", async () => {
@@ -243,17 +244,21 @@ describe("Gamificação do cliente", () => {
 
     renderPage();
 
-    const points = await screen.findByRole("region", { name: "Pontos" });
+    const points = await pointsCard();
     expect(within(points).getByText("4")).toBeInTheDocument();
     expect(within(points).getByText("dias seguidos de treino")).toBeInTheDocument();
-    expect(within(points).getByText("Próximo marco: 5 dias (+10 pontos)")).toBeInTheDocument();
-    expect(within(points).getByRole("listitem", { name: "3 dias, alcançado" })).toBeInTheDocument();
+
+    const marks = screen.getByRole("region", { name: "Marcos de sequência" });
+    expect(within(marks).getByText("Próximo marco: 5 dias (+10 pontos)")).toBeInTheDocument();
+    expect(within(marks).getByRole("listitem", { name: "3 dias, alcançado" })).toBeInTheDocument();
     expect(
-      within(points).getByRole("listitem", { name: "5 dias, ainda não alcançado" }),
+      within(marks).getByRole("listitem", { name: "5 dias, ainda não alcançado" }),
     ).toBeInTheDocument();
     expect(
-      within(points).getByRole("listitem", { name: "10 dias, ainda não alcançado" }),
+      within(marks).getByRole("listitem", { name: "10 dias, ainda não alcançado" }),
     ).toBeInTheDocument();
+    // A barra do próximo marco é informativa: imagem com o valor por extenso.
+    expect(within(marks).getByRole("img", { name: "Sequência: 4 de 5 dias" })).toBeInTheDocument();
   });
 
   it("mostra só os 3 ganhos mais recentes, como a tela de referência", async () => {
@@ -286,6 +291,8 @@ describe("Gamificação do cliente", () => {
     expect(await screen.findByRole("listitem", { name: "10 dias, alcançado" })).toBeInTheDocument();
     expect(screen.queryByText(/Próximo marco/)).not.toBeInTheDocument();
     expect(screen.queryByText("Você atingiu todos os marcos.")).not.toBeInTheDocument();
+    // Sem próximo marco não há barra de progresso.
+    expect(screen.queryByRole("img", { name: /Sequência:/ })).not.toBeInTheDocument();
   });
 
   it("mostra os badges conquistados e os bloqueados, com o progresso destes", async () => {
@@ -493,7 +500,7 @@ describe("Gamificação do cliente", () => {
     renderPage();
 
     expect(await screen.findByText("Nenhum ganho de pontos ainda.")).toBeInTheDocument();
-    expect(within(totalRow()).getByText("0")).toBeInTheDocument();
+    expect((await pointsCard()).querySelector("strong")?.textContent).toBe("0");
   });
 
   it("avisa quando a evolução não carrega", async () => {
@@ -510,4 +517,380 @@ describe("Gamificação do cliente", () => {
     );
   });
 
+  describe("cartão de pontos e streak", () => {
+    it("mostra o total com separador pt-BR no cartão e a contagem do streak em círculo", async () => {
+      mockSummary({
+        totalPoints: 12450,
+        history: [],
+        streak: { current: 7, next: { threshold: 14, bonusPoints: 60 } },
+        badges: [
+          { milestone: 3, earned: true, awardedAt: "2026-05-04T21:00:00.000Z" },
+          { milestone: 7, earned: true, awardedAt: "2026-05-05T21:00:00.000Z" },
+          { milestone: 14, earned: false, awardedAt: null },
+        ],
+      });
+
+      renderPage();
+
+      const points = await pointsCard();
+      expect(within(points).getByText("pontos totais")).toBeInTheDocument();
+      expect(points.querySelector("strong")?.textContent).toBe("12.450");
+      expect(points.querySelector(".fb-gami__streak-count")?.textContent).toBe("7");
+      expect(within(points).getByText("dias seguidos de treino")).toBeInTheDocument();
+    });
+
+    it("os marcos alcançados ganham o check; o pendente não (o estado não depende só da cor)", async () => {
+      mockSummary({
+        totalPoints: 65,
+        history: [],
+        streak: { current: 4, next: { threshold: 5, bonusPoints: 10 } },
+        badges: [
+          { milestone: 3, earned: true, awardedAt: "2026-05-04T21:00:00.000Z" },
+          { milestone: 5, earned: false, awardedAt: null },
+        ],
+      });
+
+      renderPage();
+
+      const reached = await screen.findByRole("listitem", { name: "3 dias, alcançado" });
+      const pending = screen.getByRole("listitem", { name: "5 dias, ainda não alcançado" });
+      expect(reached.querySelector("svg")).not.toBeNull();
+      expect(pending.querySelector("svg")).toBeNull();
+      expect(pending).toHaveClass("fb-gami__mark--pending");
+    });
+  });
+
+  describe("conquistas", () => {
+    function discsOf(region: HTMLElement) {
+      return within(region).getAllByRole("listitem");
+    }
+
+    it("sem nenhum desbloqueio, todas aparecem bloqueadas com o cadeado e o progresso", async () => {
+      mockSummary({ ...NO_STREAK, totalPoints: 0, history: [] });
+
+      renderPage();
+
+      const achievements = await screen.findByRole("region", { name: "Conquistas" });
+      const items = discsOf(achievements);
+      expect(items).toHaveLength(3);
+      for (const item of items) {
+        expect(item).toHaveClass("fb-gami__disc-item--locked");
+        expect(item.getAttribute("aria-label")).toMatch(/, bloqueado$/);
+      }
+      expect(
+        within(achievements).getByRole("listitem", { name: "Streak de 3 (0/3), bloqueado" }),
+      ).toHaveTextContent("Streak de 3 (0/3)");
+      expect(within(achievements).queryByText(/conquistado/)).not.toBeInTheDocument();
+    });
+
+    it("com todos desbloqueados, nenhuma fica bloqueada e o texto não traz o progresso", async () => {
+      mockSummary({
+        totalPoints: 135,
+        history: [],
+        streak: { current: 12, next: null },
+        badges: [3, 5, 10].map((milestone) => ({
+          milestone,
+          earned: true,
+          awardedAt: "2026-05-04T21:00:00.000Z",
+        })),
+      });
+
+      renderPage();
+
+      const achievements = await screen.findByRole("region", { name: "Conquistas" });
+      for (const item of discsOf(achievements)) {
+        expect(item).not.toHaveClass("fb-gami__disc-item--locked");
+        expect(item.getAttribute("aria-label")).toMatch(/, conquistado$/);
+      }
+      expect(within(achievements).getByText("Streak de 10")).toBeInTheDocument();
+    });
+
+    it("a conquistada mostra o check e a bloqueada o cadeado, em discos distintos", async () => {
+      mockSummary({
+        totalPoints: 35,
+        history: [],
+        streak: { current: 4, next: { threshold: 5, bonusPoints: 10 } },
+        badges: [
+          { milestone: 3, earned: true, awardedAt: "2026-05-04T21:00:00.000Z" },
+          { milestone: 5, earned: false, awardedAt: null },
+        ],
+      });
+
+      renderPage();
+
+      const earned = await screen.findByRole("listitem", { name: "Streak de 3, conquistado" });
+      const locked = screen.getByRole("listitem", { name: "Streak de 5 (4/5), bloqueado" });
+      expect(earned.querySelector("svg path")?.getAttribute("d")).toContain("l4.5 4.5");
+      expect(locked.querySelector("svg rect")).not.toBeNull();
+    });
+  });
+
+  describe("histórico e títulos", () => {
+    it("o histórico é uma lista (ul) dentro da seção com título de segundo nível", async () => {
+      mockSummary({ ...NO_STREAK, totalPoints: 10, history: [entry("e1", "2026-05-06", "17:30")] });
+
+      renderPage();
+
+      const history = await screen.findByRole("region", { name: "Histórico recente" });
+      const list = within(history).getByRole("list");
+      expect(list.tagName).toBe("UL");
+      expect(within(history).getAllByRole("listitem")).toHaveLength(1);
+      expect(within(history).getByRole("heading", { level: 2 })).toHaveTextContent(
+        "Histórico recente",
+      );
+    });
+
+    it("os títulos seguem a ordem: h1 da tela e um h2 por seção, na ordem em que aparecem", async () => {
+      mockSummary({
+        totalPoints: 65,
+        history: [entry("e1", "2026-05-06", "17:30")],
+        streak: { current: 4, next: { threshold: 5, bonusPoints: 10 } },
+        badges: [{ milestone: 3, earned: true, awardedAt: "2026-05-04T21:00:00.000Z" }],
+      });
+
+      renderPage();
+      await screen.findByRole("region", { name: "Histórico recente" });
+
+      const headings = screen.getAllByRole("heading");
+      expect(headings.map((heading) => Number(heading.tagName[1]))).toEqual([1, 2, 2, 2, 2, 2]);
+      expect(headings.map((heading) => heading.textContent)).toEqual([
+        "FitPoints",
+        "Conquistas",
+        "Histórico recente",
+        "Metas do professor",
+        "Ranking",
+        "Participação no ranking",
+      ]);
+    });
+  });
+
+  describe("ranking: seletor de período", () => {
+    it("o grupo tem nome e cada botão informa aria-pressed; trocar de período move o estado", async () => {
+      mockSummary({ ...NO_STREAK, totalPoints: 0, history: [] });
+      mockRanking({ week: [rankingEntry(1, "Ana P.", 2)], month: [rankingEntry(1, "Bruno A.", 9)] });
+      const user = userEvent.setup();
+      renderPage();
+      const ranking = await screen.findByRole("region", { name: "Ranking" });
+      await within(ranking).findByText("Ana P.");
+
+      const group = within(ranking).getByRole("group", { name: "Período do ranking" });
+      const weekly = within(group).getByRole("button", { name: "Semanal" });
+      const monthly = within(group).getByRole("button", { name: "Mensal" });
+      expect(weekly).toHaveAttribute("aria-pressed", "true");
+      expect(monthly).toHaveAttribute("aria-pressed", "false");
+
+      await user.click(monthly);
+      await within(ranking).findByText("Bruno A.");
+
+      expect(weekly).toHaveAttribute("aria-pressed", "false");
+      expect(monthly).toHaveAttribute("aria-pressed", "true");
+      expect(within(ranking).queryByText("Ana P.")).not.toBeInTheDocument();
+    });
+
+    it("clicar no período que já está escolhido não pede o ranking de novo", async () => {
+      mockSummary({ ...NO_STREAK, totalPoints: 0, history: [] });
+      mockRanking({ week: [rankingEntry(1, "Ana P.", 2)], month: [] });
+      const user = userEvent.setup();
+      renderPage();
+      const ranking = await screen.findByRole("region", { name: "Ranking" });
+      await within(ranking).findByText("Ana P.");
+
+      await user.click(within(ranking).getByRole("button", { name: "Semanal" }));
+
+      expect(rankingRequests).toEqual(["week"]);
+    });
+
+    it("a lista de posições é um ul", async () => {
+      mockSummary({ ...NO_STREAK, totalPoints: 0, history: [] });
+      mockRanking({ week: [rankingEntry(1, "Ana P.", 2)], month: [] });
+      renderPage();
+
+      const ranking = await screen.findByRole("region", { name: "Ranking" });
+      await within(ranking).findByText("Ana P.");
+
+      expect(within(ranking).getByRole("list").tagName).toBe("UL");
+    });
+  });
+
+  describe("ranking: estados", () => {
+    it("quem não participa vê a explicação, sem posições nem pedido do ranking", async () => {
+      mockRankingConsent(false);
+      mockSummary({ ...NO_STREAK, totalPoints: 0, history: [] });
+
+      renderPage();
+
+      const ranking = await screen.findByRole("region", { name: "Ranking" });
+      expect(await within(ranking).findByText("Você não participa do ranking.")).toBeInTheDocument();
+      expect(
+        within(ranking).getByText("Seus pontos e sua sequência continuam disponíveis só para você."),
+      ).toBeInTheDocument();
+      expect(rankingRequests).toEqual([]);
+    });
+
+    it("mostra o carregando enquanto o ranking não chega", async () => {
+      mockSummary({ ...NO_STREAK, totalPoints: 0, history: [] });
+      server.use(http.get("/api/gamification/ranking", () => new Promise(() => {})));
+
+      renderPage();
+
+      const ranking = await screen.findByRole("region", { name: "Ranking" });
+      const loading = await within(ranking).findByText("Carregando o ranking…");
+      expect(loading.closest("[data-state=loading]")).toHaveAttribute("role", "status");
+    });
+
+    it("sem conexão o ranking mostra o estado offline com a ação de tentar de novo, não um erro", async () => {
+      onlineManager.setOnline(false);
+      renderPage();
+
+      const ranking = await screen.findByRole("region", { name: "Ranking" });
+      const offline = await waitFor(() => {
+        const node = ranking.querySelector('[data-state="offline"]');
+        expect(node).not.toBeNull();
+        return node as HTMLElement;
+      });
+      expect(offline).toHaveTextContent("Sem conexão");
+      expect(offline).toHaveTextContent("Não foi possível verificar sua participação no ranking.");
+      expect(within(offline).getByRole("button", { name: "Tentar novamente" })).toBeInTheDocument();
+      expect(within(ranking).queryByRole("alert")).not.toBeInTheDocument();
+      // O seletor segue disponível mesmo sem rede.
+      expect(within(ranking).getByRole("button", { name: "Semanal" })).toHaveAttribute(
+        "aria-pressed",
+        "true",
+      );
+    });
+  });
+
+  describe("estados da tela", () => {
+    it("mostra o carregando enquanto o resumo não chega", async () => {
+      server.use(http.get("/api/gamification/me", () => new Promise(() => {})));
+
+      renderPage();
+
+      const loading = await screen.findByText("Carregando…");
+      expect(loading.closest("[data-state=loading]")).toHaveAttribute("role", "status");
+      expect(screen.getByRole("heading", { level: 1, name: "FitPoints" })).toBeInTheDocument();
+      expect(screen.queryByRole("region", { name: "Pontos" })).not.toBeInTheDocument();
+    });
+
+    it("o erro é um alerta com a ação de tentar de novo, que pede o resumo outra vez", async () => {
+      let requests = 0;
+      server.use(
+        http.get("/api/gamification/me", () => {
+          requests += 1;
+          return HttpResponse.json({ code: "INTERNAL_ERROR", message: "x" }, { status: 500 });
+        }),
+      );
+      const user = userEvent.setup();
+      renderPage();
+
+      const alert = await screen.findByRole("alert");
+      expect(alert).toHaveTextContent("Não foi possível carregar seus FitPoints.");
+      const before = requests;
+      await user.click(within(alert).getByRole("button", { name: "Tentar novamente" }));
+
+      await waitFor(() => expect(requests).toBeGreaterThan(before));
+    });
+
+    it("sem conexão mostra o estado offline, não o erro, e volta sozinho quando a rede volta", async () => {
+      onlineManager.setOnline(false);
+      renderPage();
+
+      const offline = await waitFor(() => {
+        const node = document.querySelector('[data-state="offline"]');
+        expect(node).not.toBeNull();
+        return node as HTMLElement;
+      });
+      expect(offline).toHaveTextContent("Sem conexão");
+      expect(within(offline).getByRole("button", { name: "Tentar novamente" })).toBeInTheDocument();
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+      expect(screen.getByRole("heading", { level: 1, name: "FitPoints" })).toBeInTheDocument();
+
+      mockSummary({ ...NO_STREAK, totalPoints: 30, history: [] });
+      onlineManager.setOnline(true);
+
+      expect(await pointsCard()).toBeInTheDocument();
+      expect(document.querySelector('[data-state="offline"]')).toBeNull();
+    });
+
+    it("sem pontos ainda mostra o cartão zerado e o estado vazio do histórico com o convite", async () => {
+      mockSummary({ ...NO_STREAK, totalPoints: 0, history: [] });
+
+      renderPage();
+
+      const history = await screen.findByRole("region", { name: "Histórico recente" });
+      const empty = within(history).getByText("Nenhum ganho de pontos ainda.");
+      expect(empty.closest("[data-state=empty]")).not.toBeNull();
+      expect(
+        within(history).getByText("Reserve uma aula e confirme sua presença para começar a pontuar."),
+      ).toBeInTheDocument();
+      expect(within(history).queryByRole("list")).not.toBeInTheDocument();
+      expect((await pointsCard()).querySelector("strong")?.textContent).toBe("0");
+    });
+  });
+
+  describe("metas do professor", () => {
+    const ACTIVE: GoalDetail = {
+      id: "g-1",
+      clientId: "c-1",
+      title: "Treinar 4x por semana",
+      description: null,
+      dueDate: "2026-05-30",
+      status: "ACTIVE",
+      concludedAt: null,
+      createdAt: "2026-05-01T12:00:00.000Z",
+    };
+    const DONE: GoalDetail = {
+      ...ACTIVE,
+      id: "g-2",
+      title: "Completar 12 aulas no mês",
+      dueDate: null,
+      status: "COMPLETED",
+      concludedAt: "2026-05-04T21:00:00.000Z",
+    };
+
+    it("cada meta é um cartão da lista; a concluída traz o selo, a ativa não", async () => {
+      mockSummary({ ...NO_STREAK, totalPoints: 0, history: [] });
+      mockGoals([ACTIVE, DONE]);
+
+      renderPage();
+
+      const goals = await screen.findByRole("region", { name: "Metas do professor" });
+      const [active, done] = await within(goals).findAllByRole("listitem");
+      expect(active).toHaveClass("fb-ui-card");
+      expect(done).toHaveClass("fb-ui-card");
+      expect(within(done).getByText("Concluída")).toBeInTheDocument();
+      expect(within(active).queryByText("Concluída")).not.toBeInTheDocument();
+      // A API não devolve progresso parcial da meta: não há barra inventada nos cartões.
+      expect(within(goals).queryByRole("img")).not.toBeInTheDocument();
+    });
+
+    it("mostra o carregando do bloco, sem derrubar o resto da tela", async () => {
+      mockSummary({ ...NO_STREAK, totalPoints: 30, history: [] });
+      server.use(http.get("/api/goals/mine", () => new Promise(() => {})));
+      renderPage();
+
+      const goals = await screen.findByRole("region", { name: "Metas do professor" });
+      expect(await within(goals).findByText("Carregando metas…")).toBeInTheDocument();
+      expect(await pointsCard()).toBeInTheDocument();
+    });
+  });
+
+  describe("participação no ranking", () => {
+    it("o erro ao atualizar vira um aviso (alerta) abaixo do controle", async () => {
+      mockRankingConsent(false);
+      mockSummary({ ...NO_STREAK, totalPoints: 0, history: [] });
+      server.use(
+        http.patch("/api/gamification/ranking/consent", () =>
+          HttpResponse.json({ code: "INTERNAL_ERROR", message: "Erro inesperado." }, { status: 500 }),
+        ),
+      );
+      const user = userEvent.setup();
+      renderPage();
+
+      await user.click(await screen.findByRole("checkbox", { name: "Participar do ranking" }));
+
+      const consent = screen.getByRole("region", { name: "Participação no ranking" });
+      expect(await within(consent).findByRole("alert")).toHaveTextContent(/atualizar sua participação|Erro inesperado/);
+    });
+  });
 });

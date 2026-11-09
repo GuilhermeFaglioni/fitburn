@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ErrorState, LoadingState } from "../../components/states";
+import { QueryBlockState } from "../../components/QueryBlockState";
+import { Alert } from "../../components/ui/Alert";
 import { errorMessage } from "../../lib/auth/api";
 import { useAuth } from "../../lib/auth/AuthContext";
 import { isClientUser } from "../../lib/auth/areas";
@@ -51,14 +52,12 @@ export function RankingConsentControl({
         histórico, sequência e marcos continuam disponíveis para você.
       </p>
 
-      {consentQuery.isLoading && <LoadingState surface="dark" />}
-      {consentQuery.isError && (
-        <ErrorState
-          surface="dark"
-          message="Não foi possível carregar sua participação no ranking."
-          onRetry={() => void consentQuery.refetch()}
-        />
-      )}
+      <QueryBlockState
+        query={consentQuery}
+        loading="Carregando…"
+        error="Não foi possível carregar sua participação no ranking."
+        hasData={consentQuery.data !== undefined}
+      />
       {consentQuery.data && (
         <label className="fb-ranking-consent__toggle">
           <input
@@ -71,9 +70,9 @@ export function RankingConsentControl({
         </label>
       )}
       {consentMutation.isError && (
-        <p className="fb-ranking-consent__error" role="alert">
+        <Alert className="fb-ranking-consent__error">
           {errorMessage(consentMutation.error, "Não foi possível atualizar sua participação.")}
-        </p>
+        </Alert>
       )}
     </section>
   );
