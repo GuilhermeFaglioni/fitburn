@@ -4,7 +4,7 @@ Base de design do app, derivada da proposta `proposta-fitburn-oratry.html` (nest
 
 ## Tema
 
-Claro e escuro, como na proposta. Sem escolha salva, o app segue a preferência do sistema (`prefers-color-scheme`); o botão de tema do cabeçalho alterna e grava `fb-theme` no `localStorage` (atributo `data-theme` no `<html>`). Implementado na pilha da issue #156, que substitui o tema escuro único da decisão 134: o dono confirma na revisão final da pilha. As tabelas abaixo listam os dois valores de cada token; `tokens.css` os declara no `:root` (claro) e nos blocos de tema escuro, e `test/theme-css.test.ts` confere que os valores batem com este documento.
+Decidido em D-038 (`docs/decisions.md`): claro e escuro pela preferência do sistema, em cliente e admin, com alternância manual salva por aparelho. Revisa a #134 (escuro sempre). Implementado na pilha da issue #156: o botão de tema do cabeçalho alterna e grava `fb-theme` no `localStorage` (atributo `data-theme` no `<html>`). As tabelas abaixo listam os dois valores de cada token; `tokens.css` os declara no `:root` (claro) e nos blocos de tema escuro, e `test/theme-css.test.ts` confere que os valores batem com este documento.
 
 ## Marca
 
