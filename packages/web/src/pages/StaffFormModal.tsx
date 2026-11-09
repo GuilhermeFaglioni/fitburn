@@ -1,7 +1,11 @@
-import { useId, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { SystemProfileName, type UserDetail } from "@fitburn/contracts";
-import { Modal } from "../components/Modal";
+import { Alert } from "../components/ui/Alert";
+import { Button } from "../components/ui/Button";
+import { Dialog } from "../components/ui/Dialog";
+import { Field } from "../components/ui/Field";
+import { Select } from "../components/ui/Select";
 import { ApiError } from "../lib/auth/api";
 import { listProfiles } from "../lib/profiles/api";
 import { createStaff, updateUser } from "../lib/users/api";
@@ -12,9 +16,8 @@ const ERROR_MESSAGES: Record<string, string> = {
 };
 
 /**
- * Cadastro e edição de um membro da equipe (nome, e-mail e perfil de acesso).
- * O tela de referência só mostra os botões "+ Novo usuário" e "Editar"; o formulário usa
- * o padrão dos demais diálogos administrativos.
+ * Cadastro e edição de um membro da equipe (nome, e-mail e perfil de acesso), em `Dialog` (D-038, #156).
+ * O preview só mostra os botões "+ Novo usuário" e "Editar"; o formulário usa o padrão dos diálogos do admin.
  */
 export function StaffFormModal({
   user,
@@ -26,7 +29,6 @@ export function StaffFormModal({
   onSaved: () => void;
   onClose: () => void;
 }) {
-  const formId = useId();
   const [fullName, setFullName] = useState(user?.fullName ?? "");
   const [email, setEmail] = useState(user?.email ?? "");
   const [profileId, setProfileId] = useState(user?.profile.id ?? "");
@@ -47,7 +49,7 @@ export function StaffFormModal({
     onSuccess: onSaved,
   });
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  function handleSubmit(event: FormEvent) {
     event.preventDefault();
     mutation.mutate();
   }
@@ -59,90 +61,61 @@ export function StaffFormModal({
     : null;
 
   return (
-    <Modal title={user ? "Editar usuário" : "Novo usuário"} onClose={onClose}>
+    <Dialog title={user ? "Editar usuário" : "Novo usuário"} onClose={onClose}>
       <form
         onSubmit={handleSubmit}
         aria-label={user ? "Edição de usuário" : "Cadastro de usuário"}
-        className="fb-modal__form"
+        className="fb-ui-dialog__form"
       >
-        <div className="fb-modal__field">
-          <label htmlFor={`${formId}-name`}>Nome completo</label>
-          <input
-            id={`${formId}-name`}
-            className="fb-field"
-            value={fullName}
-            onChange={(event) => setFullName(event.target.value)}
-            required
-          />
-        </div>
-        <div className="fb-modal__field">
-          <label htmlFor={`${formId}-email`}>E-mail</label>
-          <input
-            id={`${formId}-email`}
-            className="fb-field"
-            type="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            required
-          />
-        </div>
-        <div className="fb-modal__field">
-          <label htmlFor={`${formId}-profile`}>Perfil de acesso</label>
-          <select
-            id={`${formId}-profile`}
-            className="fb-field"
-            value={profileId}
-            onChange={(event) => setProfileId(event.target.value)}
-            required
-          >
-            <option value="">Selecione um perfil</option>
-            {profiles.map((profile) => (
-              <option key={profile.id} value={profile.id}>
-                {profile.name}
-              </option>
-            ))}
-            {user && !profiles.some((profile) => profile.id === user.profile.id) && (
-              <option value={user.profile.id}>{user.profile.name}</option>
-            )}
-          </select>
-        </div>
+        <Field
+          label="Nome completo"
+          value={fullName}
+          onChange={(event) => setFullName(event.target.value)}
+          required
+        />
+        <Field
+          label="E-mail"
+          type="email"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          required
+        />
+        <Select
+          label="Perfil de acesso"
+          value={profileId}
+          onChange={(event) => setProfileId(event.target.value)}
+          required
+        >
+          <option value="">Selecione um perfil</option>
+          {profiles.map((profile) => (
+            <option key={profile.id} value={profile.id}>
+              {profile.name}
+            </option>
+          ))}
+          {user && !profiles.some((profile) => profile.id === user.profile.id) && (
+            <option value={user.profile.id}>{user.profile.name}</option>
+          )}
+        </Select>
         {!user && (
-          <div className="fb-modal__field">
-            <label htmlFor={`${formId}-password`}>Senha inicial</label>
-            <input
-              id={`${formId}-password`}
-              className="fb-field"
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              required
-              minLength={8}
-            />
-          </div>
+          <Field
+            label="Senha inicial"
+            type="password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            required
+            minLength={8}
+          />
         )}
-        {errorMessage && (
-          <p role="alert" className="fb-error-box">
-            {errorMessage}
-          </p>
-        )}
-        <div className="fb-modal__footer fb-modal__footer--end">
-          <button
-            type="button"
-            className="fb-btn-secondary"
-            disabled={mutation.isPending}
-            onClick={onClose}
-          >
+        {errorMessage && <Alert>{errorMessage}</Alert>}
+        <div className="fb-ui-dialog__actions">
+          <Button disabled={mutation.isPending} onClick={onClose}>
             Cancelar
-          </button>
-          <button
-            type="submit"
-            className="fb-btn-primary fb-btn-primary--sm"
-            disabled={mutation.isPending}
-          >
+          </Button>
+          <Button type="submit" variant="primary" busy={mutation.isPending}>
             {user ? "Salvar" : "Criar usuário"}
-          </button>
+          </Button>
         </div>
       </form>
-    </Modal>
+    </Dialog>
   );
 }

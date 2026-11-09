@@ -103,7 +103,7 @@ describe("ProfilesPage", () => {
       within(clientesRow).getByRole("combobox", { name: "Escopo de Clientes" }),
       "ALL",
     );
-    await user.click(within(clientesRow).getByRole("button", { name: "Salvar" }));
+    await user.click(within(clientesRow).getByRole("button", { name: "Salvar permissões de Clientes" }));
 
     await waitFor(() => {
       expect(savedBody).toMatchObject({ actions: ["VIEW"], scope: "ALL" });
@@ -157,11 +157,11 @@ describe("ProfilesPage", () => {
     renderProfilesPage();
 
     const clientListItem = (await screen.findByRole("button", { name: "Cliente" })).closest("li")!;
-    expect(within(clientListItem).queryByRole("button", { name: "Desativar" })).not.toBeInTheDocument();
-    expect(within(clientListItem).queryByRole("button", { name: "Reativar" })).not.toBeInTheDocument();
+    expect(within(clientListItem).queryByRole("button", { name: /^Desativar perfil / })).not.toBeInTheDocument();
+    expect(within(clientListItem).queryByRole("button", { name: /^Reativar perfil / })).not.toBeInTheDocument();
 
     const customListItem = screen.getByRole("button", { name: "Recepção" }).closest("li")!;
-    expect(within(customListItem).getByRole("button", { name: "Desativar" })).toBeInTheDocument();
+    expect(within(customListItem).getByRole("button", { name: "Desativar perfil Recepção" })).toBeInTheDocument();
   });
 
   it("sem permissão de criar e editar perfis, Novo perfil e Desativar ficam bloqueados, com o motivo", async () => {
@@ -178,7 +178,7 @@ describe("ProfilesPage", () => {
     expect(create).toBeDisabled();
     expect(create).toHaveAttribute("title", "Você não tem permissão para criar perfis.");
     const customItem = (await screen.findByRole("button", { name: "Recepção" })).closest("li")!;
-    const deactivate = within(customItem).getByRole("button", { name: "Desativar" });
+    const deactivate = within(customItem).getByRole("button", { name: "Desativar perfil Recepção" });
     expect(deactivate).toBeDisabled();
     expect(deactivate).toHaveAttribute("title", "Você não tem permissão para alterar perfis.");
   });
@@ -200,7 +200,7 @@ describe("ProfilesPage", () => {
       expect(checkbox).toBeDisabled();
     }
     expect(within(clientesRow).getByRole("combobox", { name: "Escopo de Clientes" })).toBeDisabled();
-    expect(within(clientesRow).getByRole("button", { name: "Salvar" })).toBeDisabled();
+    expect(within(clientesRow).getByRole("button", { name: "Salvar permissões de Clientes" })).toBeDisabled();
   });
 
   it("mostra erro ao carregar perfis e tenta a consulta novamente", async () => {
@@ -247,7 +247,7 @@ describe("ProfilesPage", () => {
     expect(calls).toBe(2);
   });
 
-  it("desabilita criar enquanto aguarda e mostra feedback com erro da API", async () => {
+  it("marca o envio como ocupado (aria-busy) enquanto aguarda e mostra feedback com erro da API", async () => {
     let finishRequest!: () => void;
     const requestMayFinish = new Promise<void>((resolve) => {
       finishRequest = resolve;
@@ -268,7 +268,7 @@ describe("ProfilesPage", () => {
     await user.type(screen.getByLabelText("Nome"), "Novo perfil");
     const submit = screen.getByRole("button", { name: "Criar perfil" });
     await user.click(submit);
-    await waitFor(() => expect(submit).toBeDisabled());
+    await waitFor(() => expect(submit).toHaveAttribute("aria-busy", "true"));
     finishRequest();
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Falha ao criar perfil.");
@@ -291,7 +291,7 @@ describe("ProfilesPage", () => {
     renderProfilesPage();
     const user = userEvent.setup();
 
-    const deactivate = await screen.findByRole("button", { name: "Desativar" });
+    const deactivate = await screen.findByRole("button", { name: "Desativar perfil Recepção" });
     await user.click(deactivate);
     await waitFor(() => expect(deactivate).toBeDisabled());
     finishRequest();
@@ -319,7 +319,7 @@ describe("ProfilesPage", () => {
     renderProfilesPage();
     const user = userEvent.setup();
 
-    const activate = await screen.findByRole("button", { name: "Reativar" });
+    const activate = await screen.findByRole("button", { name: "Reativar perfil Recepção" });
     await user.click(activate);
     await waitFor(() => expect(activate).toBeDisabled());
     finishRequest();

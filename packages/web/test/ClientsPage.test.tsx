@@ -325,8 +325,8 @@ describe("Clientes (equipe)", () => {
       );
       renderAt("/clientes");
 
-      await user.click(await screen.findByRole("button", { name: "Desativar Marina Souza" }));
-      await user.click(screen.getByRole("button", { name: "Reativar Bruno Lima" }));
+      await user.click(await screen.findByRole("button", { name: "Desativar cliente Marina Souza" }));
+      await user.click(screen.getByRole("button", { name: "Reativar cliente Bruno Lima" }));
 
       await waitFor(() => expect(calls).toEqual(["c-marina/deactivate", "c-bruno/reactivate"]));
     });
@@ -355,7 +355,7 @@ describe("Clientes (equipe)", () => {
         mockDeletion(calls);
         renderAt("/clientes");
 
-        await user.click(await screen.findByRole("button", { name: "Excluir Marina Souza" }));
+        await user.click(await screen.findByRole("button", { name: "Excluir cliente Marina Souza" }));
 
         const dialog = screen.getByRole("dialog", { name: "Excluir cliente?" });
         expect(dialog).toHaveTextContent("Marina Souza");
@@ -375,7 +375,7 @@ describe("Clientes (equipe)", () => {
         mockDeletion(calls);
         renderAt("/clientes");
 
-        await user.click(await screen.findByRole("button", { name: "Excluir Marina Souza" }));
+        await user.click(await screen.findByRole("button", { name: "Excluir cliente Marina Souza" }));
         await user.click(screen.getByRole("button", { name: "Excluir e anonimizar" }));
 
         await waitFor(() => expect(calls).toEqual(["c-marina"]));
@@ -396,7 +396,7 @@ describe("Clientes (equipe)", () => {
         );
         renderAt("/clientes");
 
-        await user.click(await screen.findByRole("button", { name: "Excluir Marina Souza" }));
+        await user.click(await screen.findByRole("button", { name: "Excluir cliente Marina Souza" }));
         await user.click(screen.getByRole("button", { name: "Excluir e anonimizar" }));
 
         const dialog = screen.getByRole("dialog");
@@ -434,10 +434,10 @@ describe("Clientes (equipe)", () => {
       const create = screen.getByRole("button", { name: "+ Novo cliente" });
       expect(create).toBeDisabled();
       expect(create).toHaveAttribute("title", "Você não tem permissão para cadastrar clientes.");
-      const toggle = screen.getByRole("button", { name: "Desativar Marina Souza" });
+      const toggle = screen.getByRole("button", { name: "Desativar cliente Marina Souza" });
       expect(toggle).toBeDisabled();
       expect(toggle).toHaveAttribute("title", "Você não tem permissão para alterar clientes.");
-      const remove = screen.getByRole("button", { name: "Excluir Marina Souza" });
+      const remove = screen.getByRole("button", { name: "Excluir cliente Marina Souza" });
       expect(remove).toBeDisabled();
       expect(remove).toHaveAttribute("title", "Você não tem permissão para excluir clientes.");
     });
@@ -464,8 +464,8 @@ describe("Clientes (equipe)", () => {
       renderAt("/clientes");
       await screen.findByText("Marina Souza");
 
-      expect(screen.getByRole("button", { name: "Desativar Marina Souza" })).toBeEnabled();
-      expect(screen.getByRole("button", { name: "Excluir Marina Souza" })).toBeDisabled();
+      expect(screen.getByRole("button", { name: "Desativar cliente Marina Souza" })).toBeEnabled();
+      expect(screen.getByRole("button", { name: "Excluir cliente Marina Souza" })).toBeDisabled();
     });
   });
 
@@ -477,18 +477,18 @@ describe("Clientes (equipe)", () => {
       expect(await screen.findByRole("heading", { name: "Marina Souza" })).toBeInTheDocument();
       expect(screen.getByText("Rua das Flores, 10")).toBeInTheDocument();
 
-      await user.click(screen.getByRole("tab", { name: "Plano e histórico" }));
+      await user.click(within(screen.getByRole("group", { name: "Seções do cliente" })).getByRole("button", { name: "Plano e histórico" }));
       expect(screen.getByText("Plano Performance")).toBeInTheDocument();
       expect(screen.getByText("Plano Essencial")).toBeInTheDocument();
 
-      await user.click(screen.getByRole("tab", { name: "Reservas" }));
+      await user.click(within(screen.getByRole("group", { name: "Seções do cliente" })).getByRole("button", { name: "Reservas" }));
       expect(screen.getByText("Yoga Flow")).toBeInTheDocument();
       expect(screen.getByText("Nenhuma reserva anterior.")).toBeInTheDocument();
 
-      await user.click(screen.getByRole("tab", { name: "FitPoints" }));
+      await user.click(within(screen.getByRole("group", { name: "Seções do cliente" })).getByRole("button", { name: "FitPoints" }));
       expect(screen.getByText("120 pontos")).toBeInTheDocument();
 
-      await user.click(screen.getByRole("tab", { name: "Fichas" }));
+      await user.click(within(screen.getByRole("group", { name: "Seções do cliente" })).getByRole("button", { name: "Fichas" }));
       expect(screen.getByText("Ficha de Hipertrofia")).toBeInTheDocument();
     });
 

@@ -903,6 +903,14 @@
   margin-top: var(--s-2);
 }
 
+/* Formulário dentro do diálogo: campos e ações no mesmo respiro do cartão. */
+.fb-ui-dialog__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  min-width: 0;
+}
+
 /* Folha (variant="sheet"): barra superior, corpo que rola e rodapé fixo. No celular sobe da borda inferior; com
    reduced motion o --sheet-offset zera e sobra o fade. */
 .fb-ui-dialog--sheet,
@@ -1215,5 +1223,460 @@
 
   .fb-ui-bottom-nav__item[aria-current="page"]:hover {
     color: var(--brand-strong);
+  }
+}
+
+/* ==========================================================================
+   Telas do admin (issue 156, PR 13): cabeçalho de tela, barra de filtros, lista de descrição, ações de linha e
+   formulário em grade. Prefixo `fb-ui-`, só tokens. Componentes React em src/components/ui
+   (PageHeader, Toolbar, DescriptionList, Select) e as classes de página abaixo.
+   ========================================================================== */
+
+/* Texto só para leitores de tela (rótulo de campo de barra de filtros, por exemplo). */
+.fb-ui-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* "Excluir" discreto de linha de tabela: texto em --danger (4,5:1 nos dois temas), sem preenchimento. */
+.fb-ui-btn--ghost-danger {
+  color: var(--danger);
+  background: transparent;
+  padding: 0 var(--s-2);
+}
+
+@media (hover: hover) {
+  .fb-ui-btn--ghost-danger:hover:not(:disabled):not([aria-disabled="true"]) {
+    background: var(--danger-bg);
+  }
+}
+
+/* Coluna da página: título, filtros, tabela e avisos, com o respiro do design (20px). */
+.fb-ui-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-5);
+  min-width: 0;
+}
+
+.fb-ui-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  min-width: 0;
+}
+
+/* Trilha acima do título: "Clientes / Novo cliente". */
+.fb-ui-crumb {
+  color: var(--muted);
+  font-size: var(--text-small);
+  line-height: var(--leading-small);
+}
+
+/* Link de tela do admin: herda a cor do texto, sem sublinhado até o hover. Tem classe própria porque a regra geral
+   dos links do conteúdo (`.fb-admin-content a:not([class])`) só vale para link sem classe. */
+.fb-ui-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.fb-ui-link:focus-visible {
+  outline: none;
+  border-radius: var(--r-xs);
+  box-shadow: var(--sh-focus);
+}
+
+@media (hover: hover) {
+  .fb-ui-link:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+}
+
+.fb-ui-crumb .fb-ui-link {
+  color: var(--muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+@media (hover: hover) {
+  .fb-ui-crumb .fb-ui-link:hover {
+    color: var(--ink);
+  }
+}
+
+/* Cabeçalho de tela: kicker e título à esquerda, ações à direita; no celular as ações descem. */
+.fb-ui-pagehead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--s-3) var(--s-4);
+}
+
+.fb-ui-pagehead__text {
+  min-width: 0;
+}
+
+.fb-ui-pagehead__kicker {
+  margin: 0 0 var(--s-2);
+  color: var(--brand-strong);
+  font-size: var(--text-kicker);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-kicker);
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.fb-ui-pagehead__titlerow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-3);
+}
+
+.fb-ui-pagehead__title {
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: var(--text-h1);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-title);
+  line-height: var(--leading-title);
+  overflow-wrap: anywhere;
+}
+
+.fb-ui-pagehead__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-3);
+}
+
+/* Barra de filtros: busca e seletores crescem por igual e quebram no celular. */
+.fb-ui-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-3);
+}
+
+.fb-ui-toolbar > .fb-ui-field {
+  flex: 1 1 180px;
+  max-width: 320px;
+}
+
+.fb-ui-toolbar .fb-ui-input {
+  min-height: var(--s-11);
+  padding: var(--s-2) var(--s-3);
+  font-size: var(--text-small);
+  box-shadow: none;
+}
+
+.fb-ui-toolbar__end {
+  margin-left: auto;
+}
+
+.fb-ui-toolbar__count {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: var(--text-small);
+}
+
+/* Campo que não precisa da largura toda (um seletor sozinho numa tela). */
+.fb-ui-field.fb-ui-field--narrow {
+  max-width: 360px;
+}
+
+/* Texto de apoio de uma tela (explicação, nota sob a tabela). */
+.fb-ui-note {
+  margin: 0;
+  max-width: 640px;
+  color: var(--muted);
+  font-size: var(--text-small);
+  line-height: var(--leading-small);
+}
+
+.fb-ui-section-title {
+  margin: 0;
+  color: var(--ink);
+  font-size: var(--text-h3);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-title);
+  line-height: var(--leading-title);
+}
+
+/* Célula com o nome do registro: tinta forte (o link do nome usa `.fb-ui-link`). */
+.fb-ui-table td.fb-ui-table__name {
+  color: var(--ink);
+  font-weight: var(--weight-medium);
+}
+
+.fb-ui-table td.fb-ui-table__muted {
+  color: var(--muted);
+}
+
+/* Botões de uma linha: alinhados à direita, quebram em duas linhas só se faltar largura. */
+.fb-ui-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--s-2);
+}
+
+/* Matriz de permissões: marcas centradas e largura mínima própria (a rolagem fica no contêiner). */
+.fb-ui-table--matrix {
+  min-width: 820px;
+}
+
+.fb-ui-table th.fb-ui-table__center,
+.fb-ui-table td.fb-ui-table__center {
+  text-align: center;
+}
+
+.fb-ui-table--matrix .fb-ui-input {
+  min-height: var(--s-11);
+  padding: var(--s-2) var(--s-3);
+  font-size: var(--text-small);
+  box-shadow: none;
+}
+
+/* Célula de cabeçalho de linha (nome do módulo na matriz): lê como texto de corpo, não como título de coluna. */
+.fb-ui-table tbody th.fb-ui-table__rowhead {
+  padding: var(--s-3) var(--s-4);
+  background: transparent;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink);
+  font-size: var(--text-small);
+  font-weight: var(--weight-medium);
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: normal;
+}
+
+.fb-ui-table tbody tr:last-child th.fb-ui-table__rowhead {
+  border-bottom: 0;
+}
+
+.fb-ui-table__center .fb-ui-check {
+  justify-content: center;
+}
+
+/* Aviso informativo (não é erro nem sucesso): tom de marca suave, texto na tinta secundária. */
+.fb-ui-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-3);
+  box-sizing: border-box;
+  margin: 0;
+  padding: var(--s-3) var(--s-4);
+  background: var(--brand-tint);
+  border: 1px solid var(--brand-line);
+  border-radius: var(--r-md);
+  color: var(--ink-2);
+  font-size: var(--text-small);
+  line-height: var(--leading-small);
+}
+
+/* Lista de termo e valor: duas colunas no desktop, uma no celular. */
+.fb-ui-dl {
+  display: grid;
+  margin: 0;
+}
+
+.fb-ui-dl__row {
+  display: grid;
+  grid-template-columns: minmax(var(--s-24), 200px) 1fr;
+  gap: var(--s-4);
+  padding: var(--s-3) 0;
+  border-bottom: 1px solid var(--line);
+  font-size: var(--text-small);
+}
+
+.fb-ui-dl__row:last-child {
+  border-bottom: 0;
+}
+
+.fb-ui-dl dt {
+  margin: 0;
+  color: var(--muted);
+}
+
+.fb-ui-dl dd {
+  margin: 0;
+  color: var(--ink);
+  font-weight: var(--weight-medium);
+  overflow-wrap: anywhere;
+}
+
+/* Linhas simples de um cartão (reservas, histórico, fichas): texto à esquerda, selo à direita. */
+.fb-ui-rows {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fb-ui-rows > li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2) var(--s-4);
+  padding: var(--s-3) 0;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink-2);
+  font-size: var(--text-small);
+  line-height: var(--leading-small);
+}
+
+.fb-ui-rows > li:last-child {
+  border-bottom: 0;
+}
+
+.fb-ui-rows strong {
+  color: var(--ink);
+}
+
+/* Fileira de selos (marcos de presença, perfis): quebra no celular. */
+.fb-ui-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Formulário em cartão: grade de duas colunas (uma no celular) e rodapé de botões alinhado à direita. */
+.fb-ui-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s-4) var(--s-5);
+}
+
+.fb-ui-form-grid > .fb-ui-field--full {
+  grid-column: 1 / -1;
+}
+
+.fb-ui-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--s-3);
+  margin-top: var(--s-5);
+  padding-top: var(--s-5);
+  border-top: 1px solid var(--line);
+}
+
+@media (max-width: 767px) {
+  .fb-ui-form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .fb-ui-dl__row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--s-1);
+  }
+
+  .fb-ui-toolbar > .fb-ui-field {
+    max-width: none;
+  }
+
+  .fb-ui-toolbar__count,
+  .fb-ui-toolbar__end {
+    margin-left: 0;
+  }
+}
+
+/* Cartão de formulário numa coluna de leitura (cadastro de cliente): não estica na tela larga. */
+.fb-ui-card--form {
+  max-width: 760px;
+}
+
+/* Perfis de acesso: lista vertical de perfis ao lado da matriz; no celular a lista vira faixa acima. */
+.fb-ui-split {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-6);
+}
+
+.fb-ui-split__list {
+  flex: 0 0 220px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fb-ui-split__list > li {
+  display: flex;
+  align-items: center;
+  gap: var(--s-1);
+}
+
+.fb-ui-split__main {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+
+.fb-ui-profile-item {
+  box-sizing: border-box;
+  flex: 1 1 0;
+  min-height: var(--s-11);
+  padding: var(--s-2) var(--s-3);
+  background: transparent;
+  color: var(--ink-2);
+  border: 0;
+  border-radius: var(--r-sm);
+  font-family: var(--font-sans);
+  font-size: var(--text-small);
+  font-weight: var(--weight-medium);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color var(--duration-state) var(--ease-out),
+    color var(--duration-state) var(--ease-out),
+    box-shadow var(--duration-press) var(--ease-out);
+}
+
+.fb-ui-profile-item:focus-visible {
+  outline: none;
+  box-shadow: var(--sh-focus);
+}
+
+.fb-ui-profile-item[aria-pressed="true"] {
+  background: var(--brand-tint);
+  color: var(--brand-strong);
+  font-weight: var(--weight-bold);
+}
+
+@media (hover: hover) {
+  .fb-ui-profile-item:hover:not([aria-pressed="true"]) {
+    background: var(--surface-2);
+  }
+}
+
+@media (max-width: 767px) {
+  .fb-ui-split {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .fb-ui-split__list {
+    flex: 0 0 auto;
   }
 }

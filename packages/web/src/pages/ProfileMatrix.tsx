@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import {
   Module,
@@ -13,6 +13,10 @@ import {
 import { ACTION_LABELS, MODULE_LABELS, SCOPE_LABELS } from "../lib/profiles/labels";
 import { setModuleAccess } from "../lib/profiles/api";
 import { BlockedAction } from "../components/BlockedAction";
+import { Alert } from "../components/ui/Alert";
+import { Button } from "../components/ui/Button";
+import { Checkbox } from "../components/ui/Checkbox";
+import { Select } from "../components/ui/Select";
 import { useAuth } from "../lib/auth/AuthContext";
 
 const SYSTEM_ADMIN_NAME = "Administrador";
@@ -76,16 +80,16 @@ function ModuleRow({
 
   return (
     <tr>
-      <th scope="row" className="fb-td fb-td--module">
+      <th scope="row" className="fb-ui-table__rowhead">
         {MODULE_LABELS[module]}
       </th>
       {catalog.actions.map((action) => (
-        <td key={action} className="fb-mtd">
+        <td key={action} className="fb-ui-table__center">
           <BlockedAction allowed={canEdit} reason={NO_EDIT_REASON}>
-            <input
-              type="checkbox"
-              className={`fb-checkbox${isAdminLocked ? " fb-checkbox--fixed" : ""}`}
-              aria-label={`${ACTION_LABELS[action]} em ${MODULE_LABELS[module]}`}
+            <Checkbox
+              label={
+                <span className="fb-ui-sr-only">{`${ACTION_LABELS[action]} em ${MODULE_LABELS[module]}`}</span>
+              }
               checked={actions.includes(action)}
               disabled={isAdminLocked}
               onChange={() => toggleAction(action)}
@@ -93,7 +97,7 @@ function ModuleRow({
           </BlockedAction>
         </td>
       ))}
-      <td className="fb-td fb-scope">
+      <td>
         {isAdminLocked ? (
           SCOPE_LABELS[scope]
         ) : isClientScopeLocked ? (
@@ -102,9 +106,9 @@ function ModuleRow({
           </span>
         ) : (
           <BlockedAction allowed={canEdit} reason={NO_EDIT_REASON}>
-            <select
-              className="fb-field"
-              aria-label={`Escopo de ${MODULE_LABELS[module]}`}
+            <Select
+              label={`Escopo de ${MODULE_LABELS[module]}`}
+              hideLabel
               value={scope}
               disabled={isAdminLocked}
               onChange={(event) => setScope(event.target.value as PermissionScopeName)}
@@ -114,27 +118,25 @@ function ModuleRow({
                   {SCOPE_LABELS[s]}
                 </option>
               ))}
-            </select>
+            </Select>
           </BlockedAction>
         )}
       </td>
-      <td className="fb-td">
+      <td className="fb-ui-table__actions">
         {!isAdminLocked && (
           <BlockedAction allowed={canEdit} reason={NO_EDIT_REASON}>
-            <button
-              type="button"
-              className="fb-row-btn"
+            <Button
+              size="sm"
+              aria-label={`Salvar permissões de ${MODULE_LABELS[module]}`}
               disabled={mutation.isPending}
               onClick={() => mutation.mutate()}
             >
               Salvar
-            </button>
+            </Button>
           </BlockedAction>
         )}
         {mutation.isError && (
-          <p role="alert" className="fb-error-box">
-            {mutation.error.message || "Não foi possível salvar as permissões."}
-          </p>
+          <Alert>{mutation.error.message || "Não foi possível salvar as permissões."}</Alert>
         )}
       </td>
     </tr>
@@ -150,24 +152,25 @@ export function ProfileMatrix({
   catalog: ModuleCatalog;
   onChanged: () => void;
 }) {
+  const headingId = useId();
   const isAdminLocked = profile.isSystem && profile.name === SYSTEM_ADMIN_NAME;
   const isClientScopeLocked = profile.isSystem && profile.name === SYSTEM_CLIENT_NAME;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 12, flexGrow: 1, minHeight: 0 }}>
-      <h2 className="fb-visually-hidden">Matriz de permissões — {profile.name}</h2>
+    <section className="fb-ui-stack" aria-labelledby={headingId}>
+      <h2 id={headingId} className="fb-ui-section-title">
+        Matriz de permissões — {profile.name}
+      </h2>
 
       {isAdminLocked && (
-        <p role="note" className="fb-visually-hidden">
+        <p role="note" className="fb-ui-sr-only">
           O Administrador sempre tem acesso total a todos os módulos — a matriz não pode ser
           alterada.
         </p>
       )}
       {isClientScopeLocked && (
-        <p role="note" className="fb-lock-banner">
-          <span aria-hidden="true" style={{ fontSize: 15 }}>
-            🔒
-          </span>
+        <p role="note" className="fb-ui-notice">
+          <span aria-hidden="true">🔒</span>
           <span>
             O perfil <strong>Cliente</strong> possui acesso restrito aos próprios dados por regra do
             sistema. Esta matriz é fixa e não pode ser alterada, para garantir que um cliente nunca
@@ -176,22 +179,29 @@ export function ProfileMatrix({
         </p>
       )}
 
-      <div className="fb-table-wrap" style={{ opacity: isClientScopeLocked ? 0.55 : 1 }}>
-        <table>
+      {/* Mesma moldura da `Table` (região rolável e rotulada), com marcação própria: cada linha tem estado local. */}
+      <div
+        role="region"
+        aria-label={`Permissões do perfil ${profile.name}`}
+        tabIndex={0}
+        className="fb-ui-table-wrap"
+      >
+        <table
+          className="fb-ui-table fb-ui-table--matrix"
+          aria-label={`Matriz de permissões — ${profile.name}`}
+        >
           <thead>
             <tr>
-              <th scope="col" className="fb-th">
-                Módulo
-              </th>
+              <th scope="col">Módulo</th>
               {catalog.actions.map((action) => (
-                <th scope="col" key={action} className="fb-th" style={{ textAlign: "center" }}>
+                <th scope="col" key={action} className="fb-ui-table__center">
                   {ACTION_LABELS[action]}
                 </th>
               ))}
-              <th scope="col" className="fb-th">
-                Escopo
+              <th scope="col">Escopo</th>
+              <th scope="col" className="fb-ui-table__actions">
+                Ações
               </th>
-              <th scope="col" className="fb-th" />
             </tr>
           </thead>
           <tbody>
@@ -220,6 +230,6 @@ export function ProfileMatrix({
           </tbody>
         </table>
       </div>
-    </div>
+    </section>
   );
 }

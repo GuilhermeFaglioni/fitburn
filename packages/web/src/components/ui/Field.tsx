@@ -9,6 +9,8 @@ export interface FieldProps extends InputHTMLAttributes<HTMLInputElement> {
   /** Erro: marca `aria-invalid`, mostra a mensagem anunciada (`role="alert"`) e a liga ao campo. */
   error?: string;
   success?: string;
+  /** Rótulo só para leitores de tela (barras de filtro, em que o placeholder já mostra o papel do campo). */
+  hideLabel?: boolean;
   /** Controle dentro do campo, à direita do input (ex.: mostrar/ocultar senha). O input reserva o espaço dele. */
   trailing?: ReactNode;
 }
@@ -22,6 +24,7 @@ export function Field({
   help,
   error,
   success,
+  hideLabel,
   trailing,
   id,
   className,
@@ -45,7 +48,7 @@ export function Field({
   );
   return (
     <div className={join("fb-ui-field", className)}>
-      <label htmlFor={inputId} className="fb-ui-field__label">
+      <label htmlFor={inputId} className={join("fb-ui-field__label", hideLabel && "fb-ui-sr-only")}>
         {label}
       </label>
       {trailing ? (

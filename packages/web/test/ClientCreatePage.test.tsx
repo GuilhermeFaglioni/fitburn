@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { http, HttpResponse } from "msw";
@@ -60,7 +60,10 @@ describe("Cadastro de cliente (tela cheia)", () => {
     renderPage();
 
     expect(await screen.findByRole("heading", { name: "Novo cliente" })).toBeInTheDocument();
-    expect(screen.getByText("Clientes / Novo cliente")).toBeInTheDocument();
+    const crumb = screen.getByRole("navigation", { name: "Trilha de navegação" });
+    expect(crumb).toHaveTextContent("Clientes / Novo cliente");
+    expect(within(crumb).getByRole("link", { name: "Clientes" })).toHaveAttribute("href", "/clientes");
+    expect(screen.getByRole("heading", { level: 1, name: "Novo cliente" })).toBeInTheDocument();
     expect(screen.getByPlaceholderText("Nome e sobrenome")).toBeInTheDocument();
     expect(screen.getByPlaceholderText("email@exemplo.com")).toBeInTheDocument();
     expect(screen.getByPlaceholderText("(00) 00000-0000")).toBeInTheDocument();
@@ -145,7 +148,6 @@ describe("Cadastro de cliente (tela cheia)", () => {
     const email = screen.getByLabelText("E-mail *");
     expect(email).toHaveAttribute("aria-invalid", "true");
     expect(email).toHaveAttribute("aria-describedby", alert.id);
-    expect(email).toHaveClass("fb-field-error");
     // Sem faixa de sucesso e o formulário continua preenchido.
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
     expect(email).toHaveValue("carla@email.com");

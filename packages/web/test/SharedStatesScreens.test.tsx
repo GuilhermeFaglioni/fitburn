@@ -47,6 +47,8 @@ interface Screen {
   page: ReactElement;
   url: string;
   errorMessage: string;
+  /** Texto do carregando, quando a tela usa um específico (padrão: "Carregando…"). */
+  loadingMessage?: string;
   /** Resposta de sucesso sem nenhum item, para o estado vazio. */
   empty: object | null;
   emptyMessage: string;
@@ -58,6 +60,7 @@ const SCREENS: Screen[] = [
     page: <ClientsPage />,
     url: "/api/clients",
     errorMessage: "Não foi possível carregar os clientes.",
+    loadingMessage: "Carregando clientes…",
     empty: [],
     emptyMessage: "Nenhum cliente encontrado.",
   },
@@ -66,6 +69,7 @@ const SCREENS: Screen[] = [
     page: <UsersPage />,
     url: "/api/users",
     errorMessage: "Não foi possível carregar os usuários.",
+    loadingMessage: "Carregando usuários…",
     empty: [],
     emptyMessage: "Nenhum usuário encontrado.",
   },
@@ -136,12 +140,12 @@ describe("estados compartilhados nas telas principais", () => {
     server.use(http.get("/api/goals/mine", () => HttpResponse.json([])));
   });
 
-  describe.each(SCREENS)("$name", ({ page, url, errorMessage, empty, emptyMessage }) => {
+  describe.each(SCREENS)("$name", ({ page, url, errorMessage, loadingMessage, empty, emptyMessage }) => {
     it("mostra o estado de carregando enquanto espera a API", async () => {
       server.use(http.get(url, () => new Promise(() => {})));
       renderScreen(page);
 
-      const loading = await screen.findByText("Carregando…");
+      const loading = await screen.findByText(loadingMessage ?? "Carregando…");
       expect(loading).toHaveAttribute("role", "status");
     });
 
