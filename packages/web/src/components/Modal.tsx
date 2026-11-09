@@ -53,8 +53,12 @@ export function useCloseOnEscape(onClose: () => void) {
   }, [onClose]);
 }
 
-const FOCUSABLE =
+export const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+/** Foco inicial padrão dos diálogos: o primeiro campo de formulário. */
+const FIRST_FIELD =
+  'input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled])';
 
 /**
  * Foco de um diálogo modal: ao abrir, leva o foco ao primeiro campo (ou ao
@@ -62,8 +66,9 @@ const FOCUSABLE =
  * presos dentro dele; ao fechar, devolve o foco a quem o abriu. Vai no
  * elemento com role="dialog" e tabIndex={-1}. `active` (padrão: sempre) serve
  * a painéis que só viram diálogo enquanto estão abertos (a gaveta do menu).
+ * `initialFocus` troca o seletor do primeiro foco (o `Dialog` de ui/ usa o primeiro controle de qualquer tipo).
  */
-export function useDialogFocus<T extends HTMLElement>(active = true) {
+export function useDialogFocus<T extends HTMLElement>(active = true, initialFocus: string = FIRST_FIELD) {
   const ref = useRef<T>(null);
 
   useEffect(() => {
@@ -71,9 +76,7 @@ export function useDialogFocus<T extends HTMLElement>(active = true) {
     if (!dialog || !active) return;
     const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
 
-    const firstField = dialog.querySelector<HTMLElement>(
-      'input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled])',
-    );
+    const firstField = dialog.querySelector<HTMLElement>(initialFocus);
     (firstField ?? dialog).focus();
 
     function handleKeyDown(event: KeyboardEvent) {
@@ -105,7 +108,7 @@ export function useDialogFocus<T extends HTMLElement>(active = true) {
       const focusWasLost = !current || current === document.body || dialog.contains(current);
       if (opener?.isConnected && focusWasLost) opener.focus();
     };
-  }, [active]);
+  }, [active, initialFocus]);
 
   return ref;
 }
