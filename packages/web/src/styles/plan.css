@@ -1,138 +1,103 @@
 /**
- * Plano do cliente.
- * Mobile: cartão de 20px 18px e título de 19px; desktop (≥768px): cartão de
- * 24px, no máximo 640px de largura, título de 24px.
+ * Plano do cliente dentro do Perfil (D-038, tela extrapolada da base; referência: "Plano ativo" e "Histórico de
+ * planos" do preview). Só tokens: cor, raio, espaçamento e tipografia vêm do design system; vale nos dois temas.
+ * O cartão externo é o Card do Perfil (`fb-profile__card`); aqui ficam o plano atual, as datas e o histórico.
+ * No fim, a lista de histórico em densidade de consulta, que a administração reaproveita (`--light`).
  */
-.fb-plan {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  font-family: var(--font-sans);
-  color: var(--color-ink-on-dark);
-}
-
 .fb-plan__title {
   margin: 0;
-  font-size: 19px;
-  font-weight: 700;
+  font-size: var(--text-action);
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.01em;
 }
 
-.fb-plan__alert {
-  margin: 0;
-  box-sizing: border-box;
-  padding: 10px 14px;
-  background: var(--color-danger-bg);
-  border: 1px solid var(--color-danger-border);
-  border-radius: var(--radius-sm);
-  font-size: 13px;
-  color: var(--color-danger);
-}
-
-.fb-plan__card {
-  box-sizing: border-box;
+/* Plano atual: Card em destaque (borda de marca) com o nome, o selo de situação, a descrição e as datas. */
+.fb-plan .fb-plan__current {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding: 20px 18px;
-  background: var(--color-surface-raised);
-  border-radius: var(--radius-sm);
+  gap: var(--s-3);
+  padding: calc(var(--s-4) - 1px);
 }
 
-.fb-plan__card-head {
+.fb-plan__current-head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
+  gap: var(--s-3);
 }
 
-.fb-plan__card-name {
-  font-size: 18px;
-  font-weight: 700;
+.fb-plan__current-name {
+  min-width: 0;
+  font-size: var(--text-h3);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-title);
+  letter-spacing: var(--tracking-title);
+  overflow-wrap: anywhere;
 }
 
-.fb-plan__badge {
-  flex-shrink: 0;
-  padding: 5px 10px;
-  border-radius: var(--radius-sm);
-  background: rgba(237, 110, 52, 0.14);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  color: var(--color-brand-strong);
+.fb-plan__current-head .fb-ui-badge {
+  flex: 0 0 auto;
 }
 
-.fb-plan__card-text {
+.fb-plan__current-text {
   margin: 0;
-  font-size: 13px;
-  line-height: 20px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--muted);
+  font-size: var(--text-small);
+  line-height: var(--leading-small);
 }
 
 .fb-plan__dates {
-  display: flex;
-  gap: 20px;
-  padding-top: 10px;
-  border-top: 1px solid var(--color-line);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s-3);
+  margin: 0;
+  padding-top: var(--s-3);
+  border-top: 1px solid var(--brand-line);
 }
 
 .fb-plan__date {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--s-1);
 }
 
 .fb-plan__date-label {
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.45);
+  color: var(--muted);
+  font-size: var(--text-caption);
 }
 
 .fb-plan__date-value {
-  font-size: 13px;
+  margin: 0;
+  font-size: var(--text-action);
+  font-weight: var(--weight-bold);
 }
 
-/* Mais específico que .fb-state--dark.fb-state--empty (states.css, carregado depois). */
-.fb-plan .fb-state--empty.fb-plan__empty {
-  display: block;
-  padding: 24px 18px;
-  background: var(--color-surface-raised);
-  border: 1px dashed var(--color-line-2);
-  border-radius: var(--radius-sm);
-  text-align: center;
-  /* Como na tela de referência: o contêiner tem a fonte padrão e só o texto (span) tem 13px/19px. */
-  font-size: 16px;
-  line-height: normal;
-  color: rgba(255, 255, 255, 0.6);
-}
-
-.fb-plan .fb-state--empty.fb-plan__empty > span {
-  font-size: 13px;
-  line-height: 19px;
-}
-
+/* ---------- Histórico ---------- */
 .fb-plan__history {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--s-3);
 }
 
 .fb-plan__history-title {
   margin: 0;
-  font-size: 15px;
-  font-weight: 700;
+  font-size: var(--text-small);
+  font-weight: var(--weight-bold);
 }
 
 .fb-plan__none {
   margin: 0;
-  font-size: 13px;
-  color: var(--color-text-muted-on-dark);
+  color: var(--muted);
+  font-size: var(--text-small);
 }
 
 .fb-plan__history-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
   margin: 0;
   padding: 0;
   list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
 }
 
 .fb-plan__history-item {
@@ -140,103 +105,58 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  padding: 14px 16px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: var(--radius-sm);
+  gap: var(--s-3);
+  padding: var(--s-3) var(--s-4);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
 }
 
 .fb-plan__history-info {
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--s-1);
 }
 
 .fb-plan__history-name {
-  font-size: 14px;
-  font-weight: 500;
+  font-size: var(--text-small);
+  font-weight: var(--weight-medium);
+  overflow-wrap: anywhere;
 }
 
 .fb-plan__history-dates {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.45);
+  color: var(--muted);
+  font-size: var(--text-caption);
 }
 
 .fb-plan__history-status {
-  flex-shrink: 0;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  color: rgba(255, 255, 255, 0.45);
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: var(--text-kicker);
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.04em;
 }
 
+/* Consulta da administração: o mesmo item, mais compacto. */
 .fb-plan__admin-history {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--s-2);
 }
 
 .fb-plan__admin-history-title {
   margin: 0;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: var(--weight-bold);
 }
 
-/* Consulta da administração (casca clara): o mesmo item, nas cores do painel. */
 .fb-plan__history-list--light .fb-plan__history-item {
-  border-color: #eeeeee;
-  padding: 10px 14px;
-}
-
-.fb-plan__history-list--light .fb-plan__history-name {
-  font-size: 13px;
-  color: var(--color-ink-on-light);
-}
-
-.fb-plan__history-list--light .fb-plan__history-dates,
-.fb-plan__history-list--light .fb-plan__history-status {
-  color: #8a8a8a;
+  padding: var(--s-2) var(--s-3);
 }
 
 @media (min-width: 768px) {
-  .fb-plan__title {
-    font-size: 24px;
+  .fb-plan .fb-plan__current {
+    padding: calc(var(--s-5) - 1px);
   }
-
-  .fb-plan__card,
-  .fb-plan .fb-state--empty.fb-plan__empty,
-  .fb-plan__history {
-    max-width: 640px;
-  }
-
-  .fb-plan__card {
-    padding: 24px;
-  }
-
-  .fb-plan__card-name {
-    font-size: 19px;
-  }
-
-  .fb-plan__dates {
-    gap: 32px;
-    padding-top: 12px;
-  }
-
-  .fb-plan__date-value {
-    font-size: 14px;
-  }
-
-  .fb-plan .fb-state--empty.fb-plan__empty {
-    padding: 24px;
-    text-align: left;
-  }
-}
-
-/* Dentro do Perfil: título de seção, como "Dados pessoais". */
-.fb-plan--section {
-  margin-top: 24px;
-}
-
-.fb-plan--section .fb-plan__title {
-  font-size: 16px;
 }

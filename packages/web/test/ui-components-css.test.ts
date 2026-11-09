@@ -221,3 +221,22 @@ describe("alvo de toque e movimento", () => {
     expect(clean).toMatch(/@media \(hover: hover\)/);
   });
 });
+
+describe("checkbox compartilhado", () => {
+  it("tem alvo de toque de 44px, a cor da marca na caixa e o anel de foco", () => {
+    expect(rule(".fb-ui-check")).toMatch(/min-height:\s*44px/);
+    expect(rule(".fb-ui-check__input")).toMatch(/accent-color:\s*var\(--brand\)/);
+    expect(rule(".fb-ui-check__input:focus-visible")).toMatch(
+      /outline:\s*2px solid var\(--brand\)/,
+    );
+  });
+
+  it("não tem cor literal nem tamanho de texto fora dos tokens", () => {
+    const block = [".fb-ui-check", ".fb-ui-check__input", ".fb-ui-check__input:focus-visible"]
+      .map(rule)
+      .join("\n");
+    expect(block.match(/#[0-9a-fA-F]{3,8}\b/g) ?? []).toEqual([]);
+    expect(block.match(/\b(rgba?|hsla?)\(/g) ?? []).toEqual([]);
+    expect(block.match(/font-size:\s*\d/g) ?? []).toEqual([]);
+  });
+});

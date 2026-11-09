@@ -19,7 +19,11 @@ export function OnboardingPage() {
 
   const [currentRequirement] = user.onboardingPending;
   if (currentRequirement === OnboardingRequirement.PASSWORD_CHANGE) {
-    return <ProfilePage requiredPasswordChange />;
+    return (
+      <main id="conteudo" tabIndex={-1} className="fb-flow">
+        <ProfilePage requiredPasswordChange />
+      </main>
+    );
   }
   if (currentRequirement === OnboardingRequirement.PRIVACY_ACKNOWLEDGEMENT) {
     return <LegalManifestationStep key={currentRequirement} documentKey="privacy-policy" />;
@@ -29,14 +33,14 @@ export function OnboardingPage() {
   }
 
   return (
-    <main id="conteudo" tabIndex={-1} className="fb-profile">
-      <h1 className="fb-profile__title">Conclua as etapas de onboarding</h1>
-      <p>Há etapas obrigatórias pendentes para esta conta:</p>
-      <ul>
+    <main id="conteudo" tabIndex={-1} className="fb-flow">
+      <h1 className="fb-flow__title">Conclua as etapas de onboarding</h1>
+      <p className="fb-flow__lead">Há etapas obrigatórias pendentes para esta conta:</p>
+      <ol className="fb-flow__steps">
         {user.onboardingPending.map((requirement) => (
           <li key={requirement}>{REQUIREMENT_LABELS[requirement]}</li>
         ))}
-      </ul>
+      </ol>
     </main>
   );
 }

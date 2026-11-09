@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { render, screen, within } from "@testing-library/react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { render, screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { onlineManager, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { http, HttpResponse } from "msw";
 import { MemoryRouter } from "react-router-dom";
 import type { MyPlan, PlanAssignment } from "@fitburn/contracts";
@@ -154,5 +155,107 @@ describe("Plano do cliente (seção do Perfil)", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Não foi possível carregar o seu plano.",
     );
+  });
+
+  it("o selo de situação é o Badge compartilhado: ATIVO em tom de sucesso, 'Começa em' em tom de marca", async () => {
+    mockPlan({
+      active: assignment("1", "Plano Performance", "2026-08-15", "2026-11-15", "ACTIVE"),
+      history: [],
+    });
+    const first = renderPage();
+
+    const active = await screen.findByRole("region", { name: "Plano ativo" });
+    expect(within(active).getByText("ATIVO")).toHaveClass("fb-ui-badge", "fb-ui-badge--ok");
+    first.unmount();
+
+    mockPlan({
+      active: assignment("1", "Plano Performance", "2099-01-10", "2099-06-10", "ACTIVE"),
+      history: [],
+    });
+    renderPage();
+    const future = await screen.findByRole("region", { name: "Plano ativo" });
+    expect(within(future).getByText("Começa em 10/01")).toHaveClass(
+      "fb-ui-badge",
+      "fb-ui-badge--brand",
+    );
+  });
+
+  it("o plano ativo é um Card em destaque e a validade são os dois pares início/término", async () => {
+    mockPlan({
+      active: assignment("1", "Plano Performance", "2026-08-15", "2026-11-15", "ACTIVE"),
+      history: [],
+    });
+
+    renderPage();
+
+    const card = await screen.findByRole("region", { name: "Plano ativo" });
+    expect(card).toHaveClass("fb-ui-card", "fb-ui-card--selected");
+    expect(within(card).getByText("Início").nextElementSibling).toHaveTextContent("15/08/2026");
+    expect(within(card).getByText("Término").nextElementSibling).toHaveTextContent("15/11/2026");
+  });
+
+  it("os títulos seguem a ordem: 'Meu plano' em h2 e 'Histórico de planos' em h3", async () => {
+    mockPlan({ active: null, history: [] });
+
+    renderPage();
+
+    await screen.findByText("Nenhum plano anterior.");
+    const headings = screen
+      .getAllByRole("heading")
+      .map((heading) => [Number(heading.tagName[1]), heading.textContent]);
+    expect(headings).toEqual([
+      [2, "Meu plano"],
+      [3, "Histórico de planos"],
+    ]);
+  });
+
+  describe("estados", () => {
+    afterEach(() => {
+      onlineManager.setOnline(true);
+    });
+
+    it("mostra o carregando, com o título da seção, enquanto o plano não chega", async () => {
+      server.use(http.get("/api/plans/mine", () => new Promise(() => {})));
+
+      renderPage();
+
+      const loading = await screen.findByText("Carregando…");
+      expect(loading.closest("[data-state=loading]")).toHaveAttribute("role", "status");
+      expect(screen.getByRole("heading", { name: "Meu plano" })).toBeInTheDocument();
+      expect(screen.queryByRole("heading", { name: "Histórico de planos" })).toBeNull();
+    });
+
+    it("o erro tem a ação de tentar de novo, que pede o plano outra vez", async () => {
+      let requests = 0;
+      server.use(
+        http.get("/api/plans/mine", () => {
+          requests += 1;
+          return HttpResponse.json({ code: "INTERNAL_ERROR", message: "x" }, { status: 500 });
+        }),
+      );
+      const user = userEvent.setup();
+
+      renderPage();
+
+      const alert = await screen.findByRole("alert");
+      const before = requests;
+      await user.click(within(alert).getByRole("button", { name: "Tentar novamente" }));
+      await waitFor(() => expect(requests).toBeGreaterThan(before));
+    });
+
+    it("sem conexão mostra o estado offline, não o erro", async () => {
+      onlineManager.setOnline(false);
+
+      renderPage();
+
+      const offline = await waitFor(() => {
+        const node = document.querySelector('[data-state="offline"]');
+        expect(node).not.toBeNull();
+        return node as HTMLElement;
+      });
+      expect(offline).toHaveTextContent("Sem conexão");
+      expect(offline).toHaveTextContent("Não foi possível carregar o seu plano.");
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    });
   });
 });

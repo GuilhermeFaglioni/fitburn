@@ -1,80 +1,312 @@
 /**
- * Perfil / Minha conta — e no
- * proposta de design.
- * Cliente: casca escura. Equipe: a mesma tela na casca administrativa clara
- * (`.fb-profile--light`). Mobile: cartão de 18px 16px, uma coluna; desktop
- * (≥768px): cartão de 24px, no máximo 640px, grade de duas colunas.
+ * Perfil / Minha conta e telas de leitura sem casca: onboarding, Política de privacidade e Termos de uso (D-038).
+ * Telas extrapoladas da base (sem desenho na proposta; referência: seções "Perfil", "Onboarding", "Política de
+ * privacidade" e "Termos de uso" do preview). Só tokens: cor, raio, espaçamento e tipografia vêm do design system;
+ * vale nos dois temas e nas duas cascas (cliente e administrativa).
+ *
+ * Celular: uma coluna, cartões de 16px, botões de ação em largura total. Desktop (≥768px): cartões de 24px, grade de
+ * duas colunas nos dados e botões à direita. Coluna de no máximo 640px.
  */
 .fb-profile {
-  --fb-profile-card: var(--color-surface-raised);
-  --fb-profile-muted: rgba(255, 255, 255, 0.5);
-  --fb-profile-label: rgba(255, 255, 255, 0.45);
-  --fb-profile-logout: rgba(255, 255, 255, 0.55);
-  --fb-profile-divider: rgba(255, 255, 255, 0.08);
-  --fb-profile-accent: var(--color-primary-orange);
-  --fb-profile-soft: rgba(255, 255, 255, 0.6);
-  --fb-profile-line: rgba(255, 255, 255, 0.2);
-  --fb-profile-input: #0f0f0f;
-  --fb-profile-input-border: rgba(255, 255, 255, 0.14);
   display: flex;
   flex-direction: column;
-  gap: 22px;
+  gap: var(--s-5);
+  width: 100%;
+  max-width: 40rem;
   font-family: var(--font-sans);
-  color: var(--color-ink-on-dark);
+  color: var(--ink);
 }
 
-.fb-profile--light {
-  --fb-profile-card: #fafafa;
-  --fb-profile-muted: #666666;
-  --fb-profile-label: #666666;
-  --fb-profile-logout: #4a4a4a;
-  --fb-profile-divider: #e0e0e0;
-  --fb-profile-accent: var(--color-accent-on-light);
-  --fb-profile-soft: #4a4a4a;
-  --fb-profile-line: #cfcfcf;
-  --fb-profile-input: #ffffff;
-  --fb-profile-input-border: #d8d8d8;
-  color: var(--color-ink-on-light);
+.fb-profile > * {
+  min-width: 0;
 }
 
-.fb-profile__title {
+.fb-profile__title,
+.fb-flow__title {
   margin: 0;
-  font-size: 19px;
-  font-weight: 700;
+  font-family: var(--font-sans);
+  font-size: var(--text-h1);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-title);
+  letter-spacing: var(--tracking-title);
+  overflow-wrap: anywhere;
 }
 
-.fb-profile__legal-copy {
-  line-height: 1.65;
-  white-space: pre-line;
+.fb-profile__lead,
+.fb-flow__lead {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--text-small);
+  line-height: var(--leading-small);
 }
 
-.fb-profile__legal-copy p {
-  margin: 0 0 14px;
-}
-
-.fb-profile__legal-confirmation {
+/* ---------- Cabeçalho: avatar de iniciais, nome e e-mail ---------- */
+.fb-profile__identity {
   display: flex;
   align-items: center;
-  gap: 10px;
-  min-height: 44px;
+  gap: var(--s-4);
 }
 
-.fb-legal-document__links,
+.fb-profile__avatar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--r-pill);
+  background: var(--brand-tint);
+  border: 1px solid var(--brand-line);
+  color: var(--brand-strong);
+  font-size: var(--text-h3);
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.02em;
+}
+
+.fb-profile__identity-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+}
+
+.fb-profile__name {
+  font-size: var(--text-body);
+  font-weight: var(--weight-bold);
+  overflow-wrap: anywhere;
+}
+
+.fb-profile__email {
+  color: var(--muted);
+  font-size: var(--text-small);
+  overflow-wrap: anywhere;
+}
+
+/* ---------- Cartões das seções (Card compartilhado) ---------- */
+.fb-profile .fb-profile__card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  padding: var(--s-4);
+}
+
+.fb-profile__card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+}
+
+.fb-profile__card-title {
+  margin: 0;
+  font-size: var(--text-action);
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.01em;
+}
+
+/* Estados (erro, offline, carregando) dentro da tela: alinhados à esquerda e compactos. */
+.fb-profile .fb-ui-state {
+  align-items: flex-start;
+  padding: var(--s-4);
+  text-align: left;
+}
+
+.fb-profile .fb-ui-state--loading {
+  align-items: center;
+}
+
+.fb-profile .fb-ui-state__title {
+  font-size: var(--text-small);
+  font-weight: var(--weight-medium);
+  letter-spacing: 0;
+}
+
+/* ---------- Dados em leitura ---------- */
+.fb-profile__grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  margin: 0;
+}
+
+.fb-profile__item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  min-width: 0;
+}
+
+.fb-profile__label {
+  color: var(--muted);
+  font-size: var(--text-caption);
+}
+
+.fb-profile__value {
+  margin: 0;
+  font-size: var(--text-action);
+  font-weight: var(--weight-medium);
+  overflow-wrap: anywhere;
+}
+
+/* ---------- Formulários (Field e Button compartilhados) ---------- */
+.fb-profile__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+
+.fb-profile__password-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--text-small);
+  line-height: var(--leading-small);
+}
+
+/* No celular o botão principal fica em cima e ocupa a largura toda (como no preview); o cancelar vem abaixo. */
+.fb-profile__actions {
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: stretch;
+  gap: var(--s-2);
+}
+
+.fb-profile__exit {
+  display: flex;
+  justify-content: center;
+}
+
+/* ---------- Participação no ranking ---------- */
+.fb-ranking-consent {
+  gap: var(--s-3);
+}
+
+.fb-ranking-consent__copy {
+  max-width: 70ch;
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--text-small);
+  line-height: var(--leading-body);
+}
+
+.fb-ranking-consent__toggle {
+  width: fit-content;
+}
+
+/* ---------- Onboarding, Política de privacidade e Termos: coluna de leitura sem casca ---------- */
+.fb-flow {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-5);
+  width: 100%;
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: var(--s-6) var(--container-gutter) var(--s-12);
+  font-family: var(--font-sans);
+  color: var(--ink);
+}
+
+.fb-flow > * {
+  min-width: 0;
+}
+
+.fb-flow__steps {
+  margin: 0;
+  padding-left: var(--s-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  font-size: var(--text-body);
+}
+
+.fb-flow .fb-ui-state {
+  align-items: flex-start;
+  text-align: left;
+}
+
+.fb-flow .fb-ui-state--loading {
+  align-items: center;
+}
+
+.fb-legal__back {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: var(--s-2);
+  min-height: 44px;
+  color: var(--muted);
+  font-size: var(--text-small);
+  font-weight: var(--weight-medium);
+  text-underline-offset: 3px;
+}
+
+.fb-legal__back:hover {
+  color: var(--ink);
+}
+
+/* Versão logo abaixo do título (o gap da coluna é maior). */
+.fb-flow__title + .fb-legal__meta {
+  margin-top: calc(var(--s-3) * -1);
+}
+
+.fb-legal__meta {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--text-small);
+}
+
+.fb-flow .fb-legal__doc {
+  padding: var(--s-4);
+}
+
+/* Leitura em coluna de até 65 caracteres; os parágrafos vêm do texto da API, sem alteração. */
+.fb-legal__copy {
+  max-width: 65ch;
+  color: var(--ink-2);
+  font-size: var(--text-body);
+  line-height: var(--leading-body);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.fb-legal__copy p {
+  margin: 0 0 var(--s-4);
+}
+
+.fb-legal__copy p:last-child {
+  margin-bottom: 0;
+}
+
+.fb-legal__links,
 .fb-client__legal-nav,
 .fb-client__legal-footer,
 .login-page__legal-links {
   display: flex;
   flex-wrap: wrap;
-  gap: 16px;
+  gap: var(--s-4);
+}
+
+.fb-legal__links {
+  justify-content: center;
+  font-size: var(--text-small);
+}
+
+.fb-legal__links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--brand-strong);
+  text-underline-offset: 3px;
 }
 
 .fb-client__legal-nav,
 .fb-client__legal-footer {
-  font-size: 12px;
+  font-size: var(--text-caption);
 }
 
 .fb-client__legal-footer {
-  margin-top: 32px;
+  margin-top: var(--s-8);
 }
 
 .fb-client__legal-footer a {
@@ -82,319 +314,20 @@
   text-underline-offset: 3px;
 }
 
-.fb-profile__alert {
-  margin: 0;
-  box-sizing: border-box;
-  padding: 10px 14px;
-  background: var(--color-danger-bg);
-  border: 1px solid var(--color-danger-border);
-  border-radius: var(--radius-sm);
-  font-size: 13px;
-  color: var(--color-danger);
-}
-
-.fb-profile__identity {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.fb-profile__avatar {
-  flex-shrink: 0;
-  width: 56px;
-  height: 56px;
-  border-radius: var(--radius-pill);
-  background: var(--fb-profile-card);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--fb-profile-accent);
-}
-
-.fb-profile__identity-text {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.fb-profile__name {
-  font-size: 16px;
-  font-weight: 700;
-}
-
-.fb-profile__email {
-  font-size: 13px;
-  color: var(--fb-profile-muted);
-  overflow-wrap: anywhere;
-}
-
-.fb-profile__card {
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 18px 16px;
-  background: var(--fb-profile-card);
-  border-radius: var(--radius-sm);
-}
-
-.fb-profile__card-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.fb-profile__card-title {
-  margin: 0;
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.fb-profile__link-btn {
-  background: none;
-  border: none;
-  padding: 0;
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--fb-profile-accent);
-  cursor: pointer;
-}
-
-.fb-profile__grid {
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.fb-profile__item {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.fb-profile__label {
-  font-size: 11px;
-  color: var(--fb-profile-label);
-}
-
-.fb-profile__value {
-  margin: 0;
-  font-size: 14px;
-  overflow-wrap: anywhere;
-}
-
-.fb-profile__form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.fb-profile__password-hint {
-  margin: 0;
-  color: var(--fb-profile-muted);
-  font-size: 13px;
-}
-
-.fb-ranking-consent {
-  gap: 12px;
-}
-
-.fb-ranking-consent__copy {
-  max-width: 70ch;
-  margin: 0;
-  color: var(--fb-profile-muted, rgba(255, 255, 255, 0.65));
-  font-size: 13px;
-  line-height: 1.6;
-}
-
-.fb-ranking-consent__toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 44px;
-  width: fit-content;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.fb-ranking-consent__toggle input {
-  width: 18px;
-  height: 18px;
-  margin: 0;
-  accent-color: var(--color-primary-orange);
-}
-
-.fb-ranking-consent__toggle input:focus-visible {
-  outline: 2px solid var(--color-primary-orange);
-  outline-offset: 3px;
-}
-
-.fb-ranking-consent__error {
-  margin: 0;
-  color: var(--color-danger);
-  font-size: 13px;
-}
-
-.fb-profile__form .fb-profile__grid {
-  gap: 12px;
-}
-
-.fb-profile__field {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.fb-profile__field-label {
-  font-size: 12px;
-  color: var(--fb-profile-soft);
-}
-
-.fb-profile__input {
-  box-sizing: border-box;
-  width: 100%;
-  padding: 10px 12px;
-  background: var(--fb-profile-input);
-  border: 1px solid var(--fb-profile-input-border);
-  border-radius: var(--radius-sm);
-  color: inherit;
-  font-size: 14px;
-  font-family: var(--font-sans);
-}
-
-.fb-profile__input:focus {
-  border-color: var(--fb-profile-accent);
-}
-
-.fb-profile__actions {
-  display: flex;
-  gap: 10px;
-}
-
-.fb-profile__btn {
-  position: relative;
-  flex: 1;
-  box-sizing: border-box;
-  padding: 11px;
-  border-radius: var(--radius-sm);
-  font-family: var(--font-sans);
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.fb-profile__btn--ghost {
-  background: transparent;
-  border: 1px solid var(--fb-profile-line);
-  color: inherit;
-}
-
-.fb-profile__btn--primary {
-  background: var(--color-primary-orange);
-  border: none;
-  color: #ffffff;
-}
-
-.fb-profile__btn:disabled {
-  opacity: 0.6;
-  cursor: default;
-}
-
-.fb-profile__divider {
-  height: 1px;
-  background: var(--fb-profile-divider);
-}
-
-.fb-profile__logout {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  align-self: flex-start;
-  background: none;
-  border: none;
-  padding: 4px 0;
-  /* Sem font-family: na tela de referência o botão usa a fonte padrão do navegador (não a DM Sans). */
-  font-size: 14px;
-  color: var(--fb-profile-logout);
-  cursor: pointer;
-}
-
-/*
- * Alvos de toque de 44px sem mexer no que se vê: o clique é ampliado por um pseudo-elemento
- * invisível (o mesmo truque do .fb-checkbox), então a caixa do botão mantém as medidas do design.
- * A especificidade maior anula o min-height genérico de responsive.css nestes controles.
- */
-@media (max-width: 767px), (pointer: coarse) {
-  .fb-profile .fb-profile__link-btn,
-  .fb-profile .fb-profile__logout {
-    min-width: 0;
-    min-height: 0;
-  }
-
-  .fb-profile__link-btn,
-  .fb-profile__logout,
-  .fb-profile__btn {
-    position: relative;
-  }
-
-  .fb-profile__link-btn::before {
-    content: "";
-    position: absolute;
-    inset: -14px -10px;
-  }
-
-  .fb-profile__logout::before {
-    content: "";
-    position: absolute;
-    inset: -10px -8px;
-  }
-
-  .fb-profile__btn::before {
-    content: "";
-    position: absolute;
-    inset: -2px 0;
-  }
-}
-
 @media (min-width: 768px) {
   .fb-profile {
-    gap: 24px;
+    gap: var(--s-6);
   }
 
-  .fb-profile__title {
-    font-size: 24px;
-  }
-
-  .fb-profile__card {
-    max-width: 640px;
-    padding: 24px;
-    gap: 18px;
-  }
-
-  .fb-profile__card-title {
-    font-size: 15px;
+  .fb-profile .fb-profile__card {
+    gap: var(--s-5);
+    padding: var(--s-6);
   }
 
   .fb-profile__grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 18px;
-  }
-
-  .fb-profile__form,
-  .fb-profile__form .fb-profile__grid {
-    gap: 14px;
-  }
-
-  .fb-profile__divider {
-    display: none;
+    gap: var(--s-5);
   }
 
   .fb-profile__wide {
@@ -402,39 +335,19 @@
   }
 
   .fb-profile__actions {
+    flex-direction: row;
     justify-content: flex-end;
   }
 
-  .fb-profile__btn {
-    flex: none;
+  .fb-profile__exit {
+    justify-content: flex-start;
   }
 
-  .fb-profile__btn--ghost {
-    padding: 10px 20px;
+  .fb-flow {
+    padding-top: var(--s-12);
   }
 
-  .fb-profile__btn--primary {
-    padding: 10px 22px;
+  .fb-flow .fb-legal__doc {
+    padding: var(--s-6);
   }
-}
-
-/* Mesmo press dos botões do restante do app; o campo acende a borda no foco sem saltar. */
-.fb-profile__btn {
-  transition:
-    transform var(--duration-press) var(--ease-out),
-    filter var(--duration-state) var(--ease-out);
-}
-
-.fb-profile__btn:active:not(:disabled) {
-  transform: scale(var(--press-scale));
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .fb-profile__btn--primary:hover:not(:disabled) {
-    filter: brightness(1.07);
-  }
-}
-
-.fb-profile__input {
-  transition: border-color var(--duration-state) var(--ease-out);
 }
