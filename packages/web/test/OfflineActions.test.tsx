@@ -86,17 +86,17 @@ describe("Sem conexão: ações que exigem rede ficam desabilitadas", () => {
     it("com o navegador offline, mostra o banner e desabilita Reservar; ao voltar, reabilita", async () => {
       renderLoggedIn(<ClientAgendaPage />, "/agenda");
       const { sheet } = await openDetail();
-      expect(within(sheet).getByRole("button", { name: "Reservar" })).toBeEnabled();
+      expect(within(sheet).getByRole("button", { name: "Reservar aula" })).toBeEnabled();
 
       act(() => setBrowserOnline(false));
 
       expect(screen.getByRole("alert")).toHaveTextContent("Sem conexão");
-      expect(within(sheet).getByRole("button", { name: "Reservar" })).toBeDisabled();
+      expect(within(sheet).getByRole("button", { name: "Reservar aula" })).toBeDisabled();
 
       act(() => setBrowserOnline(true));
 
       expect(screen.queryByRole("alert")).not.toBeInTheDocument();
-      expect(within(sheet).getByRole("button", { name: "Reservar" })).toBeEnabled();
+      expect(within(sheet).getByRole("button", { name: "Reservar aula" })).toBeEnabled();
     });
 
     it("uma falha de rede na agenda derruba a conexão: banner e Reservar desabilitado até a API responder", async () => {
@@ -113,7 +113,7 @@ describe("Sem conexão: ações que exigem rede ficam desabilitadas", () => {
         http.get("/api/health", whenUp({ status: "ok" })),
       );
 
-      await user.click(within(sheet).getByRole("button", { name: "Reservar" }));
+      await user.click(within(sheet).getByRole("button", { name: "Reservar aula" }));
 
       expect(await screen.findByText("Sem conexão.")).toBeInTheDocument();
       // O reenvio idempotente da própria tela continua disponível para o resultado incerto.

@@ -81,15 +81,13 @@
   .fb-client-tab-btn,
   .fb-back-link,
   .fb-workout__back,
-  .fb-sheet__close,
   .login-form__input,
   .login-form__submit,
   .fb-field {
     min-height: 44px;
   }
 
-  .fb-workout__back,
-  .fb-sheet__close {
+  .fb-workout__back {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -103,7 +101,6 @@
   }
 
   .fb-icon-btn,
-  .fb-sheet__x,
   .login-form__toggle,
   .fb-back-btn {
     min-width: 44px;

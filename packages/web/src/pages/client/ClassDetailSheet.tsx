@@ -1,7 +1,11 @@
-import { useId, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ErrorCode, type ClientAgendaItem } from "@fitburn/contracts";
-import { useCloseOnEscape, useDialogFocus } from "../../components/Modal";
+import {
+  AvailabilityLevel,
+  availabilityLevel,
+  ErrorCode,
+  type ClientAgendaItem,
+} from "@fitburn/contracts";
 import { ApiError } from "../../lib/auth/api";
 import { getClientAgendaItem } from "../../lib/agenda/client-api";
 import { formatClassDay, formatClassMoment, formatInstantHour } from "../../lib/agenda/format";
@@ -11,6 +15,13 @@ import {
   rescheduleReservation,
 } from "../../lib/reservations/api";
 import { RequiresNetwork } from "../../components/RequiresNetwork";
+import { Alert } from "../../components/ui/Alert";
+import { Badge } from "../../components/ui/Badge";
+import { Button } from "../../components/ui/Button";
+import { Dialog } from "../../components/ui/Dialog";
+import { Meter } from "../../components/ui/Meter";
+import { ErrorState, LoadingState, OfflineState } from "../../components/ui/States";
+import { useNetworkRequired } from "../../lib/connectivity/useNetworkRequired";
 import { firstName } from "../../lib/names";
 
 /** Remarcação em andamento: a reserva original, enquanto o cliente escolhe a nova aula. */
@@ -28,8 +39,14 @@ type Outcome =
 
 interface NextStep {
   label: string;
-  variant: "primary" | "ghost";
+  variant: "primary" | "secondary";
   onClick: () => void;
+}
+
+/** O que a folha mostra conforme o estado: o aviso no corpo e os botões no rodapé fixo. */
+interface SheetAction {
+  notice?: ReactNode;
+  footer: ReactNode;
 }
 
 /**
@@ -50,9 +67,9 @@ function asApiError(error: Error, message: string): ApiError {
 }
 
 /**
- * Detalhe da aula com as ações de reserva:
- * bottom sheet no mobile, cartão centralizado no desktop. O backend decide
- * cada operação; qualquer resposta atualiza a agenda e o detalhe.
+ * Detalhe da aula com as ações de reserva (D-038, #156): `Dialog` em folha, que sobe da borda inferior no celular e é
+ * um cartão centralizado no desktop. O botão principal fica no rodapé fixo. O backend decide cada operação (a lógica
+ * de reserva, cancelamento e remarcação é a mesma de antes); qualquer resposta atualiza a agenda e o detalhe.
  */
 export function ClassDetailSheet({
   item,
@@ -67,7 +84,6 @@ export function ClassDetailSheet({
   onRescheduled: () => void;
   onClose: () => void;
 }) {
-  const titleId = useId();
   const queryClient = useQueryClient();
   const [outcome, setOutcome] = useState<Outcome | null>(null);
   const [confirmingCancel, setConfirmingCancel] = useState(false);
@@ -152,23 +168,32 @@ export function ClassDetailSheet({
   const pending =
     reserveMutation.isPending || cancelMutation.isPending || rescheduleMutation.isPending;
 
-  const dialogRef = useDialogFocus<HTMLDivElement>();
-  useCloseOnEscape(onClose);
+  const { offline } = useNetworkRequired();
 
   const day = formatClassDay(occurrence.startsAt);
+  const level = availabilityLevel(occurrence.available, occurrence.capacity);
+  const occupied = Math.max(0, occurrence.capacity - occurrence.available);
 
   /** A mensagem vem do backend (fonte única); aqui só se escolhe o próximo passo. */
   function nextStepAfter(refusal: Extract<Outcome, { kind: "refused" }>): NextStep {
     // Volta ao detalhe, já atualizado depois da recusa.
-    const back: NextStep = { label: "Voltar", variant: "ghost", onClick: () => setOutcome(null) };
+    const back: NextStep = {
+      label: "Voltar",
+      variant: "secondary",
+      onClick: () => setOutcome(null),
+    };
     switch (refusal.error.code) {
       case ErrorCode.CLASS_FULL:
       case ErrorCode.OCCURRENCE_NOT_BOOKABLE:
         return { label: "Ver outros horários", variant: "primary", onClick: onClose };
       case ErrorCode.DUPLICATE_RESERVATION:
-        return { label: "Ver minha reserva", variant: "ghost", onClick: () => setOutcome(null) };
+        return {
+          label: "Ver minha reserva",
+          variant: "secondary",
+          onClick: () => setOutcome(null),
+        };
       case ErrorCode.SCHEDULE_CONFLICT:
-        return { label: "Ver minha agenda", variant: "ghost", onClick: onClose };
+        return { label: "Ver minha agenda", variant: "secondary", onClick: onClose };
       case ErrorCode.INTERNAL_ERROR:
         // Resultado incerto: a reserva pode ser repetida com a mesma chave de
         // idempotência sem risco de duplicar.
@@ -181,298 +206,283 @@ export function ClassDetailSheet({
     }
   }
 
-  function renderAction(): ReactNode {
+  function renderAction(): SheetAction {
     if (outcome?.kind === "succeeded") {
-      return (
-        <div className="fb-sheet__stack">
-          <div className="fb-sheet-alert fb-sheet-alert--success" role="status">
-            <CheckIcon />
-            <span>{outcome.message}</span>
-          </div>
-          <button type="button" className="fb-sheet-btn fb-sheet-btn--ghost" onClick={onClose}>
+      return {
+        notice: <Alert tone="ok">{outcome.message}</Alert>,
+        footer: (
+          <Button block onClick={onClose}>
             Ver na agenda
-          </button>
-        </div>
-      );
+          </Button>
+        ),
+      };
     }
 
     if (outcome?.kind === "rescheduleRefused" && rescheduling) {
       const { from } = rescheduling;
-      return (
-        <div className="fb-sheet__stack">
-          <div className="fb-sheet-alert fb-sheet-alert--error" role="alert">
-            <AlertIcon />
-            <span>
+      return {
+        notice: (
+          <>
+            <Alert tone="err">
               Não foi possível remarcar. {outcome.error.message} Sua reserva original em {from.name}
               , {formatClassMoment(from.startsAt)} continua confirmada.
-            </span>
-          </div>
-          <div className="fb-sheet__badges">
-            <span className="fb-sheet-badge">RESERVA ORIGINAL ATIVA</span>
-          </div>
-          <button type="button" className="fb-sheet-btn fb-sheet-btn--ghost" onClick={onClose}>
+            </Alert>
+            <div>
+              <Badge tone="neutral">RESERVA ORIGINAL ATIVA</Badge>
+            </div>
+          </>
+        ),
+        footer: (
+          <Button block onClick={onClose}>
             Tentar remarcar novamente
-          </button>
-        </div>
-      );
+          </Button>
+        ),
+      };
     }
 
     if (outcome?.kind === "refused") {
       const next = nextStepAfter(outcome);
-      return (
-        <div className="fb-sheet__stack">
-          <div className="fb-sheet-alert fb-sheet-alert--error" role="alert">
-            <AlertIcon />
-            <span>{outcome.error.message}</span>
-          </div>
-          <button
-            type="button"
-            className={`fb-sheet-btn fb-sheet-btn--${next.variant}`}
-            disabled={pending}
-            onClick={next.onClick}
-          >
+      const conflict = outcome.error.code === ErrorCode.SCHEDULE_CONFLICT;
+      return {
+        notice: (
+          <Alert tone="err">
+            {/* A mensagem vem do backend e diz qual é a outra aula; o prefixo só nomeia o tipo de recusa. */}
+            {conflict && <strong>Conflito de reserva: </strong>}
+            {outcome.error.message}
+          </Alert>
+        ),
+        footer: (
+          <Button block variant={next.variant} disabled={pending} onClick={next.onClick}>
             {next.label}
-          </button>
-        </div>
-      );
+          </Button>
+        ),
+      };
     }
 
     const reservationId = occurrence.myReservationId;
     if (reservationId && confirmingCancel) {
-      return (
-        <div className="fb-sheet__stack">
-          <p className="fb-sheet__description">
+      return {
+        notice: (
+          <p className="fb-sheet__text">
             Cancelar sua reserva em {occurrence.name}, {formatClassMoment(occurrence.startsAt)}? A
             vaga será liberada para outros clientes.
           </p>
+        ),
+        footer: (
           <div className="fb-sheet__actions">
-            <button
-              type="button"
-              className="fb-sheet-btn fb-sheet-btn--ghost"
-              disabled={pending}
-              onClick={() => setConfirmingCancel(false)}
-            >
+            <Button disabled={pending} onClick={() => setConfirmingCancel(false)}>
               Voltar
-            </button>
+            </Button>
             <RequiresNetwork>
-              <button
-                type="button"
-                className="fb-sheet-btn fb-sheet-btn--danger"
-                disabled={pending}
+              <Button
+                variant="danger"
+                busy={cancelMutation.isPending}
+                disabled={pending && !cancelMutation.isPending}
                 onClick={() => cancelMutation.mutate(reservationId)}
               >
                 Confirmar cancelamento
-              </button>
+              </Button>
             </RequiresNetwork>
           </div>
-        </div>
-      );
+        ),
+      };
     }
 
     if (reservationId) {
-      return (
-        <div className="fb-sheet__stack">
-          <div className="fb-sheet__badges">
-            <span className="fb-sheet-badge">RESERVA CONFIRMADA</span>
+      return {
+        notice: (
+          <div>
+            <Badge tone="ok" dot>
+              RESERVA CONFIRMADA
+            </Badge>
           </div>
+        ),
+        footer: (
           <div className="fb-sheet__actions">
-            <button
-              type="button"
-              className="fb-sheet-btn fb-sheet-btn--ghost"
+            <Button
               // A aula já começou (saiu da agenda): a mensagem acima explica,
               // e o backend recusaria de qualquer forma.
               disabled={detailQuery.isError}
               onClick={() => setConfirmingCancel(true)}
             >
               Cancelar reserva
-            </button>
-            <button
-              type="button"
-              className="fb-sheet-btn fb-sheet-btn--primary"
+            </Button>
+            <Button
+              variant="primary"
               disabled={detailQuery.isError}
               onClick={() => onStartRescheduling({ reservationId, from: occurrence })}
             >
               Remarcar
-            </button>
+            </Button>
           </div>
-        </div>
-      );
+        ),
+      };
     }
 
     if (occurrence.available <= 0) {
-      return (
-        <button type="button" className="fb-sheet-btn fb-sheet-btn--primary" disabled>
-          Aula lotada
-        </button>
-      );
+      return {
+        footer: (
+          <Button block variant="primary" disabled>
+            Aula lotada
+          </Button>
+        ),
+      };
     }
 
     if (rescheduling) {
       const originalId = rescheduling.reservationId;
-      return (
-        <RequiresNetwork>
-          <button
-            type="button"
-            className="fb-sheet-btn fb-sheet-btn--primary"
-            disabled={pending || detailQuery.isError}
-            onClick={() => rescheduleMutation.mutate(originalId)}
-          >
-            Remarcar para esta aula
-          </button>
-        </RequiresNetwork>
-      );
+      return {
+        footer: (
+          <RequiresNetwork>
+            <Button
+              block
+              variant="primary"
+              busy={rescheduleMutation.isPending}
+              disabled={detailQuery.isError}
+              onClick={() => rescheduleMutation.mutate(originalId)}
+            >
+              Remarcar para esta aula
+            </Button>
+          </RequiresNetwork>
+        ),
+      };
     }
 
-    return (
-      <RequiresNetwork>
-        <button
-          type="button"
-          className="fb-sheet-btn fb-sheet-btn--primary"
-          disabled={pending || detailQuery.isError}
-          onClick={() => reserveMutation.mutate()}
-        >
-          Reservar
-        </button>
-      </RequiresNetwork>
-    );
+    return {
+      footer: (
+        <RequiresNetwork>
+          <Button
+            block
+            variant="primary"
+            busy={reserveMutation.isPending}
+            disabled={detailQuery.isError}
+            onClick={() => reserveMutation.mutate()}
+          >
+            Reservar aula <span aria-hidden="true">→</span>
+          </Button>
+        </RequiresNetwork>
+      ),
+    };
   }
 
+  const action = renderAction();
+
   return (
-    <div
-      className="fb-sheet-backdrop"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
-      }}
+    <Dialog
+      variant="sheet"
+      title={occurrence.name}
+      description={`${day} · ${formatInstantHour(occurrence.startsAt)} às ${formatInstantHour(occurrence.endsAt)}`}
+      onClose={onClose}
+      eyebrow={
+        <div className="fb-sheet__eyebrow">
+          <Badge tone="brand">{occurrence.modality.name}</Badge>
+        </div>
+      }
+      topBar={
+        <>
+          <Button variant="ghost" size="sm" aria-label="Voltar para a agenda" onClick={onClose}>
+            <BackIcon />
+            Agenda
+          </Button>
+          <Button variant="ghost" size="sm" aria-label="Fechar" onClick={onClose}>
+            <CloseIcon />
+          </Button>
+        </>
+      }
+      footer={action.footer}
     >
-      <div
-        ref={dialogRef}
-        className="fb-sheet"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        tabIndex={-1}
-      >
-        <div className="fb-sheet__handle" aria-hidden="true" />
-
-        <div className="fb-sheet__header">
-          <div className="fb-sheet__heading">
-            <h2 id={titleId} className="fb-sheet__title">
-              {occurrence.name}
-            </h2>
-            <span className="fb-sheet__subtitle">
-              {day}, {formatInstantHour(occurrence.startsAt)} –{" "}
-              {formatInstantHour(occurrence.endsAt)}
-            </span>
+      <dl className="fb-sheet__kv">
+        {occurrence.instructor && (
+          <div>
+            <dt>Professor</dt>
+            <dd>Prof. {firstName(occurrence.instructor.fullName)}</dd>
           </div>
-          <button type="button" aria-label="Fechar" className="fb-sheet__x" onClick={onClose}>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-              <path
-                d="M3 3L13 13M13 3L3 13"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-              />
-            </svg>
-          </button>
-        </div>
-
-        <div className="fb-sheet__facts">
-          {occurrence.instructor && (
-            <span className="fb-sheet__fact">
-              <PersonIcon />
-              Prof. {firstName(occurrence.instructor.fullName)}
-            </span>
-          )}
-          <span className="fb-sheet__fact">
-            <ClockIcon />
-            Duração de {occurrence.durationMinutes} minutos
-          </span>
-          <span className="fb-sheet__fact">
-            <SpotsIcon />
-            {occurrence.available} de {occurrence.capacity} vagas restantes
-          </span>
-        </div>
-
-        {occurrence.description && (
-          <p className="fb-sheet__description">{occurrence.description}</p>
         )}
+        <div>
+          <dt>Duração</dt>
+          <dd>{occurrence.durationMinutes} minutos</dd>
+        </div>
+      </dl>
 
-        {detailQuery.isError && !outcome && (
-          <p role="alert" className="fb-sheet__description">
-            Esta aula não está mais disponível na agenda (foi cancelada ou já começou).
-          </p>
-        )}
+      {occurrence.description && <p className="fb-sheet__text">{occurrence.description}</p>}
 
-        <div className="fb-sheet__divider" />
-
-        {renderAction()}
-
-        <button type="button" className="fb-sheet__close" onClick={onClose}>
-          Fechar
-        </button>
+      <div className="fb-sheet__spots">
+        <span className="fb-sheet__spots-label">
+          Disponibilidade
+          {level === AvailabilityLevel.FULL && <Badge tone="err">Lotada</Badge>}
+          {level === AvailabilityLevel.ALMOST_FULL && <Badge tone="warn">Quase lotada</Badge>}
+        </span>
+        <span className="fb-sheet__spots-count">
+          {occurrence.available} de {occurrence.capacity} vagas
+        </span>
       </div>
-    </div>
-  );
-}
-
-const FACT_STROKE = "rgba(255,255,255,0.5)";
-
-function PersonIcon() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <circle cx="8" cy="5.5" r="2.5" stroke={FACT_STROKE} strokeWidth="1.3" />
-      <path
-        d="M3 13c0.8-2.6 2.6-4 5-4s4.2 1.4 5 4"
-        stroke={FACT_STROKE}
-        strokeWidth="1.3"
-        strokeLinecap="round"
+      <Meter
+        value={occupied}
+        max={occurrence.capacity}
+        label={`${occupied} de ${occurrence.capacity} vagas ocupadas`}
       />
+
+      {!outcome && detailQuery.isPlaceholderData && (
+        <LoadingState className="fb-sheet__state" label="Atualizando disponibilidade…" />
+      )}
+      {!outcome && detailQuery.isError && (
+        <ErrorState
+          className="fb-sheet__state"
+          title="Aula indisponível"
+          description="Esta aula não está mais disponível na agenda (foi cancelada ou já começou)."
+        />
+      )}
+      {!outcome && offline && (
+        <OfflineState
+          className="fb-sheet__state"
+          description="Para reservar ou cancelar, volte a ficar online. A disponibilidade abaixo pode estar desatualizada."
+        />
+      )}
+
+      {action.notice}
+
+      <p className="fb-sheet__note">
+        <InfoIcon />
+        <span>
+          A disponibilidade mostrada é informativa; a confirmação depende das vagas no momento da
+          reserva.
+        </span>
+      </p>
+    </Dialog>
+  );
+}
+
+const ICON = {
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: 1.8,
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+  "aria-hidden": true,
+  focusable: false,
+} as const;
+
+function BackIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" {...ICON}>
+      <path d="M15 5l-7 7 7 7" />
     </svg>
   );
 }
 
-function ClockIcon() {
+function CloseIcon() {
   return (
-    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <circle cx="8" cy="8" r="6.3" stroke={FACT_STROKE} strokeWidth="1.3" />
-      <path d="M8 4.5V8L10.3 9.6" stroke={FACT_STROKE} strokeWidth="1.3" strokeLinecap="round" />
+    <svg width="16" height="16" viewBox="0 0 24 24" {...ICON}>
+      <path d="M6 6l12 12M18 6L6 18" />
     </svg>
   );
 }
 
-function SpotsIcon() {
+function InfoIcon() {
   return (
-    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path
-        d="M2 13V4.5C2 3.7 2.7 3 3.5 3H12.5C13.3 3 14 3.7 14 4.5V13"
-        stroke={FACT_STROKE}
-        strokeWidth="1.3"
-      />
-      <path d="M2 9H14" stroke={FACT_STROKE} strokeWidth="1.3" />
-    </svg>
-  );
-}
-
-function CheckIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path
-        d="M3 8.5L6.2 11.5L13 4"
-        stroke="#ed6e34"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function AlertIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <circle cx="8" cy="8" r="7" stroke="#c23a1f" strokeWidth="1.4" />
-      <path d="M8 4.5V8.5" stroke="#c23a1f" strokeWidth="1.4" strokeLinecap="round" />
-      <circle cx="8" cy="11.2" r="0.9" fill="#c23a1f" />
+    <svg className="fb-sheet__note-icon" width="16" height="16" viewBox="0 0 24 24" {...ICON}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 11v5M12 7.5h.01" />
     </svg>
   );
 }

@@ -188,264 +188,8 @@
   color: var(--color-ink-on-dark); /* design */
 }
 
-/* Detalhe da aula: cartão de 460px
-   centralizado no desktop, bottom sheet no mobile. */
-.fb-sheet-backdrop {
-  animation: fb-fade 200ms var(--ease-out) both;
-  position: fixed;
-  inset: 0;
-  z-index: 20;
-  background: rgba(0, 0, 0, 0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.fb-sheet {
-  animation: fb-enter 200ms var(--ease-out) both;
-  transform-origin: center;
-  width: 460px;
-  max-width: 100%;
-  box-sizing: border-box;
-  background: var(--color-surface-raised);
-  color: var(--color-ink-on-dark);
-  border-radius: var(--radius-sm);
-  padding: 28px;
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  box-shadow: var(--sh-3);
-}
-
-/* global.css zera o box-shadow de [role="dialog"]:focus (o diálogo recebe foco programático);
-   o design mantém a sombra do cartão. */
-.fb-sheet[role="dialog"]:focus {
-  box-shadow: var(--sh-3);
-}
-
-.fb-sheet__handle {
-  display: none;
-  width: 36px;
-  height: 4px;
-  border-radius: var(--radius-pill);
-  background: rgba(255, 255, 255, 0.2);
-  align-self: center;
-}
-
-.fb-sheet__header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.fb-sheet__heading {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.fb-sheet__x {
-  flex-shrink: 0;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  border: none;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  color: var(--color-on-dark-50);
-}
-
-.fb-sheet__title {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 700;
-}
-
-.fb-sheet__subtitle {
-  font-size: 13px;
-  color: var(--color-on-dark-55);
-}
-
-.fb-sheet__facts {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.7);
-}
-
-.fb-sheet__fact {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.fb-sheet__description {
-  margin: 0;
-  font-size: 13px;
-  line-height: 20px;
-  color: var(--color-text-muted-on-dark);
-}
-
-.fb-sheet__divider {
-  height: 1px;
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.fb-sheet__stack {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-/* Linha de botões lado a lado (ex.: Cancelar reserva | Remarcar). */
-.fb-sheet__actions {
-  display: flex;
-  gap: 10px;
-}
-
-.fb-sheet__actions .fb-sheet-btn {
-  flex: 1;
-  width: auto;
-}
-
-.fb-sheet__badges {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.fb-sheet-btn {
-  width: 100%;
-  box-sizing: border-box;
-  border-radius: var(--radius-sm);
-  font-family: var(--font-sans);
-  font-weight: 700;
-  color: var(--color-ink-on-dark);
-  cursor: pointer;
-}
-
-.fb-sheet-btn--primary {
-  padding: 13px;
-  background: var(--color-primary-orange);
-  border: none;
-  color: var(--color-ink-on-dark); /* design */
-  font-size: 15px;
-}
-
-/* Ação destrutiva confirmada (mesmo vermelho-chama do .fb-btn-danger do painel). */
-.fb-sheet-btn--danger {
-  padding: 13px;
-  background: var(--color-flame-red);
-  border: none;
-  font-size: 15px;
-}
-
-.fb-sheet-btn--ghost {
-  padding: 12px;
-  background: transparent;
-  border: 1px solid var(--color-line-2);
-  font-size: 14px;
-}
-
-.fb-sheet-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.fb-sheet-badge {
-  display: inline-block;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  color: var(--color-brand-strong);
-  background: rgba(237, 110, 52, 0.14);
-  padding: 5px 10px;
-  border-radius: var(--radius-sm);
-}
-
-.fb-sheet-badge--muted {
-  color: var(--color-text-muted-on-dark);
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.fb-sheet-badge--flame {
-  color: var(--color-danger);
-  background: rgba(194, 58, 31, 0.14);
-}
-
-.fb-sheet-alert {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  padding: 12px 14px;
-  border-radius: var(--radius-sm);
-  font-size: 13px;
-  line-height: 18px;
-}
-
-.fb-sheet-alert svg {
-  flex-shrink: 0;
-  margin-top: 2px;
-}
-
-.fb-sheet-alert--success {
-  background: rgba(237, 110, 52, 0.1);
-  border: 1px solid rgba(237, 110, 52, 0.35);
-  color: var(--color-ink-on-dark);
-}
-
-.fb-sheet-alert--error {
-  background: rgba(194, 58, 31, 0.12);
-  border: 1px solid rgba(194, 58, 31, 0.5);
-  color: var(--color-danger);
-}
-
-.fb-sheet__close {
-  align-self: center;
-  background: none;
-  border: none;
-  padding: 0;
-  font-family: var(--font-sans);
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--color-text-muted-on-dark);
-  cursor: pointer;
-}
-
-/* Alvos de toque de 44px sem alterar o layout do design (botão de 32px e "Fechar" de 17px):
-   a área clicável cresce por ::before invisível; os min-height/min-width de responsive.css
-   (mesma família de seletores, menor especificidade) ficam anulados aqui. */
-.fb-sheet .fb-sheet__x {
-  position: relative;
-  min-width: 0;
-  min-height: 0;
-}
-
-.fb-sheet .fb-sheet__x::before {
-  content: "";
-  position: absolute;
-  inset: -6px;
-}
-
-.fb-sheet .fb-sheet__close {
-  position: relative;
-  display: block;
-  min-height: 0;
-  padding: 0;
-}
-
-.fb-sheet .fb-sheet__close::before {
-  content: "";
-  position: absolute;
-  inset: -14px -20px;
-}
-
-/* Abas "Próximas | Histórico": mesma técnica (o design tem 35px de altura no mobile). */
+/* Abas "Próximas | Histórico": alvo de toque de 44px sem alterar o layout (o design tem 35px de altura no mobile); a
+   área clicável cresce por ::before invisível. */
 .fb-client-tabs .fb-client-tab-btn {
   position: relative;
   min-height: 0;
@@ -504,46 +248,10 @@
     flex: 1;
     padding: 9px 0;
   }
-
-  .fb-sheet-backdrop {
-    align-items: flex-end;
-  }
-
-  .fb-sheet {
-    width: 100%;
-    border-radius: var(--radius-sheet);
-    padding: 12px 20px 28px;
-    box-shadow: var(--sh-3);
-  }
-
-  .fb-sheet[role="dialog"]:focus {
-    box-shadow: var(--sh-3);
-  }
-
-  .fb-sheet__handle {
-    display: block;
-  }
-
-  .fb-sheet-btn--primary,
-  .fb-sheet-btn--danger {
-    padding: 14px;
-  }
-
-  .fb-sheet-btn--ghost {
-    padding: 13px;
-  }
-}
-
-/* Entrada do sheet no mobile: sobe da borda inferior (translateY em % da própria altura). */
-@media (max-width: 767px) {
-  .fb-sheet {
-    animation: fb-sheet-in 320ms var(--ease-drawer) both;
-  }
 }
 
 /* Feedback de toque nos controles do cliente; a cor do estado escolhido (dia, aba, filtro) acompanha o
    press em vez de saltar. */
-.fb-sheet-btn,
 .fb-client-tab-btn {
   transition:
     transform var(--duration-press) var(--ease-out),
@@ -553,16 +261,13 @@
     filter var(--duration-state) var(--ease-out);
 }
 
-.fb-sheet-btn:active:not(:disabled),
 .fb-client-tab-btn:active {
   transform: scale(var(--press-scale));
 }
 
 /* Navegação e botões de ícone: só a cor muda. */
 .fb-client__nav-item,
-.fb-back-btn,
-.fb-sheet__x,
-.fb-sheet__close {
+.fb-back-btn {
   transition:
     background-color var(--duration-state) var(--ease-out),
     color var(--duration-state) var(--ease-out);
@@ -570,43 +275,7 @@
 
 @media (hover: hover) and (pointer: fine) {
   .fb-client__nav-item:not(.active):hover,
-  .fb-back-btn:hover,
-  .fb-sheet__x:hover,
-  .fb-sheet__close:hover {
+  .fb-back-btn:hover {
     color: var(--color-ink-on-dark);
-  }
-
-  .fb-sheet-btn--primary:hover:not(:disabled),
-  .fb-sheet-btn--danger:hover:not(:disabled) {
-    filter: brightness(1.07);
-  }
-
-  .fb-sheet-btn--ghost:hover:not(:disabled) {
-    background-color: rgba(255, 255, 255, 0.06);
-  }
-}
-
-/* Resultado da ação no detalhe da aula: o bloco entra e o check pousa logo depois. */
-.fb-sheet-alert {
-  animation: fb-enter 220ms var(--ease-out) both;
-}
-
-.fb-sheet-alert--success svg {
-  animation: fb-check-pop 240ms var(--ease-out) 80ms both;
-}
-@keyframes fb-check-pop {
-  from {
-    opacity: 0;
-    transform: scale(0.6);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .fb-sheet-alert--success svg {
-    animation: fb-fade 200ms var(--ease-out) both;
   }
 }

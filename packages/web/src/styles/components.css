@@ -853,6 +853,113 @@
   margin-top: var(--s-2);
 }
 
+/* Folha (variant="sheet"): barra superior, corpo que rola e rodapé fixo. No celular sobe da borda inferior; com
+   reduced motion o --sheet-offset zera e sobra o fade. */
+.fb-ui-dialog--sheet {
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.fb-ui-dialog__topbar {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  padding: var(--s-3) var(--s-4) 0;
+}
+
+.fb-ui-dialog__body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: var(--s-3);
+  min-height: 0;
+  padding: var(--s-3) var(--s-5) var(--s-5);
+  overflow-y: auto;
+}
+
+.fb-ui-dialog__footer {
+  flex: 0 0 auto;
+  padding: var(--s-4) var(--s-5);
+  padding-bottom: max(var(--s-4), env(safe-area-inset-bottom));
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+}
+
+@media (max-width: 767px) {
+  .fb-ui-dialog-backdrop--sheet {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .fb-ui-dialog--sheet {
+    max-width: 100%;
+    border-bottom: 0;
+    border-radius: var(--r-xl) var(--r-xl) 0 0;
+    animation: fb-sheet-in 320ms var(--ease-drawer) both;
+  }
+}
+
+/* ---- Medidor ---- */
+.fb-ui-meter {
+  box-sizing: border-box;
+  height: 8px;
+  overflow: hidden;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+}
+
+.fb-ui-meter__fill {
+  display: block;
+  height: 100%;
+  background: var(--grad-cta);
+  /* Sem texto: só declara o par de cor da base (branco sobre o laranja) para a regra de fundo laranja. */
+  color: var(--color-on-orange);
+  border-radius: var(--r-pill);
+  animation: fb-meter-in var(--duration-meter) var(--ease-out) both;
+}
+
+/* ---- Aviso em linha ---- */
+.fb-ui-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-3);
+  box-sizing: border-box;
+  min-width: 0;
+  padding: var(--s-3) var(--s-4);
+  border: 1px solid;
+  border-radius: var(--r-md);
+  font-size: var(--text-small);
+  line-height: var(--leading-small);
+  animation: fb-enter 220ms var(--ease-out) both;
+}
+
+.fb-ui-alert__icon {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+}
+
+.fb-ui-alert__text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.fb-ui-alert--err {
+  background: var(--danger-bg);
+  border-color: var(--danger-line);
+  color: var(--danger);
+}
+
+.fb-ui-alert--ok {
+  background: var(--success-bg);
+  border-color: var(--success-line);
+  color: var(--success);
+}
+
 /* ---- Estados ---- */
 .fb-ui-state {
   display: flex;

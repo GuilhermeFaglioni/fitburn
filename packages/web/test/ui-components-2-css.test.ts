@@ -43,7 +43,7 @@ describe("componentes base II: prefixo e só tokens", () => {
 
   it("raio, sombra e tamanho de texto vêm dos tokens", () => {
     for (const [, value] of uiCss.matchAll(/border-radius:\s*([^;]+);/g)) {
-      expect(value.trim(), value).toMatch(/^(var\(--r-(xs|sm|md|lg|xl|pill)\)|50%|var\(--r-lg\) var\(--r-lg\) 0 0)$/);
+      expect(value.trim(), value).toMatch(/^(var\(--r-(xs|sm|md|lg|xl|pill)\)|50%|var\(--r-(lg|xl)\) var\(--r-(lg|xl)\) 0 0)$/);
     }
     for (const [, value] of uiCss.matchAll(/box-shadow:\s*([^;]+);/g)) {
       expect(value.trim(), value).toMatch(/^(none|var\(--sh-(1|2|3|cta|focus)\)(,\s*var\(--sh-(1|2|3|cta|focus)\))*)$/);

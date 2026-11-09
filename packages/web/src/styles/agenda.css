@@ -1,7 +1,7 @@
 /**
  * Agenda do cliente (D-038): cabeçalho com "Próximas | Histórico", semana, dias (chips), modalidades (pílulas) e
- * lista de aulas; no desktop, a grade semana × horário. A aba Histórico reaproveita o item de aula. Só tokens: cor,
- * raio, espaçamento e tipografia vêm do design system. O detalhe da aula (folha) fica em client.css.
+ * lista de aulas; no desktop, a grade semana × horário. A aba Histórico reaproveita o item de aula. O detalhe da aula
+ * (folha, `Dialog` variant="sheet") fecha o arquivo. Só tokens: cor, raio, espaçamento e tipografia vêm do design system.
  */
 .fb-agenda {
   display: flex;
@@ -384,5 +384,106 @@
   .fb-agenda__head {
     flex-direction: column;
     align-items: flex-start;
+  }
+}
+
+/* Detalhe da aula (folha): o Dialog traz a moldura, a barra superior e o rodapé fixo; aqui só o conteúdo. A folha fica
+   acima da barra inferior do cliente (z-index 10). */
+.fb-ui-dialog-backdrop--sheet {
+  z-index: 20;
+}
+
+.fb-sheet__eyebrow {
+  display: flex;
+}
+
+.fb-sheet__kv {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s-3);
+  margin: var(--s-2) 0 0;
+}
+
+.fb-sheet__kv > div {
+  min-width: 0;
+}
+
+.fb-sheet__kv dt {
+  color: var(--muted);
+  font-size: var(--text-caption);
+}
+
+.fb-sheet__kv dd {
+  margin: 0;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: var(--weight-bold);
+  overflow-wrap: anywhere;
+}
+
+.fb-sheet__text {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--text-small);
+  line-height: var(--leading-body);
+}
+
+.fb-sheet__spots {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  margin-top: var(--s-2);
+  color: var(--muted);
+  font-size: var(--text-caption);
+}
+
+.fb-sheet__spots-count {
+  color: var(--ink);
+  font-weight: var(--weight-bold);
+  font-variant-numeric: tabular-nums;
+}
+
+.fb-sheet__spots-label {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+}
+
+/* Estados em linha (carregando, erro, offline): mais compactos que o bloco da página. */
+.fb-sheet__state {
+  padding: var(--s-4);
+}
+
+/* Nota informativa em --muted: o ícone e o texto dizem que é só informação, sem depender de cor. */
+.fb-sheet__note {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-2);
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--text-caption);
+  line-height: var(--leading-small);
+}
+
+.fb-sheet__note-icon {
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+
+/* Dois botões lado a lado no rodapé (Cancelar reserva | Remarcar; Voltar | Confirmar cancelamento). */
+.fb-sheet__actions {
+  display: flex;
+  gap: var(--s-3);
+}
+
+.fb-sheet__actions > * {
+  flex: 1;
+}
+
+@media (max-width: 360px) {
+  .fb-sheet__actions {
+    flex-direction: column;
   }
 }
