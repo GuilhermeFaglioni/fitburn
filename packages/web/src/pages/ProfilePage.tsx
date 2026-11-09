@@ -10,6 +10,7 @@ import { useAuth } from "../lib/auth/AuthContext";
 import { isClientUser } from "../lib/auth/areas";
 import { formatLocalDate } from "../lib/agenda/format";
 import { getMyProfile, updateMyProfile } from "../lib/profile/api";
+import { InstallTutorial } from "../components/InstallTutorial";
 import { QueryBlockState } from "../components/QueryBlockState";
 import { RequiresNetwork } from "../components/RequiresNetwork";
 import { Alert } from "../components/ui/Alert";
@@ -130,6 +131,7 @@ export function ProfilePage({
   const [passwordForm, setPasswordForm] = useState({ currentPassword: "", newPassword: "" });
   const [passwordIssue, setPasswordIssue] = useState<Issue<PasswordField> | null>(null);
   const [passwordMessage, setPasswordMessage] = useState<string | null>(null);
+  const [tutorialOpen, setTutorialOpen] = useState(false);
 
   const saveMutation = useMutation({
     mutationFn: updateMyProfile,
@@ -413,6 +415,24 @@ export function ProfilePage({
       {!requiredPasswordChange && isClient && profile && (
         <RankingConsentControl surface="profile" />
       )}
+
+      {!requiredPasswordChange && isClient && (
+        <Card as="section" flat className="fb-profile__card" aria-labelledby="fb-profile-install">
+          <div className="fb-profile__card-head">
+            <h2 id="fb-profile-install" className="fb-profile__card-title">
+              Instalar o app
+            </h2>
+            <Button variant="soft" size="sm" onClick={() => setTutorialOpen(true)}>
+              Ver tutorial de instalação
+            </Button>
+          </div>
+          <p className="fb-profile__password-hint">
+            Deixe o Fitburn na tela inicial do celular, com acesso rápido.
+          </p>
+        </Card>
+      )}
+
+      {tutorialOpen && <InstallTutorial onClose={() => setTutorialOpen(false)} />}
 
       <div className="fb-profile__exit">
         <RequiresNetwork>

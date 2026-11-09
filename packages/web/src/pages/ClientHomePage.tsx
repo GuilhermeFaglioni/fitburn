@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { gymToday, RankingPeriod, type GamificationSummary } from "@fitburn/contracts";
@@ -10,9 +11,11 @@ import {
   rankingConsentQueryKey,
 } from "../lib/gamification/api";
 import { getMyPlan } from "../lib/plans/api";
+import { markTutorialSeen, shouldAutoOpenTutorial } from "../lib/pwa/install-tutorial";
 import { HomeReservations } from "./home/HomeReservations";
 import { formatGreetingDate, formatPlanEnd } from "./home/format";
 import { HomeEmpty } from "./home/HomeEmpty";
+import { InstallTutorial } from "../components/InstallTutorial";
 import { QueryBlockState } from "../components/QueryBlockState";
 import { Card } from "../components/ui/Card";
 
@@ -40,10 +43,12 @@ function CheckIcon() {
  * Home do cliente (D-038): kicker da data e saudação, cartão do plano ativo, próximas aulas e o resumo de
  * FitPoints, nessa ordem no celular; no desktop, coluna de 400px (saudação, plano, FitPoints) ao lado das
  * aulas (grade em home.css). Cada bloco carrega, falha e fica sem conexão sozinho (QueryBlockState).
+ * No primeiro acesso neste aparelho abre o tutorial de instalação do PWA; fechar de qualquer jeito marca como visto.
  */
 export function ClientHomePage() {
   const { user } = useAuth();
   const firstName = user?.fullName.trim().split(/\s+/)[0] ?? "";
+  const [tutorialOpen, setTutorialOpen] = useState(shouldAutoOpenTutorial);
 
   const planQuery = useQuery({ queryKey: ["plans", "mine"], queryFn: getMyPlan });
   const activePlan = planQuery.data?.active ?? null;
@@ -86,6 +91,15 @@ export function ClientHomePage() {
       <HomeReservations />
 
       <Evolution />
+
+      {tutorialOpen && (
+        <InstallTutorial
+          onClose={() => {
+            markTutorialSeen();
+            setTutorialOpen(false);
+          }}
+        />
+      )}
     </div>
   );
 }
