@@ -161,342 +161,6 @@
   color: rgba(255, 255, 255, 0.7);
 }
 
-.fb-client-title {
-  margin: 0;
-  font-family: var(--font-sans);
-  font-weight: var(--weight-bold);
-  font-size: var(--text-h1);
-  line-height: var(--leading-title);
-  letter-spacing: var(--tracking-title);
-}
-
-/* Coluna da agenda: AgendaDesktop usa gap 16px, AgendaMobile 20px. */
-.fb-client-agenda {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-/* Texto só para leitores de tela (o design não mostra o selo "Reservada" na agenda). */
-.fb-client-sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  padding: 0;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-  border: 0;
-}
-
-/* Desktop: ícone de 14px centralizado na linha; mobile: ícone de 15px no topo (ver @media). */
-.fb-client-note {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  color: var(--color-on-dark-45); /* design */
-}
-
-.fb-client-note__icon {
-  flex-shrink: 0;
-  width: 14px;
-  height: 14px;
-}
-
-.fb-client-icon-btn {
-  width: 32px;
-  height: 32px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--color-surface-raised);
-  border: none;
-  border-radius: var(--radius-sm);
-  color: var(--color-ink-on-dark);
-  cursor: pointer;
-}
-
-/* Navegação de semana: o design não tem, então fica onde há espaço vazio e sem alterar medidas.
-   Botões de 26px (desktop) / 32px (mobile) com área de toque de 44px por ::before invisível. */
-.fb-client-weeknav {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.fb-client-weeknav .fb-client-icon-btn {
-  position: relative;
-  width: 26px;
-  height: 26px;
-  min-width: 0;
-  min-height: 0;
-  background: transparent;
-  color: var(--color-text-muted-on-dark);
-  font-family: var(--font-sans);
-  font-size: 16px;
-  line-height: 1;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .fb-client-weeknav .fb-client-icon-btn:hover {
-    background: var(--color-surface-raised);
-  }
-}
-
-.fb-client-weeknav .fb-client-icon-btn::before {
-  content: "";
-  position: absolute;
-  inset: -9px -1px;
-}
-
-.fb-client-weeknav--title {
-  display: none;
-}
-
-/* Desktop: grade horários × dias */
-.fb-client-grid {
-  display: grid;
-  grid-template-columns: 68px repeat(7, minmax(0, 1fr));
-  border: 1px solid var(--color-line);
-  border-radius: var(--radius-sm);
-  overflow: hidden;
-}
-
-.fb-client-cell {
-  box-sizing: border-box;
-  padding: 6px;
-  border-top: 1px solid var(--color-line);
-  min-height: 56px;
-  display: flex;
-  align-items: center;
-}
-
-/* Duas ou mais aulas no mesmo dia e horário: empilham (uma por linha, na largura da célula) em vez de ficarem
-   espremidas lado a lado. Com uma aula só, vale o design (chip encolhido ao conteúdo). */
-.fb-client-cell:has(> .fb-client-chip + .fb-client-chip) {
-  flex-direction: column;
-  align-items: stretch;
-  justify-content: center;
-  gap: 4px;
-}
-
-.fb-client-cell--head {
-  border-top: none;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: flex-start;
-  gap: 2px;
-}
-
-/* Canto vazio do design: só abriga a navegação de semana. */
-.fb-client-cell--corner {
-  flex-direction: row;
-  align-items: center;
-  justify-content: flex-start;
-}
-
-.fb-client-cell--today {
-  background: rgba(237, 110, 52, 0.04);
-}
-
-.fb-client-cell--head.fb-client-cell--today {
-  background: rgba(237, 110, 52, 0.08);
-  color: var(--color-brand-strong);
-}
-
-.fb-client-cell__weekday {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  color: var(--color-on-dark-45); /* design */
-}
-
-.fb-client-cell--today .fb-client-cell__weekday {
-  color: var(--color-brand-strong);
-}
-
-.fb-client-cell__day {
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.fb-client-cell__hour {
-  font-size: 12px;
-  color: var(--color-on-dark-40); /* design */
-}
-
-/* Chip encolhe ao conteúdo (no design é um <a> display:block sem largura, dentro da célula em flex). */
-.fb-client-chip {
-  display: block;
-  min-width: 0;
-  max-width: 100%;
-  box-sizing: border-box;
-  padding: 7px 9px;
-  background: var(--color-surface-raised);
-  border: none;
-  border-radius: var(--radius-sm);
-  text-align: left;
-  font-family: var(--font-sans);
-  color: var(--color-ink-on-dark);
-  cursor: pointer;
-}
-
-.fb-client-chip__title {
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.fb-client-chip__sub {
-  margin-top: 2px;
-  font-size: 11px;
-}
-
-.fb-client-chip__sub.fb-availability--AVAILABLE {
-  color: var(--color-on-dark-55); /* design */
-}
-
-/* Mobile: dias da semana + cartões */
-.fb-client-days {
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  padding-bottom: 2px;
-}
-
-.fb-daychip {
-  flex-shrink: 0;
-  box-sizing: border-box;
-  width: 48px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
-  padding: 8px 0;
-  border: none;
-  border-radius: var(--radius-pill);
-  background: transparent;
-  /* Quirk do design: <button> sem font-family renderiza em Arial. */
-  font-family: Arial, Helvetica, sans-serif;
-  color: var(--color-ink-on-dark);
-  cursor: pointer;
-}
-
-.fb-daychip[aria-pressed="true"] {
-  background: var(--color-primary-orange);
-  color: var(--color-ink-on-dark); /* design */
-}
-
-.fb-daychip__weekday {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  color: var(--color-on-dark-45); /* design */
-}
-
-.fb-daychip[aria-pressed="true"] .fb-daychip__weekday {
-  color: rgba(255, 255, 255, 0.85); /* design */
-}
-
-.fb-daychip__day {
-  font-size: 15px;
-  font-weight: 700;
-}
-
-.fb-class-card {
-  width: 100%;
-  box-sizing: border-box;
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 16px;
-  background: var(--color-surface-raised);
-  border: none;
-  border-radius: var(--radius-sm);
-  text-align: left;
-  font-family: var(--font-sans);
-  color: var(--color-ink-on-dark);
-  cursor: pointer;
-}
-
-.fb-class-card__body {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-}
-
-.fb-class-card__title {
-  font-size: 15px;
-  font-weight: 700;
-}
-
-.fb-class-card__time {
-  font-size: 13px;
-  color: var(--color-on-dark-55);
-}
-
-.fb-class-card__availability {
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.fb-availability--AVAILABLE {
-  color: var(--color-text-muted-on-dark);
-}
-
-.fb-availability--ALMOST_FULL {
-  color: var(--color-brand-strong);
-}
-
-.fb-availability--FULL {
-  color: var(--color-danger);
-}
-
-.fb-client-empty {
-  box-sizing: border-box;
-  padding: 24px 16px;
-  background: var(--color-surface-raised);
-  border: 1px dashed var(--color-line-2);
-  border-radius: var(--radius-sm);
-  text-align: center;
-  font-size: 13px;
-  color: var(--color-text-muted-on-dark);
-}
-
-/* "Sem aulas" do AgendaMobile: 13px com altura de linha normal (a padrão dos estados é 19px). */
-.fb-state.fb-client-empty-day {
-  line-height: normal;
-}
-
-.fb-client-desktop-only {
-  display: block;
-}
-
-.fb-client-mobile-only {
-  display: none;
-}
-
-/* Cabeçalho da agenda: título à esquerda; semana e o controle
-   "Próximas | Histórico" à direita. */
-.fb-client-header {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.fb-client-header__controls {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
 /* Controle "Próximas | Histórico". */
 .fb-client-tabs {
   display: flex;
@@ -522,119 +186,6 @@
 .fb-client-tab-btn[aria-pressed="true"] {
   background: var(--color-primary-orange);
   color: var(--color-ink-on-dark); /* design */
-}
-
-/* Filtro de estado: pílulas no formato dos chips de dia da agenda. */
-.fb-filter-chips {
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  padding-bottom: 2px;
-}
-
-.fb-filter-chip {
-  flex-shrink: 0;
-  padding: 6px 12px;
-  border: 1px solid var(--color-line-2);
-  border-radius: var(--radius-pill);
-  background: transparent;
-  font-family: var(--font-sans);
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--color-text-muted-on-dark);
-  cursor: pointer;
-}
-
-.fb-filter-chip[aria-pressed="true"] {
-  border-color: var(--color-primary-orange);
-  background: var(--color-primary-orange);
-  color: var(--color-on-orange);
-}
-
-/* Seções do histórico: título no tamanho de "Próximas aulas". */
-.fb-reservation-section {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.fb-reservation-section__title {
-  margin: 0;
-  font-size: 17px;
-  font-weight: 700;
-}
-
-.fb-reservation-section__notice {
-  margin: 0;
-  font-size: 13px;
-  color: var(--color-danger);
-}
-
-/* Cartão de reserva. */
-.fb-reservation-list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.fb-reservation-card {
-  width: 100%;
-  box-sizing: border-box;
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 14px 16px;
-  background: var(--color-surface-raised);
-  border: none;
-  border-radius: var(--radius-sm);
-  font-family: var(--font-sans);
-  color: var(--color-ink-on-dark);
-  text-align: left;
-}
-
-.fb-reservation-card--link {
-  cursor: pointer;
-}
-
-.fb-reservation-card__info {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  min-width: 0;
-}
-
-.fb-reservation-card__title {
-  font-size: 15px;
-  font-weight: 700;
-}
-
-.fb-reservation-card__when {
-  font-size: 13px;
-  color: var(--color-on-dark-55);
-}
-
-/* Aviso de remarcação em andamento: o alerta de sucesso do detalhe
-   (.fb-sheet-alert--success) com a ação "Desistir" à direita. */
-.fb-reschedule-banner {
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.fb-reschedule-banner__dismiss {
-  flex-shrink: 0;
-  background: none;
-  border: none;
-  padding: 0;
-  font-family: var(--font-sans);
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--color-brand-strong);
-  cursor: pointer;
 }
 
 /* Detalhe da aula: cartão de 460px
@@ -945,42 +496,6 @@
     box-shadow: var(--sh-2);
   }
 
-  .fb-client-title {
-    font-size: 32px;
-  }
-
-  .fb-client-agenda {
-    gap: 20px;
-  }
-
-  .fb-client-header {
-    gap: 20px;
-  }
-
-  .fb-client-note {
-    align-items: flex-start;
-    line-height: 17px;
-  }
-
-  .fb-client-note__icon {
-    width: 15px;
-    height: 15px;
-    margin-top: 2px;
-  }
-
-  .fb-client-weeknav--title {
-    display: flex;
-    position: absolute;
-    top: 4px;
-    right: 0;
-  }
-
-  .fb-client-weeknav--title .fb-client-icon-btn {
-    width: 32px;
-    height: 32px;
-  }
-
-  .fb-client-header__controls,
   .fb-client-tabs {
     width: 100%;
   }
@@ -988,14 +503,6 @@
   .fb-client-tab-btn {
     flex: 1;
     padding: 9px 0;
-  }
-
-  .fb-client-desktop-only {
-    display: none;
-  }
-
-  .fb-client-mobile-only {
-    display: block;
   }
 
   .fb-sheet-backdrop {
@@ -1027,27 +534,6 @@
   }
 }
 
-/* Aula em que o cliente já está reservado */
-.fb-class-card--booked,
-.fb-client-chip--booked {
-  box-shadow: inset 0 0 0 1px var(--color-primary-orange);
-}
-
-.fb-booked-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 2px;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--color-brand-strong);
-}
-
-.fb-booked-badge--chip {
-  margin-top: 4px;
-  font-size: 11px;
-}
-
 /* Entrada do sheet no mobile: sobe da borda inferior (translateY em % da própria altura). */
 @media (max-width: 767px) {
   .fb-sheet {
@@ -1058,10 +544,7 @@
 /* Feedback de toque nos controles do cliente; a cor do estado escolhido (dia, aba, filtro) acompanha o
    press em vez de saltar. */
 .fb-sheet-btn,
-.fb-daychip,
-.fb-client-tab-btn,
-.fb-filter-chip,
-.fb-class-card {
+.fb-client-tab-btn {
   transition:
     transform var(--duration-press) var(--ease-out),
     background-color var(--duration-state) var(--ease-out),
@@ -1071,16 +554,12 @@
 }
 
 .fb-sheet-btn:active:not(:disabled),
-.fb-daychip:active,
-.fb-client-tab-btn:active,
-.fb-filter-chip:active {
+.fb-client-tab-btn:active {
   transform: scale(var(--press-scale));
 }
 
 /* Navegação e botões de ícone: só a cor muda. */
 .fb-client__nav-item,
-.fb-client-icon-btn,
-.fb-client-chip,
 .fb-back-btn,
 .fb-sheet__x,
 .fb-sheet__close {
@@ -1105,10 +584,6 @@
   .fb-sheet-btn--ghost:hover:not(:disabled) {
     background-color: rgba(255, 255, 255, 0.06);
   }
-}
-
-.fb-class-card:active {
-  transform: scale(var(--press-scale-soft));
 }
 
 /* Resultado da ação no detalhe da aula: o bloco entra e o check pousa logo depois. */

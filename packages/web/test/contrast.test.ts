@@ -2,7 +2,6 @@ import { readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import adminCss from "../src/styles/admin.css?raw";
 import componentsCss from "../src/styles/components.css?raw";
-import clientCss from "../src/styles/client.css?raw";
 import {
   THEMES,
   color,
@@ -201,13 +200,6 @@ const DARK_ALPHA_EXCEPTIONS: Record<string, { floor: number; only?: string; why:
 /** Pares nomeados (seletor exato, cor de texto) sobre fundo que não é o cartão elevado (tema escuro). */
 const DARK_NAMED_PAIRS: { selector: string; value: string; floor: number; bg: Rgb; why: string }[] = [
   {
-    selector: '.fb-daychip[aria-pressed="true"] .fb-daychip__weekday',
-    value: "rgba(255, 255, 255, 0.85)",
-    floor: 2.5,
-    bg: hex(token("dark", "brand")),
-    why: "rótulo a 85% do chip de dia marcado, sobre o laranja (~2.6:1)",
-  },
-  {
     selector: ".fb-gami__mark--pending",
     value: "rgba(255, 255, 255, 0.4)",
     floor: 3,
@@ -385,8 +377,8 @@ function allSheets(): [string, string][] {
 }
 
 describe("dívida de migração: branco translúcido literal nas telas ainda não migradas", () => {
-  /** Quantidade medida em #156 (PR 2). Cada PR de tela só pode reduzir; o PR 18 troca este teste por proibição. */
-  const LITERAL_WHITE_ALPHA_TEXT_CEILING = 45;
+  /** Quantidade medida em #156 (45 no PR 2; 43 depois da Agenda). Cada PR de tela só pode reduzir; o PR 18 troca este teste por proibição. */
+  const LITERAL_WHITE_ALPHA_TEXT_CEILING = 43;
 
   it("não cresce: texto novo usa tokens, que seguem o tema", () => {
     const count = allSheets()
@@ -475,13 +467,15 @@ describe("botões primários: a política", () => {
     expect(orangeFailures(".fb-checkbox:hover { background: #ed6e34; }")).not.toEqual([]);
   });
 
-  it("o chip de dia marcado segue o design: branco (rótulo a 85%) sobre o laranja, trade-off de contraste registrado", () => {
-    const rule = clientCss.match(
-      /\.fb-daychip\[aria-pressed="true"\] \.fb-daychip__weekday\s*\{[^}]*color:\s*rgba\(255, 255, 255, 0\.85\);\s*\/\* design/,
-    );
-    expect(rule).not.toBeNull();
-    // Cerca de 2,6:1 com o rótulo a 85%: só o número do dia (15px/700, branco pleno) fica perto de 3:1.
-    const orange = hex(token("dark", "brand"));
-    expect(contrast(over(WHITE, 0.85, orange), orange)).toBeGreaterThanOrEqual(2.5);
+  it("o chip de dia marcado da agenda é o Chip compartilhado: texto sobre o laranja (token color-on-orange) com 3:1 ou mais", () => {
+    const agendaCss = readFileSync(resolve(process.cwd(), "src/styles/agenda.css"), "utf8");
+    // A agenda não tem chip de dia próprio: usa .fb-ui-chip (components.css), já coberto por orangeFailures.
+    expect(agendaCss).not.toMatch(/daychip|fb-ui-chip/);
+    const marked = orangeBackgrounds(componentsCss).find(({ selector }) => selector === '.fb-ui-chip[aria-pressed="true"]');
+    expect(marked?.color).toBe("var(--color-on-orange)");
+    for (const theme of THEMES) {
+      const orange = hex(token(theme, "brand"));
+      expect(contrast(resolveColor("var(--color-on-orange)", theme), orange), theme).toBeGreaterThanOrEqual(3);
+    }
   });
 });

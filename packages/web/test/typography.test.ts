@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 const read = (path: string) => readFileSync(new URL(path, import.meta.url), "utf8");
 const tokensCss = read("../src/styles/tokens.css");
 const globalCss = read("../src/styles/global.css");
-const clientCss = read("../src/styles/client.css");
+const agendaCss = read("../src/styles/agenda.css");
 const gamificationCss = read("../src/styles/gamification.css");
 const componentsCss = read("../src/styles/components.css");
 const loginCss = read("../src/pages/LoginPage.css");
@@ -89,7 +89,7 @@ describe("escala e tokens de tipografia", () => {
 
 describe("títulos das telas do cliente", () => {
   const titles: [string, string][] = [
-    ["client.css", ruleBody(clientCss, ".fb-client-title")],
+    ["agenda.css", ruleBody(agendaCss, ".fb-agenda__title")],
     ["gamification.css", ruleBody(gamificationCss, ".fb-gami__title")],
     ["LoginPage.css", ruleBody(loginCss, ".login-form__title")],
   ];

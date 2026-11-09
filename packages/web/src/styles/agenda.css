@@ -1,0 +1,388 @@
+/**
+ * Agenda do cliente (D-038): cabeçalho com "Próximas | Histórico", semana, dias (chips), modalidades (pílulas) e
+ * lista de aulas; no desktop, a grade semana × horário. A aba Histórico reaproveita o item de aula. Só tokens: cor,
+ * raio, espaçamento e tipografia vêm do design system. O detalhe da aula (folha) fica em client.css.
+ */
+.fb-agenda {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  font-family: var(--font-sans);
+  color: var(--ink);
+}
+
+.fb-agenda > * {
+  min-width: 0;
+}
+
+.fb-agenda__head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--s-3);
+  flex-wrap: wrap;
+}
+
+.fb-agenda__kicker {
+  margin: 0 0 var(--s-2);
+  color: var(--brand-strong);
+}
+
+.fb-agenda__title {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: var(--text-h1);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-title);
+  letter-spacing: var(--tracking-title);
+}
+
+/* Semana: botões nas pontas, a semana no meio (preview). */
+.fb-agenda__weeknav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+}
+
+.fb-agenda__weeklabel {
+  font-size: var(--text-small);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Faixa de chips/pílulas com rolagem horizontal própria; o respiro evita cortar o anel de foco e a sombra. */
+.fb-agenda__scroller {
+  display: flex;
+  gap: var(--s-2);
+  overflow-x: auto;
+  padding: var(--s-1);
+  margin: calc(-1 * var(--s-1));
+  scrollbar-width: none;
+}
+
+.fb-agenda__scroller::-webkit-scrollbar {
+  display: none;
+}
+
+/* Aviso de remarcação em andamento, com a ação "Desistir" à direita. */
+.fb-agenda__banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  padding: var(--s-3) var(--s-4);
+  background: var(--success-bg);
+  border: 1px solid var(--success-line);
+  border-radius: var(--r-md);
+  color: var(--success);
+  font-size: var(--text-small);
+  font-weight: var(--weight-medium);
+  animation: fb-enter 220ms var(--ease-out) both;
+}
+
+.fb-agenda__note {
+  margin: 0;
+  font-size: var(--text-caption);
+  color: var(--muted);
+}
+
+/* Celular: dias + lista; desktop: grade. */
+.fb-agenda__mobile {
+  display: none;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+
+.fb-agenda__desktop {
+  display: block;
+}
+
+.fb-agenda__day {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+.fb-agenda__day-title,
+.fb-agenda__section-title {
+  margin: 0;
+  font-size: var(--text-small);
+  font-weight: var(--weight-medium);
+  color: var(--muted);
+}
+
+.fb-agenda__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Histórico */
+.fb-agenda__history {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-5);
+}
+
+.fb-agenda__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+.fb-agenda__section-title {
+  font-size: 15px;
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.fb-agenda__notice {
+  margin: 0;
+  font-size: var(--text-small);
+  color: var(--danger);
+}
+
+/* Item de aula (agenda e histórico): horário, aula e professor, selos. */
+.fb-class-item {
+  box-sizing: border-box;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-3);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  box-shadow: var(--sh-1);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  text-align: left;
+}
+
+.fb-class-item--booked {
+  border-color: var(--brand);
+}
+
+.fb-class-item--link {
+  cursor: pointer;
+  transition:
+    transform var(--duration-press) var(--ease-out),
+    border-color var(--duration-state) var(--ease-out),
+    box-shadow var(--duration-press) var(--ease-out);
+}
+
+.fb-class-item--link:active {
+  transform: scale(var(--press-scale-soft));
+}
+
+.fb-class-item--link:focus-visible {
+  outline: none;
+  box-shadow: var(--sh-focus);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .fb-class-item--link:hover:not(.fb-class-item--booked) {
+    border-color: var(--line-2);
+  }
+}
+
+.fb-class-item__time {
+  flex: 0 0 52px;
+  box-sizing: border-box;
+  padding: var(--s-2) 0;
+  background: var(--brand-tint);
+  border-radius: var(--r-sm);
+  color: var(--brand-strong);
+  font-size: 14px;
+  font-weight: var(--weight-bold);
+  line-height: 1.1;
+  text-align: center;
+}
+
+.fb-class-item__time small {
+  display: block;
+  font-size: var(--text-kicker);
+  font-weight: var(--weight-medium);
+}
+
+.fb-class-item__meta {
+  flex: 1;
+  min-width: 0;
+}
+
+.fb-class-item__meta b {
+  display: block;
+  font-size: 14px;
+  letter-spacing: -0.01em;
+}
+
+.fb-class-item__meta span {
+  font-size: var(--text-caption);
+  color: var(--muted);
+}
+
+.fb-class-item__end {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--s-1);
+  max-width: 45%;
+}
+
+/* O selo de vagas pode ter texto longo ("3/12 vagas · quase lotada"): quebra em vez de estourar a linha. */
+.fb-class-item__end .fb-ui-badge {
+  height: auto;
+  min-height: 24px;
+  padding-block: var(--s-1);
+  white-space: normal;
+  text-align: right;
+}
+
+/* Grade da semana (desktop): horários × dias. */
+.fb-agenda__grid {
+  display: grid;
+  grid-template-columns: 68px repeat(7, minmax(0, 1fr));
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+
+.fb-agenda__row {
+  display: contents;
+}
+
+.fb-agenda__cell {
+  box-sizing: border-box;
+  min-height: 56px;
+  padding: var(--s-2);
+  display: flex;
+  align-items: center;
+  border-top: 1px solid var(--line);
+}
+
+/* Duas ou mais aulas no mesmo dia e horário empilham (uma por linha) em vez de ficarem espremidas lado a lado. */
+.fb-agenda__cell:has(> .fb-agenda__slot + .fb-agenda__slot) {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: var(--s-1);
+}
+
+.fb-agenda__cell--head {
+  min-height: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: var(--s-1);
+  border-top: none;
+}
+
+.fb-agenda__cell--today {
+  background: var(--brand-tint);
+}
+
+.fb-agenda__cell--head.fb-agenda__cell--today {
+  color: var(--brand-strong);
+}
+
+.fb-agenda__weekday {
+  font-size: var(--text-kicker);
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.fb-agenda__cell--today .fb-agenda__weekday {
+  color: var(--brand-strong);
+}
+
+.fb-agenda__daynum {
+  font-size: 14px;
+  font-weight: var(--weight-bold);
+}
+
+.fb-agenda__hour {
+  font-size: var(--text-caption);
+  color: var(--muted);
+}
+
+/* A aula na grade encolhe ao conteúdo. */
+.fb-agenda__slot {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s-1);
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+  padding: var(--s-2);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color var(--duration-state) var(--ease-out),
+    border-color var(--duration-state) var(--ease-out),
+    box-shadow var(--duration-press) var(--ease-out);
+}
+
+.fb-agenda__slot:focus-visible {
+  outline: none;
+  box-shadow: var(--sh-focus);
+}
+
+.fb-agenda__slot--booked {
+  border-color: var(--brand);
+}
+
+.fb-agenda__slot-title {
+  font-size: var(--text-caption);
+  font-weight: var(--weight-bold);
+}
+
+.fb-agenda__slot-sub {
+  font-size: var(--text-kicker);
+  color: var(--muted);
+}
+
+.fb-agenda__slot-sub--ALMOST_FULL {
+  color: var(--warn);
+}
+
+.fb-agenda__slot-sub--FULL {
+  color: var(--danger);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .fb-agenda__slot:hover {
+    background: var(--surface);
+    border-color: var(--line-2);
+  }
+}
+
+@media (max-width: 767px) {
+  .fb-agenda {
+    gap: var(--s-5);
+  }
+
+  .fb-agenda__mobile {
+    display: flex;
+  }
+
+  .fb-agenda__desktop {
+    display: none;
+  }
+
+  .fb-agenda__head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

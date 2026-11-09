@@ -39,6 +39,15 @@ export function formatWeekRange(weekStart: string): string {
   return `${start.day} de ${MONTHS[start.month - 1]} – ${end.day} de ${MONTHS[end.month - 1]}`;
 }
 
+/** "9 – 15 nov" ou "29 set – 5 out": a semana em poucas letras, para o controle de semana. */
+export function formatWeekShort(weekStart: string): string {
+  const start = parts(weekStart);
+  const end = parts(addDays(weekStart, 6));
+  const abbreviation = (month: number) => MONTHS[month - 1].slice(0, 3);
+  if (start.month === end.month) return `${start.day} – ${end.day} ${abbreviation(end.month)}`;
+  return `${start.day} ${abbreviation(start.month)} – ${end.day} ${abbreviation(end.month)}`;
+}
+
 /** "SEG 15" (rótulo de coluna da agenda). */
 export function formatDayLabel(date: string, weekday: number): string {
   return `${WEEKDAYS_SHORT[weekday]} ${parts(date).day}`;

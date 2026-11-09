@@ -117,7 +117,8 @@ describe("Agenda › Histórico (minhas reservas)", () => {
     expect(items).toHaveLength(2);
     expect(items[0]).toHaveTextContent("Treino Funcional");
     // Amanhã: continua clicável seja qual for a hora em que o teste roda.
-    expect(items[0]).toHaveTextContent("18h00 · Prof. Rafael Andrade");
+    expect(items[0]).toHaveTextContent("18h00");
+    expect(items[0]).toHaveTextContent("Prof. Rafael Andrade");
     expect(items[0]).toHaveTextContent("CONFIRMADA");
     expect(items[1]).toHaveTextContent("CANCELADA");
 
