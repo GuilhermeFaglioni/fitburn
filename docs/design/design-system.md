@@ -4,7 +4,7 @@ Base de design do app, derivada da proposta `proposta-fitburn-oratry.html` (nest
 
 ## Tema
 
-**Decisão pendente.** A decisão 134 do repositório fixa tema escuro único; a proposta traz claro e escuro (pela preferência do sistema, com alternância manual). Este documento lista os dois valores de cada token e não escolhe um lado. A escolha é do dono do produto.
+Decidido em D-038 (`docs/decisions.md`): claro e escuro pela preferência do sistema, em cliente e admin, com alternância manual salva por aparelho. Revisa a #134 (escuro sempre). Os dois valores de cada token estão listados abaixo.
 
 ## Marca
 

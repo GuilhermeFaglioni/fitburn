@@ -76,6 +76,12 @@ Registro das decisões tomadas durante a conversa. O documento separa decisões 
 - **Decisão:** permitir sobreposição entre aulas de professores diferentes e impedir duas aulas simultâneas do mesmo professor.
 - **Consequências:** a exclusion constraint do banco é escopada por `instructorId`, com pré-validação equivalente na API. A agenda retorna `OCCURRENCE_OVERLAP` para conflito do mesmo professor e a mensagem já identifica essa regra; `SCHEDULE_CONFLICT` continua sendo o conflito entre reservas simultâneas do mesmo cliente.
 
+## Interface e tema
+
+| ID | Decisão | Status | Motivo principal |
+|---|---|---|---|
+| D-038 | Tema claro e escuro pela preferência do sistema (`prefers-color-scheme`), em cliente e admin, com alternância manual salva por aparelho (`localStorage`) | Aprovado | Revisa a #134 (escuro sempre). A proposta de design traz os dois temas; o escopo e a alternância foram confirmados pelo dono do produto. |
+
 ## Regra de mudança
 
 Decisões marcadas como “No desenho” não devem ser tratadas como definitivas até serem ratificadas. Decisões aprovadas podem ganhar detalhamento posterior sem alterar sua direção, salvo nova decisão explícita.
