@@ -7,7 +7,6 @@ import "./styles/components.css";
 import "./styles/admin.css";
 import "./styles/client.css";
 import "./styles/gamification.css";
-import "./styles/goals.css";
 import "./styles/plan.css";
 import "./styles/workout.css";
 import "./styles/profile.css";

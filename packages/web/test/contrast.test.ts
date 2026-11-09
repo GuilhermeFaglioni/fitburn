@@ -160,18 +160,17 @@ const HEX_EXCEPTIONS: Record<ThemeName, Record<string, { floor: number; why: str
 /**
  * Seletores EXATOS cuja cor de texto é branco sem fundo na própria regra:
  * - "orange": o fundo laranja vem de outra regra (o visto do checkbox, gráfico; o botão primário, que herda o
- *   gradiente CTA; o botão do formulário de metas): vale o piso de 3:1 do par do design;
- * - "no-text": barras de progresso, sem texto (o `color` só existe para o guarda de fundos laranja).
+ *   gradiente CTA): vale o piso de 3:1 do par do design;
+ * - "no-text": seletor sem texto (ex.: uma barra de progresso), ignorado pela checagem em vez de ganhar um `color`
+ *   inócuo no CSS. Hoje nenhuma barra entra aqui (a do gamification e a de Metas saíram).
  */
 const WHITE_NO_BACKGROUND = new Map<string, "orange" | "no-text">([
   [".fb-checkbox:checked::after", "orange"],
   [".fb-checkbox.fb-checkbox--fixed:disabled:checked::after", "orange"],
-  [".fb-goals__form .fb-btn-primary", "orange"],
   [".fb-btn-primary", "orange"],
   // Selo "ATIVO" do cartão do plano da Home (D-038): negrito branco translúcido-sobre-laranja; o gradiente CTA está no
   // cartão (.fb-home__plan), não no selo. Vale o mesmo piso de 3:1 do par do design.
   [".fb-home__badge", "orange"],
-  [".fb-goals__bar-fill", "no-text"],
 ]);
 
 /**

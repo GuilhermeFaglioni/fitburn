@@ -22,8 +22,8 @@ const agendaTsx = [
 ].join("\n");
 const gamificationCss = read("styles/gamification.css");
 const workoutCss = read("styles/workout.css");
-// Só a parte do cliente: o editor do professor (acima do marcador) ainda usa os --color-* legados (PR 17).
-const clientWorkoutCss = workoutCss.slice(workoutCss.indexOf("/* ---------- Cliente: ficha ativa"));
+// workout.css é só a ficha do cliente desde o lote E do admin (PR 17): o editor do professor saiu dele.
+const clientWorkoutCss = workoutCss;
 const workoutTsx = [
   read("pages/ClientWorkoutSheetsPage.tsx"),
   read("pages/ClientWorkoutSheetPage.tsx"),

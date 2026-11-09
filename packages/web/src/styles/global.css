@@ -129,8 +129,7 @@ textarea {
 .fb-gami__rank-pos,
 .fb-gami__rank-info,
 .fb-gami__entry-points,
-.fb-gami__goal-meta,
-.fb-goals__card-meta {
+.fb-gami__goal-meta {
   font-variant-numeric: tabular-nums;
 }
 

@@ -1,13 +1,21 @@
-import { useState } from "react";
+import { useId, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Module,
   PermissionAction,
   PermissionScope,
-  WorkoutSheetStatus,
   type WorkoutSheet,
 } from "@fitburn/contracts";
+import { QueryBlockState } from "../components/QueryBlockState";
+import { Alert } from "../components/ui/Alert";
+import { Badge } from "../components/ui/Badge";
+import { Button } from "../components/ui/Button";
+import { Card } from "../components/ui/Card";
+import { Dialog } from "../components/ui/Dialog";
+import { PageHeader } from "../components/ui/PageHeader";
+import { EmptyState } from "../components/ui/States";
+import { Table, type TableColumn } from "../components/ui/Table";
 import { formatInstantDate } from "../lib/agenda/format";
 import { errorMessage } from "../lib/auth/api";
 import { useAuth } from "../lib/auth/AuthContext";
@@ -19,30 +27,33 @@ import {
 } from "../lib/workout-sheets/api";
 import { StudentList } from "./goals/StudentList";
 import { SheetEditor, type SheetFormValues } from "./workout-sheets/SheetEditor";
-import { statusBadge } from "./workout-sheets/status";
-import { EmptyState, ErrorState, Feedback, LoadingState } from "../components/states";
+import { STATUS_TONE, statusBadge } from "./workout-sheets/status";
 
-const BADGE_CLASS = {
-  [WorkoutSheetStatus.ACTIVE]: "fb-badge--active",
-  [WorkoutSheetStatus.COMPLETED]: "fb-badge--neutral",
-  [WorkoutSheetStatus.ARCHIVED]: "fb-badge--inactive",
-} as const;
+function exerciseCount(count: number): string {
+  return `${count} ${count === 1 ? "exercício" : "exercícios"}`;
+}
 
 /**
- * Fichas de treino do professor: à esquerda os
- * alunos do escopo, à direita o editor da ficha e as fichas do aluno
- * escolhido. O status da ficha muda no próprio editor.
+ * Fichas de treino do professor, em lista + detalhe (D-038, #156): à esquerda os alunos do escopo (coluna de
+ * `--list-w`), à direita o editor da ficha e as fichas do aluno escolhido. O status da ficha muda no próprio editor.
+ * O escopo é o que a API devolve: o professor só vê e edita as fichas dos alunos dele.
  */
 export function WorkoutSheetsPage() {
   const { user, can } = useAuth();
   const queryClient = useQueryClient();
+  const editorTitleId = useId();
+  const listTitleId = useId();
   // A ficha do aluno aberta a partir de uma aula chega com ?cliente=<id>.
   const [searchParams] = useSearchParams();
   const [clientId, setClientId] = useState(() => searchParams.get("cliente") ?? "");
   const [editing, setEditing] = useState<WorkoutSheet | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
-  /** Sobe a cada ficha salva: o editor recomeça em branco. */
+  /** Sobe a cada ficha salva ou descartada: o editor recomeça em branco. */
   const [formVersion, setFormVersion] = useState(0);
+  /** O editor tem alterações não salvas? Ele avisa por `onDirtyChange`; trocar de contexto só segue direto se não. */
+  const dirtyRef = useRef(false);
+  /** A troca que espera a confirmação de descarte (trocar de aluno, abrir outra ficha, nova ficha, cancelar). */
+  const [discarding, setDiscarding] = useState<(() => void) | null>(null);
 
   const clientsQuery = useQuery({
     queryKey: ["workout-sheet-clients"],
@@ -72,6 +83,7 @@ export function WorkoutSheetsPage() {
           }),
     onMutate: () => setFailure(null),
     onSuccess: () => {
+      dirtyRef.current = false;
       setEditing(null);
       setFormVersion((current) => current + 1);
       return queryClient.invalidateQueries({ queryKey: ["workout-sheets"] });
@@ -89,127 +101,176 @@ export function WorkoutSheetsPage() {
     user?.permissions.find((permission) => permission.module === Module.FICHAS_DE_TREINO)?.scope ===
     PermissionScope.ALL;
 
+  /** Executa a troca; se o editor tem alterações não salvas, antes pede a confirmação em diálogo. */
+  function guarded(change: () => void) {
+    if (dirtyRef.current) setDiscarding(() => change);
+    else change();
+  }
+
+  function confirmDiscard() {
+    const change = discarding;
+    setDiscarding(null);
+    change?.();
+  }
+
   function selectClient(id: string) {
-    setClientId(id);
-    setEditing(null);
-    setFailure(null);
+    guarded(() => {
+      setClientId(id);
+      setEditing(null);
+      setFailure(null);
+      setFormVersion((current) => current + 1);
+    });
   }
 
   function edit(sheet: WorkoutSheet | null) {
-    setEditing(sheet);
-    setFailure(null);
+    guarded(() => {
+      setEditing(sheet);
+      setFailure(null);
+      setFormVersion((current) => current + 1);
+    });
   }
 
+  const columns: TableColumn<WorkoutSheet>[] = [
+    { key: "title", header: "Título", className: "fb-ui-table__name", cell: (sheet) => sheet.title },
+    {
+      key: "exercises",
+      header: "Exercícios",
+      className: "fb-ui-table__muted",
+      cell: (sheet) => exerciseCount(sheet.exercises.length),
+    },
+    {
+      key: "created",
+      header: "Criada em",
+      className: "fb-ui-table__muted",
+      cell: (sheet) => formatInstantDate(sheet.createdAt),
+    },
+    {
+      key: "status",
+      header: "Status",
+      cell: (sheet) => <Badge tone={STATUS_TONE[sheet.status]}>{statusBadge(sheet.status)}</Badge>,
+    },
+    {
+      key: "actions",
+      header: "Ações",
+      actions: true,
+      cell: (sheet) => (
+        <Button size="sm" aria-label={`Editar ficha ${sheet.title}`} onClick={() => edit(sheet)}>
+          Editar
+        </Button>
+      ),
+    },
+  ];
+
+  // O vazio depende do total de fichas do aluno, não das exibidas: a ficha em edição sai da lista.
+  const otherSheets = sheets.filter((sheet) => sheet.id !== editing?.id);
+
   return (
-    <div className="fb-sheets">
-      <StudentList
-        students={clients}
-        selectedId={clientId}
-        allStudents={allStudents}
-        onSelect={selectClient}
-      />
+    <div className="fb-ui-page">
+      <PageHeader kicker="Fichas" title="Fichas de treino" />
 
-      <div className="fb-sheets__main">
-        {clientsQuery.isLoading && <LoadingState />}
-        {clientsQuery.isError && (
-          <ErrorState
-            message="Não foi possível carregar os alunos."
-            onRetry={() => void clientsQuery.refetch()}
+      <div className="fb-ui-master">
+        <StudentList
+          students={clients}
+          selectedId={clientId}
+          allStudents={allStudents}
+          onSelect={selectClient}
+        />
+
+        <div className="fb-ui-master__detail">
+          <QueryBlockState
+            query={clientsQuery}
+            hasData={clientsQuery.data !== undefined}
+            loading="Carregando alunos…"
+            error="Não foi possível carregar os alunos."
           />
-        )}
-        {clientsQuery.isSuccess && clients.length === 0 && (
-          <EmptyState
-            message={
-              allStudents ? "Nenhum cliente ativo." : "Você ainda não tem alunos vinculados."
-            }
-          />
-        )}
-        {clientsQuery.isSuccess && clients.length > 0 && !selected && (
-          <>
-            <h1 className="fb-sheets__title">Fichas de treino</h1>
-            <p className="fb-note">Selecione um aluno para ver e montar fichas.</p>
-          </>
-        )}
-
-        {selected && (
-          <>
-            <div className="fb-sheets__head">
-              <div className="fb-sheets__heading">
-                <span className="fb-page-eyebrow">Fichas de treino / {selected.fullName}</span>
-                <h1 className="fb-sheets__title">
-                  {editing ? `Editar ficha — ${editing.title}` : "Nova ficha"}
-                </h1>
-              </div>
-              {editing && (
-                <button type="button" className="fb-btn-secondary" onClick={() => edit(null)}>
-                  + Nova ficha (nova fase)
-                </button>
-              )}
-            </div>
-
-            {failure && <Feedback tone="error">{failure}</Feedback>}
-
-            <SheetEditor
-              key={`${editing?.id ?? "new"}-${formVersion}`}
-              editing={editing}
-              allowed={editing ? canEdit : canCreate}
-              pending={mutation.isPending}
-              onCancel={() => edit(null)}
-              onSubmit={async (values) => {
-                await mutation.mutateAsync(values);
-              }}
+          {clientsQuery.isSuccess && clients.length === 0 && (
+            <EmptyState
+              title={allStudents ? "Nenhum cliente ativo." : "Você ainda não tem alunos vinculados."}
             />
+          )}
+          {clientsQuery.isSuccess && clients.length > 0 && !selected && (
+            <EmptyState title="Selecione um aluno para ver e montar fichas." />
+          )}
 
-            <section className="fb-sheets__previous" aria-labelledby="fb-sheets-list">
-              <h2 id="fb-sheets-list" className="fb-sheets__section-title">
-                {editing ? "Fichas anteriores de" : "Fichas de"} {selected.fullName}
-              </h2>
-              {sheetsQuery.isLoading && <LoadingState />}
-              {sheetsQuery.isError && (
-                <ErrorState
-                  message="Não foi possível carregar as fichas."
-                  onRetry={() => void sheetsQuery.refetch()}
-                />
-              )}
-              {/* O vazio depende do total de fichas do aluno, não das exibidas: a ficha em edição sai da lista. */}
-              {sheetsQuery.isSuccess && sheets.length === 0 && (
-                <EmptyState message="Este aluno ainda não tem fichas." />
-              )}
-              <ul className="fb-sheets__list" aria-label={`Fichas de ${selected.fullName}`}>
-                {sheets
-                  .filter((sheet) => sheet.id !== editing?.id)
-                  .map((sheet) => (
-                    <li
-                      key={sheet.id}
-                      className={`fb-sheets__item${
-                        sheet.status === WorkoutSheetStatus.ARCHIVED
-                          ? " fb-sheets__item--closed"
-                          : ""
-                      }`}
+          {selected && (
+            <>
+              <Card as="section" aria-labelledby={editorTitleId} className="fb-ui-sheet">
+                <div className="fb-ui-sheet__head">
+                  <h2 id={editorTitleId} className="fb-ui-sheet__title">
+                    {editing ? `Editar ficha — ${editing.title}` : "Nova ficha"}
+                  </h2>
+                  <Badge tone="brand">Fichas de {selected.fullName}</Badge>
+                  {editing && (
+                    <Button
+                      size="sm"
+                      variant="soft"
+                      className="fb-ui-sheet__new"
+                      onClick={() => edit(null)}
                     >
-                      <div className="fb-sheets__item-text">
-                        <span className="fb-sheets__item-title">{sheet.title}</span>
-                        <span className="fb-sheets__item-meta">
-                          {sheet.exercises.length}{" "}
-                          {sheet.exercises.length === 1 ? "exercício" : "exercícios"} · criada em{" "}
-                          {formatInstantDate(sheet.createdAt)}
-                        </span>
-                      </div>
-                      <div className="fb-sheets__item-actions">
-                        <span className={`fb-badge fb-badge--spaced ${BADGE_CLASS[sheet.status]}`}>
-                          {statusBadge(sheet.status)}
-                        </span>
-                        <button type="button" className="fb-row-btn" onClick={() => edit(sheet)}>
-                          Editar
-                        </button>
-                      </div>
-                    </li>
-                  ))}
-              </ul>
-            </section>
-          </>
-        )}
+                      + Nova ficha (nova fase)
+                    </Button>
+                  )}
+                </div>
+
+                {failure && <Alert>{failure}</Alert>}
+
+                <SheetEditor
+                  key={`${editing?.id ?? "new"}-${formVersion}`}
+                  editing={editing}
+                  allowed={editing ? canEdit : canCreate}
+                  pending={mutation.isPending}
+                  onCancel={() => edit(null)}
+                  onDirtyChange={(dirty) => {
+                    dirtyRef.current = dirty;
+                  }}
+                  onSubmit={async (values) => {
+                    await mutation.mutateAsync(values);
+                  }}
+                />
+              </Card>
+
+              <Card as="section" aria-labelledby={listTitleId} className="fb-ui-sheet">
+                <h2 id={listTitleId} className="fb-ui-sheet__title">
+                  {editing ? "Fichas anteriores de" : "Fichas de"} {selected.fullName}
+                </h2>
+                <QueryBlockState
+                  query={sheetsQuery}
+                  hasData={sheetsQuery.data !== undefined}
+                  loading="Carregando fichas…"
+                  error="Não foi possível carregar as fichas."
+                />
+                {sheetsQuery.isSuccess && sheets.length === 0 && (
+                  <EmptyState title="Este aluno ainda não tem fichas." />
+                )}
+                {otherSheets.length > 0 && (
+                  <Table
+                    label={`Fichas de ${selected.fullName}`}
+                    columns={columns}
+                    rows={otherSheets}
+                    rowKey={(sheet) => sheet.id}
+                  />
+                )}
+              </Card>
+            </>
+          )}
+        </div>
       </div>
+
+      {discarding && (
+        <Dialog
+          title="Descartar alterações não salvas?"
+          description="A ficha tem alterações que ainda não foram salvas. Se continuar, elas se perdem."
+          onClose={() => setDiscarding(null)}
+          actions={
+            <>
+              <Button onClick={() => setDiscarding(null)}>Continuar editando</Button>
+              <Button variant="danger" onClick={confirmDiscard}>
+                Descartar alterações
+              </Button>
+            </>
+          }
+        />
+      )}
     </div>
   );
 }

@@ -2524,3 +2524,414 @@
     grid-row: 2;
   }
 }
+
+/* ==========================================================================
+   Telas do admin (issue 156, PR 17): Fichas de treino e Metas, e o menu de ações.
+   Lista + detalhe (coluna de alunos de --list-w), editor de ficha com um Card por exercício e cartões de meta. Só tokens.
+   ========================================================================== */
+
+/* Lista + detalhe: a coluna de alunos tem a largura --list-w e o detalhe ocupa o resto. Abaixo de 1024px (a barra
+   lateral de --sidebar-w já come parte da tela) a lista vira uma faixa acima do detalhe. */
+.fb-ui-master {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--s-4);
+  align-items: start;
+  min-width: 0;
+}
+
+@media (min-width: 1024px) {
+  .fb-ui-master {
+    grid-template-columns: var(--list-w) minmax(0, 1fr);
+  }
+}
+
+.fb-ui-master__detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  min-width: 0;
+}
+
+/* Coluna de alunos: título em caixa alta, busca, lista e a nota do escopo. */
+.fb-ui-students {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  padding: var(--s-5);
+}
+
+.fb-ui-students__title {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--text-kicker);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-kicker);
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.fb-ui-students .fb-ui-input {
+  min-height: 44px;
+  font-size: var(--text-action);
+  box-shadow: none;
+}
+
+.fb-ui-students__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  max-height: 60vh;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.fb-ui-students__item {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 44px;
+  padding: var(--s-2) var(--s-3);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  color: var(--ink-2);
+  font-family: var(--font-sans);
+  font-size: var(--text-small);
+  font-weight: var(--weight-medium);
+  line-height: var(--leading-small);
+  text-align: left;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+
+.fb-ui-students__item[aria-current="true"] {
+  background: var(--brand-tint);
+  border-color: var(--brand-line);
+  color: var(--brand-strong);
+  font-weight: var(--weight-bold);
+}
+
+.fb-ui-students__item:focus-visible {
+  outline: none;
+  box-shadow: var(--sh-focus);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .fb-ui-students__item:hover:not([aria-current="true"]) {
+    background: var(--surface-2);
+  }
+}
+
+.fb-ui-students__note {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--text-caption);
+  line-height: var(--leading-small);
+}
+
+/* Cartão da ficha: o editor e a lista de fichas do aluno. */
+.fb-ui-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+
+.fb-ui-sheet__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-3);
+}
+
+.fb-ui-sheet__title,
+.fb-ui-goals__title {
+  margin: 0;
+  color: var(--ink);
+  font-size: var(--text-h3);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-title);
+  line-height: var(--leading-title);
+  overflow-wrap: anywhere;
+}
+
+.fb-ui-sheet__new {
+  margin-left: auto;
+}
+
+/* Editor: campos do topo em grade, exercícios e rodapé de ações. */
+.fb-ui-sheet-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-5);
+  min-width: 0;
+}
+
+.fb-ui-sheet-form > .fb-ui-form-actions {
+  margin-top: 0;
+}
+
+.fb-ui-textarea {
+  min-height: var(--s-24);
+  resize: vertical;
+  line-height: var(--leading-body);
+}
+
+.fb-ui-sheet-form__exercises {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  min-width: 0;
+}
+
+.fb-ui-sheet-form__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+}
+
+.fb-ui-sheet-form__title {
+  margin: 0;
+  color: var(--ink);
+  font-size: var(--text-action);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-title);
+}
+
+/* Um exercício = um Card. Os campos quebram sozinhos conforme a largura (sem rolagem horizontal da página). */
+.fb-ui-ex-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fb-ui-ex {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  padding: var(--s-4);
+  background: var(--surface-2);
+}
+
+.fb-ui-ex__fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 120px), 1fr));
+  gap: var(--s-3);
+  min-width: 0;
+}
+
+.fb-ui-ex__fields > .fb-ui-ex__wide {
+  grid-column: 1 / -1;
+}
+
+.fb-ui-ex .fb-ui-input {
+  min-height: 44px;
+  padding: var(--s-2) var(--s-3);
+  font-size: var(--text-action);
+  box-shadow: none;
+}
+
+.fb-ui-ex__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--s-2);
+}
+
+.fb-ui-ex__move {
+  --h: 44px;
+  min-width: 44px;
+  padding: 0;
+}
+
+.fb-ui-ex__actions .fb-ui-btn--ghost-danger {
+  --h: 44px;
+}
+
+/* Metas: o aviso, o cabeçalho da lista com "+ Nova meta" e um Card por meta. */
+.fb-ui-goals {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  min-width: 0;
+}
+
+.fb-ui-goals__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+}
+
+.fb-ui-goals__title:focus-visible {
+  outline: none;
+  border-radius: var(--r-xs);
+  box-shadow: var(--sh-focus);
+}
+
+.fb-ui-goals__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fb-ui-goal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding: var(--s-4);
+}
+
+/* Concluída ou cancelada: fundo neutro, sem baixar a opacidade (o texto mantém o contraste). */
+.fb-ui-goal--closed {
+  background: var(--surface-2);
+}
+
+.fb-ui-goal__head {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+}
+
+.fb-ui-goal__title {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  color: var(--ink);
+  font-size: var(--text-action);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-title);
+  overflow-wrap: anywhere;
+}
+
+.fb-ui-goal__head > .fb-ui-badge {
+  flex: 0 0 auto;
+}
+
+.fb-ui-goal__meta,
+.fb-ui-goal__text {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--text-small);
+  line-height: var(--leading-small);
+  overflow-wrap: anywhere;
+}
+
+/* Menu de ações (ActionMenu): botão "⋯" de 44px e a lista flutuante. */
+.fb-ui-menu {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.fb-ui-menu__trigger {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  background: var(--surface);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-sm);
+  color: var(--ink-2);
+  cursor: pointer;
+}
+
+.fb-ui-menu__trigger[aria-expanded="true"] {
+  background: var(--surface-2);
+}
+
+.fb-ui-menu__trigger:focus-visible {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: var(--sh-focus);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .fb-ui-menu__trigger:hover {
+    background: var(--surface-2);
+  }
+}
+
+.fb-ui-menu__popover {
+  position: absolute;
+  top: calc(100% + var(--s-1));
+  right: 0;
+  z-index: 2;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  min-width: 200px;
+  max-width: calc(100vw - 2 * var(--s-4));
+  padding: var(--s-2);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  box-shadow: var(--sh-3);
+}
+
+.fb-ui-menu__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+}
+
+.fb-ui-menu__item {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 var(--s-3);
+  background: transparent;
+  border: 0;
+  border-radius: var(--r-sm);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: var(--text-small);
+  font-weight: var(--weight-medium);
+  text-align: left;
+  cursor: pointer;
+}
+
+.fb-ui-menu__item--danger {
+  color: var(--danger);
+}
+
+.fb-ui-menu__item:focus-visible {
+  outline: none;
+  background: var(--surface-2);
+  box-shadow: var(--sh-focus);
+}
+
+.fb-ui-menu__item[aria-disabled="true"] {
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .fb-ui-menu__item:hover:not([aria-disabled="true"]) {
+    background: var(--surface-2);
+  }
+}
+
+.fb-ui-menu__reason {
+  margin: 0;
+  padding: var(--s-1) var(--s-3);
+  color: var(--muted);
+  font-size: var(--text-caption);
+  line-height: var(--leading-small);
+}
