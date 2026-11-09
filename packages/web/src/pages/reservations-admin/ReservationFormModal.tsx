@@ -1,7 +1,10 @@
-import { useId, useState } from "react";
+import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { addDays, ErrorCode, gymToday, type AdminReservationDetail } from "@fitburn/contracts";
-import { Modal } from "../../components/Modal";
+import { Alert } from "../../components/ui/Alert";
+import { Button } from "../../components/ui/Button";
+import { Dialog } from "../../components/ui/Dialog";
+import { Select } from "../../components/ui/Select";
 import { listClientAgenda } from "../../lib/agenda/client-api";
 import { formatClassDay, formatClassMoment, formatInstantHour } from "../../lib/agenda/format";
 import { ApiError } from "../../lib/auth/api";
@@ -35,7 +38,7 @@ export type ReservationFormMode =
 
 /**
  * "Nova reserva (administrativa)" e a remarcação em
- * nome do cliente. O cliente fica em destaque, a prévia de elegibilidade
+ * nome do cliente, em `Dialog` (D-038, #156). O cliente fica em destaque, a prévia de elegibilidade
  * ("pode reservar? por quê?") aparece antes de confirmar, e cada intenção
  * (cliente + aula) leva a sua chave de idempotência, reenviada só se a tentativa
  * falhou sem resposta do servidor; depois de uma recusa a chave é nova. Quem decide é o servidor, com as mesmas regras do cliente.
@@ -49,7 +52,6 @@ export function ReservationFormModal({
   onClose: () => void;
   onDone: (message: string) => void;
 }) {
-  const formId = useId();
   const rescheduling = mode.kind === "reschedule";
   const [pickedClientId, setPickedClientId] = useState("");
   const [occurrenceId, setOccurrenceId] = useState("");
@@ -146,7 +148,7 @@ export function ReservationFormModal({
     }
     if (!clientId || !occurrenceId) return null;
     if (previewQuery.isPending) {
-      return <p className="fb-modal__text">Verificando disponibilidade…</p>;
+      return <p className="fb-ui-note">Verificando disponibilidade…</p>;
     }
     if (preview?.reason) {
       const { title, text } = describeRefusal(preview.reason, occurrenceContext);
@@ -154,14 +156,14 @@ export function ReservationFormModal({
     }
     if (preview?.canBook) {
       return (
-        <div role="status" className="fb-success-box">
+        <Alert tone="ok">
           {rescheduling
             ? "Vaga disponível. A reserva atual será cancelada e o cliente confirmado na nova aula."
             : "Vaga disponível. A reserva será criada em nome do cliente selecionado."}
-        </div>
+        </Alert>
       );
     }
-    return <p className="fb-modal__text">Não foi possível verificar a disponibilidade agora.</p>;
+    return <p className="fb-ui-note">Não foi possível verificar a disponibilidade agora.</p>;
   }
 
   const canConfirm =
@@ -171,7 +173,7 @@ export function ReservationFormModal({
     !submitMutation.isPending;
 
   return (
-    <Modal
+    <Dialog
       title={rescheduling ? "Remarcar reserva" : "Nova reserva (administrativa)"}
       onClose={onClose}
     >
@@ -180,99 +182,83 @@ export function ReservationFormModal({
           event.preventDefault();
           if (canConfirm) submitMutation.mutate();
         }}
-        style={{ display: "flex", flexDirection: "column", gap: 16 }}
+        aria-label={rescheduling ? "Remarcação de reserva" : "Nova reserva"}
+        className="fb-ui-dialog__form"
       >
         {!rescheduling && (
-          <div className="fb-modal__field">
-            <label htmlFor={`${formId}-client`}>Cliente</label>
-            <select
-              id={`${formId}-client`}
-              className="fb-field"
-              value={pickedClientId}
-              onChange={(event) => pickIntent({ clientId: event.target.value })}
-            >
-              <option value="">Selecione o cliente</option>
-              {clients.map((candidate) => (
-                <option key={candidate.id} value={candidate.id}>
-                  {candidate.fullName}
-                </option>
-              ))}
-            </select>
-            {clientsQuery.isError && (
-              <span role="alert" className="fb-modal__caption">
-                Não foi possível carregar os clientes.
-              </span>
-            )}
-          </div>
+          <Select
+            label="Cliente"
+            value={pickedClientId}
+            onChange={(event) => pickIntent({ clientId: event.target.value })}
+            error={clientsQuery.isError ? "Não foi possível carregar os clientes." : undefined}
+          >
+            <option value="">Selecione o cliente</option>
+            {clients.map((candidate) => (
+              <option key={candidate.id} value={candidate.id}>
+                {candidate.fullName}
+              </option>
+            ))}
+          </Select>
         )}
 
         {client && (
-          <div className="fb-client-highlight">
-            <span className="fb-client-highlight__label">
+          <div className="fb-ui-highlight">
+            <span className="fb-ui-highlight__label">
               {rescheduling ? "Remarcando a reserva de" : "Reservando em nome de"}
             </span>
-            <strong className="fb-client-highlight__name">{client.fullName}</strong>
-            <span className="fb-client-highlight__email">{client.email}</span>
+            <strong className="fb-ui-highlight__name">{client.fullName}</strong>
+            <span className="fb-ui-highlight__sub">{client.email}</span>
           </div>
         )}
 
         {rescheduling && (
-          <p className="fb-modal__text">
+          <p className="fb-ui-note">
             Reserva atual: {mode.reservation.occurrence.name},{" "}
             {formatClassMoment(mode.reservation.occurrence.startsAt)}.
           </p>
         )}
 
-        <div className="fb-modal__field">
-          <label htmlFor={`${formId}-occurrence`}>{rescheduling ? "Nova aula" : "Aula"}</label>
-          <select
-            id={`${formId}-occurrence`}
-            className="fb-field"
-            value={occurrenceId}
-            onChange={(event) => pickIntent({ occurrenceId: event.target.value })}
-          >
-            <option value="">Selecione a aula</option>
-            {occurrences.map((candidate) => (
-              <option key={candidate.id} value={candidate.id}>
-                {candidate.name} — {formatClassDay(candidate.startsAt)},{" "}
-                {formatInstantHour(candidate.startsAt)} ({candidate.available}/{candidate.capacity}
-                {candidate.available <= 0 ? " — lotada" : ""})
-              </option>
-            ))}
-          </select>
-          {agendaQuery.isError && (
-            <span role="alert" className="fb-modal__caption">
-              Não foi possível carregar as aulas.
-            </span>
-          )}
-        </div>
+        <Select
+          label={rescheduling ? "Nova aula" : "Aula"}
+          value={occurrenceId}
+          onChange={(event) => pickIntent({ occurrenceId: event.target.value })}
+          error={agendaQuery.isError ? "Não foi possível carregar as aulas." : undefined}
+        >
+          <option value="">Selecione a aula</option>
+          {occurrences.map((candidate) => (
+            <option key={candidate.id} value={candidate.id}>
+              {candidate.name} — {formatClassDay(candidate.startsAt)},{" "}
+              {formatInstantHour(candidate.startsAt)} ({candidate.available}/{candidate.capacity}
+              {candidate.available <= 0 ? " — lotada" : ""})
+            </option>
+          ))}
+        </Select>
 
         {renderOutcome()}
 
-        <div className="fb-modal__footer fb-modal__footer--end fb-modal__footer--tight">
-          <button type="button" className="fb-btn-secondary" onClick={onClose}>
-            Cancelar
-          </button>
+        <div className="fb-ui-dialog__actions">
+          <Button onClick={onClose}>Cancelar</Button>
           <RequiresNetwork>
-            <button
+            <Button
               type="submit"
-              className="fb-btn-primary fb-btn-primary--sm"
+              variant="primary"
+              busy={submitMutation.isPending}
               disabled={!canConfirm}
             >
               {rescheduling ? "Confirmar remarcação" : "Confirmar reserva"}
-            </button>
+            </Button>
           </RequiresNetwork>
         </div>
       </form>
-    </Modal>
+    </Dialog>
   );
 }
 
 function RefusalBox({ title, text }: { title: string | null; text: string }) {
   return (
-    <div role="alert" className="fb-error-box">
+    <Alert>
       {title && <strong>{title} </strong>}
       {text}
-    </div>
+    </Alert>
   );
 }

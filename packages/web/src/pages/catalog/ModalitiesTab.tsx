@@ -3,6 +3,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Module, PermissionAction, type ModalityDetail } from "@fitburn/contracts";
 import { BlockedAction } from "../../components/BlockedAction";
 import { DeleteRowButton } from "../../components/DeleteRowButton";
+import { QueryBlockState } from "../../components/QueryBlockState";
+import { Alert } from "../../components/ui/Alert";
+import { Badge } from "../../components/ui/Badge";
+import { Button } from "../../components/ui/Button";
+import { EmptyState } from "../../components/ui/States";
+import { Table, type TableColumn } from "../../components/ui/Table";
+import { Toolbar } from "../../components/ui/Toolbar";
 import { useAuth } from "../../lib/auth/AuthContext";
 import {
   activateModality,
@@ -11,11 +18,13 @@ import {
   listModalities,
 } from "../../lib/catalog/api";
 import { ModalityForm } from "./ModalityForm";
-import { EmptyState, ErrorState, Feedback, LoadingState } from "../../components/states";
 
 type FormState =
-  { mode: "closed" } | { mode: "create" } | { mode: "edit"; modality: ModalityDetail };
+  | { mode: "closed" }
+  | { mode: "create" }
+  | { mode: "edit"; modality: ModalityDetail };
 
+/** Modalidades (D-038, #156): tabela com as ações por linha; criar e editar abrem o `Dialog` do formulário. */
 export function ModalitiesTab() {
   const { can } = useAuth();
   const queryClient = useQueryClient();
@@ -37,21 +46,84 @@ export function ModalitiesTab() {
   const canEdit = can(Module.TEMPLATES_DE_AULA, PermissionAction.EDIT);
   const canDelete = can(Module.TEMPLATES_DE_AULA, PermissionAction.DELETE);
 
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 14, flexGrow: 1, minHeight: 0 }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end" }}>
-        <BlockedAction allowed={canCreate} reason="Você não tem permissão para criar modalidades.">
-          <button
-            type="button"
-            className="fb-btn-primary"
-            onClick={() =>
-              setForm(form.mode === "create" ? { mode: "closed" } : { mode: "create" })
+  const columns: TableColumn<ModalityDetail>[] = [
+    {
+      key: "name",
+      header: "Nome",
+      className: "fb-ui-table__name",
+      cell: (modality) => (
+        <span className="fb-ui-table__inline">
+          {modality.name}
+          {!modality.isActive && <Badge dot>INATIVO</Badge>}
+        </span>
+      ),
+    },
+    {
+      key: "description",
+      header: "Descrição",
+      className: "fb-ui-table__muted",
+      cell: (modality) => modality.description ?? "—",
+    },
+    {
+      key: "templates",
+      header: "Templates ativos",
+      className: "fb-ui-table__muted",
+      cell: (modality) => modality.activeTemplateCount,
+    },
+    {
+      key: "actions",
+      header: "Ações",
+      actions: true,
+      cell: (modality) => (
+        <div className="fb-ui-row-actions">
+          <BlockedAction allowed={canEdit} reason="Você não tem permissão para editar modalidades.">
+            <Button
+              size="sm"
+              aria-label={`Editar modalidade ${modality.name}`}
+              onClick={() => setForm({ mode: "edit", modality })}
+            >
+              Editar
+            </Button>
+          </BlockedAction>
+          <BlockedAction allowed={canEdit} reason="Você não tem permissão para editar modalidades.">
+            <Button
+              size="sm"
+              aria-label={`${modality.isActive ? "Desativar" : "Ativar"} modalidade ${modality.name}`}
+              onClick={() => toggleMutation.mutate(modality)}
+            >
+              {modality.isActive ? "Desativar" : "Ativar"}
+            </Button>
+          </BlockedAction>
+          <DeleteRowButton
+            subject={`modalidade ${modality.name}`}
+            inUseReason={
+              modality.templateCount > 0
+                ? "Esta modalidade tem templates vinculados — remova ou reatribua os templates primeiro."
+                : undefined
             }
-          >
-            + Nova modalidade
-          </button>
-        </BlockedAction>
-      </div>
+            allowed={canDelete}
+            deniedReason="Você não tem permissão para excluir modalidades."
+            onDelete={async () => {
+              await deleteModality(modality.id);
+              void invalidate();
+            }}
+          />
+        </div>
+      ),
+    },
+  ];
+
+  return (
+    <div className="fb-ui-page">
+      <Toolbar>
+        <div className="fb-ui-toolbar__end">
+          <BlockedAction allowed={canCreate} reason="Você não tem permissão para criar modalidades.">
+            <Button variant="primary" size="sm" onClick={() => setForm({ mode: "create" })}>
+              + Nova modalidade
+            </Button>
+          </BlockedAction>
+        </div>
+      </Toolbar>
 
       {form.mode !== "closed" && (
         <ModalityForm
@@ -65,107 +137,30 @@ export function ModalitiesTab() {
         />
       )}
 
-      {modalitiesQuery.isLoading && <LoadingState />}
-      {modalitiesQuery.isError && (
-        <ErrorState
-          message="Não foi possível carregar as modalidades."
-          onRetry={() => void modalitiesQuery.refetch()}
-        />
-      )}
+      <QueryBlockState
+        query={modalitiesQuery}
+        hasData={modalitiesQuery.data !== undefined}
+        loading="Carregando modalidades…"
+        error="Não foi possível carregar as modalidades."
+      />
       {toggleMutation.isError && (
-        <Feedback tone="error">
-          {toggleMutation.error.message || "Não foi possível alterar a modalidade."}
-        </Feedback>
+        <Alert>{toggleMutation.error.message || "Não foi possível alterar a modalidade."}</Alert>
       )}
       {modalitiesQuery.data && modalitiesQuery.data.length === 0 && (
-        <EmptyState message="Nenhuma modalidade cadastrada." />
+        <EmptyState title="Nenhuma modalidade cadastrada." />
       )}
-
       {modalitiesQuery.data && modalitiesQuery.data.length > 0 && (
-        <div className="fb-table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th className="fb-th">Nome</th>
-                <th className="fb-th">Descrição</th>
-                <th className="fb-th">Templates ativos</th>
-                <th className="fb-th" style={{ textAlign: "right" }}>
-                  Ações
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {modalitiesQuery.data.map((modality) => (
-                <tr key={modality.id}>
-                  <td
-                    className="fb-td"
-                    style={{ fontWeight: 500, color: modality.isActive ? undefined : "var(--color-text-muted-on-dark)" }}
-                  >
-                    {modality.name}
-                    {!modality.isActive && (
-                      <span className="fb-badge fb-badge--inactive" style={{ marginLeft: 8 }}>
-                        INATIVO
-                      </span>
-                    )}
-                  </td>
-                  <td className="fb-td" style={{ color: "var(--color-text-muted-on-dark)" }}>
-                    {modality.description ?? "—"}
-                  </td>
-                  <td className="fb-td" style={{ color: "var(--color-text-muted-on-dark)" }}>
-                    {modality.activeTemplateCount}
-                  </td>
-                  <td
-                    className="fb-td"
-                    style={{ textAlign: "right", position: "relative", whiteSpace: "nowrap" }}
-                  >
-                    <BlockedAction
-                      allowed={canEdit}
-                      reason="Você não tem permissão para editar modalidades."
-                    >
-                      <button
-                        type="button"
-                        className="fb-row-btn"
-                        onClick={() => setForm({ mode: "edit", modality })}
-                      >
-                        Editar
-                      </button>
-                    </BlockedAction>
-                    <BlockedAction
-                      allowed={canEdit}
-                      reason="Você não tem permissão para editar modalidades."
-                    >
-                      <button
-                        type="button"
-                        className="fb-row-btn"
-                        onClick={() => toggleMutation.mutate(modality)}
-                      >
-                        {modality.isActive ? "Desativar" : "Ativar"}
-                      </button>
-                    </BlockedAction>
-                    <DeleteRowButton
-                      inUseReason={
-                        modality.templateCount > 0
-                          ? "Esta modalidade tem templates vinculados — remova ou reatribua os templates primeiro."
-                          : undefined
-                      }
-                      allowed={canDelete}
-                      deniedReason="Você não tem permissão para excluir modalidades."
-                      onDelete={async () => {
-                        await deleteModality(modality.id);
-                        invalidate();
-                      }}
-                    />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <Table
+          label="Modalidades"
+          columns={columns}
+          rows={modalitiesQuery.data}
+          rowKey={(modality) => modality.id}
+        />
       )}
-      <span className="fb-note">
+      <p className="fb-ui-note">
         Modalidades com templates vinculados não podem ser excluídas — remova ou reatribua os
         templates primeiro.
-      </span>
+      </p>
     </div>
   );
 }

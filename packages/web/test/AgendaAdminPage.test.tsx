@@ -124,7 +124,8 @@ describe("AgendaAdminPage", () => {
 
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
     const chip = await screen.findByRole("button", { name: /18h00.*Treino Funcional/ });
-    expect(chip).toHaveTextContent("Prof. Rafael · 0/10");
+    expect(chip).toHaveTextContent("Prof. Rafael");
+    expect(within(chip).getByText("0/10", { exact: false })).toBeInTheDocument();
     expect(sentBody).toMatchObject({
       templateId: TEMPLATE.id,
       date: WEDNESDAY,
@@ -148,10 +149,10 @@ describe("AgendaAdminPage", () => {
     renderPage();
 
     expect(await screen.findByRole("button", { name: /18h00.*Treino Funcional/ })).toHaveTextContent(
-      "Prof. Rafael Andrade · 0/10",
+      "Prof. Rafael Andrade",
     );
     expect(screen.getByRole("button", { name: /19h00.*Treino Funcional/ })).toHaveTextContent(
-      "Prof. Rafael Souza · 0/10",
+      "Prof. Rafael Souza",
     );
   });
 

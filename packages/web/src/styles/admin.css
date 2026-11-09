@@ -156,20 +156,6 @@
   gap: 12px;
 }
 
-.fb-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-/* Filtros à esquerda e a contagem de resultados empurrada para a direita. */
-.fb-toolbar--filters {
-  justify-content: flex-start;
-  gap: 10px;
-}
-
 /* No design, "+ Novo cliente" é um <a> (DM Sans); os demais primários são <button> sem família (Arial). */
 .fb-btn-primary--sans {
   font-family: var(--font-sans);
@@ -178,18 +164,6 @@
 .fb-btn-primary:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-}
-
-.fb-visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  padding: 0;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-  border: 0;
 }
 
 .fb-btn-dashed {
@@ -286,39 +260,6 @@
   cursor: not-allowed;
 }
 
-.fb-row-btn--danger {
-  color: var(--color-danger);
-}
-
-.fb-row-btn--danger[aria-disabled="true"] {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .fb-row-btn--danger[aria-disabled="true"]:hover {
-    background: none;
-  }
-}
-
-.fb-blocked-popover {
-  position: absolute;
-  right: 0;
-  top: 34px;
-  z-index: 2;
-  width: 260px;
-  box-sizing: border-box;
-  background: #2a1410;
-  border: 1px solid var(--color-flame-red);
-  border-radius: var(--radius-sm);
-  padding: 12px 14px;
-  text-align: left;
-  box-shadow: var(--sh-2);
-  font-size: 12px;
-  line-height: 18px;
-  color: #ffffff;
-}
-
 .fb-note {
   font-size: 12px;
   color: var(--color-text-muted-on-dark);
@@ -412,137 +353,6 @@
   color: var(--color-text-muted-on-dark);
 }
 
-.fb-form {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  max-width: 420px;
-  box-sizing: border-box;
-  padding: 16px;
-  border: 1px solid var(--color-line);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface-2);
-}
-
-.fb-form label {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--color-ink-2-on-dark);
-}
-
-.fb-form input,
-.fb-form select {
-  width: 100%;
-}
-
-/* Agenda administrativa — */
-.fb-week-grid {
-  flex-grow: 1;
-  min-height: 0;
-  display: flex;
-  gap: 10px;
-  overflow: auto;
-}
-
-.fb-day-col {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.fb-day-head {
-  text-align: center;
-  padding: 6px 0;
-  border-bottom: 2px solid var(--color-line);
-}
-
-/* O rótulo é um <span> dentro de um bloco de 16px, como na tela de referência (a cabeça fica com 35px). */
-.fb-day-head > span {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--color-text-muted-on-dark);
-}
-
-.fb-day-head--today {
-  border-bottom-color: var(--color-brand-strong);
-}
-
-.fb-day-head--today > span {
-  color: var(--color-brand-strong);
-}
-
-.fb-chip-cls {
-  box-sizing: border-box;
-  width: 100%;
-  padding: 8px 9px;
-  border-radius: var(--radius-sm);
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  cursor: pointer;
-  border: none;
-  text-align: left;
-  font-family: var(--font-sans);
-  background: rgba(237, 110, 52, 0.12);
-  color: var(--color-brand-strong);
-}
-
-.fb-chip-cls--full {
-  background: rgba(194, 58, 31, 0.12);
-  color: var(--color-danger);
-}
-
-.fb-chip-cls--cancelled {
-  background: var(--color-surface-2);
-  color: var(--color-text-muted-on-dark);
-  text-decoration: line-through;
-}
-
-.fb-chip-cls__hour {
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.fb-chip-cls__title {
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.fb-chip-cls__sub {
-  font-size: 10px;
-  opacity: 0.75;
-}
-
-.fb-day-empty {
-  flex-grow: 1;
-  min-height: 48px;
-  border: none;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  cursor: pointer;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .fb-day-empty:hover {
-    background: var(--color-surface-2);
-  }
-}
-
-.fb-icon-btn {
-  width: 32px;
-  height: 32px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--color-surface-raised);
-  border: 1px solid var(--color-line-2);
-  border-radius: var(--radius-sm);
-  color: var(--color-ink-2-on-dark);
-  cursor: pointer;
-}
-
 .fb-modal-backdrop {
   animation: fb-fade 180ms var(--ease-out) both;
   position: fixed;
@@ -592,8 +402,7 @@
   gap: 6px;
 }
 
-.fb-modal__field label,
-.fb-modal__caption {
+.fb-modal__field label {
   font-size: 12px;
   font-weight: 500;
   color: var(--color-ink-2-on-dark);
@@ -601,26 +410,6 @@
 
 .fb-modal__field .fb-field {
   width: 100%;
-}
-
-.fb-export-hint {
-  margin: 0;
-  max-width: 220px;
-  font-size: 11px;
-  line-height: 16px;
-  text-align: right;
-  color: var(--color-text-muted-on-dark);
-}
-
-.fb-modal__hint {
-  font-size: 11px;
-  color: var(--color-text-muted-on-dark);
-}
-
-.fb-modal__form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
 }
 
 .fb-modal__grid {
@@ -642,10 +431,6 @@
   justify-content: flex-end;
 }
 
-.fb-modal__footer--tight {
-  padding-top: 8px;
-}
-
 .fb-btn-primary--lg {
   padding: 11px 22px;
   font-size: 15px;
@@ -661,121 +446,6 @@
   font-size: 13px;
 }
 
-.fb-error-box {
-  margin: 0;
-  box-sizing: border-box;
-  padding: 12px 14px;
-  background: rgba(194, 58, 31, 0.08);
-  border: 1px solid var(--color-flame-red);
-  border-radius: var(--radius-sm);
-  font-size: 12px;
-  line-height: 18px;
-  color: var(--color-danger);
-}
-
-.fb-error-box ul {
-  margin: 6px 0 0;
-  padding-left: 18px;
-}
-
-.fb-weekday-toggles {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.fb-weekday-toggle {
-  min-width: 44px;
-  padding: 7px 0;
-  background: var(--color-surface-raised);
-  border: 1px solid var(--color-line-2);
-  border-radius: var(--radius-sm);
-  font-family: var(--font-sans);
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--color-text-muted-on-dark);
-  cursor: pointer;
-}
-
-.fb-weekday-toggle[aria-pressed="true"] {
-  background: var(--color-primary-orange);
-  border-color: var(--color-brand-strong);
-  color: #ffffff;
-}
-
-.fb-recurrence-summary {
-  margin: 0;
-  padding: 10px 12px;
-  background: var(--color-surface-2);
-  border: 1px solid var(--color-line);
-  border-radius: var(--radius-sm);
-  font-size: 12px;
-  line-height: 18px;
-  color: var(--color-ink-2-on-dark);
-}
-
-.fb-modal__text {
-  margin: 0;
-  font-size: 13px;
-  line-height: 20px;
-  color: var(--color-ink-2-on-dark);
-}
-
-.fb-filter {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  color: var(--color-ink-2-on-dark);
-}
-
-.fb-badge--danger {
-  color: var(--color-danger);
-  background: rgba(194, 58, 31, 0.1);
-}
-
-.fb-success-box {
-  margin: 0;
-  box-sizing: border-box;
-  padding: 12px 14px;
-  background: var(--color-success-bg);
-  border: 1px solid var(--color-success-border);
-  border-radius: var(--radius-sm);
-  font-size: 12px;
-  line-height: 18px;
-  color: var(--color-success);
-}
-
-/* O cliente da reserva, em destaque para não reservar para a pessoa errada. */
-.fb-client-highlight {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  box-sizing: border-box;
-  padding: 12px 14px;
-  background: rgba(237, 110, 52, 0.08);
-  border: 1px solid var(--color-primary-orange);
-  border-radius: var(--radius-sm);
-}
-
-.fb-client-highlight__label {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--color-brand-strong);
-}
-
-.fb-client-highlight__name {
-  font-size: 16px;
-  color: var(--color-ink-on-dark);
-}
-
-.fb-client-highlight__email {
-  font-size: 12px;
-  color: var(--color-text-muted-on-dark);
-}
-
 /* Mobile: as tabelas mantêm as colunas legíveis e rolam na horizontal dentro da moldura. */
 @media (max-width: 767px) {
   .fb-admin-content .fb-table-wrap table {
@@ -789,8 +459,7 @@
 
 .fb-btn-primary,
 .fb-btn-secondary,
-.fb-btn-danger,
-.fb-weekday-toggle {
+.fb-btn-danger {
   transition:
     transform var(--duration-press) var(--ease-out),
     background-color var(--duration-state) var(--ease-out),
@@ -801,8 +470,7 @@
 
 .fb-btn-primary:active:not(:disabled),
 .fb-btn-secondary:active:not(:disabled),
-.fb-btn-danger:active:not(:disabled),
-.fb-weekday-toggle:active {
+.fb-btn-danger:active:not(:disabled) {
   transform: scale(var(--press-scale));
 }
 
@@ -810,7 +478,7 @@
    ganha o cinza de fundo que as telas já usam. */
 @media (hover: hover) and (pointer: fine) {
   .fb-btn-primary:hover:not(:disabled),
-  .fb-btn-danger:hover:not(:disabled) {
+.fb-btn-danger:hover:not(:disabled) {
     filter: brightness(1.07);
   }
 
@@ -822,18 +490,10 @@
 /* Troca de estado (hover, aba ativa, perfil escolhido, marcado): a cor acompanha em vez de saltar. */
 .fb-tab-btn,
 .fb-row-btn,
-.fb-day-empty,
 .fb-checkbox,
-.fb-btn-dashed,
-.fb-chip-cls {
+.fb-btn-dashed {
   transition:
     background-color var(--duration-state) var(--ease-out),
     border-color var(--duration-state) var(--ease-out),
     color var(--duration-state) var(--ease-out);
-}
-
-/* O aviso de ação bloqueada nasce do botão que o abriu (canto de cima à direita). */
-.fb-blocked-popover {
-  transform-origin: top right;
-  animation: fb-enter 150ms var(--ease-out) both;
 }

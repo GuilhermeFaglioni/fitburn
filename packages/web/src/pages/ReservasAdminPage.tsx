@@ -15,7 +15,18 @@ import {
 } from "@fitburn/contracts";
 import { BlockedAction } from "../components/BlockedAction";
 import { ExportCsvButton } from "../components/ExportCsvButton";
-import { Modal } from "../components/Modal";
+import { QueryBlockState } from "../components/QueryBlockState";
+import { RequiresNetwork } from "../components/RequiresNetwork";
+import { Alert } from "../components/ui/Alert";
+import { Badge, type BadgeTone } from "../components/ui/Badge";
+import { Button } from "../components/ui/Button";
+import { Dialog } from "../components/ui/Dialog";
+import { Field } from "../components/ui/Field";
+import { PageHeader } from "../components/ui/PageHeader";
+import { Select } from "../components/ui/Select";
+import { EmptyState } from "../components/ui/States";
+import { Table, type TableColumn } from "../components/ui/Table";
+import { Toolbar } from "../components/ui/Toolbar";
 import { formatClassDay, formatClassMoment, formatInstantHour } from "../lib/agenda/format";
 import { errorMessage } from "../lib/auth/api";
 import { useAuth } from "../lib/auth/AuthContext";
@@ -28,8 +39,6 @@ import {
   ReservationFormModal,
   type ReservationFormMode,
 } from "./reservations-admin/ReservationFormModal";
-import { EmptyState, ErrorState, Feedback, LoadingState } from "../components/states";
-import { RequiresNetwork } from "../components/RequiresNetwork";
 
 type Period = "today" | "week" | "all";
 
@@ -43,21 +52,21 @@ const STATUSES: Array<{
   status: ReservationStatusName;
   option: string;
   badge: string;
-  tone: string;
+  tone: BadgeTone;
 }> = [
   {
     status: ReservationStatus.CONFIRMED,
     option: "Confirmada",
     badge: "CONFIRMADA",
-    tone: "active",
+    tone: "ok",
   },
-  { status: ReservationStatus.CANCELLED, option: "Cancelada", badge: "CANCELADA", tone: "danger" },
+  { status: ReservationStatus.CANCELLED, option: "Cancelada", badge: "CANCELADA", tone: "err" },
   { status: ReservationStatus.COMPLETED, option: "Concluída", badge: "CONCLUÍDA", tone: "neutral" },
   {
     status: ReservationStatus.NO_SHOW,
     option: "Não compareceu",
     badge: "NÃO COMPARECEU",
-    tone: "danger",
+    tone: "warn",
   },
 ];
 
@@ -90,7 +99,7 @@ function isChangeable(reservation: AdminReservationDetail): boolean {
 }
 
 /**
- * Reservas administrativas: a equipe consulta as
+ * Reservas administrativas (D-038, #156): a equipe consulta as
  * reservas e reserva, cancela ou remarca em nome do cliente. As regras são as
  * do cliente; o servidor decide e registra quem executou.
  */
@@ -151,54 +160,140 @@ export function ReservasAdminPage() {
       reservation.occurrence.modality.name.toLowerCase().includes(normalizedSearch),
   );
 
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 18, height: "100%" }}>
-      <div className="fb-page-header">
-        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          <span className="fb-page-eyebrow">Reservas</span>
-          <h1 className="fb-page-title">Reservas administrativas</h1>
-        </div>
-        <div style={{ display: "flex", alignItems: "flex-start", flexWrap: "wrap", gap: 10 }}>
-          {/* Fora da tela de referência: exporta o período do filtro; "Todas" não tem intervalo (a API exige from/to). */}
-          <ExportCsvButton
-            label="Exportar reservas (CSV)"
-            onExport={() =>
-              exportRange
-                ? exportReservationsCsv(exportRange.from, exportRange.to)
-                : Promise.resolve()
-            }
-            disabled={exportRange === null}
-            hint={exportRange === null ? "Escolha Hoje ou Esta semana para exportar." : undefined}
-          />
-          <BlockedAction allowed={canCreate} reason="Você não tem permissão para criar reservas.">
-            <button
-              type="button"
-              className="fb-btn-primary"
-              onClick={() => {
-                setFlash(null);
-                setForm({ kind: "create" });
-              }}
-            >
-              + Nova reserva
-            </button>
-          </BlockedAction>
-        </div>
-      </div>
+  const columns: TableColumn<AdminReservationDetail>[] = [
+    {
+      key: "client",
+      header: "Cliente",
+      className: "fb-ui-table__name",
+      cell: (reservation) => reservation.client.fullName,
+    },
+    {
+      key: "class",
+      header: "Aula",
+      cell: (reservation) => reservation.occurrence.modality.name,
+    },
+    {
+      key: "when",
+      header: "Data / Horário",
+      className: "fb-ui-table__muted",
+      cell: (reservation) =>
+        `${formatClassDay(reservation.occurrence.startsAt)}, ${formatInstantHour(reservation.occurrence.startsAt)}`,
+    },
+    {
+      key: "status",
+      header: "Status",
+      cell: (reservation) => {
+        const item = STATUSES.find((candidate) => candidate.status === reservation.status)!;
+        const record = [
+          `Criada por ${actorText(reservation.createdBy)}`,
+          ...(reservation.status === ReservationStatus.CANCELLED
+            ? [`Cancelada por ${actorText(reservation.cancelledBy)}`]
+            : []),
+        ];
+        return (
+          <>
+            <Badge tone={item.tone} dot={item.tone === "ok"} title={record.join(". ")}>
+              {item.badge}
+            </Badge>
+            {/* Quem criou e quem cancelou: dito aos leitores de tela e no title do selo. */}
+            {record.map((line) => (
+              <span key={line} className="fb-ui-sr-only">
+                {line}
+              </span>
+            ))}
+          </>
+        );
+      },
+    },
+    {
+      key: "actions",
+      header: "Ações",
+      actions: true,
+      cell: (reservation) => {
+        if (!isChangeable(reservation)) return "—";
+        const name = reservation.client.fullName;
+        return (
+          <div className="fb-ui-row-actions">
+            {!isDeletedClient(reservation) && (
+              <BlockedAction allowed={canEdit} reason="Você não tem permissão para alterar reservas.">
+                <Button
+                  size="sm"
+                  aria-label={`Remarcar reserva de ${name}`}
+                  onClick={() => {
+                    setFlash(null);
+                    setForm({ kind: "reschedule", reservation });
+                  }}
+                >
+                  Remarcar
+                </Button>
+              </BlockedAction>
+            )}
+            <BlockedAction allowed={canEdit} reason="Você não tem permissão para alterar reservas.">
+              <Button
+                size="sm"
+                variant="ghost-danger"
+                aria-label={`Cancelar reserva de ${name}`}
+                onClick={() => {
+                  setFlash(null);
+                  cancelMutation.reset();
+                  setCancelling(reservation);
+                }}
+              >
+                Cancelar
+              </Button>
+            </BlockedAction>
+          </div>
+        );
+      },
+    },
+  ];
 
-      <div className="fb-toolbar fb-toolbar--filters">
-        <input
+  return (
+    <div className="fb-ui-page">
+      <PageHeader
+        kicker="Reservas"
+        title="Reservas administrativas"
+        actions={
+          <>
+            {/* Exporta o período do filtro; "Todas" não tem intervalo (a API exige from/to). */}
+            <ExportCsvButton
+              label="Exportar reservas (CSV)"
+              onExport={() =>
+                exportRange
+                  ? exportReservationsCsv(exportRange.from, exportRange.to)
+                  : Promise.resolve()
+              }
+              disabled={exportRange === null}
+              hint={exportRange === null ? "Escolha Hoje ou Esta semana para exportar." : undefined}
+            />
+            <BlockedAction allowed={canCreate} reason="Você não tem permissão para criar reservas.">
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => {
+                  setFlash(null);
+                  setForm({ kind: "create" });
+                }}
+              >
+                + Nova reserva
+              </Button>
+            </BlockedAction>
+          </>
+        }
+      />
+
+      <Toolbar role="search" aria-label="Filtros das reservas">
+        <Field
           type="search"
-          className="fb-field"
-          style={{ width: 260 }}
+          label="Buscar por cliente ou aula"
+          hideLabel
           placeholder="Buscar por cliente ou aula"
-          aria-label="Buscar por cliente ou aula"
           value={searchTerm}
           onChange={(event) => setSearchTerm(event.target.value)}
         />
-        <select
-          className="fb-field"
-          style={{ width: 180 }}
-          aria-label="Status"
+        <Select
+          label="Status"
+          hideLabel
           value={status}
           onChange={(event) => setStatus(event.target.value as ReservationStatusName | "")}
         >
@@ -208,11 +303,10 @@ export function ReservasAdminPage() {
               {item.option}
             </option>
           ))}
-        </select>
-        <select
-          className="fb-field"
-          style={{ width: 180 }}
-          aria-label="Período"
+        </Select>
+        <Select
+          label="Período"
+          hideLabel
           value={period}
           onChange={(event) => setPeriod(event.target.value as Period)}
         >
@@ -221,118 +315,26 @@ export function ReservasAdminPage() {
               {item.label}
             </option>
           ))}
-        </select>
-      </div>
+        </Select>
+      </Toolbar>
 
-      {flash && <Feedback tone="success">{flash}</Feedback>}
-      {reservationsQuery.isLoading && <LoadingState />}
-      {reservationsQuery.isError && (
-        <ErrorState
-          message={errorMessage(reservationsQuery.error, "Não foi possível carregar as reservas.")}
-          onRetry={() => void reservationsQuery.refetch()}
-        />
-      )}
+      {flash && <Alert tone="ok">{flash}</Alert>}
+      <QueryBlockState
+        query={reservationsQuery}
+        hasData={reservationsQuery.data !== undefined}
+        loading="Carregando reservas…"
+        error={errorMessage(reservationsQuery.error, "Não foi possível carregar as reservas.")}
+      />
       {reservations && reservations.length === 0 && (
-        <EmptyState message="Nenhuma reserva encontrada." />
+        <EmptyState title="Nenhuma reserva encontrada." />
       )}
-
       {reservations && reservations.length > 0 && (
-        <div className="fb-table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th className="fb-th">Cliente</th>
-                <th className="fb-th">Aula</th>
-                <th className="fb-th">Data / Horário</th>
-                <th className="fb-th">Status</th>
-                <th className="fb-th" style={{ textAlign: "right" }}>
-                  Ações
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {reservations.map((reservation) => {
-                const badge = STATUSES.find((item) => item.status === reservation.status)!;
-                const changeable = isChangeable(reservation);
-                const muted = reservation.status !== ReservationStatus.CONFIRMED;
-                const name = reservation.client.fullName;
-                const record = [
-                  `Criada por ${actorText(reservation.createdBy)}`,
-                  ...(reservation.status === ReservationStatus.CANCELLED
-                    ? [`Cancelada por ${actorText(reservation.cancelledBy)}`]
-                    : []),
-                ];
-                return (
-                  <tr key={reservation.id} className={muted ? "fb-row--inactive" : undefined}>
-                    <td className="fb-td fb-td--name">{name}</td>
-                    <td className="fb-td">{reservation.occurrence.modality.name}</td>
-                    <td className="fb-td fb-td--soft">
-                      {formatClassDay(reservation.occurrence.startsAt)},{" "}
-                      {formatInstantHour(reservation.occurrence.startsAt)}
-                    </td>
-                    <td className="fb-td">
-                      <span
-                        className={`fb-badge fb-badge--${badge.tone}`}
-                        title={record.join(". ")}
-                      >
-                        {badge.badge}
-                      </span>
-                      {/* Quem criou e quem cancelou: fora do quadro do design, dito aos leitores de tela e no title do selo. */}
-                      {record.map((line) => (
-                        <span key={line} className="fb-visually-hidden">
-                          {line}
-                        </span>
-                      ))}
-                    </td>
-                    <td className="fb-td fb-td--actions" style={{ textAlign: "right" }}>
-                      {changeable ? (
-                        <>
-                          {!isDeletedClient(reservation) && (
-                            <BlockedAction
-                              allowed={canEdit}
-                              reason="Você não tem permissão para alterar reservas."
-                            >
-                              <button
-                                type="button"
-                                className="fb-row-btn"
-                                aria-label={`Remarcar reserva de ${name}`}
-                                onClick={() => {
-                                  setFlash(null);
-                                  setForm({ kind: "reschedule", reservation });
-                                }}
-                              >
-                                Remarcar
-                              </button>
-                            </BlockedAction>
-                          )}
-                          <BlockedAction
-                            allowed={canEdit}
-                            reason="Você não tem permissão para alterar reservas."
-                          >
-                            <button
-                              type="button"
-                              className="fb-row-btn fb-row-btn--danger"
-                              aria-label={`Cancelar reserva de ${name}`}
-                              onClick={() => {
-                                setFlash(null);
-                                cancelMutation.reset();
-                                setCancelling(reservation);
-                              }}
-                            >
-                              Cancelar
-                            </button>
-                          </BlockedAction>
-                        </>
-                      ) : (
-                        "—"
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        <Table
+          label="Reservas"
+          columns={columns}
+          rows={reservations}
+          rowKey={(reservation) => reservation.id}
+        />
       )}
 
       {form && (
@@ -340,33 +342,35 @@ export function ReservasAdminPage() {
       )}
 
       {cancelling && (
-        <Modal title="Cancelar reserva" onClose={() => setCancelling(null)}>
-          <p className="fb-modal__text">
-            Cancelar a reserva de <strong>{cancelling.client.fullName}</strong> em{" "}
-            {cancelling.occurrence.name}, {formatClassMoment(cancelling.occurrence.startsAt)}? A
-            vaga será liberada para outros clientes.
-          </p>
+        <Dialog
+          title="Cancelar reserva"
+          onClose={() => setCancelling(null)}
+          description={
+            <>
+              Cancelar a reserva de <strong>{cancelling.client.fullName}</strong> em{" "}
+              {cancelling.occurrence.name}, {formatClassMoment(cancelling.occurrence.startsAt)}? A
+              vaga será liberada para outros clientes.
+            </>
+          }
+          actions={
+            <>
+              <Button onClick={() => setCancelling(null)}>Voltar</Button>
+              <RequiresNetwork>
+                <Button
+                  variant="danger"
+                  busy={cancelMutation.isPending}
+                  onClick={() => cancelMutation.mutate(cancelling.id)}
+                >
+                  Confirmar cancelamento
+                </Button>
+              </RequiresNetwork>
+            </>
+          }
+        >
           {cancelMutation.isError && (
-            <div role="alert" className="fb-error-box">
-              {errorMessage(cancelMutation.error, "Não foi possível cancelar a reserva.")}
-            </div>
+            <Alert>{errorMessage(cancelMutation.error, "Não foi possível cancelar a reserva.")}</Alert>
           )}
-          <div className="fb-modal__footer fb-modal__footer--end fb-modal__footer--tight">
-            <button type="button" className="fb-btn-secondary" onClick={() => setCancelling(null)}>
-              Voltar
-            </button>
-            <RequiresNetwork>
-              <button
-                type="button"
-                className="fb-btn-danger"
-                disabled={cancelMutation.isPending}
-                onClick={() => cancelMutation.mutate(cancelling.id)}
-              >
-                Confirmar cancelamento
-              </button>
-            </RequiresNetwork>
-          </div>
-        </Modal>
+        </Dialog>
       )}
     </div>
   );

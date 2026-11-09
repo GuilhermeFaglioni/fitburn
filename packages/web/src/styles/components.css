@@ -1680,3 +1680,330 @@
     flex: 0 0 auto;
   }
 }
+
+/* ==========================================================================
+   Telas do admin (issue 156, PR 14): agenda administrativa, templates e modalidades, reservas administrativas.
+   Grade semanal (lista por dia no celular), navegação da semana, dias da recorrência, destaque do cliente da reserva e
+   confirmação de exclusão. Só tokens.
+   ========================================================================== */
+
+/* Navegação da semana: botões nas pontas, a semana no meio. Não quebra: cabe em 360px. */
+.fb-ui-weeknav {
+  flex-wrap: nowrap;
+  justify-content: space-between;
+}
+
+.fb-ui-weeknav__label {
+  min-width: 0;
+  color: var(--ink);
+  font-size: var(--text-body);
+  font-weight: var(--weight-bold);
+  text-align: center;
+}
+
+/* Botão só com símbolo (←, →): alvo de toque de 44px também no desktop. */
+.fb-ui-btn.fb-ui-btn--icon {
+  min-width: var(--s-11);
+  min-height: var(--s-11);
+  padding: 0 var(--s-3);
+}
+
+/* Grade da semana (desktop): 7 colunas. A rolagem horizontal, se faltar largura, fica na moldura da grade. */
+.fb-ui-wk-scroll {
+  overflow-x: auto;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+}
+
+.fb-ui-wk-scroll:focus-visible {
+  outline: none;
+  box-shadow: var(--sh-focus);
+}
+
+.fb-ui-wk {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(112px, 1fr));
+  min-width: 800px;
+}
+
+.fb-ui-wk__day {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 170px;
+  padding: var(--s-3);
+  border-right: 1px solid var(--line);
+}
+
+.fb-ui-wk__day:last-child {
+  border-right: 0;
+}
+
+.fb-ui-wk__day--today {
+  background: var(--brand-tint);
+}
+
+.fb-ui-wk__head {
+  margin: 0;
+  color: var(--faint);
+  font-size: var(--text-kicker);
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.fb-ui-wk__head b {
+  display: block;
+  color: var(--ink);
+  font-size: var(--text-h3);
+  letter-spacing: var(--tracking-title);
+  text-transform: none;
+}
+
+.fb-ui-wk__day--today .fb-ui-wk__head b {
+  color: var(--brand-strong);
+}
+
+.fb-ui-wk__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Aula na grade: botão com hora, modalidade, professor e a ocupação em selo. */
+.fb-ui-occ {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s-1);
+  width: 100%;
+  min-height: var(--s-11);
+  padding: var(--s-2) var(--s-3);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  box-shadow: var(--sh-1);
+  color: var(--muted);
+  font-family: var(--font-sans);
+  font-size: var(--text-caption);
+  line-height: var(--leading-small);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color var(--duration-state) var(--ease-out),
+    transform var(--duration-press) var(--ease-out);
+}
+
+.fb-ui-occ:active {
+  transform: scale(var(--press-scale));
+}
+
+.fb-ui-occ:focus-visible {
+  outline: none;
+  box-shadow: var(--sh-focus);
+}
+
+@media (hover: hover) {
+  .fb-ui-occ:hover {
+    border-color: var(--brand-line);
+  }
+}
+
+.fb-ui-occ__hour {
+  color: var(--brand-strong);
+  font-size: var(--text-caption);
+  font-weight: var(--weight-bold);
+  font-variant-numeric: tabular-nums;
+}
+
+.fb-ui-occ__title {
+  color: var(--ink);
+  font-size: var(--text-small);
+  font-weight: var(--weight-bold);
+}
+
+.fb-ui-occ--cancelled {
+  opacity: 0.7;
+}
+
+.fb-ui-occ--cancelled .fb-ui-occ__title {
+  text-decoration: line-through;
+}
+
+/* "+" para criar uma aula no dia. No desktop ocupa o resto da coluna e só aparece com o ponteiro ou o foco. */
+.fb-ui-wk__add {
+  flex: 1 1 auto;
+  min-height: var(--s-11);
+  background: transparent;
+  border: 1px dashed transparent;
+  border-radius: var(--r-sm);
+  color: var(--muted);
+  font-family: var(--font-sans);
+  font-size: var(--text-h3);
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity var(--duration-state) var(--ease-out),
+    border-color var(--duration-state) var(--ease-out);
+}
+
+.fb-ui-wk__add:focus-visible {
+  outline: none;
+  opacity: 1;
+  border-color: var(--brand);
+  box-shadow: var(--sh-focus);
+}
+
+@media (hover: hover) {
+  .fb-ui-wk__day:hover .fb-ui-wk__add {
+    opacity: 1;
+    border-color: var(--line-2);
+  }
+}
+
+/* Texto "Sem aulas": só na lista do celular (no desktop a coluna vazia basta). */
+.fb-ui-wk__none {
+  display: none;
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--text-small);
+}
+
+/* Rodapé de diálogo com dois grupos: ações de risco à esquerda, as principais à direita. */
+.fb-ui-dialog__actions--between {
+  justify-content: space-between;
+}
+
+.fb-ui-actions-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-3);
+}
+
+/* Dias da recorrência: pílulas que quebram em linhas. */
+.fb-ui-weekdays {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+}
+
+.fb-ui-weekdays .fb-ui-pill {
+  min-width: var(--s-11);
+  height: var(--s-11);
+  padding: 0 var(--s-3);
+}
+
+/* Campo composto (grupo de pílulas): rótulo no mesmo estilo dos campos. */
+.fb-ui-fieldgroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  min-width: 0;
+}
+
+/* Cliente da reserva, em destaque para não reservar para a pessoa errada. */
+.fb-ui-highlight {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  padding: var(--s-3) var(--s-4);
+  background: var(--brand-tint);
+  border: 1px solid var(--brand-line);
+  border-radius: var(--r-md);
+}
+
+.fb-ui-highlight__label {
+  color: var(--muted);
+  font-size: var(--text-caption);
+}
+
+.fb-ui-highlight__name {
+  color: var(--ink);
+  font-size: var(--text-body);
+}
+
+.fb-ui-highlight__sub {
+  color: var(--muted);
+  font-size: var(--text-small);
+  overflow-wrap: anywhere;
+}
+
+/* Exportar CSV: botão e, se houver, a dica ou o erro logo abaixo, alinhados à direita. */
+.fb-ui-export {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--s-2);
+}
+
+.fb-ui-export .fb-ui-note {
+  text-align: right;
+}
+
+/* Lista dentro de um aviso (aulas em conflito): sem marcador solto, com o recuo do aviso. */
+.fb-ui-alert__list {
+  margin: var(--s-2) 0 0;
+  padding-left: var(--s-4);
+}
+
+/* Selo com o texto de um estado na linha da tabela (nome + "INATIVO"). */
+.fb-ui-table__inline {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+@media (max-width: 767px) {
+  /* Celular: a grade vira uma lista por dia, sem rolagem horizontal. */
+  .fb-ui-wk-scroll {
+    overflow: visible;
+    background: transparent;
+    border: 0;
+  }
+
+  .fb-ui-wk {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-3);
+    min-width: 0;
+  }
+
+  .fb-ui-wk__day {
+    min-height: 0;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+  }
+
+  .fb-ui-wk__day--today {
+    background: var(--brand-tint);
+    border-color: var(--brand-line);
+  }
+
+  .fb-ui-wk__head b {
+    display: inline;
+    margin-left: var(--s-1);
+  }
+
+  .fb-ui-wk__none {
+    display: block;
+  }
+
+  .fb-ui-wk__add {
+    flex: 0 0 auto;
+    opacity: 1;
+    border-color: var(--line-2);
+  }
+
+  .fb-ui-export {
+    align-items: stretch;
+  }
+}

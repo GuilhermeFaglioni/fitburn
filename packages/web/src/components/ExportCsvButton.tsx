@@ -1,11 +1,12 @@
 import { useId, useRef, useState } from "react";
 import { errorMessage } from "../lib/auth/api";
 import { RequiresNetwork } from "./RequiresNetwork";
+import { Alert } from "./ui/Alert";
+import { Button } from "./ui/Button";
 
 interface ExportCsvButtonProps {
   label: string;
   onExport: () => Promise<void>;
-  className?: string;
   /** Desabilita o botão por um motivo da tela (ex.: período sem intervalo). Pede o `hint` junto. */
   disabled?: boolean;
   /** Texto visível sob o botão, associado a ele por `aria-describedby` (explica o `disabled`). */
@@ -13,7 +14,7 @@ interface ExportCsvButtonProps {
 }
 
 /**
- * Botão de exportação em CSV: enquanto a exportação roda fica desabilitado
+ * Botão de exportação em CSV (`Button` da base, D-038): enquanto a exportação roda fica desabilitado
  * ("Exportando…") e ignora cliques repetidos; erro da API aparece como alerta
  * logo abaixo; sem conexão fica desabilitado com a explicação padrão. A tela
  * também pode desabilitá-lo (`disabled`) e dizer o motivo em texto visível (`hint`).
@@ -21,7 +22,6 @@ interface ExportCsvButtonProps {
 export function ExportCsvButton({
   label,
   onExport,
-  className = "fb-btn-secondary",
   disabled = false,
   hint,
 }: ExportCsvButtonProps) {
@@ -47,29 +47,24 @@ export function ExportCsvButton({
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
+    <div className="fb-ui-export">
       <RequiresNetwork>
-        <button
-          type="button"
-          className={className}
+        <Button
+          size="sm"
           disabled={running || disabled}
-          aria-busy={running}
+          busy={running}
           aria-describedby={hint ? hintId : undefined}
           onClick={() => void handleClick()}
         >
           {running ? "Exportando…" : label}
-        </button>
+        </Button>
       </RequiresNetwork>
       {hint && (
-        <p id={hintId} className="fb-export-hint">
+        <p id={hintId} className="fb-ui-note">
           {hint}
         </p>
       )}
-      {error !== null && (
-        <p role="alert" className="fb-error-box">
-          {errorMessage(error, "Não foi possível exportar o relatório.")}
-        </p>
-      )}
+      {error !== null && <Alert>{errorMessage(error, "Não foi possível exportar o relatório.")}</Alert>}
     </div>
   );
 }

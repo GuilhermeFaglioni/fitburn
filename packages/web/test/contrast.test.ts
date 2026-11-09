@@ -430,9 +430,9 @@ describe.each(THEMES)("botões primários (texto sobre o laranja da marca, tema 
     expect(orangeFailures(css, theme)).toEqual([]);
   });
 
-  it("o botão primário do painel e o dia da recorrência marcado usam o par do design", () => {
+  it("o botão primário do painel usa o par do design", () => {
     const rules = orangeBackgrounds(adminCss + componentsCss);
-    for (const selector of [".fb-btn-primary", '.fb-weekday-toggle[aria-pressed="true"]']) {
+    for (const selector of [".fb-btn-primary"]) {
       const rule = rules.find((r) => r.selector === selector);
       expect(rule, selector).toBeDefined();
       expect(contrast(resolveColor(rule?.color ?? "#ffffff", theme), ORANGE)).toBeGreaterThanOrEqual(DESIGN_PAIR_MIN);

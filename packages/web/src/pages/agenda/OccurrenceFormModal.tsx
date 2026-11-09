@@ -1,7 +1,11 @@
 import { useId, useState, type FormEvent } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { expandRecurrenceDates, gymToday, weekdayOf } from "@fitburn/contracts";
-import { Modal } from "../../components/Modal";
+import { Button } from "../../components/ui/Button";
+import { Dialog } from "../../components/ui/Dialog";
+import { Field } from "../../components/ui/Field";
+import { Pill } from "../../components/ui/Pill";
+import { Select } from "../../components/ui/Select";
 import {
   createOccurrence,
   createRecurringOccurrences,
@@ -33,7 +37,7 @@ function recurrenceSummary(dates: string[]): string {
   return `Serão criadas ${dates.length} aulas: ${shown.join(", ")}${rest > 0 ? ` e mais ${rest}` : ""}.`;
 }
 
-/** "Nova aula" — formulário do modal de. */
+/** "Nova aula" (D-038, #156): formulário em `Dialog`, com a recorrência semanal opcional. */
 export function OccurrenceFormModal({
   initialDate,
   onClose,
@@ -43,7 +47,7 @@ export function OccurrenceFormModal({
   onClose: () => void;
   onSaved: () => void;
 }) {
-  const formId = useId();
+  const weekdaysLabelId = useId();
   const optionsQuery = useQuery({
     queryKey: ["occurrence-options"],
     queryFn: getOccurrenceFormOptions,
@@ -128,155 +132,115 @@ export function OccurrenceFormModal({
   }
 
   return (
-    <Modal title="Nova aula" onClose={onClose}>
-      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <div className="fb-modal__field">
-            <label htmlFor={`${formId}-template`}>Modalidade / template</label>
-            <select
-              id={`${formId}-template`}
-              className="fb-field"
-              value={templateId}
-              onChange={(event) => selectTemplate(event.target.value)}
-              required
-            >
-              <option value="" disabled>
-                Selecione
-              </option>
-              {templates.map((template) => (
-                <option key={template.id} value={template.id}>
-                  {template.name}
-                </option>
-              ))}
-            </select>
-          </div>
+    <Dialog title="Nova aula" onClose={onClose}>
+      <form onSubmit={handleSubmit} aria-label="Nova aula" className="fb-ui-dialog__form">
+        <Select
+          label="Modalidade / template"
+          value={templateId}
+          onChange={(event) => selectTemplate(event.target.value)}
+          error={optionsQuery.isError ? "Não foi possível carregar os templates." : undefined}
+          required
+        >
+          <option value="" disabled>
+            Selecione
+          </option>
+          {templates.map((template) => (
+            <option key={template.id} value={template.id}>
+              {template.name}
+            </option>
+          ))}
+        </Select>
 
-          <div className="fb-modal__grid">
-            <div className="fb-modal__field">
-              <label htmlFor={`${formId}-date`}>Data</label>
-              <input
-                id={`${formId}-date`}
-                type="date"
-                className="fb-field"
-                value={date}
-                onChange={(event) => changeDate(event.target.value)}
-                required
-              />
-            </div>
-            <div className="fb-modal__field">
-              <label htmlFor={`${formId}-time`}>Horário</label>
-              <input
-                id={`${formId}-time`}
-                type="time"
-                className="fb-field"
-                value={startTime}
-                onChange={(event) => setStartTime(event.target.value)}
-                required
-              />
-            </div>
-          </div>
-
-          <div className="fb-modal__field">
-            <label htmlFor={`${formId}-instructor`}>Professor</label>
-            <select
-              id={`${formId}-instructor`}
-              className="fb-field"
-              value={instructorId}
-              onChange={(event) => setInstructorId(event.target.value)}
-            >
-              <option value="">Sem professor</option>
-              {instructors.map((instructor) => (
-                <option key={instructor.id} value={instructor.id}>
-                  {instructorOptionLabel(instructor.fullName, instructor.id === titularId)}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="fb-modal__grid">
-            <div className="fb-modal__field">
-              <label htmlFor={`${formId}-capacity`}>Capacidade</label>
-              <input
-                id={`${formId}-capacity`}
-                type="number"
-                min={1}
-                className="fb-field"
-                value={capacity}
-                onChange={(event) => setCapacity(event.target.value)}
-                required
-              />
-            </div>
-            <div className="fb-modal__field">
-              <label htmlFor={`${formId}-recurrence`}>Recorrência</label>
-              <select
-                id={`${formId}-recurrence`}
-                className="fb-field"
-                value={repeatsWeekly ? "WEEKLY" : "NONE"}
-                onChange={(event) => changeRecurrence(event.target.value)}
-              >
-                <option value="NONE">Não se repete</option>
-                <option value="WEEKLY">Repetir semanalmente</option>
-              </select>
-            </div>
-          </div>
-
-          {repeatsWeekly && (
-            <>
-              <div className="fb-modal__field">
-                <span style={{ fontSize: 12, fontWeight: 500, color: "#333333" }}>
-                  Dias da semana
-                </span>
-                <div className="fb-weekday-toggles" role="group" aria-label="Dias da semana">
-                  {WEEKDAY_TOGGLES.map(({ weekday, label }) => (
-                    <button
-                      key={weekday}
-                      type="button"
-                      className="fb-weekday-toggle"
-                      aria-pressed={weekdays.includes(weekday)}
-                      onClick={() => toggleWeekday(weekday)}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="fb-modal__field">
-                <label htmlFor={`${formId}-end-date`}>Repetir até</label>
-                <input
-                  id={`${formId}-end-date`}
-                  type="date"
-                  className="fb-field"
-                  value={endDate}
-                  min={date}
-                  onChange={(event) => setEndDate(event.target.value)}
-                  required
-                />
-              </div>
-              {endDate && (
-                <p className="fb-recurrence-summary">{recurrenceSummary(recurrenceDates)}</p>
-              )}
-            </>
-          )}
+        <div className="fb-ui-form-grid">
+          <Field
+            label="Data"
+            type="date"
+            value={date}
+            onChange={(event) => changeDate(event.target.value)}
+            required
+          />
+          <Field
+            label="Horário"
+            type="time"
+            value={startTime}
+            onChange={(event) => setStartTime(event.target.value)}
+            required
+          />
         </div>
+
+        <Select
+          label="Professor"
+          value={instructorId}
+          onChange={(event) => setInstructorId(event.target.value)}
+        >
+          <option value="">Sem professor</option>
+          {instructors.map((instructor) => (
+            <option key={instructor.id} value={instructor.id}>
+              {instructorOptionLabel(instructor.fullName, instructor.id === titularId)}
+            </option>
+          ))}
+        </Select>
+
+        <div className="fb-ui-form-grid">
+          <Field
+            label="Capacidade"
+            type="number"
+            min={1}
+            value={capacity}
+            onChange={(event) => setCapacity(event.target.value)}
+            required
+          />
+          <Select
+            label="Recorrência"
+            value={repeatsWeekly ? "WEEKLY" : "NONE"}
+            onChange={(event) => changeRecurrence(event.target.value)}
+          >
+            <option value="NONE">Não se repete</option>
+            <option value="WEEKLY">Repetir semanalmente</option>
+          </Select>
+        </div>
+
+        {repeatsWeekly && (
+          <>
+            <div className="fb-ui-fieldgroup">
+              <span id={weekdaysLabelId} className="fb-ui-field__label">
+                Dias da semana
+              </span>
+              <div className="fb-ui-weekdays" role="group" aria-labelledby={weekdaysLabelId}>
+                {WEEKDAY_TOGGLES.map(({ weekday, label }) => (
+                  <Pill
+                    key={weekday}
+                    pressed={weekdays.includes(weekday)}
+                    onClick={() => toggleWeekday(weekday)}
+                  >
+                    {label}
+                  </Pill>
+                ))}
+              </div>
+            </div>
+            <Field
+              label="Repetir até"
+              type="date"
+              value={endDate}
+              min={date}
+              onChange={(event) => setEndDate(event.target.value)}
+              required
+            />
+            {endDate && <p className="fb-ui-note">{recurrenceSummary(recurrenceDates)}</p>}
+          </>
+        )}
 
         {error !== null && <OccurrenceErrorBox error={error} />}
 
-        <div className="fb-modal__footer">
-          <span />
-          <div style={{ display: "flex", gap: 10, marginLeft: "auto" }}>
-            <button type="button" className="fb-btn-secondary" onClick={onClose}>
-              Fechar
-            </button>
-            <button
-              type="submit"
-              className="fb-btn-primary fb-btn-primary--sm"
-              disabled={isSubmitting}
-            >
-              Salvar
-            </button>
-          </div>
+        <div className="fb-ui-dialog__actions">
+          <Button disabled={isSubmitting} onClick={onClose}>
+            Fechar
+          </Button>
+          <Button type="submit" variant="primary" busy={isSubmitting}>
+            Salvar
+          </Button>
         </div>
       </form>
-    </Modal>
+    </Dialog>
   );
 }

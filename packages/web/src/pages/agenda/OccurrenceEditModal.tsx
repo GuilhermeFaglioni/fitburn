@@ -1,4 +1,4 @@
-import { useId, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import {
@@ -12,7 +12,10 @@ import {
 } from "@fitburn/contracts";
 import { BlockedAction } from "../../components/BlockedAction";
 import { ApiError } from "../../lib/auth/api";
-import { Modal } from "../../components/Modal";
+import { Button } from "../../components/ui/Button";
+import { Dialog } from "../../components/ui/Dialog";
+import { Field } from "../../components/ui/Field";
+import { Select } from "../../components/ui/Select";
 import { useAuth } from "../../lib/auth/AuthContext";
 import { canSeeRoster } from "../../lib/attendance/roster-access";
 import {
@@ -27,7 +30,7 @@ import { OccurrenceErrorBox } from "./OccurrenceErrorBox";
 
 type View = "form" | "confirm-cancel" | "confirm-delete";
 
-/** "Editar aula" e a confirmação de cancelamento de. */
+/** "Editar aula" e a confirmação de cancelamento ou exclusão, em `Dialog` (D-038, #156). */
 export function OccurrenceEditModal({
   occurrence,
   onClose,
@@ -37,7 +40,6 @@ export function OccurrenceEditModal({
   onClose: () => void;
   onChanged: () => void;
 }) {
-  const formId = useId();
   const { user, can, scopeOf } = useAuth();
   const navigate = useNavigate();
   const optionsQuery = useQuery({
@@ -120,141 +122,111 @@ export function OccurrenceEditModal({
   if (view !== "form") {
     const isCancel = view === "confirm-cancel";
     return (
-      <Modal title={isCancel ? "Cancelar esta aula?" : "Excluir esta aula?"} onClose={onClose}>
-        <p className="fb-modal__text">
-          {occurrence.name} · {when}{" "}
-          {isCancel
+      <Dialog
+        key={view}
+        title={isCancel ? "Cancelar esta aula?" : "Excluir esta aula?"}
+        onClose={onClose}
+        description={`${occurrence.name} · ${when} ${
+          isCancel
             ? "sai da agenda dos clientes e continua no histórico. O horário fica livre para outra aula."
-            : "será removida definitivamente, inclusive do histórico. Use só para aulas criadas por engano."}
-        </p>
-        <div className="fb-modal__footer fb-modal__footer--end fb-modal__footer--tight">
-          <button
-            type="button"
-            className="fb-btn-secondary"
-            disabled={isSubmitting}
-            onClick={() => setView("form")}
-          >
-            Voltar
-          </button>
-          <button
-            type="button"
-            className="fb-btn-danger"
-            disabled={isSubmitting}
-            onClick={() =>
-              void run(() =>
-                isCancel ? cancelOccurrence(occurrence.id) : deleteOccurrence(occurrence.id),
-              )
-            }
-          >
-            {isCancel ? "Confirmar cancelamento" : "Confirmar exclusão"}
-          </button>
-        </div>
-      </Modal>
+            : "será removida definitivamente, inclusive do histórico. Use só para aulas criadas por engano."
+        }`}
+        actions={
+          <>
+            <Button disabled={isSubmitting} onClick={() => setView("form")}>
+              Voltar
+            </Button>
+            <Button
+              variant="danger"
+              busy={isSubmitting}
+              onClick={() =>
+                void run(() =>
+                  isCancel ? cancelOccurrence(occurrence.id) : deleteOccurrence(occurrence.id),
+                )
+              }
+            >
+              {isCancel ? "Confirmar cancelamento" : "Confirmar exclusão"}
+            </Button>
+          </>
+        }
+      />
     );
   }
 
+  const locked = isCancelled || !canEdit;
+
   return (
-    <Modal title="Editar aula" onClose={onClose}>
-      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-        <fieldset
-          disabled={isCancelled || !canEdit}
-          style={{ border: "none", margin: 0, padding: 0 }}
+    <Dialog key="form" title="Editar aula" onClose={onClose}>
+      <form onSubmit={handleSubmit} aria-label="Editar aula" className="fb-ui-dialog__form">
+        <Select label="Modalidade / template" value="current" disabled>
+          <option value="current">{occurrence.name}</option>
+        </Select>
+
+        <div className="fb-ui-form-grid">
+          <Field
+            label="Data"
+            type="date"
+            disabled={locked || hasReservations}
+            value={date}
+            onChange={(event) => setDate(event.target.value)}
+            required
+          />
+          <Field
+            label="Horário"
+            type="time"
+            disabled={locked || hasReservations}
+            value={startTime}
+            onChange={(event) => setStartTime(event.target.value)}
+            required
+          />
+        </div>
+
+        <Select
+          label="Professor"
+          disabled={locked}
+          value={instructorId}
+          onChange={(event) => setInstructorId(event.target.value)}
         >
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <div className="fb-modal__field">
-              <label htmlFor={`${formId}-template`}>Modalidade / template</label>
-              <select id={`${formId}-template`} className="fb-field" value="current" disabled>
-                <option value="current">{occurrence.name}</option>
-              </select>
-            </div>
+          <option value="">Sem professor</option>
+          {instructorOptions.map((instructor) => (
+            <option key={instructor.id} value={instructor.id}>
+              {instructorOptionLabel(instructor.fullName, instructor.id === titularId)}
+            </option>
+          ))}
+        </Select>
 
-            <div className="fb-modal__grid">
-              <div className="fb-modal__field">
-                <label htmlFor={`${formId}-date`}>Data</label>
-                <input
-                  id={`${formId}-date`}
-                  type="date"
-                  className="fb-field"
-                  disabled={hasReservations}
-                  value={date}
-                  onChange={(event) => setDate(event.target.value)}
-                  required
-                />
-              </div>
-              <div className="fb-modal__field">
-                <label htmlFor={`${formId}-time`}>Horário</label>
-                <input
-                  id={`${formId}-time`}
-                  type="time"
-                  className="fb-field"
-                  disabled={hasReservations}
-                  value={startTime}
-                  onChange={(event) => setStartTime(event.target.value)}
-                  required
-                />
-              </div>
-            </div>
+        <div className="fb-ui-form-grid">
+          <Field
+            label="Capacidade"
+            type="number"
+            min={hasReservations ? booked : 1}
+            disabled={locked}
+            value={capacity}
+            onChange={(event) => setCapacity(event.target.value)}
+            required
+          />
+          <Field
+            label="Duração (min)"
+            type="number"
+            min={1}
+            disabled={locked || hasReservations}
+            value={durationMinutes}
+            onChange={(event) => setDurationMinutes(event.target.value)}
+            required
+          />
+        </div>
 
-            <div className="fb-modal__field">
-              <label htmlFor={`${formId}-instructor`}>Professor</label>
-              <select
-                id={`${formId}-instructor`}
-                className="fb-field"
-                value={instructorId}
-                onChange={(event) => setInstructorId(event.target.value)}
-              >
-                <option value="">Sem professor</option>
-                {instructorOptions.map((instructor) => (
-                  <option key={instructor.id} value={instructor.id}>
-                    {instructorOptionLabel(instructor.fullName, instructor.id === titularId)}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="fb-modal__grid">
-              <div className="fb-modal__field">
-                <label htmlFor={`${formId}-capacity`}>Capacidade</label>
-                <input
-                  id={`${formId}-capacity`}
-                  type="number"
-                  min={hasReservations ? booked : 1}
-                  className="fb-field"
-                  value={capacity}
-                  onChange={(event) => setCapacity(event.target.value)}
-                  required
-                />
-              </div>
-              <div className="fb-modal__field">
-                <label htmlFor={`${formId}-duration`}>Duração (min)</label>
-                <input
-                  id={`${formId}-duration`}
-                  type="number"
-                  min={1}
-                  className="fb-field"
-                  disabled={hasReservations}
-                  value={durationMinutes}
-                  onChange={(event) => setDurationMinutes(event.target.value)}
-                  required
-                />
-              </div>
-            </div>
-          </div>
-        </fieldset>
-
-        {isCancelled && (
-          <p className="fb-modal__text">Esta aula foi cancelada e continua no histórico.</p>
-        )}
+        {isCancelled && <p className="fb-ui-note">Esta aula foi cancelada e continua no histórico.</p>}
         {hasReservations && (
-          <p role="note" className="fb-lock-banner">
+          <p role="note" className="fb-ui-notice">
             Esta aula tem {reservationsLabel}: não pode ser cancelada nem excluída, e horário e
             duração não podem mudar. A capacidade mínima é {booked}.
           </p>
         )}
         {error !== null && <OccurrenceErrorBox error={error} />}
 
-        <div className="fb-modal__footer">
-          <div style={{ display: "flex" }}>
+        <div className="fb-ui-dialog__actions fb-ui-dialog__actions--between">
+          <div className="fb-ui-actions-group">
             {!isCancelled && (
               <BlockedAction
                 allowed={canEdit && !hasReservations}
@@ -264,13 +236,9 @@ export function OccurrenceEditModal({
                     : "Você não tem permissão para cancelar aulas."
                 }
               >
-                <button
-                  type="button"
-                  className="fb-btn-danger-text"
-                  onClick={() => setView("confirm-cancel")}
-                >
+                <Button variant="ghost-danger" onClick={() => setView("confirm-cancel")}>
                   Cancelar aula
-                </button>
+                </Button>
               </BlockedAction>
             )}
             {/* Cancelada fica no histórico: não se oferece exclusão. */}
@@ -283,24 +251,16 @@ export function OccurrenceEditModal({
                     : "Você não tem permissão para excluir aulas."
                 }
               >
-                <button
-                  type="button"
-                  className="fb-btn-danger-text"
-                  onClick={() => setView("confirm-delete")}
-                >
+                <Button variant="ghost-danger" onClick={() => setView("confirm-delete")}>
                   Excluir aula
-                </button>
+                </Button>
               </BlockedAction>
             )}
           </div>
-          <div style={{ display: "flex", gap: 10, marginLeft: "auto" }}>
-            <button type="button" className="fb-btn-secondary" onClick={onClose}>
-              Fechar
-            </button>
+          <div className="fb-ui-actions-group">
+            <Button onClick={onClose}>Fechar</Button>
             {showRoster && (
-              <button
-                type="button"
-                className="fb-btn-secondary"
+              <Button
                 onClick={() =>
                   navigate(`/presenca/${occurrence.id}`, {
                     state: { from: "/agenda-administrativa" },
@@ -308,22 +268,18 @@ export function OccurrenceEditModal({
                 }
               >
                 Ver alunos
-              </button>
+              </Button>
             )}
             {!isCancelled && (
               <BlockedAction allowed={canEdit} reason="Você não tem permissão para editar aulas.">
-                <button
-                  type="submit"
-                  className="fb-btn-primary fb-btn-primary--sm"
-                  disabled={isSubmitting}
-                >
+                <Button type="submit" variant="primary" busy={isSubmitting}>
                   Salvar
-                </button>
+                </Button>
               </BlockedAction>
             )}
           </div>
         </div>
       </form>
-    </Modal>
+    </Dialog>
   );
 }
