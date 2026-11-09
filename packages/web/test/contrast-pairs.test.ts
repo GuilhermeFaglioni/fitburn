@@ -1,89 +1,100 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { THEMES, color, contrast, hex, token, type Rgb, type ThemeName } from "./theme-tokens";
 
 /**
- * Verificação WCAG AA do tema escuro único (DS8, decisão 134): pares de texto/superfície, texto secundário,
- * link, erro, sucesso, aviso, borda de controle e texto do botão. Lê os tokens do disco.
+ * Verificação WCAG AA dos dois temas (DS8, decisões 134 e D-038): pares de texto/superfície, texto secundário,
+ * link, erro, sucesso, aviso, borda de controle e texto do botão. Lê os tokens do disco e resolve cada tema.
  * Texto normal exige 4.5:1; texto grande e componentes de interface exigem 3:1.
  * Exceções são nomeadas, com o valor medido e a decisão que as aprovou.
  */
-const tokens = readFileSync(join(process.cwd(), "src/styles/tokens.css"), "utf8");
 const components = readFileSync(join(process.cwd(), "src/styles/components.css"), "utf8");
 
-type Rgb = [number, number, number];
-const hex = (value: string): Rgb => {
-  const h = value.replace("#", "");
-  return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16)) as Rgb;
-};
-const luminance = ([r, g, b]: Rgb) => {
-  const ch = (v: number) => {
-    const c = v / 255;
-    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
-  };
-  return 0.2126 * ch(r) + 0.7152 * ch(g) + 0.0722 * ch(b);
-};
-const contrast = (a: Rgb, b: Rgb) => {
-  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
-  return (hi + 0.05) / (lo + 0.05);
-};
-const token = (name: string) => {
-  const m = tokens.match(new RegExp(`--${name}:\\s*(#[0-9a-fA-F]{6});`));
-  if (!m) throw new Error(`token ${name} não é hex`);
-  return hex(m[1]);
-};
-
-const PAGE = token("color-surface-000");
-const CARD = token("color-surface-raised");
-const RAISED2 = token("color-surface-2");
 const WHITE: Rgb = [255, 255, 255];
+const PAGE = (theme: ThemeName) => color(theme, "bg");
+const CARD = (theme: ThemeName) => color(theme, "surface");
+const SURFACE_2 = (theme: ThemeName) => color(theme, "surface-2");
 
-describe("texto normal (4.5:1) sobre o tema escuro", () => {
+describe.each(THEMES)("texto normal (4.5:1), tema %s", (theme) => {
   const texts: [string, string][] = [
-    ["ink-on-dark", "color-ink-on-dark"],
-    ["ink-2-on-dark", "color-ink-2-on-dark"],
-    ["text-muted-on-dark", "color-text-muted-on-dark"],
-    ["brand-strong (link)", "color-brand-strong"],
-    ["primary-orange como texto", "color-primary-orange"],
-    ["danger (erro)", "color-danger"],
-    ["success", "color-success"],
-    ["warn", "color-warn"],
-    ["info", "color-info"],
+    ["ink", "ink"],
+    ["ink-2", "ink-2"],
+    ["muted", "muted"],
+    ["brand-strong (link)", "brand-strong"],
+    ["danger (erro)", "danger"],
+    ["success", "success"],
+    ["warn", "warn"],
+    ["color-info (selo neutro, alias de ink-2)", "color-info"],
   ];
   for (const [label, name] of texts) {
     it(`${label} passa de 4.5:1 sobre a página, o cartão e a superfície 2`, () => {
-      for (const [bgName, bg] of [["página", PAGE], ["cartão", CARD], ["superfície 2", RAISED2]] as const) {
-        expect(contrast(token(name), bg), `${label} sobre ${bgName}`).toBeGreaterThanOrEqual(4.5);
+      for (const [bgName, bg] of [
+        ["página", PAGE(theme)],
+        ["cartão", CARD(theme)],
+        ["superfície 2", SURFACE_2(theme)],
+      ] as const) {
+        expect(contrast(color(theme, name), bg), `${label} sobre ${bgName}`).toBeGreaterThanOrEqual(4.5);
       }
     });
   }
 });
 
 describe("exceção nomeada: texto faint (rótulo auxiliar)", () => {
-  it("faint passa na página (4.80:1), mas no cartão dá 4.48:1, abaixo de 4.5 por 0.02: só no fundo da página", () => {
-    expect(contrast(token("color-text-faint-on-dark"), PAGE)).toBeGreaterThanOrEqual(4.5);
-    const onCard = contrast(token("color-text-faint-on-dark"), CARD);
+  it("escuro: faint passa na página (4.80:1), mas no cartão dá 4.48:1, abaixo de 4.5 por 0.02: só no fundo da página", () => {
+    expect(contrast(color("dark", "faint"), PAGE("dark"))).toBeGreaterThanOrEqual(4.5);
+    const onCard = contrast(color("dark", "faint"), CARD("dark"));
     expect(onCard).toBeGreaterThan(4.4);
     expect(onCard).toBeLessThan(4.5);
   });
+
+  it("claro: faint dá 3.85:1 sobre branco (cinza das linhas inativas da proposta), acima de 3:1 e abaixo de 4.5:1", () => {
+    const onPage = contrast(color("light", "faint"), PAGE("light"));
+    expect(onPage).toBeGreaterThan(3.8);
+    expect(onPage).toBeLessThan(4.5);
+  });
 });
 
-describe("borda de controle (3:1) e divisórias", () => {
-  it("borda do campo e do botão secundário é o faint (4.48:1 sobre o cartão), não a linha decorativa", () => {
+describe("exceção nomeada: o laranja da marca como texto no tema claro", () => {
+  it("claro: --brand dá 3.05:1 sobre branco, por isso o texto laranja do tema claro é --brand-strong (6.15:1)", () => {
+    expect(contrast(color("light", "brand"), PAGE("light"))).toBeLessThan(4.5);
+    expect(contrast(color("light", "brand-strong"), PAGE("light"))).toBeGreaterThanOrEqual(6);
+  });
+
+  it("escuro: --brand passa de 4.5:1 sobre a página e o cartão", () => {
+    expect(contrast(color("dark", "brand"), PAGE("dark"))).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(color("dark", "brand"), CARD("dark"))).toBeGreaterThanOrEqual(4.5);
+  });
+});
+
+describe.each(THEMES)("borda de controle (3:1) e divisórias, tema %s", (theme) => {
+  it("borda do campo e do botão secundário é o faint, não a linha decorativa", () => {
     expect(components).toMatch(/\.fb-field \{[^}]*border: 1px solid var\(--color-text-faint-on-dark\)/);
     expect(components).toMatch(/\.fb-btn-secondary \{[^}]*border: 1px solid var\(--color-text-faint-on-dark\)/);
-    expect(contrast(token("color-text-faint-on-dark"), CARD)).toBeGreaterThanOrEqual(3);
+    expect(token(theme, "color-text-faint-on-dark")).toBe(token(theme, "faint"));
   });
 
   it("a linha decorativa (line-2) fica abaixo de 3:1: é divisória, não borda de controle", () => {
-    expect(contrast(token("color-line-2"), CARD)).toBeLessThan(3);
+    expect(contrast(color(theme, "line-2"), CARD(theme))).toBeLessThan(3);
+  });
+});
+
+describe("borda de controle (3:1): exceção nomeada do faint", () => {
+  it("escuro: o faint dá 4.48:1 sobre o cartão (passa de 3:1)", () => {
+    expect(contrast(color("dark", "faint"), CARD("dark"))).toBeGreaterThanOrEqual(3);
+  });
+
+  it("claro: o faint dá 3.85:1 sobre o cartão branco (passa de 3:1)", () => {
+    expect(contrast(color("light", "faint"), CARD("light"))).toBeGreaterThanOrEqual(3);
   });
 });
 
 describe("texto do botão primário (exceções aprovadas)", () => {
   it("branco sobre o laranja da marca dá 3.05:1: exceção aprovada na decisão 136 (texto grande e negrito)", () => {
-    const ratio = contrast(WHITE, token("color-primary-orange"));
-    expect(ratio).toBeCloseTo(3.05, 2);
-    expect(ratio).toBeGreaterThanOrEqual(3);
+    for (const theme of THEMES) {
+      const ratio = contrast(WHITE, color(theme, "brand"));
+      expect(ratio).toBeCloseTo(3.05, 2);
+      expect(ratio).toBeGreaterThanOrEqual(3);
+    }
   });
 
   it("branco sobre o fim do gradiente CTA (#C23A1F) passa de 4.5:1", () => {

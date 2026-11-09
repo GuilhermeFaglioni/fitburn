@@ -10,6 +10,7 @@ import { join } from "node:path";
 describe("PWA: build de produção", () => {
   let outDir: string;
   let sw: string;
+  let indexHtml: string;
   let manifest: {
     name: string;
     short_name: string;
@@ -28,6 +29,7 @@ describe("PWA: build de produção", () => {
       env: { ...process.env, NODE_ENV: "production" },
     });
     sw = readFileSync(join(outDir, "sw.js"), "utf8");
+    indexHtml = readFileSync(join(outDir, "index.html"), "utf8");
     manifest = JSON.parse(readFileSync(join(outDir, "manifest.webmanifest"), "utf8"));
   }, 120_000);
 
@@ -40,6 +42,8 @@ describe("PWA: build de produção", () => {
     expect(manifest.short_name).toBe("Fitburn");
     expect(manifest.display).toBe("standalone");
     expect(manifest.start_url).toBe("/");
+    // O manifest não aceita dois valores: fica no escuro (decisão do plano da #156). Os <meta name="theme-color">
+    // do HTML seguem o tema (ver o teste de tema abaixo).
     expect(manifest.theme_color).toBe("#0a0a0a");
     expect(manifest.icons.map((icon) => icon.src)).toContain("flame.svg");
   });
@@ -50,6 +54,23 @@ describe("PWA: build de produção", () => {
     expect(urls).toContain("index.html");
     expect(urls.some((url) => /^assets\/index-.*\.js$/.test(url))).toBe(true);
     expect(urls.filter((url) => url.includes("api"))).toEqual([]);
+  });
+
+  it("o tema salvo é aplicado antes do CSS e do app, por um arquivo próprio que o service worker pré-carrega", () => {
+    expect(readFileSync(join(outDir, "theme-init.js"), "utf8")).toContain("fb-theme");
+
+    const script = indexHtml.indexOf('<script src="/theme-init.js"></script>');
+    expect(script).toBeGreaterThan(-1);
+    expect(script).toBeLessThan(indexHtml.indexOf('rel="stylesheet"'));
+    expect(script).toBeLessThan(indexHtml.indexOf('type="module"'));
+
+    // Sem script inline (a CSP do nginx usa script-src 'self'): todo <script> do build tem src.
+    const inline = [...indexHtml.matchAll(/<script\b([^>]*)>/g)].filter(([, attrs]) => !/\bsrc=/.test(attrs));
+    expect(inline).toEqual([]);
+
+    // Sem isso a primeira visita offline perderia o tema salvo.
+    const urls = [...sw.matchAll(/url:"([^"]+)"/g)].map((match) => match[1]);
+    expect(urls).toContain("theme-init.js");
   });
 
   it("nenhuma requisição de API passa pelo cache: sem regras de runtime e /api fora do fallback de navegação", () => {

@@ -14,16 +14,16 @@ body,
 
 body {
   margin: 0;
-  background: var(--color-surface-000);
-  color: var(--color-ink-on-dark);
+  background: var(--bg);
+  color: var(--ink);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }
 
-/* Foco visível para quem navega por teclado: laranja da marca, com halo escuro que o mantém
-   legível também sobre o laranja (botão primário) e sobre o conteúdo claro. */
+/* Foco visível para quem navega por teclado: laranja da marca, com o anel de 3px (--sh-focus) que o mantém
+   legível também sobre o laranja (botão primário), nos dois temas. */
 :focus-visible {
-  outline: 2px solid var(--color-primary-orange);
+  outline: 2px solid var(--brand);
   outline-offset: 2px;
   box-shadow: var(--sh-focus);
 }
@@ -41,8 +41,8 @@ main:focus,
   left: 8px;
   z-index: 100;
   padding: 10px 16px;
-  background: var(--color-surface-raised);
-  color: var(--color-ink-on-dark);
+  background: var(--surface);
+  color: var(--ink);
   border-radius: var(--radius-sm);
   font-size: 14px;
   font-weight: 700;
@@ -94,16 +94,16 @@ main:focus,
 /* Superfícies do navegador no tom da marca: seleção de texto, cursor de digitação e controles nativos
    (o checkbox do consentimento do ranking, rádios). */
 ::selection {
-  background: rgba(237, 110, 52, 0.32);
+  background: color-mix(in srgb, var(--brand) 32%, transparent);
 }
 
 :root {
-  accent-color: var(--color-primary-orange);
+  accent-color: var(--brand);
 }
 
 input,
 textarea {
-  caret-color: var(--color-primary-orange);
+  caret-color: var(--brand);
 }
 
 /* Números que se comparam numa coluna ou mudam no lugar (percentuais, posições, horários, contagens, datas

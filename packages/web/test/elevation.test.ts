@@ -1,8 +1,9 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
+import { THEMES, token } from "./theme-tokens";
 
 /**
- * Raio, sombras e bordas (DS3, decisões #133 e #134). Lê o CSS, sem navegador.
+ * Raio, sombras e bordas (DS3, decisões #133 e #134; sombras nos dois temas, D-038). Lê o CSS, sem navegador.
  * O raio fica em 5px: nenhum `border-radius` literal novo fora de tokens.css.
  */
 // Vitest roda a partir de packages/web (pnpm --filter).
@@ -21,11 +22,23 @@ const tokens = readFileSync(join(SRC, "styles/tokens.css"), "utf8");
 const global = readFileSync(join(SRC, "styles/global.css"), "utf8");
 
 describe("elevação e foco", () => {
-  it("define os níveis de sombra da proposta e o anel de foco de 3px", () => {
-    for (const name of ["sh-1", "sh-2", "sh-3", "sh-cta", "sh-focus"]) {
-      expect(tokens, name).toMatch(new RegExp(`--${name}:`));
+  it("define os níveis de sombra da proposta e o anel de foco de 3px, nos dois temas", () => {
+    for (const theme of THEMES) {
+      for (const name of ["sh-1", "sh-2", "sh-3", "sh-cta", "sh-focus"]) {
+        expect(token(theme, name), `${name} ${theme}`).toMatch(/^0 /);
+      }
+      expect(token(theme, "sh-focus"), theme).toMatch(/^0 0 0 3px /);
     }
-    expect(tokens).toMatch(/--sh-focus:\s*0 0 0 3px/);
+  });
+
+  it("as sombras mudam com o tema: tingidas de marrom no claro, pretas no escuro (a do CTA fica laranja)", () => {
+    for (const name of ["sh-1", "sh-2", "sh-3"]) {
+      expect(token("light", name), name).toContain("rgba(120,52,20,");
+      expect(token("dark", name), name).toContain("rgba(0,0,0,");
+    }
+    expect(token("light", "sh-cta")).toContain("rgba(237,110,52,");
+    expect(token("dark", "sh-cta")).toContain("rgba(237,110,52,");
+    expect(token("light", "sh-cta")).not.toBe(token("dark", "sh-cta"));
   });
 
   it("nenhum nome antigo de sombra sobrevive", () => {
@@ -46,7 +59,7 @@ describe("raio e bordas", () => {
     expect(offenders).toEqual([]);
   });
 
-  it("bordas de 1px de cartões e divisórias usam as linhas do tema escuro", () => {
+  it("bordas de 1px de cartões e divisórias usam as linhas do tema (--line), não branco translúcido", () => {
     const literal = files.flatMap(({ path, css }) =>
       [...css.matchAll(/border[^;\n]*1px solid rgba\(255,\s*255,\s*255,\s*0\.(06|08)\)/g)].map(() => path),
     );

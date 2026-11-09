@@ -17,6 +17,7 @@ import "./styles/dashboard.css";
 import "./styles/states.css";
 import "./styles/responsive.css";
 import "./styles/connectivity.css";
+import "./styles/theme-toggle.css";
 
 const queryClient = new QueryClient();
 

@@ -1,0 +1,67 @@
+/* Alternância de tema (D-038): pílula fixa no topo, como o botão de tema da proposta. Os PRs de casca (cliente, login,
+   admin) a encaixam no cabeçalho de cada tela. Z-index acima de cabeçalhos fixos e abaixo de sheets, menus e avisos. */
+.fb-theme-toggle {
+  position: fixed;
+  top: var(--s-3);
+  right: var(--s-3);
+  z-index: 15;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-2);
+  box-sizing: border-box;
+  height: 38px;
+  min-width: 38px;
+  padding: 0 14px;
+  background: var(--surface);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-pill);
+  box-shadow: var(--sh-1);
+  color: var(--ink-2);
+  font-family: var(--font-sans);
+  font-size: var(--text-small);
+  font-weight: var(--weight-medium);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-state) var(--ease-out),
+    transform var(--duration-press) var(--ease-out);
+}
+
+.fb-theme-toggle:hover {
+  background: var(--surface-2);
+}
+
+.fb-theme-toggle:active {
+  transform: scale(var(--press-scale));
+}
+
+/* Em telas de toque o alvo tem 44px. */
+@media (pointer: coarse) {
+  .fb-theme-toggle {
+    height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* No celular só o ícone aparece (o nome acessível continua no aria-label), para não cobrir o conteúdo do topo. */
+@media (max-width: 767px) {
+  .fb-theme-toggle {
+    padding: 0;
+    width: 38px;
+  }
+
+  .fb-theme-toggle__label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 767px) and (pointer: coarse) {
+  .fb-theme-toggle {
+    width: 44px;
+  }
+}

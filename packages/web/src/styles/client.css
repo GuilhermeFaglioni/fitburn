@@ -47,7 +47,7 @@
 .fb-client__nav-item.active,
 .fb-client__nav-item[aria-current="page"] {
   background: rgba(237, 110, 52, 0.14);
-  color: var(--color-primary-orange);
+  color: var(--color-brand-strong);
   font-weight: 500;
 }
 
@@ -234,7 +234,7 @@
 
 .fb-client-cell--head.fb-client-cell--today {
   background: rgba(237, 110, 52, 0.08);
-  color: var(--color-primary-orange);
+  color: var(--color-brand-strong);
 }
 
 .fb-client-cell__weekday {
@@ -245,7 +245,7 @@
 }
 
 .fb-client-cell--today .fb-client-cell__weekday {
-  color: var(--color-primary-orange);
+  color: var(--color-brand-strong);
 }
 
 .fb-client-cell__day {
@@ -379,7 +379,7 @@
 }
 
 .fb-availability--ALMOST_FULL {
-  color: var(--color-primary-orange);
+  color: var(--color-brand-strong);
 }
 
 .fb-availability--FULL {
@@ -564,7 +564,7 @@
   font-family: var(--font-sans);
   font-size: 13px;
   font-weight: 700;
-  color: var(--color-primary-orange);
+  color: var(--color-brand-strong);
   cursor: pointer;
 }
 
@@ -742,7 +742,7 @@
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.04em;
-  color: var(--color-primary-orange);
+  color: var(--color-brand-strong);
   background: rgba(237, 110, 52, 0.14);
   padding: 5px 10px;
   border-radius: var(--radius-sm);
@@ -886,7 +886,7 @@
   }
 
   .fb-client__tab.active {
-    color: var(--color-primary-orange);
+    color: var(--color-brand-strong);
   }
 
   .fb-client-title {
@@ -984,7 +984,7 @@
   margin-top: 2px;
   font-size: 12px;
   font-weight: 700;
-  color: var(--color-primary-orange);
+  color: var(--color-brand-strong);
 }
 
 .fb-booked-badge--chip {

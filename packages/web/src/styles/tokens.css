@@ -5,59 +5,58 @@
  * — Design System, Branding e Marketing.md para o histórico da marca.
  */
 :root {
-  /* Cores. Tema escuro único (decisão #134), com neutros quentes da proposta Oratry (decisão #132).
-     Os tokens claros (`*-on-light`) seguem só para as superfícies claras que ainda não migraram (admin, DS7). */
+  /* Cores legadas (--color-*): aliases dos tokens da base de design (bloco "Base de design" abaixo), para que as telas
+     ainda não migradas sigam o tema (D-038, #156). Cada PR de tela troca o alias pelo token real; o último apaga este
+     bloco. Os nomes "-on-dark" valem agora para o texto e a superfície da página, nos dois temas. */
 
-  /* Superfícies: fundo e cartão do tema escuro; branco só para as superfícies claras (admin, até DS7). */
-  /* Bordas de 1px: linha suave e linha de controle (proposta Oratry, tema escuro). */
-  --color-line: #2a2320;
-  --color-line-2: #3a302b;
-
-  --color-surface-000: #0a0a0a;
-  --color-surface-raised: #161311;
-  --color-surface-2: #1e1916;
+  /* Superfícies e bordas. */
+  --color-line: var(--line);
+  --color-line-2: var(--line-2);
+  --color-surface-000: var(--bg);
+  --color-surface-raised: var(--surface);
+  --color-surface-2: var(--surface-2);
 
   /* Texto. */
-  --color-ink-on-dark: #ffffff;
+  --color-ink-on-dark: var(--ink);
+  --color-ink-2-on-dark: var(--ink-2);
+  --color-text-muted-on-dark: var(--muted);
+  --color-text-faint-on-dark: var(--faint);
+  /* Os cinco alphas de texto secundário viram dois níveis sólidos: 40 e 45% -> --faint; 50, 55 e 65% -> --muted. */
+  --color-on-dark-40: var(--faint);
+  --color-on-dark-45: var(--faint);
+  --color-on-dark-50: var(--muted);
+  --color-on-dark-55: var(--muted);
+  --color-on-dark-65: var(--muted);
+
+  /* Texto sobre superfície clara fixa (cartões e painéis que continuam claros nos dois temas): valores do tema claro. */
   --color-ink-on-light: #1c1714;
-  --color-text-muted-on-dark: #a39a94;
   --color-text-muted-on-light: #6b5d55;
   --color-text-faint-on-light: #8e7f76;
-  /* Um alpha para cada nível de texto secundário das telas escuras que ainda não migrou para os tokens sólidos. */
-  --color-on-dark-40: rgba(255, 255, 255, 0.4);
-  --color-on-dark-45: rgba(255, 255, 255, 0.45);
-  --color-on-dark-50: rgba(255, 255, 255, 0.5);
-  --color-on-dark-55: rgba(255, 255, 255, 0.55);
-  --color-on-dark-65: rgba(255, 255, 255, 0.65);
-
-  /* Marca. O laranja e o vermelho-chama não mudam. O laranja de texto sobre claro é #A8401A (decisão #136). */
-  --color-primary-orange: #ed6e34;
-  --color-flame-red: #c23a1f;
   --color-accent-on-light: #a8401a;
-  --color-brand-strong: #f08a5a;
-  /* Texto branco sobre o laranja da marca: exceção de contraste aprovada para texto grande e negrito (decisão #136). */
-  --color-on-orange: #ffffff;
-  --gradient-cta: linear-gradient(145deg, #f58a55 0%, #ed6e34 45%, #c23a1f 100%);
-  --sh-cta: 0 10px 26px rgba(237, 110, 52, 0.3);
-
-  /* Estados: erro (fundo e borda translúcidos sobre o escuro); sucesso e aviso entram com os badges (DS4). */
-  --color-danger: #ff6d5a;
-  --color-danger-bg: rgba(255, 109, 90, 0.1);
-  --color-danger-border: rgba(255, 109, 90, 0.35);
   --color-error-text-on-light: #b42318;
   --color-success-text-on-light: #1e6b34;
 
-  /* Admin no tema escuro (DS7): tinta secundária, faint, estados e tintas. */
-  --color-ink-2-on-dark: #e9e1dc;
-  --color-text-faint-on-dark: #857b75;
-  --color-success: #5cc98a;
-  --color-success-bg: rgba(92, 201, 138, 0.1);
-  --color-success-border: rgba(92, 201, 138, 0.35);
-  --color-warn: #f2c25c;
-  --color-warn-border: rgba(242, 194, 92, 0.35);
-  --color-info: #8fb4ea;
-  --color-info-bg: rgba(143, 180, 234, 0.12);
-  --color-warm-bg: rgba(237, 110, 52, 0.08);
+  /* Marca. O laranja e o vermelho-chama não mudam entre temas; o laranja de texto segue o tema (--brand-strong). */
+  --color-primary-orange: var(--brand);
+  --color-flame-red: var(--flame);
+  --color-brand-strong: var(--brand-strong);
+  /* Texto branco sobre o laranja da marca: exceção de contraste aprovada para texto grande e negrito (decisão #136). */
+  --color-on-orange: #ffffff;
+  --gradient-cta: var(--grad-cta);
+
+  /* Estados. Sem equivalente na base: aviso e caixa de aviso usam a tinta e a borda de marca; o info (só o selo de
+     perfil em UsersPage) usa o selo neutro. */
+  --color-danger: var(--danger);
+  --color-danger-bg: var(--danger-bg);
+  --color-danger-border: var(--danger-line);
+  --color-success: var(--success);
+  --color-success-bg: var(--success-bg);
+  --color-success-border: var(--success-line);
+  --color-warn: var(--warn);
+  --color-warn-border: var(--brand-line);
+  --color-warm-bg: var(--brand-tint);
+  --color-info: var(--ink-2);
+  --color-info-bg: var(--surface-2);
 
   /* Espaçamento base 4 (DS5): --s-1 é 4px, --s-24 é 96px. Layouts compartilhados usam estes tokens. */
   --s-1: 4px;
@@ -117,14 +116,6 @@
   /* Bottom sheet do mobile: só os cantos de cima. */
   --radius-sheet: 16px 16px 0 0;
 
-  /* Elevação (DS3, proposta Oratry): sombras tingidas no tema escuro. Cards no fluxo usam --sh-1; menus e
-     popovers --sh-2; diálogos e sheets --sh-3. Não há halo sem deslocamento. */
-  --sh-1: 0 5px 14px rgba(0, 0, 0, 0.35);
-  --sh-2: 0 12px 38px rgba(0, 0, 0, 0.45);
-  --sh-3: 0 22px 60px rgba(0, 0, 0, 0.55);
-  /* Anel de foco de 3px (a cor de marca com 35% de opacidade). */
-  --sh-focus: 0 0 0 3px rgba(237, 110, 52, 0.35);
-
   /* Motion: curvas e deslocamentos compartilhados (os keyframes ficam em global.css). */
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
@@ -155,10 +146,12 @@
   }
 }
 
-/* Base de design aprovada (docs/design/design-system.md, D-038): tokens novos, ainda sem uso.
-   O tema segue a preferência do sistema; a alternância manual entra no PR de tema.
-   Os --color-* acima seguem até a migração das telas. */
+/* Base de design aprovada (docs/design/design-system.md, D-038). O tema segue a preferência do sistema
+   (prefers-color-scheme); a alternância manual escreve data-theme no <html> (src/lib/theme, public/theme-init.js).
+   Claro é o :root; o escuro tem dois blocos com as MESMAS declarações: o do sistema (sem escolha manual de claro)
+   e o da escolha manual. Mudou um, mude o outro (test/theme-css.test.ts confere o pareamento). */
 :root {
+  color-scheme: light;
   --brand: #ED6E34;
   --flame: #C23A1F;
   --brand-strong: #A8401A;
@@ -192,9 +185,18 @@
   --r-lg: 20px;
   --r-xl: 28px;
   --r-pill: 999px;
+  /* Elevação (DS3): sombras tingidas de marrom no claro e pretas no escuro; cards no fluxo usam --sh-1, menus e
+     popovers --sh-2, diálogos e sheets --sh-3, ações --sh-cta. Não há halo sem deslocamento. */
+  --sh-1: 0 5px 14px rgba(120,52,20,.06);
+  --sh-2: 0 12px 38px rgba(120,52,20,.08);
+  --sh-3: 0 22px 60px rgba(120,52,20,.10);
+  --sh-cta: 0 10px 23px rgba(237,110,52,.28);
+  /* Anel de foco de 3px (a cor de marca com 35% de opacidade), igual nos dois temas. */
+  --sh-focus: 0 0 0 3px rgba(237,110,52,.35);
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
+    color-scheme: dark;
     --brand-strong: #F08A5A;
     --brand-hover: #F58A55;
     --brand-tint: #2A1810;
@@ -219,9 +221,14 @@
     --success-line: rgba(92,201,138,.35);
     --warn: #F2C25C;
     --warn-bg: rgba(242,194,92,.1);
+    --sh-1: 0 5px 14px rgba(0,0,0,.35);
+    --sh-2: 0 12px 38px rgba(0,0,0,.45);
+    --sh-3: 0 22px 60px rgba(0,0,0,.55);
+    --sh-cta: 0 10px 26px rgba(237,110,52,.30);
   }
 }
 :root[data-theme="dark"] {
+  color-scheme: dark;
   --brand-strong: #F08A5A;
   --brand-hover: #F58A55;
   --brand-tint: #2A1810;
@@ -246,4 +253,8 @@
   --success-line: rgba(92,201,138,.35);
   --warn: #F2C25C;
   --warn-bg: rgba(242,194,92,.1);
+  --sh-1: 0 5px 14px rgba(0,0,0,.35);
+  --sh-2: 0 12px 38px rgba(0,0,0,.45);
+  --sh-3: 0 22px 60px rgba(0,0,0,.55);
+  --sh-cta: 0 10px 26px rgba(237,110,52,.30);
 }
