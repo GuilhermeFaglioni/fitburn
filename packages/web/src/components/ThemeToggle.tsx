@@ -3,8 +3,8 @@ import { useTheme } from "../lib/theme/useTheme";
 
 /**
  * Alternância manual entre tema claro e escuro (D-038). O texto mostra o tema em vigor; a escolha é guardada por
- * aparelho. Com `inline` o botão segue o fluxo do cabeçalho da casca (cliente); sem ele fica fixo no topo, que é como
- * o AppShell o oferece às telas cuja casca ainda não tem cabeçalho próprio (login, admin).
+ * aparelho. Com `inline` o botão segue o fluxo do cabeçalho da casca (cliente e admin); sem ele fica fixo no topo, que é como
+ * o AppShell o oferece às telas cuja casca ainda não tem cabeçalho próprio (login, Presença).
  */
 export function ThemeToggle({ inline = false }: { inline?: boolean }) {
   const { theme, toggle } = useTheme();

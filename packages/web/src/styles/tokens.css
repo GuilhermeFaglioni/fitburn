@@ -86,6 +86,9 @@
   /* Largura máxima do conteúdo e respiro lateral (mobile primeiro). */
   --container-max: 1200px;
   --container-gutter: var(--s-4);
+  /* Layout do admin (aprovados pelo dono em #156): barra lateral e coluna de alunos da lista + detalhe. */
+  --sidebar-w: 224px;
+  --list-w: 260px;
 
   /* Tipografia (DS2, decisão #135). Títulos em DM Sans 700 com tracking negativo; Cormorant só como ênfase em itálico. */
   --font-serif: "Cormorant", Georgia, "Times New Roman", serif;

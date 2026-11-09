@@ -277,3 +277,60 @@ describe("BottomNav", () => {
     }
   });
 });
+
+describe("Dialog em variante drawer (gaveta)", () => {
+  function DrawerHarness() {
+    const [open, setOpen] = useState(false);
+    return (
+      <>
+        <button type="button" onClick={() => setOpen(true)}>
+          Abrir menu
+        </button>
+        {open && (
+          <Dialog
+            id="gaveta"
+            variant="drawer"
+            title="Menu"
+            onClose={() => setOpen(false)}
+            topBar={
+              <button type="button" onClick={() => setOpen(false)}>
+                Fechar
+              </button>
+            }
+            footer={<button type="button">Sair</button>}
+          >
+            <a href="/clientes">Clientes</a>
+          </Dialog>
+        )}
+      </>
+    );
+  }
+
+  it("é um diálogo modal nomeado, com o id pedido e as classes da gaveta (não as da folha)", async () => {
+    const user = userEvent.setup();
+    render(<DrawerHarness />);
+    await user.click(screen.getByRole("button", { name: "Abrir menu" }));
+
+    const dialog = screen.getByRole("dialog", { name: "Menu" });
+    expect(dialog).toHaveAttribute("aria-modal", "true");
+    expect(dialog).toHaveAttribute("id", "gaveta");
+    expect(dialog).toHaveClass("fb-ui-dialog--drawer");
+    expect(dialog).not.toHaveClass("fb-ui-dialog--sheet");
+    expect(dialog.parentElement).toHaveClass("fb-ui-dialog-backdrop--drawer");
+    expect(within(dialog).getByRole("link", { name: "Clientes" })).toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: "Sair" })).toBeInTheDocument();
+  });
+
+  it("foco entra no primeiro controle (a barra superior), Esc fecha e o foco volta a quem abriu", async () => {
+    const user = userEvent.setup();
+    render(<DrawerHarness />);
+    const opener = screen.getByRole("button", { name: "Abrir menu" });
+    await user.click(opener);
+    expect(screen.getByRole("button", { name: "Fechar" })).toHaveFocus();
+
+    await user.keyboard("{Escape}");
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(opener).toHaveFocus();
+  });
+});

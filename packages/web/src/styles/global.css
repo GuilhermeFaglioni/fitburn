@@ -82,6 +82,15 @@ main:focus,
   }
 }
 
+@keyframes fb-drawer-in {
+  from {
+    transform: translateX(calc(var(--sheet-offset) * -1));
+  }
+  to {
+    transform: none;
+  }
+}
+
 @keyframes fb-sheet-in {
   from {
     transform: translateY(var(--sheet-offset));

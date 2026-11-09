@@ -113,14 +113,16 @@ Fontes: `--font-sans` (DM Sans, para tudo) e `--font-serif` (Cormorant, só em i
 
 Peças e estados (repouso, hover, foco, pressionado com escala 0,97, desabilitado, erro e carregando) estão na seção "Componentes" de `proposta-fitburn-oratry.html`. Botões: primário (gradiente CTA), secundário, soft, ghost, perigo e pequeno. Campos: repouso, foco, erro, sucesso e desabilitado.
 
-## Tokens novos (aguardando aprovação)
+## Layout do admin (aprovados)
 
-Tokens que o preview de todas as telas (`preview-todas-telas.html`) precisou e que não existem na proposta. Só viram código depois da aprovação. Cores literais foram evitadas: o preview reaproveita os tokens acima. O branco `#fff` e o `rgba(255,255,255,.x)` sobre o gradiente CTA (botão, chip ativo, card de plano) seguem como na proposta.
+Tokens que o preview de todas as telas (`preview-todas-telas.html`) precisou e que não existem na proposta. Aprovados pelo dono na issue #156; estão em `tokens.css` (`--sidebar-w` desde o PR 12, `--list-w` para o PR 17). Cores literais foram evitadas: o preview reaproveita os tokens acima. O branco `#fff` e o `rgba(255,255,255,.x)` sobre o gradiente CTA (botão, chip ativo, card de plano) seguem como na proposta.
 
 | Token | Claro | Escuro | Tela de origem | Motivo |
 |---|---|---|---|---|
 | `--sidebar-w` | 224px | — | Todas as telas do admin | Largura da barra lateral do admin (11 itens de menu, "Templates & modalidades" é o mais longo). A proposta só mostra uma barra superior de exemplo. |
 | `--list-w` | 260px | — | Fichas de treino, Metas | Largura da coluna de alunos no layout lista + detalhe. Sem equivalente na proposta. |
+
+Token novo que o preview trouxer e ainda não estiver aprovado fica fora desta seção, numa seção "Tokens novos (aguardando aprovação)", e só vira código depois da aprovação.
 
 ## Como adicionar um token
 

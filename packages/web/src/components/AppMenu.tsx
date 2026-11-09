@@ -1,124 +1,107 @@
-import { useEffect, useId, useRef, useState } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import { useAuth } from "../lib/auth/AuthContext";
-import { visibleAdminMenuItems } from "../lib/auth/areas";
+import { visibleAdminMenuItems, type AdminMenuItem } from "../lib/auth/areas";
 import "./AppMenu.css";
-import { useDialogFocus } from "./Modal";
+import { AdminBrand } from "./AdminBrand";
 import { RequiresNetwork } from "./RequiresNetwork";
+import { Button } from "./ui/Button";
+import { Dialog } from "./ui/Dialog";
+
+interface AppMenuProps {
+  /** `id` da gaveta (celular), para o `aria-controls` do botão Menu da casca. */
+  drawerId?: string;
+  /** A gaveta do celular está aberta. No desktop a navegação é a barra lateral e nunca "abre". */
+  drawerOpen?: boolean;
+  /** Pedido para fechar a gaveta (Esc, clique no fundo ou botão Fechar). */
+  onDrawerClose?: () => void;
+}
+
+function MenuLinks({ items }: { items: AdminMenuItem[] }) {
+  return (
+    <>
+      <nav aria-label="Navegação principal">
+        <ul className="app-menu__list">
+          {items.map((item) => (
+            <li key={item.to}>
+              <NavLink to={item.to} className="app-menu__link">
+                {item.label}
+              </NavLink>
+            </li>
+          ))}
+        </ul>
+      </nav>
+      <nav aria-label="Documentos legais" className="app-menu__legal">
+        <NavLink to="/privacidade" className="app-menu__link app-menu__link--small">
+          Política de privacidade
+        </NavLink>
+        <NavLink to="/termos" className="app-menu__link app-menu__link--small">
+          Termos de uso
+        </NavLink>
+      </nav>
+    </>
+  );
+}
+
+function MenuAccount() {
+  const { user, logout } = useAuth();
+  if (!user) return null;
+  return (
+    <div className="app-menu__account">
+      <div className="app-menu__account-info">
+        <span className="app-menu__account-name">{user.fullName}</span>
+        <span className="app-menu__account-profile">{user.profile.name}</span>
+      </div>
+      <NavLink to="/perfil" className="app-menu__link">
+        Minha conta
+      </NavLink>
+      <RequiresNetwork>
+        <button type="button" className="app-menu__link app-menu__logout" onClick={() => void logout()}>
+          Sair
+        </button>
+      </RequiresNetwork>
+    </div>
+  );
+}
 
 /**
- * Navegação administrativa: barra lateral fixa no desktop; no mobile, uma barra
- * superior com o botão "Menu" que abre a mesma navegação como gaveta. O
- * mobile/desktop é decidido só por CSS (AppMenu.css); a gaveta fechada fica com
- * visibility:hidden, então seus links saem da tabulação e da árvore de acessibilidade.
+ * Navegação administrativa (#156, D-038): barra lateral clara de `--sidebar-w` no desktop, com a marca, as telas que
+ * o perfil vê (`visibleAdminMenuItems`, na ordem do menu), os documentos legais e, no rodapé, o usuário, "Minha conta"
+ * e "Sair". No celular a barra some (CSS) e a mesma navegação abre como gaveta (`Dialog` variante `drawer`), que a casca
+ * aciona pelo botão Menu: aberta, o foco entra, o Tab fica preso, Esc fecha e o foco volta ao botão.
  */
-export function AppMenu() {
-  const { user, logout } = useAuth();
-  const visibleItems = user ? visibleAdminMenuItems(user) : [];
-  const [open, setOpen] = useState(false);
-  const panelId = useId();
-  const toggleRef = useRef<HTMLButtonElement>(null);
-  // Aberta, a gaveta se comporta como diálogo modal: o foco entra, o Tab fica preso e o foco
-  // volta ao botão Menu ao fechar. No desktop ela é a barra lateral e nunca "abre".
-  const panelRef = useDialogFocus<HTMLDivElement>(open);
-  const { pathname } = useLocation();
-
-  // Escolher uma tela fecha a gaveta.
-  useEffect(() => {
-    setOpen(false);
-  }, [pathname]);
-
-  useEffect(() => {
-    if (!open) return;
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        setOpen(false);
-        toggleRef.current?.focus();
-      }
-    }
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [open]);
-
-  if (visibleItems.length === 0) return null;
+export function AppMenu({ drawerId, drawerOpen = false, onDrawerClose }: AppMenuProps) {
+  const { user } = useAuth();
+  const items = user ? visibleAdminMenuItems(user) : [];
+  if (items.length === 0) return null;
 
   return (
     <>
-      <div className="app-topbar">
-        <span className="app-topbar__brand">FITBURN</span>
-        <button
-          ref={toggleRef}
-          type="button"
-          className="app-topbar__toggle"
-          aria-expanded={open}
-          aria-controls={panelId}
-          onClick={() => setOpen((current) => !current)}
-        >
-          Menu
-        </button>
-      </div>
-      <div
-        className={`app-menu__scrim${open ? " app-menu__scrim--open" : ""}`}
-        aria-hidden="true"
-        onClick={() => setOpen(false)}
-      />
-      <div
-        ref={panelRef}
-        id={panelId}
-        className={`app-menu${open ? " app-menu--open" : ""}`}
-        role={open ? "dialog" : undefined}
-        aria-modal={open ? true : undefined}
-        aria-label={open ? "Menu" : undefined}
-        tabIndex={open ? -1 : undefined}
-      >
-        <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
-          <span className="app-menu__brand">FITBURN</span>
-          <nav aria-label="Navegação principal">
-            <ul className="app-menu__list">
-              {visibleItems.map((item) => (
-                <li key={item.to}>
-                  <NavLink
-                    to={item.to}
-                    className={({ isActive }) => `app-menu__link${isActive ? " active" : ""}`}
-                  >
-                    {item.label}
-                  </NavLink>
-                </li>
-              ))}
-              <li>
-                <NavLink to="/privacidade" className="app-menu__link">
-                  Política de privacidade
-                </NavLink>
-              </li>
-              <li>
-                <NavLink to="/termos" className="app-menu__link">
-                  Termos de uso
-                </NavLink>
-              </li>
-            </ul>
-          </nav>
+      <div className="app-menu">
+        <AdminBrand />
+        <div className="app-menu__scroll">
+          <MenuLinks items={items} />
         </div>
-
-        {user && (
-          <div className="app-menu__account">
-            <div className="app-menu__account-info">
-              <span className="app-menu__account-name">{user.fullName}</span>
-              <span className="app-menu__account-profile">{user.profile.name}</span>
-              <NavLink
-                to="/perfil"
-                className={({ isActive }) => `app-menu__account-link${isActive ? " active" : ""}`}
-              >
-                Minha conta
-              </NavLink>
-            </div>
-            <RequiresNetwork>
-              <button type="button" className="app-menu__logout" onClick={() => void logout()}>
-                Sair
-              </button>
-            </RequiresNetwork>
-          </div>
-        )}
+        <MenuAccount />
       </div>
+      {drawerOpen && (
+        <Dialog
+          id={drawerId}
+          variant="drawer"
+          title="Menu"
+          onClose={() => onDrawerClose?.()}
+          topBar={
+            <>
+              <AdminBrand />
+              <Button variant="ghost" size="sm" onClick={() => onDrawerClose?.()}>
+                Fechar
+              </Button>
+            </>
+          }
+          footer={<MenuAccount />}
+        >
+          <MenuLinks items={items} />
+        </Dialog>
+      )}
     </>
   );
 }

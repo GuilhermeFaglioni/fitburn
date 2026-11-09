@@ -62,21 +62,25 @@ function renderAt(path: string) {
 describe("casca administrativa no mobile", () => {
   beforeEach(() => mockSession("Administrador", ADMIN_PERMISSIONS));
 
-  it("o botão Menu abre e fecha a navegação, refletindo o estado em aria-expanded", async () => {
+  /** A gaveta aberta é o diálogo (role="dialog"); no jsdom a barra lateral também está no DOM, então os links vêm dela. */
+  const drawer = () => screen.getByRole("dialog", { name: "Menu" });
+
+  it("o botão Menu abre e fecha a gaveta, refletindo o estado em aria-expanded e apontando para ela em aria-controls", async () => {
     renderAt("/dashboard");
     const user = userEvent.setup();
 
     const toggle = await screen.findByRole("button", { name: "Menu" });
     expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 
     await user.click(toggle);
     expect(toggle).toHaveAttribute("aria-expanded", "true");
-    const panel = document.getElementById(toggle.getAttribute("aria-controls") as string);
-    expect(panel).not.toBeNull();
-    expect(within(panel as HTMLElement).getByRole("link", { name: "Clientes" })).toBeVisible();
+    expect(drawer()).toHaveAttribute("id", toggle.getAttribute("aria-controls"));
+    expect(within(drawer()).getByRole("link", { name: "Clientes" })).toBeVisible();
 
-    await user.click(toggle);
+    await user.click(within(drawer()).getByRole("button", { name: "Fechar" }));
     expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
   it("fecha o menu com Esc e devolve o foco ao botão Menu", async () => {
@@ -88,7 +92,8 @@ describe("casca administrativa no mobile", () => {
     await user.keyboard("{Escape}");
 
     expect(toggle).toHaveAttribute("aria-expanded", "false");
-    expect(toggle).toHaveFocus();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    await waitFor(() => expect(toggle).toHaveFocus());
   });
 
   it("fecha o menu ao escolher uma tela", async () => {
@@ -97,10 +102,11 @@ describe("casca administrativa no mobile", () => {
     const toggle = await screen.findByRole("button", { name: "Menu" });
     await user.click(toggle);
 
-    await user.click(screen.getByRole("link", { name: "Clientes" }));
+    await user.click(within(drawer()).getByRole("link", { name: "Clientes" }));
 
     expect(await screen.findByRole("heading", { name: "Clientes", level: 1 })).toBeInTheDocument();
     expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
   describe("gaveta como diálogo modal (gestão de foco)", () => {
@@ -109,34 +115,35 @@ describe("casca administrativa no mobile", () => {
       const user = userEvent.setup();
       const toggle = await screen.findByRole("button", { name: "Menu" });
       await user.click(toggle);
-      const panel = document.getElementById(toggle.getAttribute("aria-controls") as string) as HTMLElement;
-      return { user, toggle, panel };
+      return { user, toggle, panel: drawer() };
     }
 
-    it("aberta, é um diálogo modal nomeado e o foco entra nela", async () => {
+    it("aberta, é um diálogo modal nomeado, com a navegação e a conta, e o foco entra nela", async () => {
       const { panel } = await openDrawer();
 
-      expect(panel).toHaveAttribute("role", "dialog");
       expect(panel).toHaveAttribute("aria-modal", "true");
       expect(panel).toHaveAccessibleName("Menu");
+      expect(within(panel).getByRole("navigation", { name: "Navegação principal" })).toBeInTheDocument();
+      expect(within(panel).getByRole("link", { name: "Minha conta" })).toBeInTheDocument();
+      expect(within(panel).getByRole("button", { name: "Sair" })).toBeInTheDocument();
       expect(panel.contains(document.activeElement)).toBe(true);
     });
 
-    it("fechada (ou no desktop, onde é a barra lateral) não é um diálogo nem rouba o foco", async () => {
+    it("fechada (ou no desktop, onde é a barra lateral) não há diálogo nem o foco é roubado", async () => {
       renderAt("/dashboard");
       const toggle = await screen.findByRole("button", { name: "Menu" });
-      const panel = document.getElementById(toggle.getAttribute("aria-controls") as string) as HTMLElement;
 
-      expect(panel).not.toHaveAttribute("role");
-      expect(panel).not.toHaveAttribute("aria-modal");
-      expect(panel.contains(document.activeElement)).toBe(false);
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+      expect(toggle).not.toHaveFocus();
+      expect(document.body.contains(document.activeElement) && document.activeElement !== document.body).toBe(false);
     });
 
     it("o Tab fica preso na gaveta: do último item volta ao primeiro, e o Shift+Tab faz o inverso", async () => {
       const { user, panel } = await openDrawer();
       const items = within(panel).getAllByRole("link").concat(within(panel).getAllByRole("button"));
-      const first = items[0];
-      const last = items[items.length - 1];
+      const sorted = items.sort((a, b) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1));
+      const first = sorted[0];
+      const last = sorted[sorted.length - 1];
 
       last.focus();
       await user.tab();
@@ -146,19 +153,20 @@ describe("casca administrativa no mobile", () => {
       expect(last).toHaveFocus();
     });
 
-    it("fechar pela cortina devolve o foco ao botão Menu", async () => {
-      const { user, toggle } = await openDrawer();
+    it("fechar pelo fundo escurecido devolve o foco ao botão Menu", async () => {
+      const { user, toggle, panel } = await openDrawer();
 
-      await user.click(document.querySelector(".app-menu__scrim") as HTMLElement);
+      await user.click(panel.parentElement as HTMLElement);
 
       expect(toggle).toHaveAttribute("aria-expanded", "false");
-      expect(toggle).toHaveFocus();
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+      await waitFor(() => expect(toggle).toHaveFocus());
     });
 
     it("escolher uma tela não perde o foco: ele vai ao conteúdo da nova tela, não some com a gaveta", async () => {
-      const { user } = await openDrawer();
+      const { user, panel } = await openDrawer();
 
-      await user.click(screen.getByRole("link", { name: "Clientes" }));
+      await user.click(within(panel).getByRole("link", { name: "Clientes" }));
 
       expect(await screen.findByRole("heading", { name: "Clientes", level: 1 })).toBeInTheDocument();
       expect(screen.getByRole("main")).toHaveFocus();

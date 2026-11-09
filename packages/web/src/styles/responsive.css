@@ -143,12 +143,12 @@
 
 @media (max-width: 767px) {
   .fb-admin-content {
-    --fb-admin-pad-x: 16px;
-    --fb-admin-pad-y: 20px;
+    --fb-admin-pad-x: var(--container-gutter);
+    --fb-admin-pad-y: var(--s-5);
   }
 
   .fb-page-title {
-    font-size: 22px;
+    font-size: var(--text-h2);
   }
 
   .fb-toolbar,
