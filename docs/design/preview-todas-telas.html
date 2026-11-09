@@ -1,0 +1,690 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fitburn: preview de todas as telas</title>
+<meta name="description" content="Preview de todas as telas do app Fitburn com a nova base de design. Dados fictícios.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@1,600;1,700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap" rel="stylesheet">
+<style>
+/* =========================================================
+   Tokens. Cores da marca Fitburn (tokens.css do app):
+   laranja #ED6E34 e vermelho-chama #C23A1F. Neutros tingidos
+   de quente, como o Oratry tinge os dele de azul.
+   ========================================================= */
+:root{
+  color-scheme: light;
+  --brand: #ED6E34;            /* laranja Fitburn */
+  --flame: #C23A1F;            /* vermelho-chama do logo */
+  --brand-strong: #A8401A;     /* texto/link laranja sobre claro (6,15:1) */
+  --brand-hover: #D85F28;
+  --brand-tint: #FFF4EE;       /* superfície suave */
+  --brand-tint-2: #FFE8DC;
+  --brand-line: #F7CDB7;       /* borda de controle de marca */
+  --grad-cta: linear-gradient(145deg,#F58A55 0%,#ED6E34 45%,#C23A1F 100%);
+  --grad-text: linear-gradient(100deg,#C23A1F,#ED6E34 60%,#F7A274);
+
+  --bg: #FFFFFF;
+  --bg-soft: #FFFAF7;
+  --surface: #FFFFFF;
+  --surface-2: #FBF5F1;
+  --ink: #1C1714;
+  --ink-2: #3A302A;
+  --muted: #6B5D55;
+  --faint: #8E7F76;
+  --line: #EFE2DA;
+  --line-2: #E5D3C8;
+
+  --danger: #B42318;  --danger-bg: #FDECEA;  --danger-line: #F5C2BC;
+  --success: #1E6B34; --success-bg: #EAF7EE; --success-line: #BFE3CA;
+  --warn: #8A5A00;    --warn-bg: #FFF5DB;
+
+  --font-sans: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-serif: "Cormorant", Georgia, serif;
+
+  --r-xs: 6px; --r-sm: 10px; --r-md: 14px; --r-lg: 20px; --r-xl: 28px; --r-pill: 999px;
+
+  --sh-1: 0 5px 14px rgba(120,52,20,.06);
+  --sh-2: 0 12px 38px rgba(120,52,20,.08);
+  --sh-3: 0 22px 60px rgba(120,52,20,.10);
+  --sh-cta: 0 10px 23px rgba(237,110,52,.28);
+  --sh-focus: 0 0 0 3px rgba(237,110,52,.35);
+
+  --s-1:4px; --s-2:8px; --s-3:12px; --s-4:16px; --s-5:20px; --s-6:24px; --s-8:32px; --s-12:48px; --s-16:64px; --s-24:96px;
+  --ease-out: cubic-bezier(.23,1,.32,1);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --brand-strong:#F08A5A; --brand-hover:#F58A55;
+    --brand-tint:#2A1810; --brand-tint-2:#3A1F12; --brand-line:#5A2E1A;
+    --grad-text: linear-gradient(100deg,#F06A3A,#ED6E34 55%,#FFB48C);
+    --bg:#0A0A0A; --bg-soft:#100D0C; --surface:#161311; --surface-2:#1E1916;
+    --ink:#FFFFFF; --ink-2:#E9E1DC; --muted:#A39A94; --faint:#857B75;
+    --line:#2A2320; --line-2:#3A302B;
+    --danger:#FF6D5A; --danger-bg:rgba(255,109,90,.1); --danger-line:rgba(255,109,90,.35);
+    --success:#5CC98A; --success-bg:rgba(92,201,138,.1); --success-line:rgba(92,201,138,.35);
+    --warn:#F2C25C; --warn-bg:rgba(242,194,92,.1);
+    --sh-1: 0 5px 14px rgba(0,0,0,.35);
+    --sh-2: 0 12px 38px rgba(0,0,0,.45);
+    --sh-3: 0 22px 60px rgba(0,0,0,.55);
+    --sh-cta: 0 10px 26px rgba(237,110,52,.30);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --brand-strong:#F08A5A; --brand-hover:#F58A55;
+  --brand-tint:#2A1810; --brand-tint-2:#3A1F12; --brand-line:#5A2E1A;
+  --grad-text: linear-gradient(100deg,#F06A3A,#ED6E34 55%,#FFB48C);
+  --bg:#0A0A0A; --bg-soft:#100D0C; --surface:#161311; --surface-2:#1E1916;
+  --ink:#FFFFFF; --ink-2:#E9E1DC; --muted:#A39A94; --faint:#857B75;
+  --line:#2A2320; --line-2:#3A302B;
+  --danger:#FF6D5A; --danger-bg:rgba(255,109,90,.1); --danger-line:rgba(255,109,90,.35);
+  --success:#5CC98A; --success-bg:rgba(92,201,138,.1); --success-line:rgba(92,201,138,.35);
+  --warn:#F2C25C; --warn-bg:rgba(242,194,92,.1);
+  --sh-1: 0 5px 14px rgba(0,0,0,.35);
+  --sh-2: 0 12px 38px rgba(0,0,0,.45);
+  --sh-3: 0 22px 60px rgba(0,0,0,.55);
+  --sh-cta: 0 10px 26px rgba(237,110,52,.30);
+}
+
+/* ========================= Base ========================= */
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+html,body{overflow-x:clip}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.55 var(--font-sans)}
+img,svg{display:block;max-width:100%}
+a{color:var(--brand-strong);text-decoration:none}
+a:hover{text-decoration:underline}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--brand);outline-offset:3px;border-radius:6px}
+.wrap{max-width:1240px;margin:0 auto;padding:0 clamp(16px,5vw,48px)}
+.kicker{margin:0 0 14px;font-size:11px;font-weight:700;letter-spacing:.32em;text-transform:uppercase;color:var(--brand-strong)}
+h1,h2,h3,h4{margin:0;color:var(--ink);font-weight:700}
+.h-display{font-size:clamp(38px,6.4vw,72px);line-height:1.04;letter-spacing:-.045em;text-wrap:balance}
+.h-display em,.h2 em{font-family:var(--font-serif);font-style:italic;font-weight:700;letter-spacing:-.02em;background:var(--grad-text);-webkit-background-clip:text;background-clip:text;color:transparent;padding-right:.06em}
+.h2{font-size:clamp(30px,4.2vw,52px);line-height:1.06;letter-spacing:-.045em;text-wrap:balance}
+.lead{font-size:clamp(16px,1.6vw,19px);line-height:1.6;color:var(--muted);max-width:620px;margin:20px 0 0}
+section{padding:clamp(64px,9vw,112px) 0;position:relative}
+section + section{border-top:1px solid var(--line)}
+.sec-head{max-width:760px;margin:0 0 clamp(32px,5vw,56px)}
+.sec-head.center{margin-left:auto;margin-right:auto;text-align:center}
+.sec-head.center .lead{margin-left:auto;margin-right:auto}
+.sub{font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin:40px 0 16px}
+.sub:first-child{margin-top:0}
+
+/* ========================= Header ========================= */
+.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:saturate(1.4) blur(12px);-webkit-backdrop-filter:saturate(1.4) blur(12px);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;gap:24px;height:72px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.18em;font-size:15px;color:var(--ink)}
+.brand svg{width:30px;height:30px}
+.top nav{display:flex;gap:28px;margin-left:auto}
+.top nav a{color:var(--muted);font-size:14px;font-weight:500}
+.top nav a:hover{color:var(--ink);text-decoration:none}
+.theme-btn{border:1px solid var(--line-2);background:var(--surface);border-radius:var(--r-pill);height:38px;padding:0 14px;font-size:13px;font-weight:500;color:var(--ink-2);cursor:pointer;display:flex;align-items:center;gap:8px}
+.theme-btn:hover{background:var(--surface-2)}
+@media (max-width:820px){.top nav{display:none}.theme-btn{margin-left:auto}}
+
+/* ========================= Hero ========================= */
+.hero{padding:clamp(48px,8vw,104px) 0 clamp(56px,8vw,96px);background:
+  radial-gradient(circle at 12% 20%,rgba(237,110,52,.10),transparent 32%),
+  radial-gradient(circle at 88% 70%,rgba(194,58,31,.08),transparent 34%),var(--bg)}
+.hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:48px;align-items:center}
+.hero .actions{display:flex;flex-wrap:wrap;gap:14px;margin-top:32px}
+.hero .facts{display:flex;flex-wrap:wrap;gap:24px;margin-top:40px}
+.hero .facts div{padding-left:14px;border-left:1px solid var(--line-2);font-size:13px;color:var(--muted);line-height:1.45}
+.hero .facts strong{display:block;color:var(--ink);font-size:20px;letter-spacing:-.03em}
+.orbit-scene{position:relative;aspect-ratio:1;max-width:460px;margin-inline:auto;width:100%}
+.orbit-scene::before{content:"";position:absolute;inset:10%;border-radius:50%;background:radial-gradient(circle,rgba(237,110,52,.22),rgba(237,110,52,.06) 45%,transparent 70%);filter:blur(10px)}
+.orbit-ring{position:absolute;left:4%;top:30%;width:92%;height:40%;border:1px solid var(--brand-line);border-radius:50%;transform:rotate(-20deg)}
+.orbit-flame{position:absolute;left:26%;top:26%;width:48%;height:48%;filter:drop-shadow(0 24px 40px rgba(194,58,31,.25))}
+.float{position:absolute;display:flex;gap:10px;align-items:center;padding:12px 14px;width:min(196px,48%);border-radius:var(--r-lg);background:color-mix(in srgb,var(--surface) 92%,transparent);border:1px solid var(--line);box-shadow:var(--sh-2);font-size:12px;color:var(--muted);line-height:1.35}
+.float strong{display:block;font-size:13px;color:var(--ink)}
+.float .ic{flex:0 0 34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--brand-tint);color:var(--brand-strong)}
+.f1{top:4%;left:0}.f2{top:42%;right:0}.f3{bottom:4%;left:8%}
+@media (max-width:900px){.hero-grid{grid-template-columns:1fr}.orbit-scene{max-width:380px}}
+
+/* ========================= Botões ========================= */
+.btn{--h:48px;display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:var(--h);padding:0 22px;border-radius:var(--r-md);border:1px solid transparent;font-weight:700;font-size:15px;cursor:pointer;text-decoration:none;white-space:nowrap;transition:transform .16s var(--ease-out),filter .16s var(--ease-out),background-color .14s var(--ease-out),box-shadow .16s var(--ease-out)}
+.btn:hover{text-decoration:none}
+.btn:active{transform:scale(.97)}
+.btn-primary{color:#fff;background:var(--grad-cta);border-color:#E0602A;box-shadow:var(--sh-cta)}
+.btn-primary:hover{filter:brightness(1.05);transform:translateY(-1px)}
+.btn-secondary{color:var(--ink-2);background:var(--surface);border-color:var(--line-2)}
+.btn-secondary:hover{background:var(--surface-2)}
+.btn-soft{color:var(--brand-strong);background:var(--brand-tint);border-color:var(--brand-line)}
+.btn-soft:hover{background:var(--brand-tint-2)}
+.btn-ghost{color:var(--muted);background:transparent;padding:0 6px}
+.btn-ghost:hover{color:var(--ink)}
+.btn-danger{color:#fff;background:#B42318;border-color:#B42318}
+.btn[disabled],.btn[aria-disabled="true"]{opacity:.45;cursor:not-allowed;box-shadow:none;transform:none;filter:none}
+.btn-sm{--h:38px;padding:0 14px;font-size:13px;border-radius:var(--r-sm)}
+.btn-block{width:100%}
+.btn-choice{justify-content:space-between;width:100%}
+.btn .arr{transition:transform .16s var(--ease-out)}
+.btn:hover .arr{transform:translateX(3px)}
+.spin{width:16px;height:16px;border-radius:50%;border:2px solid rgba(255,255,255,.45);border-top-color:#fff;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+
+/* ========================= Inputs ========================= */
+.field{display:flex;flex-direction:column;gap:7px;min-width:0}
+.field label{font-size:13px;font-weight:500;color:var(--ink-2)}
+.input{width:100%;min-height:52px;padding:14px 16px;border:1px solid var(--line-2);background:var(--surface);border-radius:var(--r-md);font-size:16px;color:var(--ink);box-shadow:var(--sh-1);transition:border-color .14s,box-shadow .14s}
+.input::placeholder{color:var(--faint)}
+.input:focus{outline:none;border-color:var(--brand);box-shadow:var(--sh-focus)}
+.input.is-focus{border-color:var(--brand);box-shadow:var(--sh-focus)}
+.input.is-error{border-color:var(--danger);box-shadow:0 0 0 3px var(--danger-bg)}
+.input.is-ok{border-color:var(--success)}
+.input[disabled]{background:var(--surface-2);color:var(--faint);box-shadow:none}
+.help{font-size:12.5px;color:var(--muted)}
+.help.err{color:var(--danger)}
+.help.ok{color:var(--success)}
+.check{display:flex;gap:10px;align-items:flex-start;font-size:14px;color:var(--muted)}
+.check input{width:20px;height:20px;accent-color:var(--brand);margin:1px 0 0;flex:0 0 auto}
+
+/* ========================= Cards, badges, chips ========================= */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:var(--s-6);box-shadow:var(--sh-2);min-width:0}
+.card.flat{box-shadow:none}
+.card.hl{border:2px solid var(--brand);background:linear-gradient(160deg,var(--brand-tint),var(--surface) 60%);box-shadow:0 20px 50px rgba(237,110,52,.14)}
+.badge{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:var(--r-pill);font-size:11px;font-weight:700;letter-spacing:.04em;background:var(--surface-2);color:var(--ink-2);border:1px solid var(--line);white-space:nowrap}
+.badge .dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+.badge.brand{background:var(--brand-tint);color:var(--brand-strong);border-color:var(--brand-line)}
+.badge.solid{background:var(--brand);color:#fff;border-color:var(--brand)}
+.badge.ok{background:var(--success-bg);color:var(--success);border-color:var(--success-line)}
+.badge.err{background:var(--danger-bg);color:var(--danger);border-color:var(--danger-line)}
+.badge.warn{background:var(--warn-bg);color:var(--warn);border-color:transparent}
+.chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:52px;height:60px;padding:0 10px;border-radius:var(--r-md);border:1px solid var(--line);background:var(--surface);font-size:11px;color:var(--muted);cursor:pointer}
+.chip b{font-size:17px;color:var(--ink);letter-spacing:-.02em}
+.chip[aria-pressed="true"]{background:var(--grad-cta);border-color:transparent;color:rgba(255,255,255,.85);box-shadow:var(--sh-cta)}
+.chip[aria-pressed="true"] b{color:#fff}
+.pill{flex:0 0 auto;height:34px;padding:0 14px;border-radius:var(--r-pill);border:1px solid var(--line-2);background:var(--surface);font-size:13px;font-weight:500;color:var(--ink-2);cursor:pointer}
+.pill[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.ic-circle{flex:0 0 40px;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(140deg,var(--brand-tint),var(--brand-tint-2));color:var(--brand-strong)}
+.ic-circle svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.alert{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:var(--r-md);font-size:13.5px;line-height:1.45;border:1px solid}
+.alert.err{background:var(--danger-bg);border-color:var(--danger-line);color:var(--danger)}
+.alert.ok{background:var(--success-bg);border-color:var(--success-line);color:var(--success)}
+.meter{height:8px;border-radius:var(--r-pill);background:var(--surface-2);overflow:hidden;border:1px solid var(--line)}
+.meter i{display:block;height:100%;border-radius:inherit;background:var(--grad-cta)}
+
+/* ========================= Telas (mockups) ========================= */
+.screens{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:28px;align-items:start}
+.screen-label{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:0 0 12px;font-size:13px;color:var(--muted)}
+.screen-label b{color:var(--ink);font-size:15px}
+.device{position:relative;width:100%;max-width:360px;margin:0 auto;background:var(--bg-soft);border:1px solid var(--line);border-radius:var(--r-xl);box-shadow:var(--sh-3);overflow:hidden;display:flex;flex-direction:column;min-height:640px}
+.status{display:flex;justify-content:space-between;padding:12px 20px 4px;font-size:12px;font-weight:700;color:var(--ink-2)}
+.app-top{display:flex;align-items:center;justify-content:space-between;padding:10px 18px 6px}
+.app-top .brand{font-size:12px}
+.app-top .brand svg{width:22px;height:22px}
+.avatar{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:700;background:var(--brand-tint);color:var(--brand-strong);border:1px solid var(--brand-line)}
+.app-body{flex:1;padding:8px 18px 18px;display:flex;flex-direction:column;gap:18px}
+.app-body h3{font-size:24px;letter-spacing:-.035em;line-height:1.1}
+.app-body .sec-t{display:flex;justify-content:space-between;align-items:baseline;font-size:15px;font-weight:700;letter-spacing:-.01em}
+.app-body .sec-t a{font-size:12.5px;font-weight:500}
+.plan-card{padding:18px;border-radius:var(--r-lg);background:var(--grad-cta);color:#fff;box-shadow:var(--sh-cta);position:relative;overflow:hidden}
+.plan-card::after{content:"";position:absolute;right:-30px;top:-30px;width:130px;height:130px;border-radius:50%;border:1px solid rgba(255,255,255,.28)}
+.plan-card small{font-size:10px;font-weight:700;letter-spacing:.24em;opacity:.85}
+.plan-card strong{display:block;font-size:20px;letter-spacing:-.03em;margin-top:6px}
+.plan-card span{font-size:12.5px;opacity:.9}
+.stat-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{padding:14px;border-radius:var(--r-md);background:var(--surface);border:1px solid var(--line);box-shadow:var(--sh-1)}
+.stat small{display:block;font-size:11px;color:var(--muted)}
+.stat strong{font-size:24px;letter-spacing:-.04em}
+.stat em{font-style:normal;font-size:11px;color:var(--success);font-weight:700}
+.class-item{display:flex;gap:12px;align-items:center;padding:12px;border-radius:var(--r-md);background:var(--surface);border:1px solid var(--line);box-shadow:var(--sh-1)}
+.class-item .time{flex:0 0 52px;text-align:center;padding:6px 0;border-radius:var(--r-sm);background:var(--brand-tint);color:var(--brand-strong);font-weight:700;font-size:14px;line-height:1.1}
+.class-item .time small{display:block;font-size:10px;font-weight:500;opacity:.8}
+.class-item .meta{flex:1;min-width:0}
+.class-item .meta b{display:block;font-size:14px;letter-spacing:-.01em}
+.class-item .meta span{font-size:12px;color:var(--muted)}
+.class-item .end{display:flex;flex-direction:column;align-items:flex-end;gap:4px;font-size:11px;color:var(--muted)}
+.tabbar{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line);background:var(--surface);padding:8px 6px 12px}
+.tabbar a{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10.5px;color:var(--faint);font-weight:500;padding:4px 0;border-radius:var(--r-sm)}
+.tabbar a:hover{text-decoration:none;color:var(--ink)}
+.tabbar svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.tabbar a[aria-current="page"]{color:var(--brand-strong)}
+.tabbar a[aria-current="page"] svg{stroke:var(--brand)}
+.back{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);padding:10px 18px 0}
+.hero-class{margin:0 18px;padding:20px;border-radius:var(--r-lg);background:var(--surface);border:1px solid var(--line);box-shadow:var(--sh-2)}
+.kv{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
+.kv div{font-size:12px;color:var(--muted)}
+.kv b{display:block;font-size:14px;color:var(--ink)}
+.spots{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin:14px 0 8px}
+.spots b{color:var(--ink)}
+.sticky-cta{margin-top:auto;padding:14px 18px 18px;border-top:1px solid var(--line);background:var(--surface)}
+.login-art{height:170px;position:relative;overflow:hidden;background:radial-gradient(circle at 70% 40%,rgba(237,110,52,.28),transparent 55%),radial-gradient(circle at 20% 90%,rgba(194,58,31,.18),transparent 50%),var(--bg-soft)}
+.login-art svg{position:absolute;width:96px;height:96px;left:50%;top:50%;transform:translate(-50%,-46%)}
+.login-art .orbit-ring{left:-10%;top:28%;width:120%;height:46%}
+
+/* ========================= Tokens ========================= */
+.swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,150px),1fr));gap:12px}
+.sw{border:1px solid var(--line);border-radius:var(--r-md);overflow:hidden;background:var(--surface);font-size:12px}
+.sw i{display:block;height:72px}
+.sw div{padding:10px 12px}
+.sw b{display:block;font-size:13px;color:var(--ink)}
+.sw code{font-size:11.5px;color:var(--muted)}
+.sw span{display:block;color:var(--faint);font-size:11px;margin-top:2px}
+.type-row{display:grid;grid-template-columns:130px 1fr;gap:16px;align-items:baseline;padding:14px 0;border-bottom:1px solid var(--line)}
+.type-row code{font-size:12px;color:var(--muted)}
+.type-row p{margin:0;min-width:0;overflow-wrap:anywhere}
+@media (max-width:560px){.type-row{grid-template-columns:1fr;gap:4px}}
+.space-row{display:flex;align-items:center;gap:14px;font-size:12px;color:var(--muted);padding:5px 0}
+.space-row code{width:64px;flex:0 0 auto}
+.space-row i{display:block;height:12px;border-radius:3px;background:var(--grad-cta)}
+.grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:24px}
+.grid-3{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:20px}
+.radius-demo{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:12px}
+.radius-demo div{height:84px;background:var(--brand-tint);border:1px solid var(--brand-line);display:flex;align-items:flex-end;padding:8px 10px;font-size:11.5px;color:var(--brand-strong);font-weight:500}
+.shadow-demo{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:20px}
+.shadow-demo div{height:96px;border-radius:var(--r-lg);background:var(--surface);border:1px solid var(--line);display:flex;align-items:flex-end;padding:12px;font-size:12px;color:var(--muted)}
+
+/* ========================= Componentes extras ========================= */
+.segmented{display:inline-flex;padding:4px;border-radius:var(--r-pill);background:var(--surface-2);border:1px solid var(--line);max-width:100%;overflow-x:auto}
+.segmented button{border:0;background:transparent;height:34px;padding:0 16px;border-radius:var(--r-pill);font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;white-space:nowrap}
+.segmented button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--sh-1)}
+.topnav-demo{display:flex;align-items:center;gap:20px;padding:14px 18px;border:1px solid var(--line);border-radius:var(--r-lg);background:var(--surface);flex-wrap:wrap}
+.topnav-demo a{font-size:14px;color:var(--muted);font-weight:500}
+.topnav-demo a[aria-current="page"]{color:var(--ink);position:relative}
+.topnav-demo a[aria-current="page"]::after{content:"";position:absolute;left:0;right:0;bottom:-6px;height:2px;border-radius:2px;background:var(--brand)}
+details.acc{border-bottom:1px solid var(--line)}
+details.acc:first-of-type{border-top:1px solid var(--line)}
+details.acc summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:16px;padding:18px 2px;font-weight:500;font-size:16px;letter-spacing:-.01em}
+details.acc summary::-webkit-details-marker{display:none}
+details.acc summary span{position:relative;flex:0 0 32px;height:32px;border-radius:50%;border:1px solid var(--line-2);transition:transform .3s var(--ease-out),background .2s}
+details.acc summary span::before,details.acc summary span::after{content:"";position:absolute;left:9px;right:9px;top:15px;height:2px;border-radius:2px;background:var(--brand)}
+details.acc summary span::after{transform:rotate(90deg);transition:transform .3s var(--ease-out)}
+details.acc[open] summary span{background:var(--brand);border-color:var(--brand);transform:rotate(180deg)}
+details.acc[open] summary span::before,details.acc[open] summary span::after{background:#fff}
+details.acc[open] summary span::after{transform:rotate(0)}
+details.acc p{margin:0 0 18px;color:var(--muted);font-size:14.5px;max-width:620px}
+.dialog-demo{max-width:420px;padding:28px;border-radius:24px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--sh-3)}
+.dialog-wrap{padding:28px 16px;border-radius:var(--r-xl);background:color-mix(in srgb,var(--ink) 12%,var(--bg))}
+.table-wrap{border:1px solid var(--line);border-radius:var(--r-lg);overflow-x:auto;background:var(--surface)}
+table{width:100%;border-collapse:collapse;font-size:14px;min-width:520px}
+th{text-align:left;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);font-weight:700;padding:12px 16px;background:var(--surface-2);border-bottom:1px solid var(--line)}
+td{padding:14px 16px;border-bottom:1px solid var(--line);color:var(--ink-2)}
+tr:last-child td{border-bottom:0}
+tbody tr:hover td{background:var(--bg-soft)}
+
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+:root{--sidebar-w:224px;--list-w:260px}
+/* ========================= Preview: acréscimos ========================= */
+.pv-hero{padding:clamp(40px,6vw,72px) 0 clamp(24px,4vw,40px);background:radial-gradient(circle at 12% 20%,rgba(237,110,52,.10),transparent 32%),var(--bg)}
+.idx-group{margin:28px 0 0}
+.idx{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,190px),1fr));gap:10px;margin:0;padding:0;list-style:none}
+.idx a{display:flex;flex-direction:column;gap:2px;padding:12px 14px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--surface);box-shadow:var(--sh-1);color:var(--ink);font-weight:700;font-size:14px;letter-spacing:-.01em;height:100%}
+.idx a:hover{text-decoration:none;border-color:var(--brand-line);background:var(--brand-tint)}
+.idx a small{font-weight:500;font-size:12px;color:var(--muted);letter-spacing:0;overflow-wrap:anywhere}
+.idx a .badge{margin-top:6px;align-self:flex-start;height:20px;font-size:10px}
+section.scr{padding:clamp(40px,6vw,64px) 0}
+.scr-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;margin:0 0 24px}
+.scr-head h2{font-size:clamp(24px,3.4vw,36px);letter-spacing:-.04em;line-height:1.1}
+.scr-head code{font-size:13px;color:var(--muted);background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r-xs);padding:2px 8px}
+.group-title{padding:clamp(40px,6vw,64px) 0 0;border-top:1px solid var(--line)}
+.group-title + section.scr{border-top:0}
+.top .wrap{gap:16px}
+.top nav a.cur{color:var(--ink)}
+
+/* cliente (celular) */
+.tabbar.t5{grid-template-columns:repeat(5,1fr)}
+.tabbar.t5 a{font-size:10px}
+.app-body .meta-line{margin:6px 0 0;font-size:13px;color:var(--muted)}
+.app-body .stack{display:flex;flex-direction:column;gap:10px}
+.app-body .note{font-size:12.5px;color:var(--faint);margin:0}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap}
+.hint-card{padding:14px;border-radius:var(--r-md);border:1px dashed var(--line-2);background:var(--surface);font-size:13.5px;color:var(--muted)}
+.plan-card .badge{position:absolute;right:16px;top:16px;background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.4);color:#fff}
+.resv{padding:12px;border-radius:var(--r-md);background:var(--surface);border:1px solid var(--line);box-shadow:var(--sh-1);display:flex;flex-direction:column;gap:10px}
+.resv .meta b{display:block;font-size:14px}
+.resv .meta span{font-size:12px;color:var(--muted)}
+.big-num{font-size:34px;font-weight:700;letter-spacing:-.05em;line-height:1}
+.big-num small{display:block;font-size:11px;font-weight:500;letter-spacing:0;color:var(--muted);margin-top:4px}
+.pts-row{display:flex;justify-content:space-between;gap:12px;align-items:flex-end}
+.discs{display:flex;gap:8px;margin:0;padding:0;list-style:none}
+.disc{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(140deg,var(--brand-tint),var(--brand-tint-2));color:var(--brand-strong);border:1px solid var(--brand-line)}
+.disc.locked{background:var(--surface-2);color:var(--faint);border-color:var(--line)}
+.disc svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.marks{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.mark{height:28px;padding:0 10px;border-radius:var(--r-pill);display:inline-flex;align-items:center;font-size:12px;font-weight:700;background:var(--grad-cta);color:#fff}
+.mark.pending{background:var(--surface-2);color:var(--faint);border:1px solid var(--line)}
+.hist{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+.hist:last-child{border-bottom:0}
+.hist small{display:block;color:var(--muted);font-size:11.5px}
+.pts{font-weight:700;color:var(--success)}
+.pts.neg{color:var(--danger)}
+.rank{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:var(--r-md);border:1px solid var(--line);background:var(--surface);font-size:13.5px}
+.rank .pos{flex:0 0 24px;font-weight:700;color:var(--brand-strong)}
+.rank.me{border-color:var(--brand);background:var(--brand-tint)}
+.rank .meta{flex:1;min-width:0}
+.rank .meta small{display:block;color:var(--muted);font-size:11.5px}
+.ex{padding:14px;border-radius:var(--r-md);background:var(--surface);border:1px solid var(--line);box-shadow:var(--sh-1);display:flex;flex-direction:column;gap:10px}
+.ex h4{font-size:15px;letter-spacing:-.01em}
+.ex-chips{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.ex-chip{padding:8px 10px;border-radius:var(--r-sm);background:var(--brand-tint);border:1px solid var(--brand-line);font-size:11px;color:var(--brand-strong)}
+.ex-chip b{display:block;font-size:15px;color:var(--ink);letter-spacing:-.02em}
+.ex p{margin:0;font-size:12.5px;color:var(--muted)}
+.fcard{padding:14px;border-radius:var(--r-md);background:var(--surface);border:1px solid var(--line);display:flex;flex-direction:column;gap:12px}
+.sec-t-row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.legal-text{padding:16px;border-radius:var(--r-md);background:var(--surface);border:1px solid var(--line);font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:10px}
+.legal-text h4{font-size:14px;color:var(--ink)}
+.legal-text p{margin:0}
+.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.steps li{display:flex;align-items:center;gap:12px;padding:12px;border-radius:var(--r-md);border:1px solid var(--line);background:var(--surface);font-size:14px;font-weight:500}
+.steps li .n{flex:0 0 28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:700;background:var(--surface-2);color:var(--muted);border:1px solid var(--line)}
+.steps li.cur{border-color:var(--brand);background:var(--brand-tint)}
+.steps li.cur .n{background:var(--grad-cta);color:#fff;border-color:transparent}
+.att-row{display:flex;flex-direction:column;gap:10px;padding:12px;border-radius:var(--r-md);background:var(--surface);border:1px solid var(--line);box-shadow:var(--sh-1)}
+.att-who{display:flex;justify-content:space-between;align-items:center;gap:8px;font-weight:700;font-size:14px}
+.att-who .badge{height:20px;font-size:10px}
+.seg2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.seg2 button{height:40px;border-radius:var(--r-sm);border:1px solid var(--line-2);background:var(--surface);font-weight:700;font-size:13px;color:var(--ink-2);cursor:pointer}
+.seg2 button.on-ok{background:var(--success-bg);border-color:var(--success);color:var(--success)}
+.seg2 button.on-err{background:var(--danger-bg);border-color:var(--danger);color:var(--danger)}
+.seg2 button[disabled]{opacity:.45;cursor:not-allowed}
+.progress-line{display:flex;justify-content:space-between;font-size:12.5px;color:var(--muted)}
+.progress-line b{color:var(--ink)}
+.legal-links{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;font-size:12.5px}
+.pw{position:relative}
+.pw button{position:absolute;right:8px;top:50%;transform:translateY(-50%);border:0;background:transparent;color:var(--muted);font-size:12.5px;font-weight:500;cursor:pointer;padding:8px}
+.pw .input{padding-right:70px}
+
+/* admin (desktop) */
+.adm{display:grid;grid-template-columns:var(--sidebar-w) minmax(0,1fr);border:1px solid var(--line);border-radius:var(--r-xl);overflow:hidden;box-shadow:var(--sh-3);background:var(--bg-soft)}
+.adm-side{background:var(--surface);border-right:1px solid var(--line);padding:20px 12px;display:flex;flex-direction:column;gap:2px}
+.adm-side .brand{padding:0 12px 16px;font-size:13px}
+.adm-side .brand svg{width:24px;height:24px}
+.adm-side a{padding:9px 12px;border-radius:var(--r-sm);font-size:13.5px;font-weight:500;color:var(--muted);white-space:nowrap}
+.adm-side a:hover{text-decoration:none;background:var(--surface-2);color:var(--ink)}
+.adm-side a[aria-current="page"]{background:var(--brand-tint);color:var(--brand-strong);font-weight:700}
+.adm-side .sp{flex:1;min-height:12px}
+.adm-main{padding:clamp(16px,3vw,28px);display:flex;flex-direction:column;gap:20px;min-width:0}
+.adm-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px 16px;flex-wrap:wrap}
+.adm-head .kicker{margin-bottom:6px}
+.adm-head h3{font-size:clamp(22px,3vw,30px);letter-spacing:-.04em;line-height:1.1}
+.adm-head .sub-t{font-size:13px;color:var(--muted);margin-top:4px;display:block}
+.adm-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap}
+.toolbar .input{min-height:44px;font-size:14px;padding:10px 14px;flex:1 1 180px;width:auto;box-shadow:none}
+.adm-main .table-wrap{box-shadow:var(--sh-1)}
+.adm-main table{min-width:640px}
+td .cell-actions{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap}
+td b{color:var(--ink)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,170px),1fr));gap:14px}
+.kpi{padding:18px;border-radius:var(--r-lg);background:var(--surface);border:1px solid var(--line);box-shadow:var(--sh-1)}
+.kpi small{display:block;font-size:12px;color:var(--muted)}
+.kpi strong{display:block;font-size:30px;letter-spacing:-.05em;margin-top:6px;line-height:1.1}
+.kpi em{font-style:normal;font-size:11.5px;color:var(--success);font-weight:700}
+.card.sm{padding:var(--s-5);box-shadow:var(--sh-1)}
+.card h4{font-size:15px;letter-spacing:-.01em;margin-bottom:14px}
+.bar-row{display:grid;grid-template-columns:minmax(120px,200px) 1fr 56px;gap:12px;align-items:center;font-size:13px;color:var(--ink-2);padding:6px 0}
+.bar-row span:last-child{text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
+.two-col{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:16px}
+.figures{display:flex;gap:28px;flex-wrap:wrap;margin-bottom:14px}
+.figures strong{display:block;font-size:26px;letter-spacing:-.04em}
+.figures span{font-size:12px;color:var(--muted)}
+ol.rk{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+ol.rk li{display:flex;gap:12px;align-items:center;font-size:13.5px;padding:8px 12px;border-radius:var(--r-sm);background:var(--surface-2)}
+ol.rk li b:first-child{color:var(--brand-strong);width:20px}
+ol.rk li span{margin-left:auto;color:var(--muted)}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.form-grid .full{grid-column:1/-1}
+.dl{display:grid;grid-template-columns:minmax(120px,200px) 1fr;gap:0}
+.dl dt,.dl dd{margin:0;padding:12px 0;border-bottom:1px solid var(--line);font-size:14px}
+.dl dt{color:var(--muted)}
+.dl dd{color:var(--ink);font-weight:500}
+.crumb{font-size:13px;color:var(--muted)}
+.md{display:grid;grid-template-columns:var(--list-w) minmax(0,1fr);gap:16px;align-items:start}
+.stu-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.stu-list a{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 12px;border-radius:var(--r-sm);border:1px solid transparent;color:var(--ink-2);font-size:13.5px;font-weight:500}
+.stu-list a:hover{text-decoration:none;background:var(--surface-2)}
+.stu-list a[aria-current="true"]{background:var(--brand-tint);border-color:var(--brand-line);color:var(--brand-strong);font-weight:700}
+.wk-scroll{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r-lg);background:var(--surface)}
+.wk{display:grid;grid-template-columns:repeat(7,minmax(112px,1fr));min-width:800px}
+.wk > div{padding:10px;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:8px;min-height:170px}
+.wk > div:last-child{border-right:0}
+.wk .dh{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);font-weight:700;margin:0}
+.wk .dh b{display:block;font-size:17px;letter-spacing:-.02em;color:var(--ink);text-transform:none}
+.wk .today .dh b{color:var(--brand-strong)}
+.wk .today{background:var(--brand-tint)}
+.occ{padding:8px 10px;border-radius:var(--r-sm);background:var(--surface);border:1px solid var(--line);box-shadow:var(--sh-1);font-size:12px;color:var(--muted);line-height:1.35}
+.occ b{display:block;color:var(--ink);font-size:12.5px}
+.occ.cancel{opacity:.7}
+.occ.cancel b{text-decoration:line-through}
+.mx td,.mx th{padding:10px 12px;white-space:nowrap}
+.mx td.c{text-align:center}
+.mx input[type=checkbox]{width:18px;height:18px;accent-color:var(--brand)}
+.mx select{min-height:36px;font-size:13px;padding:6px 10px}
+.goal{padding:16px;border-radius:var(--r-md);border:1px solid var(--line);background:var(--surface);display:flex;flex-direction:column;gap:10px}
+.goal .top-r{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.goal b{font-size:15px}
+.goal p{margin:0;font-size:13px;color:var(--muted)}
+.ex-edit{display:grid;grid-template-columns:2fr repeat(4,1fr);gap:10px;padding:14px;border-radius:var(--r-md);border:1px solid var(--line);background:var(--surface-2)}
+.ex-edit .field{font-size:12px}
+.ex-edit .input{min-height:42px;font-size:14px;padding:8px 12px;box-shadow:none}
+.ex-edit .full{grid-column:1/-1}
+.mc{display:flex;gap:14px;align-items:center;padding:14px;border-radius:var(--r-md);background:var(--surface);border:1px solid var(--line);box-shadow:var(--sh-1);flex-wrap:wrap}
+.mc .time{flex:0 0 64px;text-align:center;padding:8px 0;border-radius:var(--r-sm);background:var(--brand-tint);color:var(--brand-strong);font-weight:700;font-size:15px;line-height:1.1}
+.mc .meta{flex:1;min-width:160px}
+.mc .meta b{display:block;font-size:15px}
+.mc .meta span{font-size:12.5px;color:var(--muted)}
+.day-t{font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin:0 0 10px}
+@media (max-width:820px){
+  .adm{grid-template-columns:1fr}
+  .adm-side{flex-direction:row;overflow-x:auto;border-right:0;border-bottom:1px solid var(--line);padding:10px;gap:4px;scrollbar-width:none}
+  .adm-side .brand,.adm-side .sp{display:none}
+  .md{grid-template-columns:1fr}
+  .form-grid{grid-template-columns:1fr}
+  .ex-edit{grid-template-columns:1fr 1fr}
+  .ex-edit .wide{grid-column:1/-1}
+  .bar-row{grid-template-columns:1fr 56px}
+  .bar-row .meter{grid-column:1/-1;grid-row:2}
+  .dl{grid-template-columns:1fr}
+  .dl dt{border-bottom:0;padding-bottom:0}
+}
+.adm-main td{white-space:nowrap}
+.adm-main td .cell-actions{flex-wrap:nowrap}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="flame" viewBox="0 0 512 512">
+      <path fill="#C23A1F" transform="rotate(-8 210 270)" d="M210,100 C312.5,156.7 305,383.3 210,440 C115,383.3 107.5,156.7 210,100 Z"/>
+      <path fill="#ED6E34" transform="rotate(7 300 250)" d="M300,70 C436.5,132 392.5,368 300,430 C207.5,368 163.5,132 300,70 Z"/>
+    </symbol>
+  </defs>
+</svg>
+<header class="top"><div class="wrap">
+<a class="brand" href="#topo" aria-label="Fitburn, topo"><svg aria-hidden="true"><use href="#flame"/></svg>FITBURN</a>
+<nav aria-label="Grupos"><a href="#cliente">Cliente</a><a href="#admin">Admin</a></nav>
+<button class="theme-btn" id="themeBtn" type="button" aria-label="Alternar tema claro e escuro"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><span id="themeLabel">Tema</span></button>
+</div></header>
+<main id="topo">
+<section class="pv-hero"><div class="wrap">
+<p class="kicker">Preview · 24 seções de tela</p>
+<h1 class="h2">Todas as telas, na <em>nova base</em>.</h1>
+<p class="lead">Conteúdo vindo das telas atuais do app, visual vindo da proposta de design. Dados fictícios. Use o botão de tema para alternar entre claro e escuro. Telas sem exemplo na proposta levam o selo "Extrapolada da base".</p>
+<div class="idx-group"><p class="sub">Cliente · celular</p><ul class="idx"><li><a href="#home">Home<small>/</small></a></li><li><a href="#agenda">Agenda e detalhe da aula<small>/agenda</small></a></li><li><a href="#ficha">Ficha de treino (lista e detalhe)<small>/ficha-treino · /ficha-treino/:id</small><span class="badge brand">Extrapolada da base</span></a></li><li><a href="#fitpoints">FitPoints<small>/fitpoints</small><span class="badge brand">Extrapolada da base</span></a></li><li><a href="#perfil">Perfil<small>/perfil</small><span class="badge brand">Extrapolada da base</span></a></li><li><a href="#login">Login<small>/login</small></a></li><li><a href="#onboarding">Onboarding<small>/onboarding</small><span class="badge brand">Extrapolada da base</span></a></li><li><a href="#privacidade">Política de privacidade<small>/privacidade</small><span class="badge brand">Extrapolada da base</span></a></li><li><a href="#termos">Termos de uso<small>/termos</small><span class="badge brand">Extrapolada da base</span></a></li></ul></div>
+<div class="idx-group"><p class="sub">Admin · desktop</p><ul class="idx"><li><a href="#dashboard">Dashboard<small>/dashboard</small><span class="badge brand">Extrapolada da base</span></a></li><li><a href="#clientes">Clientes<small>/clientes</small><span class="badge brand">Extrapolada da base</span></a></li><li><a href="#clientes-novo">Novo cliente<small>/clientes/novo</small><span class="badge brand">Extrapolada da base</span></a></li><li><a href="#clientes-id">Detalhe do cliente<small>/clientes/:id</small><span class="badge brand">Extrapolada da base</span></a></li><li><a href="#reservas">Reservas administrativas<small>/reservas-administrativas</small><span class="badge brand">Extrapolada da base</span></a></li><li><a href="#usuarios">Usuários e perfis<small>/usuarios</small><span class="badge brand">Extrapolada da base</span></a></li><li><a href="#agenda-admin">Agenda administrativa<small>/agenda-administrativa</small><span class="badge brand">Extrapolada da base</span></a></li><li><a href="#templates">Templates e modalidades<small>/templates-e-modalidades</small><span class="badge brand">Extrapolada da base</span></a></li><li><a href="#minhas-aulas">Minhas aulas<small>/minhas-aulas</small><span class="badge brand">Extrapolada da base</span></a></li><li><a href="#atribuicoes">Atribuições<small>/atribuicoes</small><span class="badge brand">Extrapolada da base</span></a></li><li><a href="#planos">Planos<small>/planos</small><span class="badge brand">Extrapolada da base</span></a></li><li><a href="#fichas">Fichas de treino<small>/fichas</small><span class="badge brand">Extrapolada da base</span></a></li><li><a href="#metas">Metas<small>/metas</small><span class="badge brand">Extrapolada da base</span></a></li><li><a href="#presenca">Presença<small>/presenca/:occurrenceId</small><span class="badge brand">Extrapolada da base</span></a></li><li><a href="#presenca-aluno">Presença por aluno<small>/presenca/:occurrenceId/alunos/:clientId</small><span class="badge brand">Extrapolada da base</span></a></li></ul></div>
+</div></section>
+<div id="cliente" class="group-title"><div class="wrap"><p class="kicker">Área do cliente</p><h2 class="h2">Celular, com barra <em>inferior</em>.</h2></div></div>
+<section class="scr" id="home"><div class="wrap"><div class="scr-head"><h2>Home</h2><code>/</code><span class="badge ok"><span class="dot"></span>Tela da proposta</span></div><div class="screens"><div><p class="screen-label"><b>Home</b><span>rota /</span></p><div class="device"><div class="status"><span>9:41</span><span>5G ▮▮▮</span></div><div class="app-top"><span class="brand"><svg aria-hidden="true"><use href="#flame"/></svg>FITBURN</span><span class="avatar" aria-label="Perfil">AC</span></div><div class="app-body">
+<div><p class="kicker" style="margin-bottom:8px">Terça, 10 de novembro</p><h3>Olá, Aluno</h3></div>
+<div class="plan-card"><small>PLANO ATIVO</small><strong>Musculação 3x por semana</strong><span>Ativo até 15/12</span><span class="badge">ATIVO</span></div>
+<div class="sec-t">Próximas aulas <a href="#">Ver agenda completa →</a></div>
+<div class="resv"><div class="meta"><b>Funcional</b><span>Hoje, 18h00 · Prof. Exemplo</span></div><div class="btn-row"><button class="btn btn-secondary btn-sm" type="button">Remarcar</button><button class="btn btn-ghost btn-sm" type="button">Cancelar</button></div></div>
+<div class="resv"><div class="meta"><b>Mobilidade</b><span>Qui, 07h00 · Prof. Modelo</span></div><div class="btn-row"><button class="btn btn-secondary btn-sm" type="button">Remarcar</button><button class="btn btn-ghost btn-sm" type="button">Cancelar</button></div></div>
+<div class="sec-t">FitPoints <a href="#">Ver FitPoints →</a></div>
+<div class="card flat" style="padding:16px;display:flex;flex-direction:column;gap:14px">
+ <div class="pts-row"><div class="big-num">1.240<small>pontos</small></div><div class="big-num" style="text-align:right">7<small>dias seguidos de treino</small></div></div>
+ <div><p class="kicker" style="margin-bottom:8px">Badges recentes</p><ul class="discs"><li class="disc" role="img" aria-label="Streak de 3 dias"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7"/></svg></li><li class="disc" role="img" aria-label="Streak de 7 dias"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7"/></svg></li></ul></div>
+ <p class="note">3º lugar no ranking semanal</p>
+</div></div><nav class="tabbar t5" aria-label="Navegação inferior"><a href="#"  aria-current="page"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Home</a><a href="#" ><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>Agenda</a><a href="#" ><svg viewBox="0 0 24 24"><path d="M12 2l3 7h7l-5.5 4.5L18.5 21 12 16.5 5.5 21l2-7.5L2 9h7z"/></svg>FitPoints</a><a href="#" ><svg viewBox="0 0 24 24"><path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>Treino</a><a href="#" ><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>Perfil</a></nav></div></div><div><p class="screen-label"><b>Home · estados</b><span>vazio e erro</span></p><div class="device"><div class="status"><span>9:41</span><span>5G ▮▮▮</span></div><div class="app-top"><span class="brand"><svg aria-hidden="true"><use href="#flame"/></svg>FITBURN</span><span class="avatar" aria-label="Perfil">AC</span></div><div class="app-body">
+<div><p class="kicker" style="margin-bottom:8px">Terça, 10 de novembro</p><h3>Olá, Aluno</h3></div>
+<div class="hint-card">Você ainda não tem um plano ativo. Fale com a recepção para começar.</div>
+<div class="sec-t">Próximas aulas <a href="#">Ver agenda completa →</a></div>
+<div class="hint-card">Você não tem aulas reservadas. <a href="#">Reservar uma aula</a></div>
+<div class="sec-t">FitPoints <a href="#">Ver FitPoints →</a></div>
+<div class="alert err" role="alert"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="flex:0 0 auto"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 17h.01"/></svg><span>Não foi possível carregar seus FitPoints.</span></div>
+<button class="btn btn-secondary btn-sm" type="button" style="align-self:flex-start">Tentar novamente</button>
+<div class="hint-card">Você ainda não tem pontos. Reserve uma aula e confirme sua presença para começar a pontuar.</div></div><nav class="tabbar t5" aria-label="Navegação inferior"><a href="#"  aria-current="page"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Home</a><a href="#" ><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>Agenda</a><a href="#" ><svg viewBox="0 0 24 24"><path d="M12 2l3 7h7l-5.5 4.5L18.5 21 12 16.5 5.5 21l2-7.5L2 9h7z"/></svg>FitPoints</a><a href="#" ><svg viewBox="0 0 24 24"><path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>Treino</a><a href="#" ><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>Perfil</a></nav></div></div></div></div></section>
+<section class="scr" id="agenda"><div class="wrap"><div class="scr-head"><h2>Agenda e detalhe da aula</h2><code>/agenda</code><span class="badge ok"><span class="dot"></span>Tela da proposta</span></div><div class="screens"><div><p class="screen-label"><b>Agenda</b><span>rota /agenda</span></p><div class="device"><div class="status"><span>9:41</span><span>5G ▮▮▮</span></div><div class="app-body">
+<div><p class="kicker" style="margin-bottom:8px">Semana de 9 a 15 de novembro</p><h3>Agenda</h3></div>
+<div class="segmented" role="group" aria-label="Visão" style="align-self:flex-start"><button type="button" aria-pressed="true">Próximas</button><button type="button">Histórico</button></div>
+<div class="row" style="justify-content:space-between;flex-wrap:nowrap"><button class="btn btn-secondary btn-sm" type="button" aria-label="Semana anterior">←</button><b style="font-size:13px">9 a 15 nov</b><button class="btn btn-secondary btn-sm" type="button" aria-label="Próxima semana">→</button></div>
+<div class="chips" role="group" aria-label="Dia"><button class="chip" type="button">Seg<b>9</b></button><button class="chip" type="button" aria-pressed="true">Ter<b>10</b></button><button class="chip" type="button">Qua<b>11</b></button><button class="chip" type="button">Qui<b>12</b></button><button class="chip" type="button">Sex<b>13</b></button><button class="chip" type="button">Sáb<b>14</b></button></div>
+<div class="class-item"><div class="time">06h<small>60 min</small></div><div class="meta"><b>Musculação guiada</b><span>Prof. Exemplo</span></div><div class="end"><span class="badge err">8/8 · lotada</span></div></div><div class="class-item"><div class="time">07h<small>45 min</small></div><div class="meta"><b>Mobilidade</b><span>Prof. Modelo</span></div><div class="end"><span class="badge brand">3 vagas</span></div></div><div class="class-item"><div class="time">12h<small>45 min</small></div><div class="meta"><b>Funcional</b><span>Prof. Exemplo</span></div><div class="end"><span class="badge warn">1/8 · quase lotada</span></div></div><div class="class-item"><div class="time">18h<small>60 min</small></div><div class="meta"><b>Funcional</b><span>Prof. Teste</span></div><div class="end"><span class="badge ok"><span class="dot"></span>Reservada</span></div></div><p class="note">Disponibilidade sujeita a confirmação no momento da reserva.</p></div><nav class="tabbar t5" aria-label="Navegação inferior"><a href="#" ><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Home</a><a href="#"  aria-current="page"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>Agenda</a><a href="#" ><svg viewBox="0 0 24 24"><path d="M12 2l3 7h7l-5.5 4.5L18.5 21 12 16.5 5.5 21l2-7.5L2 9h7z"/></svg>FitPoints</a><a href="#" ><svg viewBox="0 0 24 24"><path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>Treino</a><a href="#" ><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>Perfil</a></nav></div></div><div><p class="screen-label"><b>Detalhe da aula</b><span>reserva (folha da agenda)</span></p><div class="device"><div class="status"><span>9:41</span><span>5G ▮▮▮</span></div><a class="back" href="#">← Agenda</a>
+<div class="app-body" style="padding-left:0;padding-right:0">
+<div class="hero-class"><span class="badge brand">Mobilidade</span><h3 style="margin-top:12px">Mobilidade e core</h3><p style="margin:6px 0 0;font-size:13px;color:var(--muted)">Quinta, 12/11 · 07h00 às 07h45</p>
+<div class="kv"><div>Professor<b>Prof. Modelo</b></div><div>Local<b>Sala 2</b></div><div>Nível<b>Todos</b></div><div>FitPoints<b>+40</b></div></div>
+<div class="spots"><span>Disponibilidade</span><span><b>3</b> de 8 vagas</span></div><div class="meter" role="img" aria-label="5 de 8 vagas ocupadas"><i style="width:62.5%"></i></div></div>
+<div style="padding:0 18px;display:flex;flex-direction:column;gap:10px"><div class="alert err" role="alert"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="flex:0 0 auto"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 17h.01"/></svg><span>Conflito de reserva: você já tem uma aula neste horário. Atualize a agenda para ver as vagas atuais.</span></div>
+<p style="margin:0;font-size:12.5px;color:var(--faint)">A disponibilidade mostrada é informativa; a confirmação depende das vagas no momento da reserva.</p></div></div><div class="sticky-cta"><button class="btn btn-primary btn-block" type="button">Reservar aula <span class="arr" aria-hidden="true">→</span></button></div></div></div><div><p class="screen-label"><b>Agenda · histórico</b><span>aba Histórico</span></p><div class="device"><div class="status"><span>9:41</span><span>5G ▮▮▮</span></div><div class="app-body">
+<div><p class="kicker" style="margin-bottom:8px">Reservas</p><h3>Agenda</h3></div>
+<div class="segmented" role="group" aria-label="Visão" style="align-self:flex-start"><button type="button">Próximas</button><button type="button" aria-pressed="true">Histórico</button></div>
+<div class="chips" role="group" aria-label="Filtrar por estado"><button class="pill" type="button" aria-pressed="true">Todas</button><button class="pill" type="button">Confirmadas</button><button class="pill" type="button">Canceladas</button><button class="pill" type="button">Concluídas</button><button class="pill" type="button">Não compareceu</button></div>
+<div class="sec-t">Próximas reservas</div><div class="class-item"><div class="time">18h<small>Hoje</small></div><div class="meta"><b>Funcional</b><span>Prof. Teste</span></div><div class="end"><span class="badge ok"><span class="dot"></span>CONFIRMADA</span></div></div><div class="sec-t">Anteriores</div><div class="class-item"><div class="time">07h<small>03/11</small></div><div class="meta"><b>Mobilidade</b><span>Prof. Modelo</span></div><div class="end"><span class="badge">CONCLUÍDA</span></div></div><div class="class-item"><div class="time">18h<small>02/11</small></div><div class="meta"><b>Funcional</b><span>Prof. Exemplo</span></div><div class="end"><span class="badge err">CANCELADA</span></div></div><div class="class-item"><div class="time">12h<small>30/10</small></div><div class="meta"><b>Funcional</b><span>Prof. Exemplo</span></div><div class="end"><span class="badge warn">NÃO COMPARECEU</span></div></div></div><nav class="tabbar t5" aria-label="Navegação inferior"><a href="#" ><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Home</a><a href="#"  aria-current="page"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>Agenda</a><a href="#" ><svg viewBox="0 0 24 24"><path d="M12 2l3 7h7l-5.5 4.5L18.5 21 12 16.5 5.5 21l2-7.5L2 9h7z"/></svg>FitPoints</a><a href="#" ><svg viewBox="0 0 24 24"><path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>Treino</a><a href="#" ><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>Perfil</a></nav></div></div></div></div></section>
+<section class="scr" id="ficha"><div class="wrap"><div class="scr-head"><h2>Ficha de treino (lista e detalhe)</h2><code>/ficha-treino · /ficha-treino/:id</code><span class="badge brand">Extrapolada da base</span></div><div class="screens"><div><p class="screen-label"><b>Ficha de treino</b><span>rota /ficha-treino</span></p><div class="device"><div class="status"><span>9:41</span><span>5G ▮▮▮</span></div><div class="app-body"><h3>Ficha de treino</h3>
+<div><div class="sec-t-row"><h4 style="font-size:18px;letter-spacing:-.03em">Fase 2 · Força</h4><span class="badge ok"><span class="dot"></span>ATIVA</span></div><p class="meta-line">Montada por Prof. Exemplo · desde 02/11/2026</p></div>
+<ul style="margin:0;padding:0;display:flex;flex-direction:column;gap:10px" aria-label="Exercícios"><li class="ex" style="list-style:none"><h4>Agachamento livre</h4><div class="ex-chips"><div class="ex-chip">Séries<b>4</b></div><div class="ex-chip">Repetições<b>12</b></div><div class="ex-chip">Carga<b>40 kg</b></div></div><p>Obs. do professor: Descer até 90 graus.</p></li><li class="ex" style="list-style:none"><h4>Remada curvada</h4><div class="ex-chips"><div class="ex-chip">Séries<b>3</b></div><div class="ex-chip">Repetições<b>10</b></div><div class="ex-chip">Carga<b>30 kg</b></div></div></li><li class="ex" style="list-style:none"><h4>Prancha</h4><div class="ex-chips"><div class="ex-chip">Séries<b>3</b></div><div class="ex-chip">Tempo<b>45 s</b></div></div></li></ul>
+<p class="note">Foco em técnica nas duas primeiras semanas.</p>
+<div class="sec-t">Fichas anteriores</div>
+<a class="class-item" href="#"><div class="meta"><b>Fase 1 · Adaptação</b><span>05/10/2026</span></div><span class="badge">CONCLUÍDA</span></a>
+<a class="class-item" href="#" style="opacity:.75"><div class="meta"><b>Ficha antiga</b><span>01/08/2026</span></div><span class="badge">ARQUIVADA</span></a></div><nav class="tabbar t5" aria-label="Navegação inferior"><a href="#" ><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Home</a><a href="#" ><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>Agenda</a><a href="#" ><svg viewBox="0 0 24 24"><path d="M12 2l3 7h7l-5.5 4.5L18.5 21 12 16.5 5.5 21l2-7.5L2 9h7z"/></svg>FitPoints</a><a href="#"  aria-current="page"><svg viewBox="0 0 24 24"><path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>Treino</a><a href="#" ><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>Perfil</a></nav></div></div><div><p class="screen-label"><b>Ficha anterior</b><span>rota /ficha-treino/:id</span></p><div class="device"><div class="status"><span>9:41</span><span>5G ▮▮▮</span></div><a class="back" href="#">← Fichas de treino</a><div class="app-body"><h3 style="font-size:22px">Ficha de treino</h3>
+<div><div class="sec-t-row"><h4 style="font-size:18px;letter-spacing:-.03em">Fase 1 · Adaptação</h4><span class="badge">CONCLUÍDA</span></div><p class="meta-line">Montada por Prof. Exemplo · desde 05/10/2026</p></div>
+<ul style="margin:0;padding:0;display:flex;flex-direction:column;gap:10px" aria-label="Exercícios"><li class="ex" style="list-style:none"><h4>Leg press</h4><div class="ex-chips"><div class="ex-chip">Séries<b>3</b></div><div class="ex-chip">Repetições<b>15</b></div><div class="ex-chip">Carga<b>60 kg</b></div></div></li><li class="ex" style="list-style:none"><h4>Esteira</h4><div class="ex-chips"><div class="ex-chip">Tempo<b>10 min</b></div><div class="ex-chip">Distância<b>1,2 km</b></div></div></li></ul></div><nav class="tabbar t5" aria-label="Navegação inferior"><a href="#" ><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Home</a><a href="#" ><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>Agenda</a><a href="#" ><svg viewBox="0 0 24 24"><path d="M12 2l3 7h7l-5.5 4.5L18.5 21 12 16.5 5.5 21l2-7.5L2 9h7z"/></svg>FitPoints</a><a href="#"  aria-current="page"><svg viewBox="0 0 24 24"><path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>Treino</a><a href="#" ><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>Perfil</a></nav></div></div></div></div></section>
+<section class="scr" id="fitpoints"><div class="wrap"><div class="scr-head"><h2>FitPoints</h2><code>/fitpoints</code><span class="badge brand">Extrapolada da base</span></div><div class="screens"><div><p class="screen-label"><b>FitPoints</b><span>pontos, streak e histórico</span></p><div class="device"><div class="status"><span>9:41</span><span>5G ▮▮▮</span></div><div class="app-body"><h3>FitPoints</h3>
+<div class="plan-card"><small>PONTOS TOTAIS</small><strong style="font-size:34px">1.240</strong><span>7 dias seguidos de treino</span></div>
+<div><div class="marks" aria-label="Marcos de streak"><span class="mark">3 dias</span><span class="mark">7 dias</span><span class="mark pending">14 dias</span><span class="mark pending">30 dias</span></div><p class="meta-line">Próximo marco: 14 dias (+60 pontos)</p></div>
+<div class="sec-t">Conquistas</div>
+<ul class="discs"><li class="disc" aria-label="Streak de 3, conquistado"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7"/></svg></li><li class="disc" aria-label="Streak de 7, conquistado"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7"/></svg></li><li class="disc locked" aria-label="Streak de 14, bloqueado"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></li><li class="disc locked" aria-label="Streak de 30, bloqueado"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></li></ul>
+<p class="note">Streak de 14 (7/14)</p>
+<div class="sec-t">Histórico recente</div>
+<div class="card flat" style="padding:4px 16px"><div class="hist"><div>Presença confirmada · Funcional<small>09/11</small></div><span class="pts">+40</span></div><div class="hist"><div>Meta concluída · Frequência de novembro<small>07/11</small></div><span class="pts">+100</span></div><div class="hist"><div>Streak de 7 dias consecutivos<small>06/11</small></div><span class="pts">+50</span></div><div class="hist"><div>Correção de presença · Mobilidade<small>04/11</small></div><span class="pts neg">-40</span></div></div></div><nav class="tabbar t5" aria-label="Navegação inferior"><a href="#" ><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Home</a><a href="#" ><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>Agenda</a><a href="#"  aria-current="page"><svg viewBox="0 0 24 24"><path d="M12 2l3 7h7l-5.5 4.5L18.5 21 12 16.5 5.5 21l2-7.5L2 9h7z"/></svg>FitPoints</a><a href="#" ><svg viewBox="0 0 24 24"><path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>Treino</a><a href="#" ><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>Perfil</a></nav></div></div><div><p class="screen-label"><b>FitPoints · ranking e metas</b><span>mesma rota, abaixo</span></p><div class="device"><div class="status"><span>9:41</span><span>5G ▮▮▮</span></div><div class="app-body"><div class="sec-t">Metas do professor</div>
+<div class="stack"><div class="class-item"><div class="meta"><b>Frequentar 10 aulas no mês</b><span>Prazo: 30/11/2026</span></div></div><div class="class-item"><div class="meta"><b>Treinar 3 vezes por semana</b><span>Concluída em 02/11/2026</span></div><span class="badge ok"><span class="dot"></span>Concluída</span></div></div>
+<div class="sec-t">Ranking</div>
+<div class="segmented" role="group" aria-label="Período do ranking" style="align-self:flex-start"><button type="button" aria-pressed="true">Semanal</button><button type="button">Mensal</button><button type="button">Geral</button></div>
+<div class="stack">
+<div class="rank"><span class="pos">1</span><div class="meta"><b>Mariana</b><small>5 presenças</small></div></div>
+<div class="rank"><span class="pos">2</span><div class="meta"><b>Carlos</b><small>4 presenças · empate</small></div></div>
+<div class="rank me"><span class="pos">3</span><div class="meta"><b>Aluno (você)</b><small>4 presenças · empate</small></div></div></div>
+<div class="sec-t">Participação no ranking</div>
+<p class="note" style="font-size:13px;color:var(--muted)">Sua participação é opcional. Ao aderir, outros participantes veem seu primeiro nome. Seu histórico, sequência e marcos continuam disponíveis para você.</p>
+<label class="check"><input type="checkbox" checked> <span>Participar do ranking</span></label>
+<div class="hint-card">Ninguém pontuou neste período ainda. (estado vazio)</div></div><nav class="tabbar t5" aria-label="Navegação inferior"><a href="#" ><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Home</a><a href="#" ><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>Agenda</a><a href="#"  aria-current="page"><svg viewBox="0 0 24 24"><path d="M12 2l3 7h7l-5.5 4.5L18.5 21 12 16.5 5.5 21l2-7.5L2 9h7z"/></svg>FitPoints</a><a href="#" ><svg viewBox="0 0 24 24"><path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>Treino</a><a href="#" ><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>Perfil</a></nav></div></div></div></div></section>
+<section class="scr" id="perfil"><div class="wrap"><div class="scr-head"><h2>Perfil</h2><code>/perfil</code><span class="badge brand">Extrapolada da base</span></div><div class="screens"><div><p class="screen-label"><b>Perfil</b><span>dados, plano e saída</span></p><div class="device"><div class="status"><span>9:41</span><span>5G ▮▮▮</span></div><div class="app-body"><h3>Perfil</h3>
+<div class="card flat" style="padding:16px;display:flex;flex-direction:column;gap:14px"><div class="sec-t" style="margin:0">Dados pessoais</div>
+<div class="field"><label for="p1">Nome completo</label><input class="input" id="p1" value="Cliente Exemplo"></div>
+<div class="field"><label for="p2">Telefone</label><input class="input" id="p2" value="(31) 90000-0000"></div>
+<div class="field"><label for="p3">Data de nascimento</label><input class="input is-error" id="p3" value="" placeholder="dd/mm/aaaa" aria-invalid="true"><span class="help err">Telefone e data de nascimento são obrigatórios.</span></div>
+<div class="field"><label for="p4">Endereço</label><input class="input" id="p4" value="Rua Exemplo, 100, Centro"></div>
+<button class="btn btn-primary btn-block" type="button">Salvar alterações</button></div>
+<div class="card flat" style="padding:16px;display:flex;flex-direction:column;gap:12px"><div class="sec-t" style="margin:0">Plano ativo</div>
+<div class="plan-card" style="padding:14px"><strong style="margin:0">Musculação 3x por semana</strong></div>
+<div class="kv" style="margin:0"><div>Início<b>15/09/2026</b></div><div>Término<b>15/12/2026</b></div></div>
+<div class="sec-t" style="margin-top:4px">Histórico de planos</div><p class="note">Nenhum plano anterior.</p></div>
+<div class="card flat" style="padding:16px;display:flex;flex-direction:column;gap:12px"><div class="sec-t" style="margin:0">Senha</div><button class="btn btn-secondary btn-block" type="button">Alterar senha</button></div>
+<button class="btn btn-ghost" type="button" style="align-self:center">Sair da conta</button></div><nav class="tabbar t5" aria-label="Navegação inferior"><a href="#" ><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Home</a><a href="#" ><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>Agenda</a><a href="#" ><svg viewBox="0 0 24 24"><path d="M12 2l3 7h7l-5.5 4.5L18.5 21 12 16.5 5.5 21l2-7.5L2 9h7z"/></svg>FitPoints</a><a href="#" ><svg viewBox="0 0 24 24"><path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>Treino</a><a href="#"  aria-current="page"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>Perfil</a></nav></div></div><div><p class="screen-label"><b>Perfil · alterar senha</b><span>mesma rota, formulário aberto</span></p><div class="device"><div class="status"><span>9:41</span><span>5G ▮▮▮</span></div><div class="app-body"><h3>Perfil</h3>
+<div class="card flat" style="padding:16px;display:flex;flex-direction:column;gap:14px"><div class="sec-t" style="margin:0">Senha</div>
+<p class="note" style="font-size:13px;color:var(--muted)">Informe a senha atual para definir uma nova senha.</p>
+<div class="field"><label for="s1">Senha atual</label><input class="input" id="s1" type="password" value="exemplo123"></div>
+<div class="field"><label for="s2">Nova senha</label><input class="input is-focus" id="s2" type="password" value="novaSenha456"></div>
+<div class="alert ok"><span>Senha alterada com sucesso.</span></div>
+<button class="btn btn-primary btn-block" type="button">Salvar nova senha</button>
+<button class="btn btn-ghost" type="button">Cancelar troca de senha</button></div>
+<div class="sec-t">Reservas</div>
+<div class="hint-card">Nenhuma reserva próxima.</div></div><nav class="tabbar t5" aria-label="Navegação inferior"><a href="#" ><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Home</a><a href="#" ><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>Agenda</a><a href="#" ><svg viewBox="0 0 24 24"><path d="M12 2l3 7h7l-5.5 4.5L18.5 21 12 16.5 5.5 21l2-7.5L2 9h7z"/></svg>FitPoints</a><a href="#" ><svg viewBox="0 0 24 24"><path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>Treino</a><a href="#"  aria-current="page"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>Perfil</a></nav></div></div></div></div></section>
+<section class="scr" id="login"><div class="wrap"><div class="scr-head"><h2>Login</h2><code>/login</code><span class="badge ok"><span class="dot"></span>Tela da proposta</span></div><div class="screens"><div><p class="screen-label"><b>Login</b><span>erro de credenciais</span></p><div class="device"><div class="status"><span>9:41</span><span>5G ▮▮▮</span></div><div class="login-art" aria-hidden="true"><div class="orbit-ring"></div><svg><use href="#flame"/></svg></div>
+<div class="app-body" style="gap:16px"><div><p class="kicker" style="margin-bottom:8px">Fitburn Brasil</p><h3>Bem-vindo <em style="font-family:var(--font-serif);font-style:italic;color:var(--brand-strong)">de volta</em></h3><p class="meta-line">Entre com suas credenciais para continuar.</p></div>
+<div class="alert err" role="alert"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="flex:0 0 auto"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 17h.01"/></svg><span>Não foi possível entrar. Verifique seu e-mail e senha e tente novamente.</span></div>
+<div class="field"><label for="lg-email">E-mail</label><input class="input is-focus" id="lg-email" type="email" value="aluno@exemplo.com"></div>
+<div class="field"><label for="lg-pass">Senha</label><div class="pw"><input class="input is-error" id="lg-pass" type="password" value="12345" aria-invalid="true"><button type="button" aria-label="Mostrar senha">Mostrar</button></div></div>
+<button class="btn btn-primary btn-block" type="button">Entrar <span class="arr" aria-hidden="true">→</span></button>
+<p class="note" style="text-align:center">Acesso restrito a alunos e equipe Fitburn.</p>
+<div class="legal-links"><a href="#">Política de privacidade</a><a href="#">Termos de uso</a></div></div></div></div><div><p class="screen-label"><b>Login · carregando</b><span>botão em andamento</span></p><div class="device"><div class="status"><span>9:41</span><span>5G ▮▮▮</span></div><div class="login-art" aria-hidden="true"><div class="orbit-ring"></div><svg><use href="#flame"/></svg></div>
+<div class="app-body" style="gap:16px"><div><p class="kicker" style="margin-bottom:8px">Fitburn Brasil</p><h3>Bem-vindo <em style="font-family:var(--font-serif);font-style:italic;color:var(--brand-strong)">de volta</em></h3><p class="meta-line">Entre com suas credenciais para continuar.</p></div>
+<div class="field"><label for="lg2-email">E-mail</label><input class="input" id="lg2-email" type="email" placeholder="voce@exemplo.com"></div>
+<div class="field"><label for="lg2-pass">Senha</label><div class="pw"><input class="input" id="lg2-pass" type="password" value="exemplo123"><button type="button" aria-label="Ocultar senha">Ocultar</button></div></div>
+<button class="btn btn-primary btn-block" type="button" aria-busy="true"><span class="spin" aria-hidden="true"></span>Entrando…</button>
+<p class="note" style="text-align:center">Acesso restrito a alunos e equipe Fitburn.</p>
+<div class="legal-links"><a href="#">Política de privacidade</a><a href="#">Termos de uso</a></div></div></div></div></div></div></section>
+<section class="scr" id="onboarding"><div class="wrap"><div class="scr-head"><h2>Onboarding</h2><code>/onboarding</code><span class="badge brand">Extrapolada da base</span></div><div class="screens"><div><p class="screen-label"><b>Onboarding · senha</b><span>etapa 1</span></p><div class="device"><div class="status"><span>9:41</span><span>5G ▮▮▮</span></div><div class="app-body"><div><p class="kicker" style="margin-bottom:8px">Primeiro acesso</p><h3>Conclua as etapas de onboarding</h3><p class="meta-line">Há etapas obrigatórias pendentes para esta conta:</p></div>
+<ol class="steps"><li class="cur"><span class="n">1</span>Troque sua senha</li><li><span class="n">2</span>Leia a política de privacidade</li><li><span class="n">3</span>Aceite os termos de uso</li></ol>
+<div class="card flat" style="padding:16px;display:flex;flex-direction:column;gap:12px"><div class="sec-t" style="margin:0">Defina uma nova senha</div>
+<p class="note" style="font-size:13px;color:var(--muted)">Defina uma senha pessoal para liberar o acesso ao Fitburn.</p>
+<div class="field"><label for="o1">Senha atual</label><input class="input" id="o1" type="password" value="exemplo123"></div>
+<div class="field"><label for="o2">Nova senha</label><input class="input" id="o2" type="password" value=""></div>
+<button class="btn btn-primary btn-block" type="button">Salvar nova senha</button></div></div></div></div><div><p class="screen-label"><b>Onboarding · privacidade</b><span>etapa 2</span></p><div class="device"><div class="status"><span>9:41</span><span>5G ▮▮▮</span></div><div class="app-body"><h3>Ciência da política de privacidade</h3><p class="meta-line" style="margin-top:-8px">Versão 1.0</p><article class="legal-text" aria-label="Política de privacidade"><h4>1. Dados coletados</h4><p>Texto de exemplo sobre os dados que o estúdio coleta para prestar o serviço.</p><h4>2. Finalidade</h4><p>Texto de exemplo sobre como esses dados são usados.</p></article>
+<label class="check"><input type="checkbox" checked> <span>Li a política de privacidade</span></label>
+<button class="btn btn-primary btn-block" type="button">Registrar ciência</button></div></div></div><div><p class="screen-label"><b>Onboarding · termos</b><span>etapa 3 (botão desabilitado)</span></p><div class="device"><div class="status"><span>9:41</span><span>5G ▮▮▮</span></div><div class="app-body"><h3>Aceite dos termos de uso</h3><p class="meta-line" style="margin-top:-8px">Versão 1.0</p><article class="legal-text" aria-label="Termos de uso"><h4>1. Uso do app</h4><p>Texto de exemplo sobre as regras de reserva e de uso do aplicativo.</p><h4>2. Cancelamentos</h4><p>Texto de exemplo sobre prazos de cancelamento.</p></article>
+<label class="check"><input type="checkbox"> <span>Li e aceito os termos de uso</span></label>
+<div class="alert err" role="alert"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="flex:0 0 auto"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 17h.01"/></svg><span>Não foi possível registrar seu aceite.</span></div>
+<button class="btn btn-primary btn-block" type="button" disabled>Aceitar termos</button></div></div></div></div></div></section>
+<section class="scr" id="privacidade"><div class="wrap"><div class="scr-head"><h2>Política de privacidade</h2><code>/privacidade</code><span class="badge brand">Extrapolada da base</span></div><div class="screens"><div><p class="screen-label"><b>Política de privacidade</b><span>rota /privacidade</span></p><div class="device"><div class="status"><span>9:41</span><span>5G ▮▮▮</span></div><a class="back" href="#">← Voltar ao login</a><div class="app-body"><div><h3>Política de privacidade</h3><p class="meta-line">Versão 1.0</p></div><article class="legal-text" aria-label="Política de privacidade"><h4>1. Dados coletados</h4><p>Texto de exemplo sobre os dados que o estúdio coleta para prestar o serviço.</p><h4>2. Finalidade</h4><p>Texto de exemplo sobre como esses dados são usados.</p><h4>3. Seus direitos</h4><p>Texto de exemplo sobre acesso, correção e exclusão de dados.</p></article><div class="legal-links"><a href="#">Termos de uso</a></div></div></div></div></div></div></section>
+<section class="scr" id="termos"><div class="wrap"><div class="scr-head"><h2>Termos de uso</h2><code>/termos</code><span class="badge brand">Extrapolada da base</span></div><div class="screens"><div><p class="screen-label"><b>Termos de uso</b><span>rota /termos</span></p><div class="device"><div class="status"><span>9:41</span><span>5G ▮▮▮</span></div><a class="back" href="#">← Voltar ao login</a><div class="app-body"><div><h3>Termos de uso</h3><p class="meta-line">Versão 1.0</p></div><article class="legal-text" aria-label="Termos de uso"><h4>1. Uso do app</h4><p>Texto de exemplo sobre as regras de reserva e de uso do aplicativo.</p><h4>2. Cancelamentos</h4><p>Texto de exemplo sobre prazos de cancelamento.</p><h4>3. Responsabilidades</h4><p>Texto de exemplo sobre as responsabilidades do cliente e do estúdio.</p></article><div class="legal-links"><a href="#">Política de privacidade</a></div></div></div></div></div></div></section>
+
+<div id="admin" class="group-title"><div class="wrap"><p class="kicker">Área administrativa</p><h2 class="h2">Desktop, com <em>barra lateral</em>.</h2></div></div>
+<section class="scr" id="dashboard"><div class="wrap"><div class="scr-head"><h2>Dashboard</h2><code>/dashboard</code><span class="badge brand">Extrapolada da base</span></div><div class="adm"><nav class="adm-side" aria-label="Navegação principal"><span class="brand"><svg aria-hidden="true"><use href="#flame"/></svg>FITBURN</span><a href="#" aria-current="page">Dashboard</a><a href="#">Clientes</a><a href="#">Usuários e perfis</a><a href="#">Agenda</a><a href="#">Reservas</a><a href="#">Planos</a><a href="#">Templates & modalidades</a><a href="#">Fichas de treino</a><a href="#">Metas</a><a href="#">Minhas aulas</a><a href="#">Atribuições</a><span class="sp"></span><a href="#">Meu perfil</a><a href="#">Sair</a></nav><div class="adm-main"><div class="adm-head"><div><p class="kicker">Visão geral</p><h3>Dashboard</h3><span class="sub-t">Visão geral do Fitburn</span></div><div class="adm-actions"></div></div>
+<div class="kpis"><div class="kpi"><small>Clientes ativos</small><strong>128</strong></div><div class="kpi"><small>Ocupação média da semana</small><strong>72%</strong></div><div class="kpi"><small>Pontos distribuídos no mês</small><strong>18.450</strong></div><div class="kpi"><small>Streaks ativos</small><strong>34</strong></div></div>
+<div class="two-col"><div class="card sm"><h4>Ocupação por aula · semana atual</h4><div class="bar-row"><span>Funcional · ter 18h</span><div class="meter" role="img" aria-label="88%"><i style="width:88%"></i></div><span>88%</span></div><div class="bar-row"><span>Mobilidade · qui 07h</span><div class="meter" role="img" aria-label="62%"><i style="width:62%"></i></div><span>62%</span></div><div class="bar-row"><span>Musculação guiada · sex 06h</span><div class="meter" role="img" aria-label="100%"><i style="width:100%"></i></div><span>100%</span></div><div class="bar-row"><span>Funcional · sáb 09h</span><div class="meter" role="img" aria-label="38%"><i style="width:38%"></i></div><span>38%</span></div></div>
+<div class="card sm"><h4>FitPoints</h4><div class="figures"><div><strong>18.450</strong><span>pontos distribuídos</span></div><div><strong>34</strong><span>streaks ativos</span></div></div>
+<div class="row" style="justify-content:space-between;margin-bottom:10px"><b style="font-size:14px">Ranking do período</b><div class="segmented" role="group"><button type="button" aria-pressed="true">Semanal</button><button type="button">Mensal</button><button type="button">Geral</button></div></div>
+<ol class="rk" aria-label="Topo do ranking"><li><b>1</b>Mariana<span>5 presenças</span></li><li><b>2</b>Carlos<span>4 presenças</span></li><li><b>3</b>Aluno Teste<span>4 presenças</span></li></ol></div></div></div></div></div></section>
+<section class="scr" id="clientes"><div class="wrap"><div class="scr-head"><h2>Clientes</h2><code>/clientes</code><span class="badge brand">Extrapolada da base</span></div><div class="adm"><nav class="adm-side" aria-label="Navegação principal"><span class="brand"><svg aria-hidden="true"><use href="#flame"/></svg>FITBURN</span><a href="#">Dashboard</a><a href="#" aria-current="page">Clientes</a><a href="#">Usuários e perfis</a><a href="#">Agenda</a><a href="#">Reservas</a><a href="#">Planos</a><a href="#">Templates & modalidades</a><a href="#">Fichas de treino</a><a href="#">Metas</a><a href="#">Minhas aulas</a><a href="#">Atribuições</a><span class="sp"></span><a href="#">Meu perfil</a><a href="#">Sair</a></nav><div class="adm-main"><div class="adm-head"><div><p class="kicker">Clientes</p><h3>Clientes</h3></div><div class="adm-actions"><button class="btn btn-primary btn-sm" type="button">+ Novo cliente</button></div></div><div class="toolbar"><input class="input" type="search" placeholder="Buscar por nome ou e-mail" aria-label="Buscar por nome ou e-mail"><select class="input" aria-label="Status"><option>Status: todos</option><option>Ativo</option><option>Inativo</option></select><select class="input" aria-label="Plano"><option>Plano: todos</option><option>Sem plano ativo</option><option>Musculação 3x</option></select></div><div class="table-wrap"><table><thead><tr><th>Nome</th><th>E-mail</th><th>Telefone</th><th>Plano</th><th>Status</th><th></th></tr></thead><tbody><tr><td><b>Cliente Exemplo</b></td><td>cliente1@exemplo.com</td><td>(31) 90000-0001</td><td>Musculação 3x</td><td><span class="badge ok"><span class="dot"></span>ATIVO</span></td><td><div class="cell-actions"><button class="btn btn-secondary btn-sm" type="button">Desativar</button><button class="btn btn-ghost btn-sm" type="button" style="color:var(--danger)">Excluir</button></div></td></tr><tr><td><b>Aluna Teste</b></td><td>aluna@exemplo.com</td><td>(31) 90000-0002</td><td>Sem plano ativo</td><td><span class="badge ok"><span class="dot"></span>ATIVO</span></td><td><div class="cell-actions"><button class="btn btn-secondary btn-sm" type="button">Desativar</button><button class="btn btn-ghost btn-sm" type="button" style="color:var(--danger)">Excluir</button></div></td></tr><tr><td><b>Pessoa Modelo</b></td><td>modelo@exemplo.com</td><td>(31) 90000-0003</td><td>Musculação 2x</td><td><span class="badge"><span class="dot"></span>INATIVO</span></td><td><div class="cell-actions"><button class="btn btn-secondary btn-sm" type="button">Reativar</button><button class="btn btn-ghost btn-sm" type="button" style="color:var(--danger)">Excluir</button></div></td></tr></tbody></table></div></div></div></div></section>
+<section class="scr" id="clientes-novo"><div class="wrap"><div class="scr-head"><h2>Novo cliente</h2><code>/clientes/novo</code><span class="badge brand">Extrapolada da base</span></div><div class="adm"><nav class="adm-side" aria-label="Navegação principal"><span class="brand"><svg aria-hidden="true"><use href="#flame"/></svg>FITBURN</span><a href="#">Dashboard</a><a href="#" aria-current="page">Clientes</a><a href="#">Usuários e perfis</a><a href="#">Agenda</a><a href="#">Reservas</a><a href="#">Planos</a><a href="#">Templates & modalidades</a><a href="#">Fichas de treino</a><a href="#">Metas</a><a href="#">Minhas aulas</a><a href="#">Atribuições</a><span class="sp"></span><a href="#">Meu perfil</a><a href="#">Sair</a></nav><div class="adm-main"><span class="crumb">Clientes / Novo cliente</span><div class="adm-head"><div><p class="kicker">Cadastro</p><h3>Novo cliente</h3></div><div class="adm-actions"></div></div>
+<form class="card" aria-label="Cadastro de cliente" onsubmit="return false"><div class="form-grid">
+<div class="field"><label for="n1">Nome completo *</label><input class="input" id="n1" placeholder="Nome e sobrenome" value="Cliente Exemplo"></div>
+<div class="field"><label for="n2">E-mail *</label><input class="input is-error" id="n2" value="cliente1@exemplo.com" aria-invalid="true"><span class="help err">Este e-mail já está cadastrado.</span></div>
+<div class="field"><label for="n3">Telefone *</label><input class="input" id="n3" value="(31) 90000-0000"></div>
+<div class="field"><label for="n4">Data de nascimento *</label><input class="input" id="n4" value="01/01/1990"></div>
+<div class="field"><label for="n5">CPF (opcional)</label><input class="input is-ok" id="n5" value="000.000.000-00"><span class="help ok">Formato válido.</span></div>
+<div class="field"><label for="n6">Perfil de acesso *</label><select class="input" id="n6"><option>Cliente</option><option disabled>Professor</option><option disabled>Funcionário administrativo</option><option disabled>Administrador</option></select><span class="help">Somente administradores podem alterar o perfil de acesso.</span></div>
+<div class="field full"><label for="n7">Endereço (opcional)</label><input class="input" id="n7" placeholder="Rua, número, bairro, cidade"></div>
+<div class="field full"><label for="n8">Senha inicial *</label><input class="input" id="n8" type="password" value="exemplo123"><span class="help">Definida por você ou gerada e comunicada ao cliente fora do sistema.</span></div></div>
+<div class="row" style="margin-top:20px"><button class="btn btn-primary" type="button">Salvar cliente <span class="arr" aria-hidden="true">→</span></button><button class="btn btn-secondary" type="button">Cancelar</button></div></form></div></div></div></section>
+<section class="scr" id="clientes-id"><div class="wrap"><div class="scr-head"><h2>Detalhe do cliente</h2><code>/clientes/:id</code><span class="badge brand">Extrapolada da base</span></div><div class="adm"><nav class="adm-side" aria-label="Navegação principal"><span class="brand"><svg aria-hidden="true"><use href="#flame"/></svg>FITBURN</span><a href="#">Dashboard</a><a href="#" aria-current="page">Clientes</a><a href="#">Usuários e perfis</a><a href="#">Agenda</a><a href="#">Reservas</a><a href="#">Planos</a><a href="#">Templates & modalidades</a><a href="#">Fichas de treino</a><a href="#">Metas</a><a href="#">Minhas aulas</a><a href="#">Atribuições</a><span class="sp"></span><a href="#">Meu perfil</a><a href="#">Sair</a></nav><div class="adm-main"><span class="crumb">Clientes / Cliente Exemplo</span><div class="adm-head"><div><p class="kicker">Cliente</p><h3>Cliente Exemplo <span class="badge ok"><span class="dot"></span>ATIVO</span></h3></div><div class="adm-actions"><button class="btn btn-secondary btn-sm" type="button">Desativar cliente</button><button class="btn btn-danger btn-sm" type="button">Excluir cliente</button></div></div><div class="segmented" role="group"><button type="button" aria-pressed="true">Dados pessoais</button><button type="button">Plano e histórico</button><button type="button">Reservas</button><button type="button">FitPoints</button><button type="button">Fichas</button></div><div class="card"><dl class="dl"><dt>E-mail</dt><dd>cliente1@exemplo.com</dd><dt>Telefone</dt><dd>(31) 90000-0001</dd><dt>Data de nascimento</dt><dd>01/01/1990</dd><dt>Documento</dt><dd>000.000.000-00</dd><dt>Endereço</dt><dd>Rua Exemplo, 100, Centro</dd></dl>
+<div style="margin-top:18px"><button class="btn btn-soft btn-sm" type="button">Editar dados</button></div></div>
+<div class="card sm"><h4>Aba Reservas · próximas reservas</h4><div class="table-wrap"><table><thead><tr><th>Aula</th><th>Data / Horário</th><th>Status</th></tr></thead><tbody><tr><td>Funcional</td><td>Ter 10/11 · 18h00</td><td><span class="badge ok">CONFIRMADA</span></td></tr><tr><td>Mobilidade</td><td>Qui 12/11 · 07h00</td><td><span class="badge ok">CONFIRMADA</span></td></tr></tbody></table></div></div></div></div></div></section>
+<section class="scr" id="reservas"><div class="wrap"><div class="scr-head"><h2>Reservas administrativas</h2><code>/reservas-administrativas</code><span class="badge brand">Extrapolada da base</span></div><div class="adm"><nav class="adm-side" aria-label="Navegação principal"><span class="brand"><svg aria-hidden="true"><use href="#flame"/></svg>FITBURN</span><a href="#">Dashboard</a><a href="#">Clientes</a><a href="#">Usuários e perfis</a><a href="#">Agenda</a><a href="#" aria-current="page">Reservas</a><a href="#">Planos</a><a href="#">Templates & modalidades</a><a href="#">Fichas de treino</a><a href="#">Metas</a><a href="#">Minhas aulas</a><a href="#">Atribuições</a><span class="sp"></span><a href="#">Meu perfil</a><a href="#">Sair</a></nav><div class="adm-main"><div class="adm-head"><div><p class="kicker">Reservas</p><h3>Reservas administrativas</h3></div><div class="adm-actions"><button class="btn btn-secondary btn-sm" type="button">Exportar reservas (CSV)</button><button class="btn btn-primary btn-sm" type="button">+ Nova reserva</button></div></div><div class="toolbar"><input class="input" type="search" placeholder="Buscar por cliente ou aula" aria-label="Buscar por cliente ou aula"><select class="input" aria-label="Status"><option>Status: todas</option><option>Confirmada</option><option>Cancelada</option><option>Concluída</option><option>Não compareceu</option></select><select class="input" aria-label="Período"><option>Data: hoje</option><option>Esta semana</option></select></div><div class="table-wrap"><table><thead><tr><th>Cliente</th><th>Aula</th><th>Data / Horário</th><th>Status</th><th></th></tr></thead><tbody><tr><td><b>Cliente Exemplo</b></td><td>Funcional</td><td>Ter 10/11 · 18h00</td><td><span class="badge ok"><span class="dot"></span>CONFIRMADA</span></td><td><div class="cell-actions"><button class="btn btn-secondary btn-sm" type="button">Remarcar</button><button class="btn btn-ghost btn-sm" type="button" style="color:var(--danger)">Cancelar</button></div></td></tr><tr><td><b>Aluna Teste</b></td><td>Mobilidade</td><td>Ter 10/11 · 07h00</td><td><span class="badge">CONCLUÍDA</span></td><td><div class="cell-actions"></div></td></tr><tr><td><b>Pessoa Modelo</b></td><td>Funcional</td><td>Seg 09/11 · 18h00</td><td><span class="badge err">CANCELADA</span></td><td><div class="cell-actions"></div></td></tr><tr><td><b>Aluno Teste</b></td><td>Musculação guiada</td><td>Seg 09/11 · 06h00</td><td><span class="badge warn">NÃO COMPARECEU</span></td><td><div class="cell-actions"></div></td></tr></tbody></table></div><div class="dialog-wrap"><div class="dialog-demo" role="dialog" aria-labelledby="dlg-r" style="margin:0 auto"><h3 id="dlg-r" style="font-size:22px;letter-spacing:-.03em">Cancelar reserva</h3><p style="color:var(--muted);font-size:14.5px;margin:10px 0 22px">Funcional, terça às 18h00. A vaga será liberada para outros clientes.</p><div class="row" style="justify-content:flex-end"><button class="btn btn-secondary btn-sm" type="button">Voltar</button><button class="btn btn-danger btn-sm" type="button">Confirmar cancelamento</button></div></div></div></div></div></div></section>
+<section class="scr" id="usuarios"><div class="wrap"><div class="scr-head"><h2>Usuários e perfis</h2><code>/usuarios</code><span class="badge brand">Extrapolada da base</span></div><div class="adm"><nav class="adm-side" aria-label="Navegação principal"><span class="brand"><svg aria-hidden="true"><use href="#flame"/></svg>FITBURN</span><a href="#">Dashboard</a><a href="#">Clientes</a><a href="#" aria-current="page">Usuários e perfis</a><a href="#">Agenda</a><a href="#">Reservas</a><a href="#">Planos</a><a href="#">Templates & modalidades</a><a href="#">Fichas de treino</a><a href="#">Metas</a><a href="#">Minhas aulas</a><a href="#">Atribuições</a><span class="sp"></span><a href="#">Meu perfil</a><a href="#">Sair</a></nav><div class="adm-main"><div class="adm-head"><div><p class="kicker">Acesso</p><h3>Usuários e perfis de acesso</h3></div><div class="adm-actions"><button class="btn btn-primary btn-sm" type="button">+ Novo usuário</button></div></div><div class="toolbar"><input class="input" type="search" placeholder="Buscar por nome ou e-mail" aria-label="Buscar por nome ou e-mail"></div><div class="table-wrap"><table><thead><tr><th>Nome</th><th>E-mail</th><th>Perfil de acesso</th><th>Status</th><th></th></tr></thead><tbody><tr><td><b>Prof. Exemplo</b></td><td>prof@exemplo.com</td><td>Professor</td><td><span class="badge ok"><span class="dot"></span>ATIVO</span></td><td><div class="cell-actions"><button class="btn btn-secondary btn-sm" type="button">Desativar</button><button class="btn btn-secondary btn-sm" type="button">Redefinir senha</button><button class="btn btn-ghost btn-sm" type="button" style="color:var(--danger)">Excluir</button></div></td></tr><tr><td><b>Recepção Teste</b></td><td>recepcao@exemplo.com</td><td>Funcionário administrativo</td><td><span class="badge ok"><span class="dot"></span>ATIVO</span></td><td><div class="cell-actions"><button class="btn btn-secondary btn-sm" type="button">Desativar</button><button class="btn btn-secondary btn-sm" type="button">Redefinir senha</button><button class="btn btn-ghost btn-sm" type="button" style="color:var(--danger)">Excluir</button></div></td></tr><tr><td><b>Admin Modelo</b></td><td>admin@exemplo.com</td><td>Administrador</td><td><span class="badge"><span class="dot"></span>INATIVO</span></td><td><div class="cell-actions"><button class="btn btn-secondary btn-sm" type="button">Reativar</button><button class="btn btn-secondary btn-sm" type="button">Redefinir senha</button><button class="btn btn-ghost btn-sm" type="button" style="color:var(--danger)">Excluir</button></div></td></tr></tbody></table></div><span class="help">Cada usuário possui exatamente um perfil de acesso.</span><div class="adm-head"><div><p class="kicker">Perfis</p><h3>Perfis de acesso</h3></div><div class="adm-actions"><button class="btn btn-secondary btn-sm" type="button">+ Novo perfil</button></div></div><div class="toolbar"><div class="segmented" role="group"><button type="button" aria-pressed="true">Professor</button><button type="button">Funcionário administrativo</button><button type="button">Administrador</button><button type="button">Cliente</button></div></div><div class="table-wrap"><table class="mx" style="min-width:820px"><thead><tr><th>Módulo</th><th style="text-align:center">Ver</th><th style="text-align:center">Criar</th><th style="text-align:center">Editar</th><th style="text-align:center">Excluir</th><th style="text-align:center">Executar</th><th>Escopo</th></tr></thead><tbody><tr><th scope="row" style="text-transform:none;letter-spacing:0;font-size:13px;color:var(--ink);background:transparent">Usuários</th><td class="c"><input type="checkbox" aria-label="Ver em Usuários"></td><td class="c"><input type="checkbox" aria-label="Criar em Usuários" checked></td><td class="c"><input type="checkbox" aria-label="Editar em Usuários" checked></td><td class="c"><input type="checkbox" aria-label="Excluir em Usuários"></td><td class="c"><input type="checkbox" aria-label="Executar em Usuários" checked></td><td><select class="input" aria-label="Escopo de Usuários"><option>Todos os registros</option><option>Clientes atribuídos</option><option>Aulas atribuídas</option><option>Registros próprios</option></select></td></tr><tr><th scope="row" style="text-transform:none;letter-spacing:0;font-size:13px;color:var(--ink);background:transparent">Perfis de acesso</th><td class="c"><input type="checkbox" aria-label="Ver em Perfis de acesso" checked></td><td class="c"><input type="checkbox" aria-label="Criar em Perfis de acesso" checked></td><td class="c"><input type="checkbox" aria-label="Editar em Perfis de acesso"></td><td class="c"><input type="checkbox" aria-label="Excluir em Perfis de acesso" checked></td><td class="c"><input type="checkbox" aria-label="Executar em Perfis de acesso" checked></td><td><select class="input" aria-label="Escopo de Perfis de acesso"><option>Todos os registros</option><option>Clientes atribuídos</option><option>Aulas atribuídas</option><option>Registros próprios</option></select></td></tr><tr><th scope="row" style="text-transform:none;letter-spacing:0;font-size:13px;color:var(--ink);background:transparent">Dashboard</th><td class="c"><input type="checkbox" aria-label="Ver em Dashboard" checked></td><td class="c"><input type="checkbox" aria-label="Criar em Dashboard"></td><td class="c"><input type="checkbox" aria-label="Editar em Dashboard" checked></td><td class="c"><input type="checkbox" aria-label="Excluir em Dashboard" checked></td><td class="c"><input type="checkbox" aria-label="Executar em Dashboard"></td><td><select class="input" aria-label="Escopo de Dashboard"><option>Todos os registros</option><option>Clientes atribuídos</option><option>Aulas atribuídas</option><option>Registros próprios</option></select></td></tr><tr><th scope="row" style="text-transform:none;letter-spacing:0;font-size:13px;color:var(--ink);background:transparent">Templates de aula</th><td class="c"><input type="checkbox" aria-label="Ver em Templates de aula"></td><td class="c"><input type="checkbox" aria-label="Criar em Templates de aula" checked></td><td class="c"><input type="checkbox" aria-label="Editar em Templates de aula" checked></td><td class="c"><input type="checkbox" aria-label="Excluir em Templates de aula"></td><td class="c"><input type="checkbox" aria-label="Executar em Templates de aula" checked></td><td><select class="input" aria-label="Escopo de Templates de aula"><option>Todos os registros</option><option>Clientes atribuídos</option><option>Aulas atribuídas</option><option>Registros próprios</option></select></td></tr><tr><th scope="row" style="text-transform:none;letter-spacing:0;font-size:13px;color:var(--ink);background:transparent">Agenda</th><td class="c"><input type="checkbox" aria-label="Ver em Agenda" checked></td><td class="c"><input type="checkbox" aria-label="Criar em Agenda" checked></td><td class="c"><input type="checkbox" aria-label="Editar em Agenda"></td><td class="c"><input type="checkbox" aria-label="Excluir em Agenda" checked></td><td class="c"><input type="checkbox" aria-label="Executar em Agenda" checked></td><td><select class="input" aria-label="Escopo de Agenda"><option>Todos os registros</option><option>Clientes atribuídos</option><option>Aulas atribuídas</option><option>Registros próprios</option></select></td></tr><tr><th scope="row" style="text-transform:none;letter-spacing:0;font-size:13px;color:var(--ink);background:transparent">Reservas</th><td class="c"><input type="checkbox" aria-label="Ver em Reservas" checked></td><td class="c"><input type="checkbox" aria-label="Criar em Reservas"></td><td class="c"><input type="checkbox" aria-label="Editar em Reservas" checked></td><td class="c"><input type="checkbox" aria-label="Excluir em Reservas" checked></td><td class="c"><input type="checkbox" aria-label="Executar em Reservas"></td><td><select class="input" aria-label="Escopo de Reservas"><option>Todos os registros</option><option>Clientes atribuídos</option><option>Aulas atribuídas</option><option>Registros próprios</option></select></td></tr></tbody></table></div><div class="row"><button class="btn btn-primary btn-sm" type="button">Salvar permissões</button><button class="btn btn-secondary btn-sm" type="button">Desativar perfil</button></div></div></div></div></section>
+<section class="scr" id="agenda-admin"><div class="wrap"><div class="scr-head"><h2>Agenda administrativa</h2><code>/agenda-administrativa</code><span class="badge brand">Extrapolada da base</span></div><div class="adm"><nav class="adm-side" aria-label="Navegação principal"><span class="brand"><svg aria-hidden="true"><use href="#flame"/></svg>FITBURN</span><a href="#">Dashboard</a><a href="#">Clientes</a><a href="#">Usuários e perfis</a><a href="#" aria-current="page">Agenda</a><a href="#">Reservas</a><a href="#">Planos</a><a href="#">Templates & modalidades</a><a href="#">Fichas de treino</a><a href="#">Metas</a><a href="#">Minhas aulas</a><a href="#">Atribuições</a><span class="sp"></span><a href="#">Meu perfil</a><a href="#">Sair</a></nav><div class="adm-main"><div class="adm-head"><div><p class="kicker">Agenda</p><h3>Ocorrências / agenda administrativa</h3></div><div class="adm-actions"><button class="btn btn-secondary btn-sm" type="button">Exportar ocupação (CSV)</button><button class="btn btn-primary btn-sm" type="button">+ Nova aula</button></div></div><div class="row" style="justify-content:space-between"><button class="btn btn-secondary btn-sm" type="button" aria-label="Semana anterior">←</button><b>9 a 15 de novembro</b><button class="btn btn-secondary btn-sm" type="button" aria-label="Próxima semana">→</button></div><div class="wk-scroll"><div class="wk"><div><p class="dh">Seg<b>9</b></p><div class="occ"><b>06h Musculação guiada</b>Prof. Exemplo · 8/8</div></div><div class=today><p class="dh">Ter<b>10</b></p><div class="occ"><b>07h Mobilidade</b>Prof. Modelo · 5/8</div><div class="occ"><b>18h Funcional</b>Prof. Teste · 7/8</div></div><div><p class="dh">Qua<b>11</b></p><div class="occ"><b>12h Funcional</b>Sem professor · 0/8</div></div><div><p class="dh">Qui<b>12</b></p><div class="occ"><b>07h Mobilidade</b>Prof. Modelo · 3/8</div></div><div><p class="dh">Sex<b>13</b></p><div class="occ"><b>06h Musculação guiada</b>Prof. Exemplo · 8/8</div><div class="occ cancel"><b>18h Funcional</b>Cancelada</div></div><div><p class="dh">Sáb<b>14</b></p><div class="occ"><b>09h Funcional</b>Prof. Teste · 3/8</div></div><div><p class="dh">Dom<b>15</b></p></div></div></div></div></div></div></section>
+<section class="scr" id="templates"><div class="wrap"><div class="scr-head"><h2>Templates e modalidades</h2><code>/templates-e-modalidades</code><span class="badge brand">Extrapolada da base</span></div><div class="adm"><nav class="adm-side" aria-label="Navegação principal"><span class="brand"><svg aria-hidden="true"><use href="#flame"/></svg>FITBURN</span><a href="#">Dashboard</a><a href="#">Clientes</a><a href="#">Usuários e perfis</a><a href="#">Agenda</a><a href="#">Reservas</a><a href="#">Planos</a><a href="#" aria-current="page">Templates & modalidades</a><a href="#">Fichas de treino</a><a href="#">Metas</a><a href="#">Minhas aulas</a><a href="#">Atribuições</a><span class="sp"></span><a href="#">Meu perfil</a><a href="#">Sair</a></nav><div class="adm-main"><div class="adm-head"><div><p class="kicker">Templates & modalidades</p><h3>Templates de aula e modalidades</h3></div><div class="adm-actions"></div></div><div class="segmented" role="group"><button type="button" aria-pressed="true">Templates de aula</button><button type="button">Modalidades</button></div><div class="adm-head"><b style="font-size:16px">Templates de aula</b><button class="btn btn-primary btn-sm" type="button">+ Novo template</button></div><div class="table-wrap"><table><thead><tr><th>Nome</th><th>Modalidade</th><th>Duração</th><th>Capacidade</th><th>Professor padrão</th><th></th></tr></thead><tbody><tr><td><b>Funcional 18h</b></td><td>Funcional</td><td>60 min</td><td>8</td><td>Prof. Teste</td><td><div class="cell-actions"><button class="btn btn-secondary btn-sm" type="button">Desativar</button><button class="btn btn-ghost btn-sm" type="button" style="color:var(--danger)">Excluir</button></div></td></tr><tr><td><b>Mobilidade manhã</b></td><td>Mobilidade</td><td>45 min</td><td>8</td><td>Prof. Modelo</td><td><div class="cell-actions"><button class="btn btn-secondary btn-sm" type="button">Desativar</button><button class="btn btn-ghost btn-sm" type="button" style="color:var(--danger)">Excluir</button></div></td></tr></tbody></table></div><div class="adm-head"><b style="font-size:16px">Modalidades</b><button class="btn btn-secondary btn-sm" type="button">+ Nova modalidade</button></div><div class="table-wrap"><table><thead><tr><th>Nome</th><th>Descrição</th><th>Templates ativos</th><th></th></tr></thead><tbody><tr><td><b>Funcional</b></td><td>Treino em circuito</td><td>2</td><td><div class="cell-actions"><button class="btn btn-secondary btn-sm" type="button">Desativar</button><button class="btn btn-ghost btn-sm" type="button" style="color:var(--danger)">Excluir</button></div></td></tr><tr><td><b>Mobilidade</b></td><td>Alongamento e core</td><td>1</td><td><div class="cell-actions"><button class="btn btn-secondary btn-sm" type="button">Desativar</button><button class="btn btn-ghost btn-sm" type="button" style="color:var(--danger)">Excluir</button></div></td></tr></tbody></table></div><span class="help">Modalidades com templates vinculados não podem ser excluídas: remova ou reatribua os templates primeiro.</span></div></div></div></section>
+<section class="scr" id="minhas-aulas"><div class="wrap"><div class="scr-head"><h2>Minhas aulas</h2><code>/minhas-aulas</code><span class="badge brand">Extrapolada da base</span></div><div class="adm"><nav class="adm-side" aria-label="Navegação principal"><span class="brand"><svg aria-hidden="true"><use href="#flame"/></svg>FITBURN</span><a href="#">Dashboard</a><a href="#">Clientes</a><a href="#">Usuários e perfis</a><a href="#">Agenda</a><a href="#">Reservas</a><a href="#">Planos</a><a href="#">Templates & modalidades</a><a href="#">Fichas de treino</a><a href="#">Metas</a><a href="#" aria-current="page">Minhas aulas</a><a href="#">Atribuições</a><span class="sp"></span><a href="#">Meu perfil</a><a href="#">Sair</a></nav><div class="adm-main"><div class="adm-head"><div><p class="kicker">Presença</p><h3>Minhas aulas</h3></div><div class="adm-actions"><button class="btn btn-secondary btn-sm" type="button">Exportar presenças (CSV)</button></div></div><div class="segmented" role="group"><button type="button" aria-pressed="true">Hoje</button><button type="button">Semana</button></div><div style="display:flex;flex-direction:column;gap:10px"><div class="mc"><div class="time">07h00</div><div class="meta"><b>Mobilidade</b><span>Prof. Modelo · 5 reservas</span></div><span class="badge ok"><span class="dot"></span>Tudo registrado</span><button class="btn btn-soft btn-sm" type="button">Ver presença</button></div><div class="mc"><div class="time">18h00</div><div class="meta"><b>Funcional</b><span>Prof. Exemplo · 7 reservas</span></div><span class="badge warn">3 pendentes</span><button class="btn btn-soft btn-sm" type="button">Registrar presença</button></div><div class="mc"><div class="time">20h00</div><div class="meta"><b>Funcional</b><span>Sem professor · 0 reservas</span></div><span class="badge">Sem reservas</span><button class="btn btn-soft btn-sm" type="button">Ver presença</button></div></div><p class="day-t" style="margin-top:6px">Quarta, 11/11</p><div class="mc"><div class="time">12h00</div><div class="meta"><b>Funcional</b><span>Prof. Exemplo · 2 reservas</span></div><span class="badge warn">2 pendentes</span><button class="btn btn-soft btn-sm" type="button">Registrar presença</button></div></div></div></div></section>
+<section class="scr" id="atribuicoes"><div class="wrap"><div class="scr-head"><h2>Atribuições</h2><code>/atribuicoes</code><span class="badge brand">Extrapolada da base</span></div><div class="adm"><nav class="adm-side" aria-label="Navegação principal"><span class="brand"><svg aria-hidden="true"><use href="#flame"/></svg>FITBURN</span><a href="#">Dashboard</a><a href="#">Clientes</a><a href="#">Usuários e perfis</a><a href="#">Agenda</a><a href="#">Reservas</a><a href="#">Planos</a><a href="#">Templates & modalidades</a><a href="#">Fichas de treino</a><a href="#">Metas</a><a href="#">Minhas aulas</a><a href="#" aria-current="page">Atribuições</a><span class="sp"></span><a href="#">Meu perfil</a><a href="#">Sair</a></nav><div class="adm-main"><div class="adm-head"><div><p class="kicker">Clientes</p><h3>Atribuição de clientes a professores</h3></div><div class="adm-actions"></div></div><p style="margin:0;color:var(--muted);font-size:14px;max-width:640px">Um professor acompanha os clientes que reservam as aulas dele e os que forem atribuídos a ele aqui.</p><div class="field" style="max-width:360px"><label for="a1">Professor</label><select class="input" id="a1"><option>Prof. Exemplo</option><option>Selecione um professor</option></select></div><div class="table-wrap"><table><thead><tr><th>Cliente</th><th>E-mail</th><th>Atribuído em</th><th></th></tr></thead><tbody><tr><td><b>Cliente Exemplo</b></td><td>cliente1@exemplo.com</td><td>02/11/2026</td><td><div class="cell-actions"><button class="btn btn-ghost btn-sm" type="button" style="color:var(--danger)">Remover</button></div></td></tr><tr><td><b>Aluna Teste</b></td><td>aluna@exemplo.com</td><td>05/11/2026</td><td><div class="cell-actions"><button class="btn btn-ghost btn-sm" type="button" style="color:var(--danger)">Remover</button></div></td></tr></tbody></table></div><div class="card sm"><h4>Atribuir cliente</h4><div class="toolbar"><select class="input" aria-label="Cliente"><option>Selecione um cliente</option></select><button class="btn btn-primary btn-sm" type="button">Atribuir</button></div></div></div></div></div></section>
+<section class="scr" id="planos"><div class="wrap"><div class="scr-head"><h2>Planos</h2><code>/planos</code><span class="badge brand">Extrapolada da base</span></div><div class="adm"><nav class="adm-side" aria-label="Navegação principal"><span class="brand"><svg aria-hidden="true"><use href="#flame"/></svg>FITBURN</span><a href="#">Dashboard</a><a href="#">Clientes</a><a href="#">Usuários e perfis</a><a href="#">Agenda</a><a href="#">Reservas</a><a href="#" aria-current="page">Planos</a><a href="#">Templates & modalidades</a><a href="#">Fichas de treino</a><a href="#">Metas</a><a href="#">Minhas aulas</a><a href="#">Atribuições</a><span class="sp"></span><a href="#">Meu perfil</a><a href="#">Sair</a></nav><div class="adm-main"><div class="adm-head"><div><p class="kicker">Planos</p><h3>Planos</h3></div><div class="adm-actions"><button class="btn btn-primary btn-sm" type="button">+ Novo plano</button></div></div><div class="segmented" role="group"><button type="button" aria-pressed="true">Catálogo de planos</button><button type="button">Atribuir a cliente</button></div><div class="table-wrap"><table><thead><tr><th>Nome</th><th>Descrição</th><th>Status</th><th>Clientes ativos</th><th></th></tr></thead><tbody><tr><td><b>Musculação 2x</b></td><td>Duas aulas por semana</td><td><span class="badge ok"><span class="dot"></span>ATIVO</span></td><td>42</td><td><div class="cell-actions"><button class="btn btn-secondary btn-sm" type="button">Editar</button><button class="btn btn-secondary btn-sm" type="button">Desativar</button></div></td></tr><tr><td><b>Musculação 3x</b></td><td>Três aulas por semana</td><td><span class="badge ok"><span class="dot"></span>ATIVO</span></td><td>61</td><td><div class="cell-actions"><button class="btn btn-secondary btn-sm" type="button">Editar</button><button class="btn btn-secondary btn-sm" type="button">Desativar</button></div></td></tr><tr><td><b>Plano antigo</b></td><td>Descontinuado</td><td><span class="badge"><span class="dot"></span>INATIVO</span></td><td>0</td><td><div class="cell-actions"><button class="btn btn-secondary btn-sm" type="button">Editar</button><button class="btn btn-secondary btn-sm" type="button">Ativar</button></div></td></tr></tbody></table></div><div class="card"><h4>Atribuir a cliente</h4><div class="form-grid"><div class="field full"><label for="pl1">Cliente</label><select class="input" id="pl1"><option>Selecione um cliente</option></select></div><div class="field"><label for="pl2">Plano</label><select class="input" id="pl2"><option>Selecione um plano</option></select></div><div class="field"></div><div class="field"><label for="pl3">Início</label><input class="input" id="pl3" value="10/11/2026"></div><div class="field"><label for="pl4">Término</label><input class="input" id="pl4" value="10/12/2026"></div></div><div style="margin-top:18px"><button class="btn btn-primary btn-sm" type="button">Encerrar atual e atribuir</button></div></div></div></div></div></section>
+<section class="scr" id="fichas"><div class="wrap"><div class="scr-head"><h2>Fichas de treino</h2><code>/fichas</code><span class="badge brand">Extrapolada da base</span></div><div class="adm"><nav class="adm-side" aria-label="Navegação principal"><span class="brand"><svg aria-hidden="true"><use href="#flame"/></svg>FITBURN</span><a href="#">Dashboard</a><a href="#">Clientes</a><a href="#">Usuários e perfis</a><a href="#">Agenda</a><a href="#">Reservas</a><a href="#">Planos</a><a href="#">Templates & modalidades</a><a href="#" aria-current="page">Fichas de treino</a><a href="#">Metas</a><a href="#">Minhas aulas</a><a href="#">Atribuições</a><span class="sp"></span><a href="#">Meu perfil</a><a href="#">Sair</a></nav><div class="adm-main"><div class="adm-head"><div><p class="kicker">Fichas</p><h3>Fichas de treino</h3><span class="sub-t">Selecione um aluno para ver e montar fichas.</span></div><div class="adm-actions"></div></div><div class="md"><div class="card sm"><p class="kicker" style="margin-bottom:12px">MEUS ALUNOS</p><input class="input" type="search" placeholder="Buscar aluno" aria-label="Buscar aluno" style="min-height:42px;font-size:14px;margin-bottom:12px;box-shadow:none"><ul class="stu-list" aria-label="Meus alunos"><li><a href="#" aria-current="true">Cliente Exemplo</a></li><li><a href="#" aria-current="false">Aluna Teste</a></li><li><a href="#" aria-current="false">Pessoa Modelo</a></li></ul><p class="help" style="margin-top:12px">Lista filtrada pelos alunos vinculados ao professor logado.</p></div><div style="display:flex;flex-direction:column;gap:16px;min-width:0"><div class="card"><div class="sec-t-row" style="margin-bottom:16px"><h4 style="margin:0">Nova ficha</h4><span class="badge brand">Fichas de Cliente Exemplo</span></div><div class="form-grid"><div class="field"><label for="f1">Título</label><input class="input" id="f1" placeholder="Ex.: Fase 2" value="Fase 2 · Força"></div><div class="field"><label for="f2">Status</label><select class="input" id="f2"><option>Ativa</option><option>Concluída</option><option>Arquivada</option></select></div><div class="field full"><label for="f3">Observações gerais</label><input class="input" id="f3" placeholder="Orientações para a ficha toda (opcional)"></div></div><p class="sub" style="margin:24px 0 12px">Exercícios</p><div style="display:flex;flex-direction:column;gap:12px"><div class="ex-edit"><div class="field wide"><label>Exercício</label><input class="input" value="Agachamento livre"></div><div class="field"><label>Séries</label><input class="input" value="4"></div><div class="field"><label>Repetições</label><input class="input" value="12"></div><div class="field"><label>Carga</label><input class="input" value="40 kg"></div><div class="field"><label>Tempo</label><input class="input"></div><div class="field"><label>Distância</label><input class="input"></div><div class="field full"><label>Observações</label><input class="input" value="Descer até 90 graus."></div><div class="full row"><button class="btn btn-secondary btn-sm" type="button" aria-label="Subir">↑</button><button class="btn btn-secondary btn-sm" type="button" aria-label="Descer">↓</button><button class="btn btn-ghost btn-sm" type="button" style="color:var(--danger)">Remover</button></div></div></div><div class="row" style="margin-top:16px"><button class="btn btn-soft btn-sm" type="button">+ Adicionar exercício</button><button class="btn btn-primary btn-sm" type="button">Salvar ficha</button></div></div><div class="card sm"><h4>Fichas anteriores de Cliente Exemplo</h4><div class="table-wrap"><table><thead><tr><th>Título</th><th>Criada em</th><th>Status</th><th></th></tr></thead><tbody><tr><td><b>Fase 1 · Adaptação</b></td><td>05/10/2026</td><td><span class="badge">CONCLUÍDA</span></td><td><div class="cell-actions"><button class="btn btn-secondary btn-sm" type="button">Editar</button></div></td></tr></tbody></table></div></div></div></div></div></div></div></section>
+<section class="scr" id="metas"><div class="wrap"><div class="scr-head"><h2>Metas</h2><code>/metas</code><span class="badge brand">Extrapolada da base</span></div><div class="adm"><nav class="adm-side" aria-label="Navegação principal"><span class="brand"><svg aria-hidden="true"><use href="#flame"/></svg>FITBURN</span><a href="#">Dashboard</a><a href="#">Clientes</a><a href="#">Usuários e perfis</a><a href="#">Agenda</a><a href="#">Reservas</a><a href="#">Planos</a><a href="#">Templates & modalidades</a><a href="#">Fichas de treino</a><a href="#" aria-current="page">Metas</a><a href="#">Minhas aulas</a><a href="#">Atribuições</a><span class="sp"></span><a href="#">Meu perfil</a><a href="#">Sair</a></nav><div class="adm-main"><div class="adm-head"><div><p class="kicker">Metas</p><h3>Metas individuais</h3><span class="sub-t">Selecione um aluno para ver e criar metas.</span></div><div class="adm-actions"></div></div><div class="md"><div class="card sm"><p class="kicker" style="margin-bottom:12px">MEUS ALUNOS</p><input class="input" type="search" placeholder="Buscar aluno" aria-label="Buscar aluno" style="min-height:42px;font-size:14px;margin-bottom:12px;box-shadow:none"><ul class="stu-list" aria-label="Meus alunos"><li><a href="#" aria-current="true">Cliente Exemplo</a></li><li><a href="#" aria-current="false">Aluna Teste</a></li><li><a href="#" aria-current="false">Pessoa Modelo</a></li></ul><p class="help" style="margin-top:12px">Lista filtrada pelos alunos vinculados ao professor logado.</p></div><div style="display:flex;flex-direction:column;gap:16px;min-width:0"><p style="margin:0;color:var(--muted);font-size:14px">A pontuação de gamificação é calculada automaticamente pelo sistema com base na presença e nas metas. Os pontos <b style="color:var(--ink)">não podem ser editados</b> nesta tela: aqui você define apenas as metas e marca quando são concluídas.</p><p class="sub" style="margin:0">Metas ativas</p><div class="goal"><div class="top-r"><b>Frequentar 10 aulas no mês</b><span class="badge ok"><span class="dot"></span>ATIVA</span></div><p>Prazo: 30/11/2026</p><div class="meter" role="img" aria-label="60%"><i style="width:60%"></i></div><div class="row"><button class="btn btn-soft btn-sm" type="button">Concluir meta</button><button class="btn btn-secondary btn-sm" type="button">Editar</button><button class="btn btn-ghost btn-sm" type="button" style="color:var(--danger)">Cancelar meta</button></div></div><div class="goal"><div class="top-r"><b>Treinar 3 vezes por semana</b><span class="badge">CONCLUÍDA</span></div><p>Concluída em 02/11/2026</p></div><div class="card sm"><h4>+ Nova meta</h4><div class="form-grid"><div class="field full"><label for="g1">Título</label><input class="input" id="g1" placeholder="Ex.: Frequentar 10 aulas no mês"></div><div class="field full"><label for="g2">Descrição</label><input class="input" id="g2" placeholder="Detalhe opcional sobre a meta"></div><div class="field"><label for="g3">Prazo</label><input class="input" id="g3" value="30/11/2026"></div></div><div style="margin-top:16px"><button class="btn btn-primary btn-sm" type="button">Criar meta</button></div></div></div></div></div></div></div></section>
+<section class="scr" id="presenca"><div class="wrap"><div class="scr-head"><h2>Presença</h2><code>/presenca/:occurrenceId</code><span class="badge brand">Extrapolada da base</span></div><div class="screens"><div><p class="screen-label"><b>Presença</b><span>lista da aula</span></p><div class="device"><div class="status"><span>9:41</span><span>5G ▮▮▮</span></div><div class="row" style="padding:10px 18px 0;flex-wrap:nowrap"><button class="btn btn-secondary btn-sm" type="button" aria-label="Voltar">←</button><div><h3 style="font-size:20px;letter-spacing:-.03em">Presença</h3><span class="meta-line" style="margin:0;font-size:12.5px;color:var(--muted)">Funcional · terça, 18h00</span></div></div><div class="app-body"><div class="progress-line"><span><b>2 de 4</b> registrados</span><span>Toque para marcar</span></div>
+<div class="alert ok" style="background:var(--surface-2);border-color:var(--line);color:var(--muted)"><span>Somente o professor atribuído a esta aula pode registrar presença.</span></div>
+<div class="stack">
+<div class="att-row"><div class="att-who"><span>Cliente Exemplo ›</span></div><div class="seg2" role="group" aria-label="Cliente Exemplo"><button class="on-ok" type="button" aria-pressed="true">Presente</button><button type="button">Faltou</button></div></div>
+<div class="att-row"><div class="att-who"><span>Aluna Teste ›</span></div><div class="seg2" role="group" aria-label="Aluna Teste"><button type="button">Presente</button><button class="on-err" type="button" aria-pressed="true">Faltou</button></div></div>
+<div class="att-row"><div class="att-who"><span>Pessoa Modelo ›</span><span class="badge warn">PENDENTE</span></div><div class="seg2" role="group" aria-label="Pessoa Modelo"><button type="button">Presente</button><button type="button">Faltou</button></div></div>
+<div class="att-row"><div class="att-who"><span>Aluno Teste ›</span><span class="badge warn">PENDENTE</span></div><div class="seg2" role="group" aria-label="Aluno Teste"><button type="button">Presente</button><button type="button">Faltou</button></div></div></div></div></div></div><div><p class="screen-label"><b>Presença · antes do início</b><span>botões desabilitados</span></p><div class="device"><div class="status"><span>9:41</span><span>5G ▮▮▮</span></div><div class="row" style="padding:10px 18px 0;flex-wrap:nowrap"><button class="btn btn-secondary btn-sm" type="button" aria-label="Voltar">←</button><div><h3 style="font-size:20px;letter-spacing:-.03em">Presença</h3><span style="font-size:12.5px;color:var(--muted)">Mobilidade · quinta, 07h00</span></div></div><div class="app-body"><div class="progress-line"><span><b>0 de 3</b> registrados</span><span>Toque para marcar</span></div>
+<div class="hint-card">A presença abre no início da aula, às 07h00.</div>
+<div class="att-row"><div class="att-who"><span>Cliente Exemplo ›</span><span class="badge warn">PENDENTE</span></div><div class="seg2"><button type="button" disabled>Presente</button><button type="button" disabled>Faltou</button></div></div>
+<div class="att-row"><div class="att-who"><span>Aluna Teste ›</span><span class="badge warn">PENDENTE</span></div><div class="seg2"><button type="button" disabled>Presente</button><button type="button" disabled>Faltou</button></div></div></div></div></div></div></div></section>
+<section class="scr" id="presenca-aluno"><div class="wrap"><div class="scr-head"><h2>Presença por aluno</h2><code>/presenca/:occurrenceId/alunos/:clientId</code><span class="badge brand">Extrapolada da base</span></div><div class="screens"><div><p class="screen-label"><b>Ficha do aluno na aula</b><span>professor consulta a ficha</span></p><div class="device"><div class="status"><span>9:41</span><span>5G ▮▮▮</span></div><div class="row" style="padding:10px 18px 0;flex-wrap:nowrap"><button class="btn btn-secondary btn-sm" type="button" aria-label="Voltar">←</button><div><h3 style="font-size:20px;letter-spacing:-.03em">Cliente Exemplo</h3><span style="font-size:12.5px;color:var(--muted)">Ficha de treino</span></div></div><div class="app-body"><div><div class="sec-t-row"><h4 style="font-size:18px;letter-spacing:-.03em">Fase 2 · Força</h4><span class="badge ok"><span class="dot"></span>ATIVA</span></div><p class="meta-line">Montada por Prof. Exemplo · desde 02/11/2026</p></div><ul style="margin:0;padding:0;display:flex;flex-direction:column;gap:10px" aria-label="Exercícios"><li class="ex" style="list-style:none"><h4>Agachamento livre</h4><div class="ex-chips"><div class="ex-chip">Séries<b>4</b></div><div class="ex-chip">Repetições<b>12</b></div><div class="ex-chip">Carga<b>40 kg</b></div></div><p>Obs. do professor: Descer até 90 graus.</p></li><li class="ex" style="list-style:none"><h4>Remada curvada</h4><div class="ex-chips"><div class="ex-chip">Séries<b>3</b></div><div class="ex-chip">Repetições<b>10</b></div><div class="ex-chip">Carga<b>30 kg</b></div></div></li><li class="ex" style="list-style:none"><h4>Prancha</h4><div class="ex-chips"><div class="ex-chip">Séries<b>3</b></div><div class="ex-chip">Tempo<b>45 s</b></div></div></li></ul>
+<button class="btn btn-soft btn-block" type="button">Editar ficha</button>
+<div class="sec-t">Fichas anteriores</div>
+<a class="class-item" href="#"><div class="meta"><b>Fase 1 · Adaptação</b><span>05/10/2026</span></div><span class="badge">CONCLUÍDA</span></a></div></div></div></div></div></section>
+
+</main>
+<footer><div class="wrap">Preview exploratório. Dados fictícios. Referência: proposta-fitburn-oratry.html e design-system.md.</div></footer>
+<script>
+(function(){
+  var root=document.documentElement,btn=document.getElementById('themeBtn'),lbl=document.getElementById('themeLabel');
+  function current(){var t=root.getAttribute('data-theme');if(t)return t;return window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}
+  function paint(){lbl.textContent=current()==='dark'?'Escuro':'Claro'}
+  try{var s=localStorage.getItem('fb-theme');if(s)root.setAttribute('data-theme',s)}catch(e){}
+  paint();
+  btn.addEventListener('click',function(){var n=current()==='dark'?'light':'dark';root.setAttribute('data-theme',n);try{localStorage.setItem('fb-theme',n)}catch(e){}paint()});
+})();
+</script>
+</body>
+</html>
