@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { onlineManager, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { http, HttpResponse } from "msw";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import {
@@ -549,5 +549,187 @@ describe("Home do cliente", () => {
     expect(await screen.findByText("Não foi possível carregar suas reservas.")).toBeInTheDocument();
     expect(await screen.findByText("Não foi possível carregar seus FitPoints.")).toBeInTheDocument();
     expect(await screen.findByText("Plano Performance")).toBeInTheDocument();
+  });
+});
+
+describe("Home do cliente: visual e estados (D-038)", () => {
+  beforeEach(() => {
+    mockSuccessfulLogin("Cliente");
+  });
+
+  afterEach(() => {
+    onlineManager.setOnline(true);
+  });
+
+  describe("saudação", () => {
+    it("mostra o kicker da data acima do título, com um só título de nível 1", async () => {
+      mockHome();
+      renderPage();
+
+      const heading = await screen.findByRole("heading", { level: 1, name: "Olá, Usuário" });
+      const kicker = heading.parentElement?.querySelector(".fb-kicker");
+      // "Terça, 10 de novembro": dia da semana, dia e mês por extenso.
+      expect(kicker?.textContent).toMatch(/^[A-Za-zçÇ]+, \d{1,2} de [a-zç]+$/);
+      expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
+    });
+
+    it("os títulos de seção são de nível 2, depois do título da tela", async () => {
+      mockHome({ gamification: ACTIVE_GAMIFICATION, ranking: weeklyRanking(8) });
+      renderPage();
+
+      await screen.findByText("1.240");
+      const levels = screen.getAllByRole("heading").map((h) => [h.tagName, h.textContent]);
+      expect(levels).toEqual([
+        ["H1", "Olá, Usuário"],
+        ["H2", "Próximas aulas"],
+        ["H2", "FitPoints"],
+      ]);
+    });
+  });
+
+  describe("cartão do plano ativo", () => {
+    it("tem o rótulo 'Plano ativo' acima do nome e a data de término", async () => {
+      mockHome({ plan: ACTIVE_PLAN });
+      renderPage();
+
+      const card = await screen.findByRole("region", { name: "Plano ativo" });
+      expect(card.querySelector(".fb-home__plan-kicker")).toHaveTextContent("Plano ativo");
+      expect(card.querySelector(".fb-home__plan-name")).toHaveTextContent("Plano Performance");
+    });
+
+    it("com início futuro o rótulo vira 'Próximo plano'", async () => {
+      mockHome({
+        plan: {
+          active: { ...ACTIVE_PLAN.active!, startDate: "2099-01-10", endDate: "2099-06-10" },
+          history: [],
+        },
+      });
+      renderPage();
+
+      const card = await screen.findByRole("region", { name: "Plano ativo" });
+      expect(card.querySelector(".fb-home__plan-kicker")).toHaveTextContent("Próximo plano");
+    });
+  });
+
+  describe("item de aula", () => {
+    it("mostra modalidade, horário, professor e a situação da reserva", async () => {
+      mockHome({ reservations: [reservation("r-1", addDays(TODAY, 1), "18:00")] });
+      renderPage();
+
+      const section = await screen.findByRole("region", { name: "Próximas aulas" });
+      const item = await within(section).findByRole("listitem");
+      expect(within(item).getByText("Treino Funcional")).toBeInTheDocument();
+      expect(item).toHaveTextContent("18h00 · Prof. Rafael");
+      expect(within(item).getByText("Confirmada")).toBeInTheDocument();
+    });
+  });
+
+  describe("carregando", () => {
+    it("cada bloco mostra o seu próprio carregando enquanto a resposta não chega", async () => {
+      server.use(
+        http.get("/api/plans/mine", () => new Promise(() => {})),
+        http.get("/api/reservations", () => new Promise(() => {})),
+        http.get("/api/gamification/me", () => new Promise(() => {})),
+        http.get("/api/gamification/ranking/consent", () => new Promise(() => {})),
+      );
+      renderPage();
+
+      expect(await screen.findByText("Carregando seu plano…")).toBeInTheDocument();
+      expect(screen.getByText("Carregando suas aulas…")).toBeInTheDocument();
+      expect(screen.getByText("Carregando seus FitPoints…")).toBeInTheDocument();
+      for (const status of screen.getAllByRole("status")) {
+        expect(status).toHaveAttribute("aria-busy", "true");
+      }
+      // O título da tela já está lá, sem esperar os dados.
+      expect(screen.getByRole("heading", { level: 1, name: "Olá, Usuário" })).toBeInTheDocument();
+    });
+  });
+
+  describe("vazio", () => {
+    it("sem plano, sem aulas e sem pontos mostra os três vazios, sem zeros nem ofertas", async () => {
+      mockHome({ plan: NO_PLAN, reservations: [], gamification: EMPTY_GAMIFICATION });
+      renderPage();
+
+      const empties = await waitFor(() => {
+        const found = document.querySelectorAll('[data-state="empty"]');
+        expect(found).toHaveLength(3);
+        return Array.from(found).map((node) => node.textContent);
+      });
+      expect(empties[0]).toContain("Você ainda não tem um plano ativo.");
+      expect(empties[1]).toContain("Você não tem aulas reservadas.");
+      expect(empties[2]).toContain("Você ainda não tem pontos.");
+      expect(screen.queryByRole("region", { name: "Plano ativo" })).not.toBeInTheDocument();
+    });
+  });
+
+  describe("erro", () => {
+    it("o erro é anunciado como alerta e 'Tentar novamente' busca de novo só aquele bloco", async () => {
+      const user = userEvent.setup();
+      let attempts = 0;
+      mockHome({ plan: ACTIVE_PLAN });
+      server.use(
+        http.get("/api/reservations", () => {
+          attempts += 1;
+          return attempts === 1
+            ? HttpResponse.json({ code: "X", message: "x" }, { status: 500 })
+            : HttpResponse.json([reservation("r-1", addDays(TODAY, 1), "18:00")]);
+        }),
+      );
+      renderPage();
+
+      const section = await screen.findByRole("region", { name: "Próximas aulas" });
+      const alert = await within(section).findByRole("alert");
+      expect(alert).toHaveTextContent("Não foi possível carregar suas reservas.");
+      expect(screen.getByText("Plano Performance")).toBeInTheDocument();
+
+      await user.click(within(alert).getByRole("button", { name: "Tentar novamente" }));
+
+      expect(await within(section).findByRole("listitem")).toHaveTextContent("Treino Funcional");
+      expect(within(section).queryByRole("alert")).not.toBeInTheDocument();
+    });
+
+    it("o erro do plano aparece no lugar do cartão", async () => {
+      mockHome();
+      server.use(
+        http.get("/api/plans/mine", () =>
+          HttpResponse.json({ code: "X", message: "x" }, { status: 500 }),
+        ),
+      );
+      renderPage();
+
+      expect(await screen.findByText("Não foi possível carregar o seu plano.")).toBeInTheDocument();
+      expect(screen.queryByRole("region", { name: "Plano ativo" })).not.toBeInTheDocument();
+    });
+  });
+
+  describe("sem conexão", () => {
+    it("sem rede, cada bloco mostra o estado offline em vez de ficar em branco", async () => {
+      onlineManager.setOnline(false);
+      mockHome();
+      renderPage();
+
+      const offline = await waitFor(() => {
+        const found = document.querySelectorAll('[data-state="offline"]');
+        expect(found).toHaveLength(3);
+        return Array.from(found);
+      });
+      for (const node of offline) {
+        expect(node).toHaveTextContent("Sem conexão");
+        expect(within(node as HTMLElement).getByRole("button", { name: "Tentar novamente" })).toBeInTheDocument();
+      }
+      expect(screen.getByRole("heading", { level: 1, name: "Olá, Usuário" })).toBeInTheDocument();
+    });
+
+    it("quando a rede volta, os blocos carregam sozinhos", async () => {
+      onlineManager.setOnline(false);
+      mockHome({ plan: ACTIVE_PLAN });
+      renderPage();
+      await waitFor(() => expect(document.querySelectorAll('[data-state="offline"]')).toHaveLength(3));
+
+      onlineManager.setOnline(true);
+
+      expect(await screen.findByText("Plano Performance")).toBeInTheDocument();
+      expect(document.querySelectorAll('[data-state="offline"]')).toHaveLength(0);
+    });
   });
 });

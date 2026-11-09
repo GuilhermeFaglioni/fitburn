@@ -65,3 +65,10 @@
     width: 44px;
   }
 }
+
+/* No cabeçalho da casca do cliente: acompanha o fluxo da linha, sem fixar no canto. */
+.fb-theme-toggle--inline {
+  position: static;
+  flex: 0 0 auto;
+  box-shadow: none;
+}

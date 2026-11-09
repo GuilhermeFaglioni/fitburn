@@ -6,30 +6,49 @@
   flex-grow: 1;
   display: flex;
   min-height: 0;
-  color: var(--color-ink-on-dark);
+  color: var(--ink);
 }
 
 .fb-client__sidebar {
   width: 232px;
   flex-shrink: 0;
   box-sizing: border-box;
-  border-right: 1px solid var(--color-line);
-  padding: 28px 20px;
+  border-right: 1px solid var(--line);
+  padding: var(--s-7) var(--s-5);
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: var(--s-6);
 }
 
 .fb-client__brand {
-  font-size: 17px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.18em;
+  color: var(--ink);
+}
+
+.fb-client__brand-mark {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+}
+
+/* A chama usa os tokens de marca nos dois temas (a proposta tem o vermelho-chama atrás e o laranja à frente). */
+.fb-flame__back {
+  fill: var(--flame);
+}
+
+.fb-flame__front {
+  fill: var(--brand);
 }
 
 .fb-client__nav {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--s-1);
 }
 
 .fb-client__nav-item {
@@ -37,18 +56,67 @@
   align-items: center;
   gap: 10px;
   min-height: 44px;
-  padding: 10px 12px;
-  border-radius: var(--radius-sm);
+  padding: 10px var(--s-3);
+  border-radius: var(--r-sm);
   font-size: 14px;
-  color: var(--color-on-dark-65);
+  color: var(--muted);
   text-decoration: none;
+}
+
+.fb-client__nav-item:focus-visible {
+  outline: none;
+  box-shadow: var(--sh-focus);
 }
 
 .fb-client__nav-item.active,
 .fb-client__nav-item[aria-current="page"] {
-  background: rgba(237, 110, 52, 0.14);
-  color: var(--color-brand-strong);
-  font-weight: 500;
+  background: var(--brand-tint);
+  color: var(--brand-strong);
+  font-weight: var(--weight-medium);
+}
+
+/* Ícones de traço (viewBox 24) com a cor do texto; o ativo usa o laranja da marca, como na barra inferior. */
+.fb-client__nav-icon {
+  display: inline-flex;
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+}
+
+.fb-client__nav-icon svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.fb-client__nav-item[aria-current="page"] .fb-client__nav-icon svg {
+  stroke: var(--brand);
+}
+
+/* Coluna à direita da lateral: cabeçalho (marca no celular, botão de tema) e o conteúdo. */
+.fb-client__body {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.fb-client__top {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--s-3);
+  box-sizing: border-box;
+  padding: var(--s-3) var(--s-12) 0;
+}
+
+/* No desktop a marca fica na lateral. */
+.fb-client__brand--top {
+  display: none;
 }
 
 .fb-client__content {
@@ -62,7 +130,7 @@
 }
 
 .fb-client__content[data-screen="home"] {
-  padding: 48px;
+  padding: var(--s-6) var(--s-12) var(--s-12);
 }
 
 .fb-client__content[data-screen="agenda"] {
@@ -73,7 +141,8 @@
   padding: 40px;
 }
 
-.fb-client__tabbar {
+/* A barra inferior é só do celular (o desktop tem a lateral). */
+.fb-client .fb-client__tabbar {
   display: none;
 }
 
@@ -848,7 +917,7 @@
 
   .fb-client__content[data-screen="home"],
   .fb-client__content[data-screen="agenda"] {
-    padding: 28px 20px 108px;
+    padding: var(--s-4) 20px 108px;
   }
 
   /* Gamificação: 24px 20px 108px no mobile (a tab bar fixa de 76px não cobre o fim do conteúdo). */
@@ -856,37 +925,24 @@
     padding: 24px 20px 108px;
   }
 
-  .fb-client__tabbar {
+  .fb-client__top {
+    justify-content: space-between;
+    padding: var(--s-3) var(--s-5) 0;
+  }
+
+  .fb-client__brand--top {
+    display: inline-flex;
+  }
+
+  /* Barra inferior fixa (BottomNav): ocupa a largura toda, acima do conteúdo e abaixo de folhas e menus. */
+  .fb-client .fb-client__tabbar {
+    display: grid;
     position: fixed;
     left: 0;
     right: 0;
     bottom: 0;
     z-index: 10;
-    box-sizing: border-box;
-    height: 76px;
-    background: var(--color-surface-raised);
-    border-top: 1px solid var(--color-line);
-    display: flex;
-  }
-
-  .fb-client__tab {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    padding: 10px 4px 8px;
-    /* Como no design: o botão da barra inferior não define font-family e o rótulo cai em Arial. */
-    font-family: Arial, "Liberation Sans", Helvetica, sans-serif;
-    font-size: 11px;
-    font-weight: 500;
-    color: var(--color-on-dark-55);
-    text-decoration: none;
-  }
-
-  .fb-client__tab.active {
-    color: var(--color-brand-strong);
+    box-shadow: var(--sh-2);
   }
 
   .fb-client-title {
@@ -1005,8 +1061,7 @@
 .fb-daychip,
 .fb-client-tab-btn,
 .fb-filter-chip,
-.fb-class-card,
-.fb-client__tab {
+.fb-class-card {
   transition:
     transform var(--duration-press) var(--ease-out),
     background-color var(--duration-state) var(--ease-out),
@@ -1018,8 +1073,7 @@
 .fb-sheet-btn:active:not(:disabled),
 .fb-daychip:active,
 .fb-client-tab-btn:active,
-.fb-filter-chip:active,
-.fb-client__tab:active {
+.fb-filter-chip:active {
   transform: scale(var(--press-scale));
 }
 

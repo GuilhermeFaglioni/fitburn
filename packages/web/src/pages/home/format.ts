@@ -40,3 +40,9 @@ export function formatUpcomingMoment(startsAt: string): string {
   const [, month, day] = date.split("-");
   return `${weekday} ${day}/${month}, ${time}`;
 }
+
+/** "2026-11-10" → "Terça, 10 de novembro": o kicker acima da saudação da Home. */
+export function formatGreetingDate(date: string = gymToday()): string {
+  const [, month, day] = date.split("-").map(Number);
+  return `${WEEKDAYS[weekdayOf(date)]}, ${day} de ${MONTHS[month - 1]}`;
+}

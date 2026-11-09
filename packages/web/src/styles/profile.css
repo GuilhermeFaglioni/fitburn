@@ -78,7 +78,7 @@
 }
 
 .fb-client__legal-footer a {
-  color: rgba(255, 255, 255, 0.65);
+  color: var(--muted);
   text-underline-offset: 3px;
 }
 

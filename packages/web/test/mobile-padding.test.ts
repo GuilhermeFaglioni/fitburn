@@ -25,6 +25,7 @@ describe("padding mobile do conteúdo do cliente", () => {
       mobile,
     );
     expect(rule, `sem override mobile para ${screen}`).not.toBeNull();
-    expect(rule![1]).toMatch(/padding:\s*\d+px 20px 108px/);
+    // O topo pode vir de um token de espaçamento (--s-N) ou de px; o lado (20px) e o respiro de 108px são fixos.
+    expect(rule![1]).toMatch(/padding:\s*(?:\d+px|var\(--s-\d+\)) 20px 108px/);
   });
 });
