@@ -7,8 +7,11 @@ import { firstName } from "../../lib/names";
 import { formatUpcomingMoment } from "./format";
 import { errorMessage } from "../../lib/auth/api";
 import { cancelReservation, listMyReservations } from "../../lib/reservations/api";
-import { ErrorState, Feedback, LoadingState } from "../../components/states";
+import { Feedback } from "../../components/states";
+import { Badge } from "../../components/ui/Badge";
+import { Button } from "../../components/ui/Button";
 import { RequiresNetwork } from "../../components/RequiresNetwork";
+import { HomeBlockState, HomeEmpty } from "./HomeBlockState";
 
 /** Quantas reservas cabem na Home. */
 const MAX_RESERVATIONS = 3;
@@ -31,27 +34,27 @@ export function HomeReservations() {
       <div className="fb-home__row">
         <h2 className="fb-home__title">Próximas aulas</h2>
         <Link to="/agenda" className="fb-home__link">
-          Ver agenda<span className="fb-home__link-more"> completa</span>
+          Ver agenda completa<span aria-hidden="true"> →</span>
         </Link>
       </div>
 
-      {reservationsQuery.isLoading && <LoadingState surface="dark" />}
-      {reservationsQuery.isError && (
-        <ErrorState
-          surface="dark"
-          message="Não foi possível carregar suas reservas."
-          onRetry={() => void reservationsQuery.refetch()}
-        />
-      )}
+      <HomeBlockState
+        query={reservationsQuery}
+        loading="Carregando suas aulas…"
+        error="Não foi possível carregar suas reservas."
+        hasData={reservations !== undefined}
+      />
 
       {reservations &&
         (reservations.length === 0 ? (
-          <div className="fb-client-empty">
-            <p className="fb-home__empty-text">Você não tem aulas reservadas.</p>
-            <Link to="/agenda" className="fb-home__link">
-              Reservar uma aula
-            </Link>
-          </div>
+          <HomeEmpty
+            title="Você não tem aulas reservadas."
+            action={
+              <Link to="/agenda" className="fb-home__link">
+                Reservar uma aula
+              </Link>
+            }
+          />
         ) : (
           <ul className="fb-home__reservations">
             {reservations.map((reservation) => (
@@ -98,34 +101,30 @@ function HomeReservation({ reservation }: { reservation: ReservationDetail }) {
   return (
     <>
       <div className="fb-home__reservation-info">
-        <span className="fb-home__reservation-title">{occurrence.name}</span>
+        <div className="fb-home__reservation-head">
+          <span className="fb-home__reservation-title">{occurrence.name}</span>
+          <Badge tone="ok" dot>
+            Confirmada
+          </Badge>
+        </div>
         <span className="fb-home__reservation-when">
           {formatUpcomingMoment(occurrence.startsAt)}
           {occurrence.instructor ? ` · Prof. ${firstName(occurrence.instructor.fullName)}` : ""}
         </span>
       </div>
 
-      {error && (
-        <Feedback tone="error" surface="dark">
-          {error}
-        </Feedback>
-      )}
+      {error && <Feedback tone="error">{error}</Feedback>}
 
       <div className="fb-home__reservation-actions">
         {confirming ? (
           <>
-            <button
-              type="button"
-              className="fb-home__ghost-btn"
-              disabled={pending}
-              onClick={() => setConfirming(false)}
-            >
+            <Button size="sm" variant="ghost" disabled={pending} onClick={() => setConfirming(false)}>
               Voltar
-            </button>
+            </Button>
             <RequiresNetwork>
-              <button
-                type="button"
-                className="fb-home__ghost-btn fb-home__ghost-btn--danger"
+              <Button
+                size="sm"
+                variant="danger"
                 disabled={pending}
                 onClick={() => {
                   setError(null);
@@ -133,15 +132,15 @@ function HomeReservation({ reservation }: { reservation: ReservationDetail }) {
                 }}
               >
                 Confirmar cancelamento
-              </button>
+              </Button>
             </RequiresNetwork>
           </>
         ) : (
           <>
             <RequiresNetwork>
-              <button
-                type="button"
-                className="fb-home__ghost-btn"
+              <Button
+                size="sm"
+                variant="secondary"
                 disabled={pending}
                 onClick={() => {
                   setError(null);
@@ -149,11 +148,11 @@ function HomeReservation({ reservation }: { reservation: ReservationDetail }) {
                 }}
               >
                 Remarcar
-              </button>
+              </Button>
             </RequiresNetwork>
-            <button
-              type="button"
-              className="fb-home__ghost-btn"
+            <Button
+              size="sm"
+              variant="ghost"
               disabled={pending}
               onClick={() => {
                 setError(null);
@@ -161,7 +160,7 @@ function HomeReservation({ reservation }: { reservation: ReservationDetail }) {
               }}
             >
               Cancelar
-            </button>
+            </Button>
           </>
         )}
       </div>

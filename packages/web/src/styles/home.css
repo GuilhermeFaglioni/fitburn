@@ -1,14 +1,14 @@
 /**
- * Home do cliente. Mobile: blocos empilhados com 28px de intervalo
- * (saudação e plano, próximas aulas, evolução); desktop largo (≥1100px):
- * coluna de 400px (saudação, plano, evolução) ao lado das próximas aulas.
+ * Home do cliente (D-038). Celular: blocos empilhados (saudação e plano, próximas aulas, FitPoints); desktop
+ * largo (≥1100px): coluna de 400px (saudação, plano, FitPoints) ao lado das próximas aulas. Só tokens: cor, raio,
+ * espaçamento e tipografia vêm do design system.
  */
 .fb-home {
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: var(--s-6);
   font-family: var(--font-sans);
-  color: var(--color-ink-on-dark);
+  color: var(--ink);
 }
 
 .fb-home > * {
@@ -18,39 +18,63 @@
 .fb-home__intro {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: var(--s-5);
 }
 
 .fb-home__block {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--s-3);
 }
 
 .fb-home__row {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--s-3);
+}
+
+/* Kicker da data e título da tela (H3 da proposta: 24px, tracking de título). */
+.fb-home__kicker {
+  margin: 0 0 var(--s-2);
+  color: var(--brand-strong);
 }
 
 .fb-home__greeting {
   margin: 0;
-  font-size: 22px;
-  font-weight: 700;
+  font-size: var(--text-h1);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-title);
+  letter-spacing: var(--tracking-title);
 }
 
 .fb-home__title {
   margin: 0;
-  font-size: 17px;
-  font-weight: 700;
+  font-size: 15px;
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.01em;
 }
 
+/* Link de seção: alvo de toque de 44px sem aumentar a linha (área extra pelo ::before invisível). */
 .fb-home__link {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--color-brand-strong);
+  position: relative;
+  font-size: var(--text-small);
+  font-weight: var(--weight-medium);
+  color: var(--brand-strong);
   text-decoration: none;
+  white-space: nowrap;
+}
+
+.fb-home__link::before {
+  content: "";
+  position: absolute;
+  inset: -12px -8px;
+}
+
+.fb-home__link:focus-visible {
+  outline: none;
+  border-radius: var(--r-xs);
+  box-shadow: var(--sh-focus);
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -59,73 +83,107 @@
   }
 }
 
-/* "Ver agenda" no mobile, "Ver agenda completa" no desktop. */
-.fb-home__link-more {
-  display: none;
-}
-
-.fb-home__alert {
-  margin: 0;
-  box-sizing: border-box;
-  padding: 10px 14px;
-  background: var(--color-danger-bg);
-  border: 1px solid var(--color-danger-border);
-  border-radius: var(--radius-sm);
-  font-size: 13px;
-  color: var(--color-danger);
-}
-
 .fb-home__note {
-  font-size: 13px;
-  color: var(--color-on-dark-65);
+  margin: 0;
+  font-size: var(--text-caption);
+  color: var(--faint);
 }
 
-/* Plano ativo. */
-.fb-home__plan {
-  box-sizing: border-box;
-  display: flex;
+/* Estados (vazio, erro, carregando, offline) dentro dos blocos: alinhados à esquerda, compactos, como o aviso da
+   proposta. */
+.fb-home__state.fb-ui-state {
+  align-items: flex-start;
+  padding: var(--s-4);
+  border-radius: var(--r-md);
+  text-align: left;
+}
+
+.fb-home__state.fb-ui-state--loading {
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 14px 16px;
-  background: var(--color-surface-raised);
-  border-radius: var(--radius-sm);
+  padding: var(--s-2) 0;
 }
 
-.fb-home__plan--empty {
-  display: block;
-  border: 1px dashed var(--color-line-2);
-  font-size: 13px;
-  line-height: 19px;
-  color: var(--color-on-dark-65);
+.fb-home__state .fb-ui-state__title {
+  font-size: var(--text-small);
+  font-weight: var(--weight-medium);
+  letter-spacing: 0;
 }
 
-.fb-home__plan-info {
+.fb-home__state.fb-ui-state--empty .fb-ui-state__title {
+  color: var(--muted);
+  font-weight: var(--weight-regular);
+}
+
+.fb-home__state .fb-ui-state__action {
+  margin-top: var(--s-1);
+}
+
+/* Plano ativo: cartão com o gradiente CTA. O branco sobre o laranja segue a exceção da base (texto em negrito);
+   as transparências saem de color-mix sobre o token de texto sobre o laranja, sem rgba literal. */
+.fb-home__plan {
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  min-width: 0;
+  gap: var(--s-1);
+  padding: var(--s-5) var(--s-5) var(--s-4);
+  border-radius: var(--r-lg);
+  background: var(--grad-cta);
+  box-shadow: var(--sh-cta);
+  color: var(--color-on-orange);
+}
+
+.fb-home__plan::after {
+  content: "";
+  position: absolute;
+  right: -30px;
+  top: -30px;
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--color-on-orange) 28%, transparent);
+  pointer-events: none;
+}
+
+.fb-home__plan-kicker {
+  font-size: 10px;
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
 }
 
 .fb-home__plan-name {
-  font-size: 15px;
-  font-weight: 700;
+  display: block;
+  padding-right: var(--s-16);
+  font-size: 20px;
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-title);
+  letter-spacing: -0.03em;
+  overflow-wrap: anywhere;
 }
 
 .fb-home__plan-until {
-  font-size: 12px;
-  color: var(--color-on-dark-50);
+  font-size: 13px;
+  font-weight: var(--weight-bold);
 }
 
 .fb-home__badge {
-  flex-shrink: 0;
-  padding: 5px 10px;
-  border-radius: var(--radius-sm);
-  background: rgba(237, 110, 52, 0.14);
-  font-size: 11px;
-  font-weight: 700;
+  position: absolute;
+  right: var(--s-4);
+  top: var(--s-4);
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: var(--r-pill);
+  border: 1px solid color-mix(in srgb, var(--color-on-orange) 40%, transparent);
+  background: color-mix(in srgb, var(--color-on-orange) 18%, transparent);
+  font-size: var(--text-kicker);
+  font-weight: var(--weight-bold);
   letter-spacing: 0.04em;
-  color: var(--color-brand-strong);
+  color: var(--color-on-orange);
 }
 
 /* Próximas aulas. */
@@ -135,136 +193,110 @@
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--s-2);
 }
 
 .fb-home__reservation {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 14px 16px;
-  background: var(--color-surface-raised);
-  border-radius: var(--radius-sm);
+  gap: var(--s-3);
+  padding: var(--s-3);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  box-shadow: var(--sh-1);
 }
 
 .fb-home__reservation-info {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: var(--s-1);
+  min-width: 0;
+}
+
+.fb-home__reservation-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s-2);
 }
 
 .fb-home__reservation-title {
-  font-size: 15px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
 }
 
 .fb-home__reservation-when {
-  font-size: 13px;
-  color: var(--color-on-dark-55);
+  font-size: var(--text-caption);
+  color: var(--muted);
 }
 
 .fb-home__reservation-actions {
   display: flex;
-  gap: 16px;
-  padding-top: 8px;
-  border-top: 1px solid var(--color-line);
+  flex-wrap: wrap;
+  gap: var(--s-2);
 }
 
-.fb-home__ghost-btn {
-  background: none;
-  border: none;
-  padding: 4px 0;
-  font-family: var(--font-sans);
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--color-text-muted-on-dark);
-  cursor: pointer;
+/* Recusa de cancelar ou remarcar: ocupa a linha toda, abaixo da aula. */
+.fb-home__reservation > .fb-state {
+  flex: 1 1 100%;
 }
 
-.fb-home__ghost-btn:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
-
-.fb-home__ghost-btn--danger {
-  color: var(--color-danger);
-}
-
-.fb-home__empty-text {
-  margin: 0 0 8px;
-}
-
-/* Resumo da gamificação. */
+/* FitPoints: o cartão sem sombra da proposta. */
 .fb-home__evolution {
-  box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 18px;
-  padding: 20px 16px;
-  background: var(--color-surface-raised);
-  border-radius: var(--radius-sm);
+  gap: var(--s-4);
+  padding: var(--s-4);
+  border-radius: var(--r-lg);
 }
 
 .fb-home__points-row {
   display: flex;
-  flex-wrap: wrap;
+  justify-content: space-between;
   align-items: flex-end;
-  gap: 20px;
+  gap: var(--s-3);
 }
 
-.fb-home__points {
+.fb-home__points,
+.fb-home__streak {
   display: flex;
   flex-direction: column;
-}
-
-.fb-home__points-total {
-  font-size: 48px;
-  font-weight: 700;
-  line-height: 1;
-  color: var(--color-brand-strong);
-}
-
-.fb-home__points-label {
-  margin-top: 4px;
-  font-size: 12px;
-  color: var(--color-on-dark-50);
+  gap: var(--s-1);
 }
 
 .fb-home__streak {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding-bottom: 6px;
+  align-items: flex-end;
+  text-align: right;
 }
 
+.fb-home__points-total,
 .fb-home__streak-count {
-  width: 30px;
-  height: 30px;
-  border-radius: var(--radius-pill);
-  background: rgba(237, 110, 52, 0.14);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--color-brand-strong);
+  font-size: 34px;
+  font-weight: var(--weight-bold);
+  line-height: 1;
+  letter-spacing: -0.05em;
 }
 
+.fb-home__points-label,
 .fb-home__streak-label {
-  font-size: 13px;
-  color: var(--color-on-dark-65);
+  font-size: 11px;
+  font-weight: var(--weight-medium);
+  color: var(--muted);
 }
 
 .fb-home__recent-badge {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--s-2);
 }
 
-.fb-home__recent-badge .fb-home__points-label {
-  margin-top: 0;
-  font-weight: 500;
+.fb-home__recent-label {
+  margin: 0;
+  color: var(--brand-strong);
 }
 
 .fb-home__badges {
@@ -272,18 +304,28 @@
   padding: 0;
   list-style: none;
   display: flex;
-  gap: 8px;
+  gap: var(--s-2);
 }
 
 .fb-home__badge-disc {
-  width: 36px;
-  height: 36px;
-  border-radius: var(--radius-pill);
-  background: var(--color-surface-000);
-  border: 1px solid var(--color-line-2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(140deg, var(--brand-tint), var(--brand-tint-2));
+  border: 1px solid var(--brand-line);
+  color: var(--brand-strong);
+}
+
+.fb-home__badge-disc svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 /* Duas colunas só quando cabem ao lado da barra lateral (232px + 400px + 40px + a coluna das aulas);
@@ -293,8 +335,8 @@
     display: grid;
     grid-template-columns: 400px minmax(0, 1fr);
     grid-template-rows: auto 1fr;
-    column-gap: 40px;
-    row-gap: 28px;
+    column-gap: var(--s-10);
+    row-gap: var(--s-6);
   }
 
   .fb-home__intro {
@@ -308,7 +350,7 @@
     align-self: start;
   }
 
-  .fb-home > [aria-label="Sua evolução"] {
+  .fb-home > [aria-label="FitPoints"] {
     grid-column: 1;
     grid-row: 2;
     align-self: start;
@@ -316,72 +358,39 @@
 }
 
 @media (min-width: 768px) {
-  .fb-home__greeting {
-    font-size: 26px;
-  }
-
   .fb-home__title {
-    font-size: 18px;
-  }
-
-  .fb-home__link-more {
-    display: inline;
-  }
-
-  .fb-home__plan {
-    padding: 16px 18px;
+    font-size: var(--text-h3);
   }
 
   .fb-home__plan-name {
-    font-size: 16px;
+    font-size: 22px;
   }
 
-  .fb-home__plan-until {
-    font-size: 13px;
-  }
-
-  /* Cada aula em uma linha: título e quando à esquerda, "Remarcar" e "Cancelar" à direita, sem filete. */
+  /* Cada aula em uma linha: título e quando à esquerda, as ações à direita. */
   .fb-home__reservation {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    flex-direction: row;
+    flex-wrap: wrap;
     align-items: center;
-    column-gap: 16px;
-    row-gap: 10px;
-    padding: 16px 18px;
+    justify-content: space-between;
+    gap: var(--s-4);
+    padding: var(--s-3) var(--s-4);
   }
 
   .fb-home__reservation-info {
-    grid-column: 1;
-    grid-row: 1;
+    flex: 1 1 auto;
   }
 
   .fb-home__reservation-actions {
-    grid-column: 2;
-    grid-row: 1;
-    gap: 20px;
-    padding-top: 0;
-    border-top: none;
-  }
-
-  .fb-home__reservation > :not(.fb-home__reservation-info, .fb-home__reservation-actions) {
-    grid-column: 1 / -1;
-    grid-row: 2;
+    flex: 0 0 auto;
+    flex-wrap: nowrap;
   }
 
   .fb-home__evolution {
-    gap: 20px;
-    padding: 22px 20px;
+    padding: var(--s-5);
   }
 
-  .fb-home__points-row {
-    gap: 24px;
-  }
-
-  .fb-home__points-total {
-    font-size: 56px;
-  }
-
-  .fb-home__streak {
-    padding-bottom: 8px;
+  .fb-home__points-total,
+  .fb-home__streak-count {
+    font-size: 40px;
   }
 }

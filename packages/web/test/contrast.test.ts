@@ -173,6 +173,9 @@ const WHITE_NO_BACKGROUND = new Map<string, "orange" | "no-text">([
   [".login-form__submit-label", "orange"],
   // Presente (laranja) e Faltou (vermelho-chama, 5.36:1) acrescentam o fundo pelos modificadores --present e --absent.
   ['.fb-seg-btn[aria-pressed="true"]', "orange"],
+  // Selo "ATIVO" do cartão do plano da Home (D-038): negrito branco translúcido-sobre-laranja; o gradiente CTA está no
+  // cartão (.fb-home__plan), não no selo. Vale o mesmo piso de 3:1 do par do design.
+  [".fb-home__badge", "orange"],
   [".fb-goals__bar-fill", "no-text"],
   [".fb-dash__meter-fill", "no-text"],
 ]);

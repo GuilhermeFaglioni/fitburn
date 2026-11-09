@@ -1,6 +1,7 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { OfflineBanner } from "./OfflineBanner";
 import { ThemeToggle } from "./ThemeToggle";
+import { ThemeToggleHostProvider } from "./themeToggleHost";
 import { UpdateBanner } from "./UpdateBanner";
 
 /**
@@ -12,6 +13,8 @@ import { UpdateBanner } from "./UpdateBanner";
  * o Login têm cascas visuais totalmente diferentes no design.
  */
 export function AppShell({ children }: { children: ReactNode }) {
+  // A casca do cliente tem o botão de tema no cabeçalho; nesse caso o botão fixo sai.
+  const [themeToggleHosted, setThemeToggleHosted] = useState(false);
   return (
     <div
       data-testid="app-shell"
@@ -20,12 +23,12 @@ export function AppShell({ children }: { children: ReactNode }) {
       <a href="#conteudo" className="fb-skip-link">
         Ir para o conteúdo
       </a>
-      <ThemeToggle />
+      {!themeToggleHosted && <ThemeToggle />}
       <div className="fb-banner-stack">
         <OfflineBanner />
         <UpdateBanner />
       </div>
-      {children}
+      <ThemeToggleHostProvider onHostedChange={setThemeToggleHosted}>{children}</ThemeToggleHostProvider>
     </div>
   );
 }

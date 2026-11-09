@@ -2,18 +2,18 @@ import { ThemeIcon } from "./icons/ThemeIcon";
 import { useTheme } from "../lib/theme/useTheme";
 
 /**
- * Alternância manual entre tema claro e escuro (D-038), fixa no topo. O texto mostra o tema em vigor;
- * a escolha é guardada por aparelho. Cada casca (cliente, login, admin) encaixa o botão no próprio cabeçalho
- * nos PRs de tela; até lá ele vive no AppShell, para existir em todas as telas.
+ * Alternância manual entre tema claro e escuro (D-038). O texto mostra o tema em vigor; a escolha é guardada por
+ * aparelho. Com `inline` o botão segue o fluxo do cabeçalho da casca (cliente); sem ele fica fixo no topo, que é como
+ * o AppShell o oferece às telas cuja casca ainda não tem cabeçalho próprio (login, admin).
  */
-export function ThemeToggle() {
+export function ThemeToggle({ inline = false }: { inline?: boolean }) {
   const { theme, toggle } = useTheme();
   const current = theme === "dark" ? "escuro" : "claro";
   const other = theme === "dark" ? "claro" : "escuro";
   return (
     <button
       type="button"
-      className="fb-theme-toggle"
+      className={inline ? "fb-theme-toggle fb-theme-toggle--inline" : "fb-theme-toggle"}
       onClick={toggle}
       aria-label={`Tema ${current}. Alternar para o tema ${other}`}
     >

@@ -11,8 +11,9 @@ import {
 } from "../lib/gamification/api";
 import { getMyPlan } from "../lib/plans/api";
 import { HomeReservations } from "./home/HomeReservations";
-import { formatPlanEnd } from "./home/format";
-import { EmptyState, ErrorState, LoadingState } from "../components/states";
+import { formatGreetingDate, formatPlanEnd } from "./home/format";
+import { HomeBlockState, HomeEmpty } from "./home/HomeBlockState";
+import { Card } from "../components/ui/Card";
 
 /** Quantos badges recentes cabem na fileira da evolução. */
 const MAX_BADGES = 3;
@@ -28,23 +29,16 @@ function latestBadges(badges: GamificationSummary["badges"]): number[] {
 
 function CheckIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path
-        d="M3 8.5L6.2 11.5L13 4"
-        stroke="#ed6e34"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M5 12.5l4.5 4.5L19 7" />
     </svg>
   );
 }
 
 /**
- * Home do cliente: saudação e plano
- * ativo, próximas aulas e resumo da evolução, nessa ordem no mobile; no desktop,
- * coluna de 400px (saudação, plano, evolução) ao lado das aulas (grade em
- * home.css). Cada bloco carrega e falha sozinho.
+ * Home do cliente (D-038): kicker da data e saudação, cartão do plano ativo, próximas aulas e o resumo de
+ * FitPoints, nessa ordem no celular; no desktop, coluna de 400px (saudação, plano, FitPoints) ao lado das
+ * aulas (grade em home.css). Cada bloco carrega, falha e fica sem conexão sozinho (HomeBlockState).
  */
 export function ClientHomePage() {
   const { user } = useAuth();
@@ -57,33 +51,33 @@ export function ClientHomePage() {
   return (
     <div className="fb-home">
       <div className="fb-home__intro">
-        <h1 className="fb-home__greeting">{firstName ? `Olá, ${firstName}` : "Olá"}</h1>
+        <div>
+          <p className="fb-kicker fb-home__kicker">{formatGreetingDate()}</p>
+          <h1 className="fb-home__greeting">{firstName ? `Olá, ${firstName}` : "Olá"}</h1>
+        </div>
 
-        {planQuery.isLoading && <LoadingState surface="dark" />}
-        {planQuery.isError && (
-          <ErrorState
-            surface="dark"
-            message="Não foi possível carregar o seu plano."
-            onRetry={() => void planQuery.refetch()}
-          />
-        )}
+        <HomeBlockState
+          query={planQuery}
+          loading="Carregando seu plano…"
+          error="Não foi possível carregar o seu plano."
+          hasData={planQuery.data !== undefined}
+        />
         {activePlan && (
           <section className="fb-home__plan" aria-label="Plano ativo">
-            <div className="fb-home__plan-info">
-              <span className="fb-home__plan-name">{activePlan.plan.name}</span>
-              <span className="fb-home__plan-until">
-                {startsLater
-                  ? `Começa em ${formatDayMonth(activePlan.startDate)}`
-                  : `Ativo até ${formatPlanEnd(activePlan.endDate)}`}
-              </span>
-            </div>
+            <small className="fb-home__plan-kicker">
+              {startsLater ? "Próximo plano" : "Plano ativo"}
+            </small>
+            <strong className="fb-home__plan-name">{activePlan.plan.name}</strong>
+            <span className="fb-home__plan-until">
+              {startsLater
+                ? `Começa em ${formatDayMonth(activePlan.startDate)}`
+                : `Ativo até ${formatPlanEnd(activePlan.endDate)}`}
+            </span>
             {!startsLater && <span className="fb-home__badge">ATIVO</span>}
           </section>
         )}
         {planQuery.data && !activePlan && (
-          <div className="fb-home__plan fb-home__plan--empty">
-            Você ainda não tem um plano ativo. Fale com a recepção para começar.
-          </div>
+          <HomeEmpty title="Você ainda não tem um plano ativo. Fale com a recepção para começar." />
         )}
       </div>
 
@@ -119,28 +113,23 @@ function Evolution() {
       <div className="fb-home__row">
         <h2 className="fb-home__title">FitPoints</h2>
         <Link to="/fitpoints" className="fb-home__link">
-          Ver FitPoints
+          Ver FitPoints<span aria-hidden="true"> →</span>
         </Link>
       </div>
 
-      {summaryQuery.isLoading && <LoadingState surface="dark" />}
-      {summaryQuery.isError && (
-        <ErrorState
-          surface="dark"
-          message="Não foi possível carregar seus FitPoints."
-          onRetry={() => void summaryQuery.refetch()}
-        />
-      )}
+      <HomeBlockState
+        query={summaryQuery}
+        loading="Carregando seus FitPoints…"
+        error="Não foi possível carregar seus FitPoints."
+        hasData={summary !== undefined}
+      />
 
       {summary && !hasPoints && (
-        <EmptyState
-          surface="dark"
-          message="Você ainda não tem pontos. Reserve uma aula e confirme sua presença para começar a pontuar."
-        />
+        <HomeEmpty title="Você ainda não tem pontos. Reserve uma aula e confirme sua presença para começar a pontuar." />
       )}
 
       {summary && hasPoints && (
-        <div className="fb-home__evolution">
+        <Card flat className="fb-home__evolution">
           <div className="fb-home__points-row">
             <div className="fb-home__points">
               <span className="fb-home__points-total">
@@ -155,7 +144,7 @@ function Evolution() {
           </div>
 
           <div className="fb-home__recent-badge">
-            <span className="fb-home__points-label">Badges recentes</span>
+            <p className="fb-kicker fb-home__recent-label">Badges recentes</p>
             {badges.length === 0 ? (
               <span className="fb-home__note">Nenhum badge conquistado ainda.</span>
             ) : (
@@ -186,7 +175,7 @@ function Evolution() {
           {consentQuery.data?.consented && rankingQuery.isSuccess && !myEntry && (
             <span className="fb-home__note">Você ainda não pontuou no ranking desta semana.</span>
           )}
-        </div>
+        </Card>
       )}
     </section>
   );
