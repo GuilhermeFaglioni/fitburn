@@ -1,8 +1,10 @@
-import { WorkoutSheetStatus, type WorkoutExercise, type WorkoutSheet } from "@fitburn/contracts";
+import { type WorkoutExercise, type WorkoutSheet } from "@fitburn/contracts";
 import { formatInstantDate } from "../../lib/agenda/format";
 import { firstName } from "../../lib/names";
-import { statusBadge } from "./status";
-import { EmptyState } from "../../components/states";
+import { Badge } from "../../components/ui/Badge";
+import { Card } from "../../components/ui/Card";
+import { EmptyState } from "../../components/ui/States";
+import { STATUS_TONE, statusBadge } from "./status";
 
 /** Os campos de um exercício, na ordem da tela de referência; os que o professor não preencheu ficam de fora. */
 const CHIPS: Array<{ field: "sets" | "reps" | "load" | "duration" | "distance"; label: string }> = [
@@ -16,7 +18,7 @@ const CHIPS: Array<{ field: "sets" | "reps" | "load" | "duration" | "distance"; 
 function ExerciseCard({ exercise }: { exercise: WorkoutExercise }) {
   const chips = CHIPS.filter(({ field }) => exercise[field]);
   return (
-    <li className="fb-workout__exercise">
+    <Card as="li" className="fb-workout__exercise">
       <h3 className="fb-workout__exercise-name">{exercise.name}</h3>
       {chips.length > 0 && (
         <div className="fb-workout__chips">
@@ -31,15 +33,14 @@ function ExerciseCard({ exercise }: { exercise: WorkoutExercise }) {
       {exercise.notes && (
         <p className="fb-workout__exercise-notes">Obs. do professor: {exercise.notes}</p>
       )}
-    </li>
+    </Card>
   );
 }
 
 /**
- * Uma ficha de treino do cliente por inteiro ( /
- *): título da tela (`showPageTitle`), nome e status
- * da ficha, quem montou e desde quando, e os cartões de exercício, em uma
- * coluna no celular e duas no desktop. Somente leitura.
+ * Uma ficha de treino do cliente por inteiro (D-038): título da tela (`showPageTitle`), nome e status da ficha,
+ * quem montou e desde quando, os cartões de exercício (uma coluna no celular, duas no desktop) e, no fim, a
+ * observação geral. Somente leitura. A tela é extrapolada da base (não há desenho dela na proposta).
  */
 export function ClientSheetView({
   sheet,
@@ -54,22 +55,17 @@ export function ClientSheetView({
         {showPageTitle && <h1 className="fb-workout__title">Ficha de treino</h1>}
         <div className="fb-workout__title-row">
           <h2 className="fb-workout__sheet-title">{sheet.title}</h2>
-          <span
-            className={`fb-workout__badge${
-              sheet.status === WorkoutSheetStatus.ACTIVE ? "" : " fb-workout__badge--closed"
-            }`}
-          >
+          <Badge tone={STATUS_TONE[sheet.status]} dot={sheet.status === "ACTIVE"}>
             {statusBadge(sheet.status)}
-          </span>
+          </Badge>
         </div>
         <span className="fb-workout__meta">
-          Montada por {firstName(sheet.authorName)} · desde{" "}
-          {formatInstantDate(sheet.createdAt)}
+          Montada por {firstName(sheet.authorName)} · desde {formatInstantDate(sheet.createdAt)}
         </span>
       </header>
 
       {sheet.exercises.length === 0 ? (
-        <EmptyState surface="dark" message="Esta ficha ainda não tem exercícios." />
+        <EmptyState title="Esta ficha ainda não tem exercícios." />
       ) : (
         <ul className="fb-workout__exercises" aria-label="Exercícios">
           {sheet.exercises.map((exercise) => (
@@ -78,7 +74,7 @@ export function ClientSheetView({
         </ul>
       )}
 
-      {/* O tela de referência não tem lugar para a observação geral; fica discreta, depois dos exercícios. */}
+      {/* A proposta não tem lugar para a observação geral; fica discreta, depois dos exercícios. */}
       {sheet.notes && <p className="fb-workout__notes">{sheet.notes}</p>}
     </>
   );

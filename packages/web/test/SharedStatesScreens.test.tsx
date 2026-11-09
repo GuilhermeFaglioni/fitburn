@@ -107,8 +107,8 @@ const SCREENS: Screen[] = [
     url: "/api/workout-sheets/mine",
     errorMessage: "Não foi possível carregar as suas fichas.",
     empty: [],
-    emptyMessage:
-      "Você ainda não tem fichas de treino. Fale com o seu professor para receber a sua.",
+    // O estado vazio tem título e descrição ("Fale com o seu professor…"); o título é o texto fixado aqui.
+    emptyMessage: "Você ainda não tem fichas de treino.",
   },
   {
     name: "Dashboard",

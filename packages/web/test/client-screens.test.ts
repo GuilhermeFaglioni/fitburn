@@ -20,6 +20,15 @@ const agendaTsx = [
   read("pages/client/ReservationHistory.tsx"),
   read("components/QueryBlockState.tsx"),
 ].join("\n");
+const workoutCss = read("styles/workout.css");
+// Só a parte do cliente: o editor do professor (acima do marcador) ainda usa os --color-* legados (PR 17).
+const clientWorkoutCss = workoutCss.slice(workoutCss.indexOf("/* ---------- Cliente: ficha ativa"));
+const workoutTsx = [
+  read("pages/ClientWorkoutSheetsPage.tsx"),
+  read("pages/ClientWorkoutSheetPage.tsx"),
+  read("pages/workout-sheets/ClientSheetView.tsx"),
+  read("pages/workout-sheets/PreviousSheetItem.tsx"),
+].join("\n");
 const homeTsx = [
   read("pages/ClientHomePage.tsx"),
   read("pages/home/HomeReservations.tsx"),
@@ -32,7 +41,9 @@ const COLOR_FUNCTION = /\b(?:rgba?|hsla?)\(/g;
 describe("login: erro ligado ao campo", () => {
   it("a senha marca aria-invalid e aponta para a mensagem; a mensagem é o Alert compartilhado (role=alert)", () => {
     expect(login.match(/aria-invalid=\{showError \|\| undefined\}/g) ?? []).toHaveLength(1);
-    expect(login.match(/aria-describedby=\{showError \? errorId : undefined\}/g) ?? []).toHaveLength(1);
+    expect(
+      login.match(/aria-describedby=\{showError \? errorId : undefined\}/g) ?? [],
+    ).toHaveLength(1);
     expect(login).toMatch(/<Alert id=\{errorId\}>/);
     // Alert tem role="alert" por padrão para o tom de erro (ver ui-components.test).
     expect(read("components/ui/Alert.tsx")).toMatch(/tone === "err" \? "alert"/);
@@ -133,5 +144,32 @@ describe("Agenda do cliente (D-038)", () => {
     );
     expect(clientCss).not.toMatch(/\.fb-sheet/);
     expect(clientCss).toContain(".fb-client-tab-btn");
+  });
+});
+
+describe("Ficha de treino do cliente (D-038, tela extrapolada da base)", () => {
+  it("a parte do cliente de workout.css só usa tokens da base: sem hex, rgba/hsla, --color-* legado nem --radius-*", () => {
+    expect(clientWorkoutCss.length).toBeGreaterThan(500);
+    expect(clientWorkoutCss.match(HEX) ?? []).toEqual([]);
+    expect(clientWorkoutCss.match(COLOR_FUNCTION) ?? []).toEqual([]);
+    expect(clientWorkoutCss).not.toMatch(/var\(--color-/);
+    expect(clientWorkoutCss).not.toMatch(/var\(--radius-/);
+    expect(clientWorkoutCss).not.toMatch(/border-radius:\s*\d/);
+  });
+
+  it("a ficha (TSX) não tem cor literal nem a prop surface; estados, card e selo vêm de ui/", () => {
+    expect(workoutTsx.match(HEX) ?? []).toEqual([]);
+    expect(workoutTsx.match(COLOR_FUNCTION) ?? []).toEqual([]);
+    expect(workoutTsx).not.toMatch(/surface=/);
+    expect(workoutTsx).not.toContain('components/states"');
+    for (const component of ["ui/States", "ui/Card", "ui/Badge"]) {
+      expect(workoutTsx).toContain(`components/${component}`);
+    }
+    expect(workoutTsx).toContain("QueryBlockState");
+  });
+
+  it("o alvo de toque do voltar tem 44px e o card da ficha anterior não baixa a opacidade (contraste)", () => {
+    expect(clientWorkoutCss).toMatch(/\.fb-workout__back\s*\{[^}]*min-height:\s*44px/);
+    expect(clientWorkoutCss).not.toMatch(/opacity:/);
   });
 });

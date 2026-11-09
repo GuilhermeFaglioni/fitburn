@@ -1,16 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
 import { WorkoutSheetStatus } from "@fitburn/contracts";
-import { formatInstantDate } from "../lib/agenda/format";
 import { listMyWorkoutSheets } from "../lib/workout-sheets/api";
 import { ClientSheetView } from "./workout-sheets/ClientSheetView";
-import { statusBadge } from "./workout-sheets/status";
-import { EmptyState, ErrorState, LoadingState } from "../components/states";
+import { PreviousSheetItem } from "./workout-sheets/PreviousSheetItem";
+import { QueryBlockState } from "../components/QueryBlockState";
+import { EmptyState } from "../components/ui/States";
 
 /**
- * Ficha de treino do cliente:
+ * Ficha de treino do cliente (D-038):
  * numa página só, a ficha ativa com os exercícios e, abaixo, "Fichas
  * anteriores" (concluídas e arquivadas), que abrem no detalhe. Somente leitura.
+ * Carregando, sem conexão e erro vêm de `QueryBlockState` (`ui/States`).
  */
 export function ClientWorkoutSheetsPage() {
   const sheetsQuery = useQuery({
@@ -25,24 +25,22 @@ export function ClientWorkoutSheetsPage() {
     <div className="fb-workout">
       {active.length === 0 && <h1 className="fb-workout__title">Ficha de treino</h1>}
 
-      {sheetsQuery.isLoading && <LoadingState surface="dark" />}
-      {sheetsQuery.isError && (
-        <ErrorState
-          surface="dark"
-          message="Não foi possível carregar as suas fichas."
-          onRetry={() => void sheetsQuery.refetch()}
-        />
-      )}
+      <QueryBlockState
+        query={sheetsQuery}
+        loading="Carregando…"
+        error="Não foi possível carregar as suas fichas."
+        hasData={sheetsQuery.data !== undefined}
+      />
 
       {sheetsQuery.isSuccess && sheets.length === 0 && (
         <EmptyState
-          surface="dark"
-          message="Você ainda não tem fichas de treino. Fale com o seu professor para receber a sua."
+          title="Você ainda não tem fichas de treino."
+          description="Fale com o seu professor para receber a sua."
         />
       )}
 
       {sheetsQuery.isSuccess && sheets.length > 0 && active.length === 0 && (
-        <EmptyState surface="dark" message="Nenhuma ficha ativa no momento." />
+        <EmptyState title="Nenhuma ficha ativa no momento." />
       )}
 
       {active.map((sheet, index) => (
@@ -57,20 +55,7 @@ export function ClientWorkoutSheetsPage() {
           <ul className="fb-workout__previous">
             {previous.map((sheet) => (
               <li key={sheet.id}>
-                <Link
-                  to={`/ficha-treino/${sheet.id}`}
-                  className={`fb-workout__row${
-                    sheet.status === WorkoutSheetStatus.ARCHIVED ? " fb-workout__row--archived" : ""
-                  }`}
-                >
-                  <span className="fb-workout__row-text">
-                    <span className="fb-workout__row-title">{sheet.title}</span>
-                    <span className="fb-workout__row-date">
-                      {formatInstantDate(sheet.createdAt)}
-                    </span>
-                  </span>
-                  <span className="fb-workout__row-status">{statusBadge(sheet.status)}</span>
-                </Link>
+                <PreviousSheetItem sheet={sheet} to={`/ficha-treino/${sheet.id}`} />
               </li>
             ))}
           </ul>
