@@ -126,9 +126,14 @@ describe("ClientAgendaPage", () => {
     await within(day).findByText("Spinning");
     const cards = within(day).getAllByRole("button", { name: /Prof\./ });
     expect(cards.map((card) => card.textContent)).toEqual([
-      expect.stringContaining("07h00 – 08h00 · Prof. Rafael"),
-      expect.stringContaining("18h00 – 19h00 · Prof. Rafael"),
+      expect.stringContaining("07h00"),
+      expect.stringContaining("18h00"),
     ]);
+    for (const card of cards) {
+      expect(card).toHaveTextContent("60 min");
+      expect(card).toHaveTextContent("Prof. Rafael");
+      expect(card).not.toHaveTextContent("Andrade");
+    }
     expect(within(day).queryByText("Yoga")).not.toBeInTheDocument();
 
     await user.click(
@@ -151,7 +156,8 @@ describe("ClientAgendaPage", () => {
     renderPage();
 
     const day = await screen.findByRole("region", { name: "Aulas do dia" });
-    expect(await within(day).findByText("9/12 vagas disponíveis")).toBeInTheDocument();
+    // O nível vai no texto do selo (não só na cor): "lotada" e "quase lotada" são legíveis sem ver cor.
+    expect(await within(day).findByText("9/12 vagas")).toBeInTheDocument();
     expect(within(day).getByText("3/12 vagas · quase lotada")).toBeInTheDocument();
     expect(within(day).getByText("0/10 vagas · lotada")).toBeInTheDocument();
     expect(
@@ -173,8 +179,10 @@ describe("ClientAgendaPage", () => {
 
     const day = await screen.findByRole("region", { name: "Aulas do dia" });
     const [reserved, open] = await within(day).findAllByRole("button", { name: /Prof\./ });
-    expect(reserved).toHaveTextContent("RESERVADA");
-    expect(open).not.toHaveTextContent("RESERVADA");
+    expect(reserved).toHaveTextContent("Reservada");
+    expect(reserved).not.toHaveTextContent("vagas");
+    expect(open).not.toHaveTextContent("Reservada");
+    expect(open).toHaveTextContent("9/12 vagas");
     const grid = screen.getByRole("region", { name: "Grade da semana" });
     expect(within(grid).getAllByText("Reservada")).toHaveLength(1);
   });

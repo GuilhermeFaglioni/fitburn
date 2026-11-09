@@ -10,34 +10,24 @@ import {
 import { getClientAgendaItem } from "../../lib/agenda/client-api";
 import { formatClassDay, formatInstantHour } from "../../lib/agenda/format";
 import { listMyReservations } from "../../lib/reservations/api";
-import { EmptyState, ErrorState, LoadingState } from "../../components/states";
+import { QueryBlockState } from "../../components/QueryBlockState";
+import { Badge, type BadgeTone } from "../../components/ui/Badge";
+import { Pill } from "../../components/ui/Pill";
+import { EmptyState } from "../../components/ui/States";
+import { ClassItem } from "./ClassItem";
 
-/** Rótulos de cada estado: o selo do cartão e a pílula do filtro. */
+/** Rótulos de cada estado: o selo do item e a pílula do filtro. A situação vai no texto, a cor só reforça. */
 const STATUSES: Array<{
   status: ReservationStatusName;
   badge: string;
   filter: string;
-  tone: string;
+  tone: BadgeTone;
+  dot?: boolean;
 }> = [
-  { status: ReservationStatus.CONFIRMED, badge: "CONFIRMADA", filter: "Confirmadas", tone: "" },
-  {
-    status: ReservationStatus.CANCELLED,
-    badge: "CANCELADA",
-    filter: "Canceladas",
-    tone: " fb-sheet-badge--muted",
-  },
-  {
-    status: ReservationStatus.COMPLETED,
-    badge: "CONCLUÍDA",
-    filter: "Concluídas",
-    tone: " fb-sheet-badge--muted",
-  },
-  {
-    status: ReservationStatus.NO_SHOW,
-    badge: "NÃO COMPARECEU",
-    filter: "Não compareceu",
-    tone: " fb-sheet-badge--flame",
-  },
+  { status: ReservationStatus.CONFIRMED, badge: "CONFIRMADA", filter: "Confirmadas", tone: "ok", dot: true },
+  { status: ReservationStatus.CANCELLED, badge: "CANCELADA", filter: "Canceladas", tone: "err" },
+  { status: ReservationStatus.COMPLETED, badge: "CONCLUÍDA", filter: "Concluídas", tone: "neutral" },
+  { status: ReservationStatus.NO_SHOW, badge: "NÃO COMPARECEU", filter: "Não compareceu", tone: "warn" },
 ];
 
 const SECTIONS: Array<{ when: MyReservationsQuery["when"]; title: string; empty: string }> = [
@@ -46,10 +36,9 @@ const SECTIONS: Array<{ when: MyReservationsQuery["when"]; title: string; empty:
 ];
 
 /**
- * Aba "Histórico" da agenda: as minhas
- * reservas, próximas e anteriores, com filtro de estado. Os cartões seguem
- * os de "Próximas aulas" de; uma aula que ainda não
- * começou abre o detalhe, com as ações de cancelar e remarcar.
+ * Aba "Histórico" da agenda: as minhas reservas, próximas e anteriores, com filtro de situação. Os itens são os
+ * mesmos da agenda; uma aula que ainda não começou abre o detalhe, com as ações de cancelar e remarcar. Cada
+ * seção carrega, falha e fica sem conexão sozinha.
  */
 export function ReservationHistory({
   onOpenClass,
@@ -59,26 +48,19 @@ export function ReservationHistory({
   const [status, setStatus] = useState<ReservationStatusName | undefined>(undefined);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      <div className="fb-filter-chips" role="group" aria-label="Filtrar por estado">
-        <button
-          type="button"
-          className="fb-filter-chip"
-          aria-pressed={status === undefined}
-          onClick={() => setStatus(undefined)}
-        >
+    <div className="fb-agenda__history">
+      <div className="fb-agenda__scroller" role="group" aria-label="Filtrar por estado">
+        <Pill pressed={status === undefined} onClick={() => setStatus(undefined)}>
           Todas
-        </button>
+        </Pill>
         {STATUSES.map((option) => (
-          <button
+          <Pill
             key={option.status}
-            type="button"
-            className="fb-filter-chip"
-            aria-pressed={status === option.status}
+            pressed={status === option.status}
             onClick={() => setStatus(option.status)}
           >
             {option.filter}
-          </button>
+          </Pill>
         ))}
       </div>
 
@@ -129,43 +111,37 @@ function ReservationSection({
   }
 
   return (
-    <section className="fb-reservation-section" aria-label={title}>
-      <h2 className="fb-reservation-section__title">{title}</h2>
+    <section className="fb-agenda__section" aria-label={title}>
+      <h2 className="fb-agenda__section-title">{title}</h2>
 
-      {reservationsQuery.isLoading && <LoadingState surface="dark" />}
-      {reservationsQuery.isError && (
-        <ErrorState
-          surface="dark"
-          message="Não foi possível carregar suas reservas."
-          onRetry={() => void reservationsQuery.refetch()}
-        />
-      )}
+      <QueryBlockState
+        className="fb-agenda__state"
+        query={reservationsQuery}
+        loading="Carregando…"
+        error="Não foi possível carregar suas reservas."
+        hasData={reservationsQuery.data !== undefined}
+      />
       {unavailable && (
-        <p role="alert" className="fb-reservation-section__notice">
+        <p role="alert" className="fb-agenda__notice">
           Esta aula não está mais disponível na agenda (foi cancelada ou já começou).
         </p>
       )}
 
-      {reservationsQuery.isSuccess &&
+      {reservationsQuery.data &&
         (reservationsQuery.data.length === 0 ? (
-          <EmptyState surface="dark" message={empty} />
+          <EmptyState title={empty} />
         ) : (
-          <ul className="fb-reservation-list">
+          <ul className="fb-agenda__list">
             {reservationsQuery.data.map((reservation) => (
               <li key={reservation.id}>
-                {new Date(reservation.occurrence.startsAt) > new Date() ? (
-                  <button
-                    type="button"
-                    className="fb-reservation-card fb-reservation-card--link"
-                    onClick={() => openClass(reservation.occurrence.id)}
-                  >
-                    <ReservationCardBody reservation={reservation} />
-                  </button>
-                ) : (
-                  <div className="fb-reservation-card">
-                    <ReservationCardBody reservation={reservation} />
-                  </div>
-                )}
+                <ReservationItem
+                  reservation={reservation}
+                  onOpen={
+                    new Date(reservation.occurrence.startsAt) > new Date()
+                      ? () => openClass(reservation.occurrence.id)
+                      : undefined
+                  }
+                />
               </li>
             ))}
           </ul>
@@ -174,19 +150,27 @@ function ReservationSection({
   );
 }
 
-function ReservationCardBody({ reservation }: { reservation: ReservationDetail }) {
+function ReservationItem({
+  reservation,
+  onOpen,
+}: {
+  reservation: ReservationDetail;
+  onOpen?: () => void;
+}) {
   const { occurrence } = reservation;
   const label = STATUSES.find((option) => option.status === reservation.status)!;
   return (
-    <>
-      <span className="fb-reservation-card__info">
-        <span className="fb-reservation-card__title">{occurrence.name}</span>
-        <span className="fb-reservation-card__when">
-          {formatClassDay(occurrence.startsAt)}, {formatInstantHour(occurrence.startsAt)}
-          {occurrence.instructor ? ` · Prof. ${occurrence.instructor.fullName}` : ""}
-        </span>
-      </span>
-      <span className={`fb-sheet-badge${label.tone}`}>{label.badge}</span>
-    </>
+    <ClassItem
+      time={formatInstantHour(occurrence.startsAt)}
+      timeNote={formatClassDay(occurrence.startsAt)}
+      title={occurrence.name}
+      instructor={occurrence.instructor ? `Prof. ${occurrence.instructor.fullName}` : undefined}
+      end={
+        <Badge tone={label.tone} dot={label.dot}>
+          {label.badge}
+        </Badge>
+      }
+      onClick={onOpen}
+    />
   );
 }
