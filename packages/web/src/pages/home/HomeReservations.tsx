@@ -7,11 +7,12 @@ import { firstName } from "../../lib/names";
 import { formatUpcomingMoment } from "./format";
 import { errorMessage } from "../../lib/auth/api";
 import { cancelReservation, listMyReservations } from "../../lib/reservations/api";
-import { Feedback } from "../../components/states";
+import { Alert } from "../../components/ui/Alert";
 import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
+import { QueryBlockState } from "../../components/QueryBlockState";
 import { RequiresNetwork } from "../../components/RequiresNetwork";
-import { HomeBlockState, HomeEmpty } from "./HomeBlockState";
+import { HomeEmpty } from "./HomeEmpty";
 
 /** Quantas reservas cabem na Home. */
 const MAX_RESERVATIONS = 3;
@@ -38,7 +39,8 @@ export function HomeReservations() {
         </Link>
       </div>
 
-      <HomeBlockState
+      <QueryBlockState
+        className="fb-home__state"
         query={reservationsQuery}
         loading="Carregando suas aulas…"
         error="Não foi possível carregar suas reservas."
@@ -113,7 +115,7 @@ function HomeReservation({ reservation }: { reservation: ReservationDetail }) {
         </span>
       </div>
 
-      {error && <Feedback tone="error">{error}</Feedback>}
+      {error && <Alert tone="err">{error}</Alert>}
 
       <div className="fb-home__reservation-actions">
         {confirming ? (

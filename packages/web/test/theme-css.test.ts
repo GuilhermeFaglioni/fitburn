@@ -101,60 +101,22 @@ describe("temas pareados", () => {
   });
 });
 
-describe("aliases legados (--color-*) apontam para os tokens da base", () => {
-  const ALIASES: Record<string, string> = {
-    "color-line": "line",
-    "color-line-2": "line-2",
-    "color-surface-000": "bg",
-    "color-surface-raised": "surface",
-    "color-surface-2": "surface-2",
-    "color-ink-on-dark": "ink",
-    "color-ink-2-on-dark": "ink-2",
-    "color-text-muted-on-dark": "muted",
-    "color-text-faint-on-dark": "faint",
-    "color-on-dark-40": "faint",
-    "color-on-dark-45": "faint",
-    "color-on-dark-50": "muted",
-    "color-on-dark-55": "muted",
-    "color-on-dark-65": "muted",
-    "color-primary-orange": "brand",
-    "color-flame-red": "flame",
-    "color-brand-strong": "brand-strong",
-    "gradient-cta": "grad-cta",
-    "color-danger": "danger",
-    "color-danger-bg": "danger-bg",
-    "color-danger-border": "danger-line",
-    "color-success": "success",
-    "color-success-bg": "success-bg",
-    "color-success-border": "success-line",
-    "color-warn": "warn",
-    "color-warn-border": "brand-line",
-    "color-warm-bg": "brand-tint",
-    "color-info": "ink-2",
-    "color-info-bg": "surface-2",
-  };
-
-  it.each(Object.entries(ALIASES))("--%s resolve para --%s nos dois temas", (legacy, target) => {
+describe("tokens.css sem legado (PR 18, #156)", () => {
+  it("nenhum --color-* nem --gradient-cta: o texto e as superfícies vêm direto dos tokens da base", () => {
     for (const theme of THEMES) {
-      expect(rawTokens[theme][`--${legacy}`], `${legacy} é um alias`).toMatch(/^var\(--/);
-      expect(token(theme, legacy), `${legacy} ${theme}`).toBe(token(theme, target));
+      const legacy = Object.keys(rawTokens[theme]).filter((name) => /^--(color-|gradient-|radius-)/.test(name));
+      expect(legacy, theme).toEqual([]);
     }
   });
 
-  it("nenhum --color-* legado é cor fixa escura: os que seguem fixos são os de texto sobre painel claro e o branco do laranja", () => {
-    const fixed = Object.entries(rawTokens.light)
-      .filter(([name, value]) => name.startsWith("--color-") && !value.startsWith("var("))
-      .map(([name]) => name)
-      .sort();
-    expect(fixed).toEqual([
-      "--color-accent-on-light",
-      "--color-error-text-on-light",
-      "--color-ink-on-light",
-      "--color-on-orange",
-      "--color-success-text-on-light",
-      "--color-text-faint-on-light",
-      "--color-text-muted-on-light",
-    ]);
+  it("todo token de cor do tema claro tem a versão do escuro, ou é igual nos dois (declarado só no claro)", () => {
+    const themed = Object.keys(darkByChoice);
+    expect(themed.length).toBeGreaterThan(20);
+    for (const name of themed) expect(rawTokens.light[name], `${name} claro`).toBeDefined();
+  });
+
+  it("o branco sobre o laranja (--on-brand) é igual nos dois temas e é branco puro", () => {
+    for (const theme of THEMES) expect(token(theme, "on-brand").toLowerCase(), theme).toBe("#ffffff");
   });
 });
 

@@ -1,9 +1,15 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 
 /**
  * Navegação e layout (DS5, seção 5 do fluxo). Lê o CSS do disco.
  */
+const walk = (dir: string): string[] =>
+  readdirSync(dir).flatMap((name) => {
+    const path = join(dir, name);
+    if (statSync(path).isDirectory()) return walk(path);
+    return /\.(css|tsx|ts)$/.test(name) ? [path] : [];
+  });
 const read = (p: string) => readFileSync(join(process.cwd(), "src", p), "utf8");
 const tokens = read("styles/tokens.css");
 const global = read("styles/global.css");
@@ -14,17 +20,28 @@ const responsive = read("styles/responsive.css");
 const components = read("styles/components.css");
 
 describe("espaçamento e container", () => {
-  it("escala de espaçamento base 4, de --s-1 (4px) a --s-24 (96px)", () => {
-    for (let i = 1; i <= 24; i++) {
-      expect(tokens, `--s-${i}`).toContain(`--s-${i}: ${i * 4}px;`);
-    }
+  it("escala de espaçamento base 4: todo --s-N declarado vale N x 4px, e os da base aprovada existem", () => {
+    const declared = [...tokens.matchAll(/--s-(\d+):\s*(\d+)px;/g)].map(([, n, px]) => [Number(n), Number(px)]);
+    for (const [n, px] of declared) expect(px, `--s-${n}`).toBe(n * 4);
+    const names = declared.map(([n]) => n);
+    for (const n of [1, 2, 3, 4, 5, 6, 8, 12, 16, 24]) expect(names, `--s-${n}`).toContain(n);
   });
 
-  it("o container usa a largura máxima e o respiro lateral por token", () => {
-    const body = global.match(/\.fb-container\s*\{([^}]*)\}/)?.[1] ?? "";
+  it("todo --s-N declarado é usado por alguma folha de estilo ou componente (nada de degrau sem uso)", () => {
+    const sources = walk(join(process.cwd(), "src"))
+      .filter((path) => !path.endsWith("styles/tokens.css"))
+      .map((path) => readFileSync(path, "utf8"))
+      .join("\n");
+    const unused = [...tokens.matchAll(/--s-(\d+):/g)]
+      .map(([, n]) => n)
+      .filter((n) => !sources.includes(`var(--s-${n})`) && ![1, 2, 3, 4, 5, 6, 8, 12, 16, 24].includes(Number(n)));
+    expect(unused).toEqual([]);
+  });
+
+  it("o contêiner do conteúdo (admin) usa a largura máxima e o respiro lateral por token", () => {
+    const body = admin.match(/\.fb-admin-content\s*\{([^}]*)\}/)?.[1] ?? "";
     expect(body).toMatch(/max-width:\s*var\(--container-max\)/);
-    expect(body).toMatch(/padding-inline:\s*var\(--container-gutter\)/);
-    expect(body).not.toMatch(/padding(-inline)?:\s*\d/);
+    expect(global).not.toContain(".fb-container");
   });
 });
 
@@ -41,18 +58,18 @@ describe("navegação do cliente", () => {
 
 describe("tabela e diálogo", () => {
   it("a rolagem horizontal da tabela fica dentro do próprio componente", () => {
-    const body = admin.match(/\.fb-table-wrap\s*\{([^}]*)\}/)?.[1] ?? "";
-    expect(body).toMatch(/overflow:\s*auto/);
+    const body = components.match(/\.fb-ui-table-wrap\s*\{([^}]*)\}/)?.[1] ?? "";
+    expect(body).toMatch(/overflow-x:\s*auto/);
   });
 
   it("linhas da tabela têm destaque ao passar o mouse", () => {
-    expect(admin).toMatch(/\.fb-table-wrap tbody tr:hover > td/);
+    expect(components).toMatch(/\.fb-ui-table tbody tr:hover/);
   });
 
-  it("o diálogo usa o raio da marca e a sombra de diálogo (--sh-3)", () => {
-    const body = admin.match(/\.fb-modal\s*\{([^}]*)\}/)?.[1] ?? "";
+  it("o diálogo usa o raio --r-xl e a sombra de diálogo (--sh-3)", () => {
+    const body = components.match(/\.fb-ui-dialog\s*\{([^}]*)\}/)?.[1] ?? "";
     expect(body).toMatch(/box-shadow:\s*var\(--sh-3\)/);
-    expect(admin).toMatch(/\.fb-modal\b[^{]*\{[^}]*border-radius:\s*var\(--radius-sm\)/);
+    expect(body).toMatch(/border-radius:\s*var\(--r-xl\)/);
   });
 });
 
@@ -85,8 +102,7 @@ describe("casca do admin (PR 12, #156)", () => {
   });
 
   it("a casca não usa cor literal: só tokens (nem hex, nem rgb, nem escuro fixo)", () => {
-    const shell = admin.slice(admin.indexOf(".fb-admin-shell"), admin.indexOf(".fb-page-eyebrow"));
-    for (const css of [appMenu, shell]) {
+    for (const css of [appMenu, admin]) {
       expect(css.replace(/\/\*[\s\S]*?\*\//g, "")).not.toMatch(/#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(/);
     }
   });
@@ -100,8 +116,8 @@ describe("casca do admin (PR 12, #156)", () => {
     expect(responsive).toMatch(/--fb-admin-pad-x:\s*var\(--container-gutter\)/);
   });
 
-  it("o título de tela (.fb-page-title) segue a escala de tipografia", () => {
-    const title = body(admin, ".fb-page-title");
+  it("o título de tela (.fb-ui-pagehead__title) segue a escala de tipografia", () => {
+    const title = body(components, ".fb-ui-pagehead__title");
     expect(title).toMatch(/font-size:\s*var\(--text-h1\)/);
     expect(title).toMatch(/letter-spacing:\s*var\(--tracking-title\)/);
   });
@@ -112,7 +128,7 @@ describe("casca do admin (PR 12, #156)", () => {
     expect(mobile).toMatch(/\.fb-admin__menu-button\s*\{\s*display:\s*inline-flex/);
     expect(mobile).toMatch(/\.fb-admin__brand--top\s*\{\s*display:\s*inline-flex/);
     expect(appMenu).toMatch(/@media \(max-width: 767px\)\s*\{\s*\.app-menu\s*\{\s*display:\s*none/);
-    expect(body(admin, ".fb-table-wrap")).toMatch(/overflow:\s*auto/);
+    expect(body(components, ".fb-ui-table-wrap")).toMatch(/overflow-x:\s*auto/);
     expect(body(admin, ".fb-admin__body")).toMatch(/min-width:\s*0/);
     expect(body(admin, ".fb-admin-content")).toMatch(/min-width:\s*0/);
   });

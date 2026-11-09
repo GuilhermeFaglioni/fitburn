@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { THEMES, color, contrast, hex, token, type Rgb, type ThemeName } from "./theme-tokens";
+import { THEMES, color, contrast, hex, type Rgb, type ThemeName } from "./theme-tokens";
 
 /**
  * Verificação WCAG AA dos dois temas (DS8, decisões 134 e D-038): pares de texto/superfície, texto secundário,
@@ -24,7 +24,6 @@ describe.each(THEMES)("texto normal (4.5:1), tema %s", (theme) => {
     ["danger (erro)", "danger"],
     ["success", "success"],
     ["warn", "warn"],
-    ["color-info (selo neutro, alias de ink-2)", "color-info"],
   ];
   for (const [label, name] of texts) {
     it(`${label} passa de 4.5:1 sobre a página, o cartão e a superfície 2`, () => {
@@ -68,9 +67,9 @@ describe("exceção nomeada: o laranja da marca como texto no tema claro", () =>
 
 describe.each(THEMES)("borda de controle (3:1) e divisórias, tema %s", (theme) => {
   it("borda do campo e do botão secundário é o faint, não a linha decorativa", () => {
-    expect(components).toMatch(/\.fb-field \{[^}]*border: 1px solid var\(--color-text-faint-on-dark\)/);
-    expect(components).toMatch(/\.fb-btn-secondary \{[^}]*border: 1px solid var\(--color-text-faint-on-dark\)/);
-    expect(token(theme, "color-text-faint-on-dark")).toBe(token(theme, "faint"));
+    expect(components).toMatch(/\.fb-ui-input \{[^}]*border: 1px solid var\(--faint\)/);
+    expect(components).toMatch(/\.fb-ui-btn--secondary \{[^}]*border-color: var\(--faint\)/);
+    expect(contrast(color(theme, "faint"), CARD(theme))).toBeGreaterThanOrEqual(3);
   });
 
   it("a linha decorativa (line-2) fica abaixo de 3:1: é divisória, não borda de controle", () => {

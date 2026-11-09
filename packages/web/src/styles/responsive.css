@@ -3,57 +3,21 @@
  * Vem por último em main.tsx para ajustar as telas sem reescrever os arquivos
  * de cada uma. Mobile-first onde faz sentido; o ponto de quebra é o mesmo da
  * casca do cliente e da administrativa (768 px).
- *
- * O proposta de design só tem o desktop das telas administrativas: no mobile
- * elas seguem a mesma linguagem (fundo claro, laranja como acento) em coluna única.
  */
-
-/* Nunca deixa um campo, tabela ou coluna de grade empurrar a página além da largura. */
-.fb-field,
-.fb-form input,
-.fb-form select {
-  max-width: 100%;
-}
-
-.fb-table-wrap {
-  min-width: 0;
-  max-width: 100%;
-}
-
-.fb-modal__grid > * {
-  min-width: 0;
-}
-
-.fb-td,
-.fb-page-title {
-  overflow-wrap: anywhere;
-}
 
 /* Links do conteúdo administrativo na cor da marca, em vez do azul padrão do navegador. */
 .fb-admin-content a:not([class]) {
-  color: var(--color-ink-on-dark);
+  color: var(--ink);
   font-weight: 500;
   text-decoration: underline;
-  text-decoration-color: var(--color-primary-orange);
+  text-decoration-color: var(--brand);
   text-underline-offset: 3px;
 }
 
 /* Alvos de toque de 44 px em telas pequenas e em dispositivos de ponteiro grosso (WCAG 2.5.5). */
 @media (max-width: 767px), (pointer: coarse) {
-  .fb-btn-primary,
-  .fb-btn-secondary,
-  .fb-btn-danger,
-  .fb-btn-danger-text,
-  .fb-tab-btn,
-  .fb-state__retry,
-  .fb-workout__back,
-  .login-form__input,
-  .login-form__submit,
-  .fb-field {
-    min-height: 44px;
-  }
-
   .fb-workout__back {
+    min-height: 44px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -61,43 +25,16 @@
     padding-right: 8px;
   }
 
-  .fb-tab-btn {
-    min-width: 44px;
-  }
-
-  .login-form__toggle {
-    min-width: 44px;
-    min-height: 44px;
-  }
-
-  /* Links e botões da Home: o design tem 13px de texto sem caixa maior (a linha das aulas mede 34px). A área de
-     toque de 44px vem de um ::before invisível, como no checkbox, sem mexer no layout visível. */
-  .fb-home__link,
-  .fb-home__ghost-btn {
+  /* Links da Home: o design tem 13px de texto sem caixa maior (a linha das aulas mede 34px). A área de toque de 44px
+     vem de um ::before invisível, sem mexer no layout visível. */
+  .fb-home__link {
     position: relative;
   }
 
-  .fb-home__link::before,
-  .fb-home__ghost-btn::before {
+  .fb-home__link::before {
     content: "";
     position: absolute;
     inset: -13px -8px;
-  }
-
-  .fb-checkbox {
-    /* A caixa continua de 18 px; a área de toque cresce com a margem invisível. */
-    position: relative;
-  }
-
-  .fb-checkbox::before {
-    content: "";
-    position: absolute;
-    inset: -13px;
-  }
-
-  .fb-td a {
-    display: inline-block;
-    padding: 15px 0;
   }
 }
 
@@ -107,68 +44,9 @@
     --fb-admin-pad-y: var(--s-5);
   }
 
-  .fb-page-title {
-    font-size: var(--text-h2);
-  }
-
-  .fb-toolbar,
-  .fb-toolbar > div {
-    width: 100%;
-  }
-
-  .fb-toolbar .fb-btn-primary {
-    width: 100%;
-  }
-
-  .fb-filter {
-    flex-wrap: wrap;
-  }
-
   /* Rótulo + seleção lado a lado só enquanto cabem; senão a seleção vai para a linha de baixo. */
   .fb-admin-content label {
     max-width: 100%;
     flex-wrap: wrap;
-  }
-
-  .fb-admin-content label > select.fb-field {
-    min-width: 0;
-    flex: 1 1 200px;
-  }
-
-  .fb-tabs {
-    gap: 8px;
-    overflow-x: auto;
-  }
-
-  .fb-tab-btn {
-    flex-shrink: 0;
-    padding: 9px 8px;
-  }
-
-  /* Tabelas: a rolagem horizontal fica dentro do quadro, com colunas que não espremem o texto. */
-  .fb-table-wrap table {
-    min-width: 520px;
-  }
-
-  /* Diálogos: quase tela cheia, campos em coluna única, ações empilhadas. */
-  .fb-modal-backdrop {
-    padding: 8px;
-    align-items: flex-end;
-  }
-
-  .fb-modal {
-    padding: 20px 16px;
-  }
-
-  .fb-modal__grid {
-    grid-template-columns: 1fr;
-  }
-
-  .fb-modal__footer {
-    flex-wrap: wrap;
-  }
-
-  .fb-form {
-    max-width: 100%;
   }
 }

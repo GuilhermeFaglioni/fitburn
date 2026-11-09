@@ -52,7 +52,7 @@ describe("componentes base II: prefixo e só tokens", () => {
   });
 
   it("cor de texto e de fundo usam tokens da base (nada de --color-* legado)", () => {
-    expect(uiCss).not.toMatch(/--color-(?!on-orange)/);
+    expect(uiCss).not.toMatch(/--color-/);
   });
 
   it("as transições usam as durações e a curva dos tokens", () => {
@@ -111,11 +111,11 @@ describe("acordeão", () => {
     expect(rule(".fb-ui-accordion__icon::before")).toMatch(/background:\s*var\(--brand\)/);
   });
 
-  it("aberto: indicador preenchido de marca (traços em --color-on-orange) e gira", () => {
+  it("aberto: indicador preenchido de marca (traços em --on-brand) e gira", () => {
     const open = rule(".fb-ui-accordion__item[open] .fb-ui-accordion__icon");
     expect(open).toMatch(/background:\s*var\(--brand\)/);
     expect(open).toMatch(/transform:\s*rotate\(180deg\)/);
-    expect(rule(".fb-ui-accordion__item[open] .fb-ui-accordion__icon::before")).toMatch(/background:\s*var\(--color-on-orange\)/);
+    expect(rule(".fb-ui-accordion__item[open] .fb-ui-accordion__icon::before")).toMatch(/background:\s*var\(--on-brand\)/);
   });
 
   it("o texto do painel (--muted) passa de 4.5:1 sobre o fundo nos dois temas", () => {

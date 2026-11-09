@@ -10,8 +10,8 @@
 .fb-offline-banner {
   padding: 10px 16px;
   background: color-mix(in srgb, var(--danger) 10%, var(--bg));
-  border-bottom: 1px solid var(--color-danger-border);
-  color: var(--color-danger);
+  border-bottom: 1px solid var(--danger-line);
+  color: var(--danger);
   font-family: var(--font-sans);
   font-size: 14px;
   text-align: center;
@@ -27,7 +27,7 @@
   padding: 4px 12px;
   background: transparent;
   border: 1px solid currentColor;
-  border-radius: var(--radius-sm);
+  border-radius: var(--r-sm);
   color: inherit;
   font: inherit;
   cursor: pointer;
@@ -35,14 +35,14 @@
 
 .fb-update-banner {
   padding: 10px 16px;
-  background: var(--color-surface-raised);
-  border-bottom: 1px solid var(--color-primary-orange);
-  color: var(--color-ink-on-dark);
+  background: var(--surface);
+  border-bottom: 1px solid var(--brand);
+  color: var(--ink);
   font-family: var(--font-sans);
   font-size: 14px;
   text-align: center;
 }
 
 .fb-update-banner__action {
-  color: var(--color-brand-strong);
+  color: var(--brand-strong);
 }

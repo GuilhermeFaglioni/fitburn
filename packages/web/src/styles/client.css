@@ -196,6 +196,6 @@
 
 @media (hover: hover) and (pointer: fine) {
   .fb-client__nav-item:not(.active):hover {
-    color: var(--color-ink-on-dark);
+    color: var(--ink);
   }
 }

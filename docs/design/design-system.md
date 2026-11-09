@@ -4,7 +4,7 @@ Base de design do app, derivada da proposta `proposta-fitburn-oratry.html` (nest
 
 ## Tema
 
-Decidido em D-038 (`docs/decisions.md`): claro e escuro pela preferência do sistema, em cliente e admin, com alternância manual salva por aparelho. Revisa a #134 (escuro sempre). Os dois valores de cada token estão listados abaixo.
+Decidido em D-038 (`docs/decisions.md`): claro e escuro pela preferência do sistema, em cliente e admin, com alternância manual salva por aparelho. Revisa a #134 (escuro sempre). Implementado na pilha da issue #156: o botão de tema do cabeçalho alterna e grava `fb-theme` no `localStorage` (atributo `data-theme` no `<html>`). As tabelas abaixo listam os dois valores de cada token; `tokens.css` os declara no `:root` (claro) e nos blocos de tema escuro, e `test/theme-css.test.ts` confere que os valores batem com este documento.
 
 ## Marca
 
@@ -17,10 +17,11 @@ Decidido em D-038 (`docs/decisions.md`): claro e escuro pela preferência do sis
 | `--brand-tint` | #FFF4EE | #2A1810 |
 | `--brand-tint-2` | #FFE8DC | #3A1F12 |
 | `--brand-line` | #F7CDB7 | #5A2E1A |
+| `--on-brand` | #FFFFFF | — |
 | `--grad-cta` | linear-gradient(145deg,#F58A55 0%,#ED6E34 45%,#C23A1F 100%) | — |
 | `--grad-text` | linear-gradient(100deg,#C23A1F,#ED6E34 60%,#F7A274) | linear-gradient(100deg,#F06A3A,#ED6E34 55%,#FFB48C) |
 
-Regras: o laranja `--brand` é acento, nunca fundo de área grande. Texto laranja sobre claro usa `--brand-strong` (6,15:1). Texto branco sobre o laranja só em texto grande e negrito.
+Regras: o laranja `--brand` é acento, nunca fundo de área grande. Texto laranja sobre claro usa `--brand-strong` (6,15:1). Texto branco sobre o laranja só em texto grande e negrito; `--on-brand` é esse branco (texto, traço e a translucidez sobre o laranja, o vermelho-chama e o gradiente CTA), em vez de `#fff` literal nas folhas de estilo.
 
 ## Superfícies, texto e bordas
 
@@ -115,7 +116,7 @@ Peças e estados (repouso, hover, foco, pressionado com escala 0,97, desabilitad
 
 ## Layout do admin (aprovados)
 
-Tokens que o preview de todas as telas (`preview-todas-telas.html`) precisou e que não existem na proposta. Aprovados pelo dono na issue #156; estão em `tokens.css` (`--sidebar-w` desde o PR 12, `--list-w` para o PR 17). Cores literais foram evitadas: o preview reaproveita os tokens acima. O branco `#fff` e o `rgba(255,255,255,.x)` sobre o gradiente CTA (botão, chip ativo, card de plano) seguem como na proposta.
+Tokens que o preview de todas as telas (`preview-todas-telas.html`) precisou e que não existem na proposta. Aprovados pelo dono na issue #156; estão em `tokens.css` e em uso (`--sidebar-w` na barra lateral do admin, `--list-w` na lista + detalhe de Fichas e Metas). Cores literais foram evitadas: o preview reaproveita os tokens acima. O branco `#fff` e o `rgba(255,255,255,.x)` sobre o gradiente CTA (botão, chip ativo, card de plano) seguem como na proposta.
 
 | Token | Claro | Escuro | Tela de origem | Motivo |
 |---|---|---|---|---|

@@ -99,7 +99,7 @@ describe("botão", () => {
 
   it("perigo é branco sobre o vermelho-chama (5,36:1) nos dois temas, não o --danger de texto", () => {
     expect(rule(".fb-ui-btn--danger")).toMatch(/background:\s*var\(--flame\)/);
-    expect(rule(".fb-ui-btn--danger")).toMatch(/color:\s*var\(--color-on-orange\)/);
+    expect(rule(".fb-ui-btn--danger")).toMatch(/color:\s*var\(--on-brand\)/);
     for (const theme of THEMES) {
       const white: [number, number, number] = [255, 255, 255];
       expect(contrast(white, color(theme, "flame"))).toBeGreaterThanOrEqual(4.5);

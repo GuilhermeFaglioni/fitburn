@@ -53,7 +53,8 @@ const profileTsx = [
 const homeTsx = [
   read("pages/ClientHomePage.tsx"),
   read("pages/home/HomeReservations.tsx"),
-  read("pages/home/HomeBlockState.tsx"),
+  read("pages/home/HomeEmpty.tsx"),
+  read("components/QueryBlockState.tsx"),
 ].join("\n");
 
 const HEX = /#[0-9a-fA-F]{3,8}\b/g;
@@ -105,7 +106,7 @@ describe("cores das telas do cliente", () => {
 
   it("home.css não tem rgba/hsla literal nem usa os --color-* legados: só tokens da base", () => {
     expect(homeCss.match(COLOR_FUNCTION) ?? []).toEqual([]);
-    expect(homeCss).not.toMatch(/var\(--color-(?!on-orange)/);
+    expect(homeCss).not.toMatch(/var\(--color-/);
     expect(homeCss).not.toMatch(/var\(--radius-/);
   });
 
@@ -200,8 +201,8 @@ describe("FitPoints do cliente (D-038, tela extrapolada da base)", () => {
     expect(gamificationCss.length).toBeGreaterThan(500);
     expect(gamificationCss.match(HEX) ?? []).toEqual([]);
     expect(gamificationCss.match(COLOR_FUNCTION) ?? []).toEqual([]);
-    // O branco sobre o laranja é o token --color-on-orange (exceção da base); nenhum outro --color-*.
-    expect(gamificationCss).not.toMatch(/var\(--color-(?!on-orange)/);
+    // O branco sobre o laranja é o token --on-brand (exceção da base); nenhum --color-*.
+    expect(gamificationCss).not.toMatch(/var\(--color-/);
     expect(gamificationCss).not.toMatch(/var\(--radius-/);
     expect(gamificationCss).not.toMatch(/border-radius:\s*\d/);
     expect(gamificationCss).not.toMatch(/opacity:/);
