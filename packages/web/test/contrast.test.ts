@@ -168,8 +168,6 @@ const WHITE_NO_BACKGROUND = new Map<string, "orange" | "no-text">([
   [".fb-checkbox.fb-checkbox--fixed:disabled:checked::after", "orange"],
   [".fb-goals__form .fb-btn-primary", "orange"],
   [".fb-btn-primary", "orange"],
-  // O rótulo do botão de entrar do login: o laranja está no botão (LoginPage.css), não no rótulo.
-  [".login-form__submit-label", "orange"],
   // Presente (laranja) e Faltou (vermelho-chama, 5.36:1) acrescentam o fundo pelos modificadores --present e --absent.
   ['.fb-seg-btn[aria-pressed="true"]', "orange"],
   // Selo "ATIVO" do cartão do plano da Home (D-038): negrito branco translúcido-sobre-laranja; o gradiente CTA está no
@@ -377,8 +375,8 @@ function allSheets(): [string, string][] {
 }
 
 describe("dívida de migração: branco translúcido literal nas telas ainda não migradas", () => {
-  /** Quantidade medida em #156 (45 no PR 2; 43 depois da Agenda). Cada PR de tela só pode reduzir; o PR 18 troca este teste por proibição. */
-  const LITERAL_WHITE_ALPHA_TEXT_CEILING = 43;
+  /** Quantidade medida em #156 (45 no PR 2; 43 depois da Agenda; 39 depois do Login). Cada PR de tela só pode reduzir; o PR 18 troca este teste por proibição. */
+  const LITERAL_WHITE_ALPHA_TEXT_CEILING = 39;
 
   it("não cresce: texto novo usa tokens, que seguem o tema", () => {
     const count = allSheets()
@@ -448,11 +446,12 @@ describe.each(THEMES)("botões primários (texto sobre o laranja da marca, tema 
     }
   });
 
-  it("o rótulo do botão de entrar do login usa o texto sobre o laranja", () => {
-    const login = allSheets().find(([name]) => name === "pages/LoginPage.css")?.[1] ?? "";
-    const label = textColors(login).find(({ selector }) => selector === ".login-form__submit-label");
-    expect(label).toBeDefined();
-    expect(contrast(resolveColor(label?.raw ?? "#ffffff", theme), ORANGE)).toBeGreaterThanOrEqual(DESIGN_PAIR_MIN);
+  it("o botão de entrar do login é o Button primário compartilhado, cujo texto sobre o laranja chega a 3:1", () => {
+    const login = readFileSync(resolve(process.cwd(), "src/pages/LoginPage.tsx"), "utf8");
+    expect(login).toMatch(/<Button type="submit" variant="primary" block/);
+    const primary = orangeBackgrounds(componentsCss).find(({ selector }) => selector === ".fb-ui-btn--primary");
+    expect(primary).toBeDefined();
+    expect(contrast(resolveColor(primary?.color ?? "#ffffff", theme), ORANGE)).toBeGreaterThanOrEqual(DESIGN_PAIR_MIN);
   });
 });
 

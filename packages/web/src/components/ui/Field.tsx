@@ -1,5 +1,5 @@
 import { useId } from "react";
-import type { InputHTMLAttributes } from "react";
+import type { InputHTMLAttributes, ReactNode } from "react";
 import { join } from "./join";
 
 export interface FieldProps extends InputHTMLAttributes<HTMLInputElement> {
@@ -9,6 +9,8 @@ export interface FieldProps extends InputHTMLAttributes<HTMLInputElement> {
   /** Erro: marca `aria-invalid`, mostra a mensagem anunciada (`role="alert"`) e a liga ao campo. */
   error?: string;
   success?: string;
+  /** Controle dentro do campo, à direita do input (ex.: mostrar/ocultar senha). O input reserva o espaço dele. */
+  trailing?: ReactNode;
 }
 
 /**
@@ -20,9 +22,11 @@ export function Field({
   help,
   error,
   success,
+  trailing,
   id,
   className,
   "aria-describedby": describedBy,
+  "aria-invalid": ariaInvalid,
   ...input
 }: FieldProps) {
   const generated = useId();
@@ -30,18 +34,28 @@ export function Field({
   const messageId = `${inputId}-msg`;
   const message = error ?? success ?? help;
   const describedby = join(describedBy, message && messageId) || undefined;
+  const renderInput = (extraClass?: string) => (
+    <input
+      {...input}
+      id={inputId}
+      className={join("fb-ui-input", !error && success && "fb-ui-input--ok", extraClass)}
+      aria-invalid={error ? true : ariaInvalid}
+      aria-describedby={describedby}
+    />
+  );
   return (
     <div className={join("fb-ui-field", className)}>
       <label htmlFor={inputId} className="fb-ui-field__label">
         {label}
       </label>
-      <input
-        {...input}
-        id={inputId}
-        className={join("fb-ui-input", !error && success && "fb-ui-input--ok")}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={describedby}
-      />
+      {trailing ? (
+        <div className="fb-ui-field__control">
+          {renderInput("fb-ui-input--has-trailing")}
+          <div className="fb-ui-field__trailing">{trailing}</div>
+        </div>
+      ) : (
+        renderInput()
+      )}
       {message && (
         <span
           id={messageId}
