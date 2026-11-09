@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, onlineManager } from "@tanstack/react-query";
 import { http, HttpResponse } from "msw";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import {
@@ -16,6 +16,7 @@ import {
 import { AuthProvider, useAuth } from "../src/lib/auth/AuthContext";
 import { AttendancePage } from "../src/pages/AttendancePage";
 import { mockSuccessfulLogin } from "./auth-mocks";
+import { setBrowserOnline } from "./connectivity-helpers";
 import { server } from "./msw-server";
 
 // Quarta-feira 06/05/2026, 18h00 na academia (America/Sao_Paulo, UTC-3).
@@ -398,5 +399,256 @@ describe("Presença (professor)", () => {
     await user.click(screen.getByRole("button", { name: "Voltar" }));
 
     expect(await screen.findByRole("heading", { name: "Minhas aulas (tela)" })).toBeInTheDocument();
+  });
+
+  describe("estrutura e acessibilidade (nova base de design)", () => {
+    it("os alunos são uma lista; cada linha tem um grupo com o nome do aluno e os estados em aria-pressed", async () => {
+      mockRoster(rosterOf(DEFAULT_ENTRIES));
+      renderPage();
+
+      const list = await screen.findByRole("list");
+      expect(within(list).getAllByRole("listitem")).toHaveLength(4);
+      expect(screen.getByRole("heading", { level: 1, name: "Presença" })).toBeInTheDocument();
+
+      for (const [name, present, absent] of [
+        ["Marina Souza", "false", "false"],
+        ["Bruno Alves", "true", "false"],
+        ["Camila Duarte", "false", "false"],
+        ["Diego Ramos", "false", "true"],
+      ]) {
+        const group = screen.getByRole("group", { name });
+        expect(within(group).getByRole("button", { name: "Presente" })).toHaveAttribute(
+          "aria-pressed",
+          present,
+        );
+        expect(within(group).getByRole("button", { name: "Faltou" })).toHaveAttribute(
+          "aria-pressed",
+          absent,
+        );
+      }
+    });
+
+    it("a contagem do topo é um status e acompanha cada marcação", async () => {
+      mockRoster(rosterOf(DEFAULT_ENTRIES));
+      server.use(
+        http.post("/api/attendance/reservations/:reservationId", () =>
+          HttpResponse.json(entry("r-marina", "Marina Souza", "PRESENT")),
+        ),
+      );
+      const user = userEvent.setup();
+      renderPage();
+
+      expect(await screen.findByText("2 de 4 registrados")).toHaveAttribute("role", "status");
+
+      await user.click(
+        within(screen.getByRole("group", { name: "Marina Souza" })).getByRole("button", {
+          name: "Presente",
+        }),
+      );
+
+      expect(screen.getByText("3 de 4 registrados")).toHaveAttribute("role", "status");
+    });
+
+    it("o grupo da linha fica aria-busy enquanto o pedido não volta e só ele", async () => {
+      mockRoster(rosterOf(DEFAULT_ENTRIES));
+      let release!: () => void;
+      const gate = new Promise<void>((resolve) => (release = resolve));
+      server.use(
+        http.post("/api/attendance/reservations/:reservationId", async () => {
+          await gate;
+          return HttpResponse.json(entry("r-marina", "Marina Souza", "PRESENT"));
+        }),
+      );
+      const user = userEvent.setup();
+      renderPage();
+      await screen.findByText("2 de 4 registrados");
+      const marina = screen.getByRole("group", { name: "Marina Souza" });
+      expect(marina).not.toHaveAttribute("aria-busy");
+
+      await user.click(within(marina).getByRole("button", { name: "Presente" }));
+
+      expect(marina).toHaveAttribute("aria-busy", "true");
+      expect(screen.getByRole("group", { name: "Camila Duarte" })).not.toHaveAttribute("aria-busy");
+
+      release();
+      await waitFor(() => expect(marina).not.toHaveAttribute("aria-busy"));
+    });
+
+    it("a marcação que o servidor recusou também sai do estado ocupado", async () => {
+      mockRoster(rosterOf(DEFAULT_ENTRIES));
+      server.use(
+        http.post("/api/attendance/reservations/:reservationId", () =>
+          HttpResponse.json({ code: "INTERNAL_ERROR", message: "Erro." }, { status: 500 }),
+        ),
+      );
+      const user = userEvent.setup();
+      renderPage();
+      await screen.findByText("2 de 4 registrados");
+      const marina = screen.getByRole("group", { name: "Marina Souza" });
+
+      await user.click(within(marina).getByRole("button", { name: "Presente" }));
+
+      expect(await screen.findByRole("alert")).toBeInTheDocument();
+      await waitFor(() => expect(marina).not.toHaveAttribute("aria-busy"));
+    });
+
+    it("sair com um pedido em andamento não pede confirmação (não há rascunho) e o pedido termina", async () => {
+      mockRoster(rosterOf(DEFAULT_ENTRIES));
+      let release!: () => void;
+      const gate = new Promise<void>((resolve) => (release = resolve));
+      server.use(
+        http.post("/api/attendance/reservations/:reservationId", async ({ params, request }) => {
+          marks.push({ reservationId: String(params.reservationId), body: await request.json() });
+          await gate;
+          return HttpResponse.json(entry("r-marina", "Marina Souza", "PRESENT"));
+        }),
+      );
+      const user = userEvent.setup();
+      renderPage();
+      await screen.findByText("2 de 4 registrados");
+      await user.click(
+        within(screen.getByRole("group", { name: "Marina Souza" })).getByRole("button", {
+          name: "Presente",
+        }),
+      );
+      await waitFor(() => expect(marks).toHaveLength(1));
+
+      await user.click(screen.getByRole("button", { name: "Voltar" }));
+
+      expect(await screen.findByRole("heading", { name: "Minhas aulas (tela)" })).toBeInTheDocument();
+      expect(screen.queryByRole("dialog")).toBeNull();
+      release();
+      expect(marks).toEqual([{ reservationId: "r-marina", body: { status: "PRESENT" } }]);
+    });
+  });
+
+  describe("estados da lista e sem conexão", () => {
+    afterEach(() => {
+      onlineManager.setOnline(true);
+      setBrowserOnline(true);
+    });
+
+    it("carregando: mostra o texto da tela e o cabeçalho", async () => {
+      server.use(http.get("/api/attendance/classes/occ-1", () => new Promise(() => {})));
+      renderPage();
+
+      const loading = await screen.findByText("Carregando a lista de presença…");
+
+      expect(loading).toHaveAttribute("role", "status");
+      expect(screen.getByRole("heading", { name: "Presença" })).toBeInTheDocument();
+      expect(screen.queryByRole("list")).toBeNull();
+    });
+
+    it("erro: alerta com o texto da tela e botão para tentar de novo", async () => {
+      let calls = 0;
+      server.use(
+        http.get("/api/attendance/classes/occ-1", () => {
+          calls += 1;
+          return calls === 1
+            ? HttpResponse.json({ code: "INTERNAL_ERROR", message: "Erro." }, { status: 500 })
+            : HttpResponse.json(rosterOf(DEFAULT_ENTRIES));
+        }),
+      );
+      const user = userEvent.setup();
+      renderPage();
+
+      expect(await screen.findByRole("alert")).toHaveTextContent(
+        "Não foi possível carregar a lista de presença.",
+      );
+
+      await user.click(screen.getByRole("button", { name: "Tentar novamente" }));
+
+      expect(await screen.findByText("Marina Souza")).toBeInTheDocument();
+    });
+
+    it("vazio: o estado da base, com a contagem em zero", async () => {
+      mockRoster(rosterOf([]));
+      renderPage();
+
+      const empty = await screen.findByText("Nenhum cliente com reserva nesta aula.");
+
+      expect(empty.closest("[data-state]")).toHaveAttribute("data-state", "empty");
+      expect(screen.queryByRole("list")).toBeNull();
+    });
+
+    it("offline antes de carregar: mostra o estado sem conexão (não um erro) e a lista vem com a rede", async () => {
+      mockRoster(rosterOf(DEFAULT_ENTRIES));
+      onlineManager.setOnline(false);
+      setBrowserOnline(false);
+      renderPage();
+
+      const offline = await waitFor(() => {
+        const found = document.querySelector('[data-state="offline"]');
+        expect(found).not.toBeNull();
+        return found as HTMLElement;
+      });
+      expect(offline).toHaveTextContent("Sem conexão");
+      expect(screen.queryByRole("alert")).toBeNull();
+
+      onlineManager.setOnline(true);
+      setBrowserOnline(true);
+
+      expect(await screen.findByText("Marina Souza")).toBeInTheDocument();
+    });
+
+    it("offline com a lista aberta: marcar fica desabilitado com o motivo e nada do que está na tela se perde", async () => {
+      mockRoster(rosterOf(DEFAULT_ENTRIES));
+      renderPage();
+      await screen.findByText("2 de 4 registrados");
+
+      setBrowserOnline(false);
+
+      await screen.findByText(/Sem conexão: registrar presença volta a funcionar/);
+      for (const name of ["Marina Souza", "Bruno Alves", "Camila Duarte", "Diego Ramos"]) {
+        for (const button of within(screen.getByRole("group", { name })).getAllByRole("button")) {
+          expect(button).toBeDisabled();
+          expect(button).toHaveAttribute("title", expect.stringMatching(/sem conexão/i));
+        }
+      }
+      // O que já estava marcado continua à mostra.
+      expect(screen.getByText("2 de 4 registrados")).toBeInTheDocument();
+      expect(
+        within(screen.getByRole("group", { name: "Bruno Alves" })).getByRole("button", {
+          name: "Presente",
+        }),
+      ).toHaveAttribute("aria-pressed", "true");
+      expect(within(rowOf("Marina Souza")).getByText("PENDENTE")).toBeInTheDocument();
+
+      setBrowserOnline(true);
+
+      await waitFor(() =>
+        expect(
+          within(screen.getByRole("group", { name: "Marina Souza" })).getByRole("button", {
+            name: "Presente",
+          }),
+        ).toBeEnabled(),
+      );
+      expect(screen.queryByText(/Sem conexão: registrar presença/)).toBeNull();
+    });
+
+    it("offline depois de marcar: a marcação já feita fica na tela", async () => {
+      mockRoster(rosterOf(DEFAULT_ENTRIES));
+      server.use(
+        http.post("/api/attendance/reservations/:reservationId", () =>
+          HttpResponse.json(entry("r-marina", "Marina Souza", "PRESENT")),
+        ),
+      );
+      const user = userEvent.setup();
+      renderPage();
+      await screen.findByText("2 de 4 registrados");
+      const marina = screen.getByRole("group", { name: "Marina Souza" });
+      await user.click(within(marina).getByRole("button", { name: "Presente" }));
+      await waitFor(() => expect(marina).not.toHaveAttribute("aria-busy"));
+
+      setBrowserOnline(false);
+
+      await screen.findByText(/Sem conexão: registrar presença/);
+      expect(within(marina).getByRole("button", { name: "Presente" })).toHaveAttribute(
+        "aria-pressed",
+        "true",
+      );
+      expect(within(marina).getByRole("button", { name: "Presente" })).toBeDisabled();
+      expect(screen.getByText("3 de 4 registrados")).toBeInTheDocument();
+    });
   });
 });

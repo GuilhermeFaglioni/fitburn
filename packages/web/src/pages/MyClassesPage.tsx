@@ -13,25 +13,39 @@ import { useAuth } from "../lib/auth/AuthContext";
 import { exportAttendanceCsv, listAttendanceClasses } from "../lib/attendance/api";
 import { formatDayHeading, formatInstantHour } from "../lib/agenda/format";
 import { ExportCsvButton } from "../components/ExportCsvButton";
-import { EmptyState, ErrorState, LoadingState } from "../components/states";
+import { QueryBlockState } from "../components/QueryBlockState";
+import { Badge, type BadgeTone } from "../components/ui/Badge";
+import { PageHeader } from "../components/ui/PageHeader";
+import { Segmented } from "../components/ui/Segmented";
+import { EmptyState } from "../components/ui/States";
 
 type Tab = "today" | "week";
+
+const PERIODS = [
+  { value: "today", label: "Hoje" },
+  { value: "week", label: "Semana" },
+] as const;
 
 function plural(count: number, singular: string, pluralForm: string): string {
   return `${count} ${count === 1 ? singular : pluralForm}`;
 }
 
-type BadgeTone = "neutral" | "active" | "accent";
+interface Progress {
+  tone: BadgeTone;
+  label: string;
+  /** Ainda há presença a registrar: o botão da linha convida a registrar; senão, só a abrir. */
+  pending: boolean;
+}
 
 /** O que falta fazer na aula: pendentes de registro, ou o total de reservas se ela ainda não começou. */
-function progressBadge(item: AttendanceClass): { tone: BadgeTone; label: string } {
+function progressOf(item: AttendanceClass): Progress {
   const pending = item.totalCount - item.registeredCount;
-  if (item.totalCount === 0) return { tone: "neutral", label: "Sem reservas" };
-  if (pending === 0) return { tone: "active", label: "Tudo registrado" };
+  if (item.totalCount === 0) return { tone: "neutral", label: "Sem reservas", pending: false };
+  if (pending === 0) return { tone: "ok", label: "Tudo registrado", pending: false };
   if (new Date(item.startsAt) > new Date()) {
-    return { tone: "neutral", label: plural(item.totalCount, "reserva", "reservas") };
+    return { tone: "neutral", label: plural(item.totalCount, "reserva", "reservas"), pending: false };
   }
-  return { tone: "accent", label: plural(pending, "pendente", "pendentes") };
+  return { tone: "warn", label: plural(pending, "pendente", "pendentes"), pending: true };
 }
 
 /** Professor da aula, só quando não é a própria pessoa (quem vê mais que as próprias aulas). */
@@ -40,30 +54,42 @@ function instructorNote(item: AttendanceClass, currentUserId: string | undefined
   return item.instructor.id === currentUserId ? null : `Prof. ${item.instructor.fullName}`;
 }
 
-function ClassCard({ item, currentUserId }: { item: AttendanceClass; currentUserId?: string }) {
-  const badge = progressBadge(item);
+function ClassRow({ item, currentUserId }: { item: AttendanceClass; currentUserId?: string }) {
+  const progress = progressOf(item);
+  const hour = formatInstantHour(item.startsAt);
   const details = [
     item.totalCount > 0 ? `${item.registeredCount} de ${item.totalCount} registrados` : null,
     instructorNote(item, currentUserId),
   ].filter((detail) => detail !== null);
+  const action = progress.pending ? "Registrar presença" : "Ver presença";
 
   return (
-    <Link className="fb-myclass" to={`/presenca/${item.id}`}>
-      <span className="fb-myclass__hour">{formatInstantHour(item.startsAt)}</span>
-      <span className="fb-myclass__info">
-        <span className="fb-myclass__title">{item.name}</span>
-        {details.length > 0 && <span className="fb-myclass__sub">{details.join(" · ")}</span>}
-      </span>
-      <span className={`fb-badge fb-badge--${badge.tone}`}>{badge.label}</span>
-    </Link>
+    <li className="fb-ui-mc">
+      <span className="fb-ui-mc__time">{hour}</span>
+      <div className="fb-ui-mc__meta">
+        <b className="fb-ui-mc__title">{item.name}</b>
+        {details.length > 0 && <span className="fb-ui-mc__sub">{details.join(" · ")}</span>}
+      </div>
+      <Badge tone={progress.tone} dot={progress.tone === "ok"}>
+        {progress.label}
+      </Badge>
+      {/* O nome acessível começa com o texto visível e acrescenta de qual aula é (vários botões iguais na lista). */}
+      <Link
+        className="fb-ui-btn fb-ui-btn--soft fb-ui-btn--sm fb-ui-mc__action"
+        to={`/presenca/${item.id}`}
+        aria-label={`${action}: ${item.name}, ${hour}`}
+      >
+        {action}
+      </Link>
+    </li>
   );
 }
 
 /**
  * Minhas aulas: as aulas do dia e da semana em que a pessoa pode registrar
  * presença (as dela; quem tem escopo mais amplo vê as de todos). Cada aula
- * abre a tela de Presença. Não há referência de design para esta tela: usa a
- * casca administrativa clara.
+ * tem o botão que abre a tela de Presença. Tela extrapolada da base (#156,
+ * D-038); o desenho é o de "Minhas aulas" do preview.
  */
 export function MyClassesPage() {
   const { user } = useAuth();
@@ -82,80 +108,55 @@ export function MyClassesPage() {
     const { date } = utcToGymDateTime(item.startsAt);
     byDay.set(date, [...(byDay.get(date) ?? []), item]);
   }
+  const loaded = classesQuery.data !== undefined;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-      <div className="fb-page-header">
-        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          <span className="fb-page-eyebrow">Presença</span>
-          <h1 className="fb-page-title">Minhas aulas</h1>
-        </div>
-        <div style={{ display: "flex", alignItems: "flex-start", flexWrap: "wrap", gap: 10 }}>
-          {/* Fora da tela de referência: exporta o mesmo período da lista (Hoje = o dia; Semana = segunda a domingo). */}
+    <div className="fb-ui-page">
+      <PageHeader
+        kicker="Presença"
+        title="Minhas aulas"
+        actions={
+          /* Exporta o mesmo período da lista (Hoje = o dia; Semana = segunda a domingo). */
           <ExportCsvButton
             label="Exportar presenças (CSV)"
             onExport={() => exportAttendanceCsv(from, to)}
           />
-        </div>
-      </div>
+        }
+      />
 
-      <div className="fb-tabs">
-        <button
-          type="button"
-          className={`fb-tab-btn${tab === "today" ? " active" : ""}`}
-          aria-pressed={tab === "today"}
-          onClick={() => setTab("today")}
-        >
-          Hoje
-        </button>
-        <button
-          type="button"
-          className={`fb-tab-btn${tab === "week" ? " active" : ""}`}
-          aria-pressed={tab === "week"}
-          onClick={() => setTab("week")}
-        >
-          Semana
-        </button>
-      </div>
+      <Segmented label="Período" options={PERIODS} value={tab} onChange={setTab} />
 
-      {classesQuery.isLoading && <LoadingState />}
-      {classesQuery.isError && (
-        <ErrorState
-          message="Não foi possível carregar as aulas."
-          onRetry={() => void classesQuery.refetch()}
-        />
+      <QueryBlockState
+        query={classesQuery}
+        hasData={loaded}
+        loading="Carregando as aulas…"
+        error="Não foi possível carregar as aulas."
+      />
+
+      {loaded && byDay.size === 0 && (
+        <EmptyState title={tab === "today" ? "Nenhuma aula hoje." : "Nenhuma aula nesta semana."} />
       )}
 
-      {classesQuery.isSuccess && byDay.size === 0 && (
-        <EmptyState
-          message={tab === "today" ? "Nenhuma aula hoje." : "Nenhuma aula nesta semana."}
-        />
-      )}
-
-      {classesQuery.isSuccess && tab === "today" && byDay.size > 0 && (
-        <ul className="fb-myclass-list">
+      {loaded && tab === "today" && byDay.size > 0 && (
+        <ul className="fb-ui-mc-list">
           {(byDay.get(today) ?? []).map((item) => (
-            <li key={item.id}>
-              <ClassCard item={item} currentUserId={user?.id} />
-            </li>
+            <ClassRow key={item.id} item={item} currentUserId={user?.id} />
           ))}
         </ul>
       )}
 
-      {classesQuery.isSuccess &&
+      {loaded &&
         tab === "week" &&
         [...byDay.entries()]
           .sort(([a], [b]) => a.localeCompare(b))
           .map(([date, items]) => (
-            <section key={date} className="fb-myclass-day">
-              <h2 className="fb-myclass-day__title">
+            <section key={date} className="fb-ui-mc-day">
+              <h2 className="fb-ui-mc-day__title">
                 {formatDayHeading(date, weekdayOf(date), today)}
               </h2>
-              <ul className="fb-myclass-list">
+              <ul className="fb-ui-mc-list">
                 {items.map((item) => (
-                  <li key={item.id}>
-                    <ClassCard item={item} currentUserId={user?.id} />
-                  </li>
+                  <ClassRow key={item.id} item={item} currentUserId={user?.id} />
                 ))}
               </ul>
             </section>

@@ -168,8 +168,6 @@ const WHITE_NO_BACKGROUND = new Map<string, "orange" | "no-text">([
   [".fb-checkbox.fb-checkbox--fixed:disabled:checked::after", "orange"],
   [".fb-goals__form .fb-btn-primary", "orange"],
   [".fb-btn-primary", "orange"],
-  // Presente (laranja) e Faltou (vermelho-chama, 5.36:1) acrescentam o fundo pelos modificadores --present e --absent.
-  ['.fb-seg-btn[aria-pressed="true"]', "orange"],
   // Selo "ATIVO" do cartão do plano da Home (D-038): negrito branco translúcido-sobre-laranja; o gradiente CTA está no
   // cartão (.fb-home__plan), não no selo. Vale o mesmo piso de 3:1 do par do design.
   [".fb-home__badge", "orange"],
@@ -368,8 +366,8 @@ function allSheets(): [string, string][] {
 }
 
 describe("dívida de migração: branco translúcido literal nas telas ainda não migradas", () => {
-  /** Quantidade medida em #156 (45 no PR 2; 43 depois da Agenda; 39 depois do Login; 19 depois da Ficha e do FitPoints; 10 depois da casca do admin). Cada PR de tela só pode reduzir; o PR 18 troca este teste por proibição. */
-  const LITERAL_WHITE_ALPHA_TEXT_CEILING = 10;
+  /** Quantidade medida em #156 (45 no PR 2; 43 depois da Agenda; 39 depois do Login; 19 depois da Ficha e do FitPoints; 10 depois da casca do admin; 0 depois do lote C do admin, com Presença e o voltar em tokens). Cada PR de tela só pode reduzir; o PR 18 troca este teste por proibição. */
+  const LITERAL_WHITE_ALPHA_TEXT_CEILING = 0;
 
   it("não cresce: texto novo usa tokens, que seguem o tema", () => {
     const count = allSheets()

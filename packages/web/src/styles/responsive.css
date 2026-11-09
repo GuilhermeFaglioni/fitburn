@@ -70,8 +70,7 @@
     min-width: 44px;
   }
 
-  .login-form__toggle,
-  .fb-back-btn {
+  .login-form__toggle {
     min-width: 44px;
     min-height: 44px;
   }
@@ -104,13 +103,6 @@
   .fb-td a {
     display: inline-block;
     padding: 15px 0;
-  }
-}
-
-/* Presença no celular: o professor marca com o polegar, então os alvos são maiores que o mínimo. */
-@media (max-width: 767px) {
-  .fb-seg-btn {
-    min-height: 48px;
   }
 }
 
