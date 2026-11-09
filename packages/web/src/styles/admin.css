@@ -279,24 +279,6 @@
   color: var(--color-warn);
 }
 
-/* Aviso menor da aba "Atribuir a cliente" (12px/18px na tela de referência). */
-.fb-lock-banner--sm {
-  font-size: 12px;
-  line-height: 18px;
-}
-
-/* Na aba "Atribuir a cliente" os rótulos são de 13px. */
-.fb-assign .fb-modal__field label {
-  font-size: 13px;
-}
-
-/* Linha com a ação principal à direita, acima da tabela. */
-.fb-toolbar-end {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-}
-
 .fb-checkbox {
   appearance: none;
   -webkit-appearance: none;

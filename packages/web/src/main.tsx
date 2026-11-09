@@ -13,7 +13,6 @@ import "./styles/workout.css";
 import "./styles/profile.css";
 import "./styles/home.css";
 import "./styles/agenda.css";
-import "./styles/dashboard.css";
 import "./styles/states.css";
 import "./styles/responsive.css";
 import "./styles/connectivity.css";

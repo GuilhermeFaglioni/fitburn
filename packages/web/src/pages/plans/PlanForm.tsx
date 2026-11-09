@@ -1,10 +1,12 @@
-import { useId, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { useMutation } from "@tanstack/react-query";
-import type { PlanDetail } from "@fitburn/contracts";
-import { Modal } from "../../components/Modal";
+import { createPlanRequestSchema, type PlanDetail } from "@fitburn/contracts";
+import { Alert } from "../../components/ui/Alert";
+import { Button } from "../../components/ui/Button";
+import { Dialog } from "../../components/ui/Dialog";
+import { Field } from "../../components/ui/Field";
 import { errorMessage } from "../../lib/auth/api";
 import { createPlan, updatePlan } from "../../lib/plans/api";
-import { Feedback } from "../../components/states";
 
 interface PlanFormProps {
   /** O plano em edição; ausente para criar um novo. */
@@ -13,11 +15,17 @@ interface PlanFormProps {
   onClose: () => void;
 }
 
-/** Diálogo de plano (criar/editar): nome e descrição. Sem preço nem duração: o plano é informativo. */
+type FieldErrors = { name?: string; description?: string };
+
+/**
+ * Diálogo de plano (criar/editar, D-038 e #156): nome e descrição. Sem preço nem duração: o plano é informativo.
+ * Os limites do contrato (nome obrigatório de até 80 caracteres, descrição de até 500) aparecem no campo, com
+ * `aria-invalid`; a recusa da API (ex.: nome repetido) aparece no aviso do próprio diálogo.
+ */
 export function PlanForm({ plan, onSaved, onClose }: PlanFormProps) {
-  const id = useId();
   const [name, setName] = useState(plan?.name ?? "");
   const [description, setDescription] = useState(plan?.description ?? "");
+  const [errors, setErrors] = useState<FieldErrors>({});
 
   const saveMutation = useMutation({
     mutationFn: () =>
@@ -29,52 +37,50 @@ export function PlanForm({ plan, onSaved, onClose }: PlanFormProps) {
 
   function submit(event: FormEvent) {
     event.preventDefault();
+    const parsed = createPlanRequestSchema.safeParse({ name, description });
+    if (!parsed.success) {
+      const next: FieldErrors = {};
+      for (const issue of parsed.error.issues) {
+        const field = issue.path[0];
+        if ((field === "name" || field === "description") && !next[field])
+          next[field] = issue.message;
+      }
+      setErrors(next);
+      return;
+    }
+    setErrors({});
     saveMutation.mutate();
   }
 
   return (
-    <Modal title={plan ? "Editar plano" : "Novo plano"} onClose={onClose}>
-      <form onSubmit={submit} style={{ display: "contents" }}>
-        <div className="fb-modal__field">
-          <label htmlFor={`${id}-name`}>Nome</label>
-          <input
-            id={`${id}-name`}
-            type="text"
-            className="fb-field"
-            placeholder="Ex.: Plano Performance"
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-          />
-        </div>
-        <div className="fb-modal__field">
-          <label htmlFor={`${id}-description`}>Descrição</label>
-          <input
-            id={`${id}-description`}
-            type="text"
-            className="fb-field"
-            placeholder="O que o plano inclui"
-            value={description}
-            onChange={(event) => setDescription(event.target.value)}
-          />
-        </div>
+    <Dialog title={plan ? "Editar plano" : "Novo plano"} onClose={onClose}>
+      <form onSubmit={submit} noValidate aria-label="Plano" className="fb-ui-dialog__form">
+        <Field
+          label="Nome"
+          placeholder="Ex.: Plano Performance"
+          value={name}
+          error={errors.name}
+          onChange={(event) => setName(event.target.value)}
+        />
+        <Field
+          label="Descrição"
+          placeholder="O que o plano inclui"
+          value={description}
+          error={errors.description}
+          onChange={(event) => setDescription(event.target.value)}
+        />
         {saveMutation.isError && (
-          <Feedback tone="error">
-            {errorMessage(saveMutation.error, "Não foi possível salvar o plano.")}
-          </Feedback>
+          <Alert>{errorMessage(saveMutation.error, "Não foi possível salvar o plano.")}</Alert>
         )}
-        <div className="fb-modal__footer fb-modal__footer--end">
-          <button type="button" className="fb-btn-secondary" onClick={onClose}>
+        <div className="fb-ui-dialog__actions">
+          <Button disabled={saveMutation.isPending} onClick={onClose}>
             Cancelar
-          </button>
-          <button
-            type="submit"
-            className="fb-btn-primary fb-btn-primary--sm"
-            disabled={name.trim() === "" || saveMutation.isPending}
-          >
+          </Button>
+          <Button type="submit" variant="primary" busy={saveMutation.isPending}>
             Salvar
-          </button>
+          </Button>
         </div>
       </form>
-    </Modal>
+    </Dialog>
   );
 }

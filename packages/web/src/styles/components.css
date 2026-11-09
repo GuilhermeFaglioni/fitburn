@@ -2324,3 +2324,203 @@
     margin-left: 0;
   }
 }
+
+/* ==========================================================================
+   Telas do admin (issue 156, PR 16): Dashboard e Planos.
+   Indicadores (KPI), painéis de ocupação e de gamificação, ranking e a atribuição de plano. Só tokens.
+   ========================================================================== */
+
+/* Indicadores: uma coluna por KPI, quebram sozinhas conforme a largura (no celular, duas por linha ou uma). */
+.fb-ui-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr));
+  gap: var(--s-4);
+  margin: 0;
+  padding: 0;
+}
+
+.fb-ui-kpi {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding: var(--s-4) var(--s-5);
+}
+
+.fb-ui-kpi dt {
+  color: var(--muted);
+  font-size: var(--text-caption);
+  line-height: var(--leading-small);
+}
+
+.fb-ui-kpi dd {
+  margin: 0;
+  color: var(--ink);
+  font-size: calc(var(--text-h1) * 1.25);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-title);
+  line-height: var(--leading-title);
+}
+
+/* Painéis lado a lado (empilham no celular). */
+.fb-ui-dash-panels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  gap: var(--s-4);
+  align-items: start;
+}
+
+.fb-ui-dash-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+
+.fb-ui-dash-panel__title {
+  margin: 0;
+  color: var(--ink);
+  font-size: var(--text-action);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-title);
+}
+
+/* Ocupação por aula: nome, barra e percentual numa linha; no celular a barra desce para a segunda linha. */
+.fb-ui-dash-bars {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fb-ui-dash-bars > li {
+  display: grid;
+  grid-template-columns: minmax(var(--s-24), 200px) minmax(0, 1fr) var(--s-13);
+  align-items: center;
+  gap: var(--s-3);
+  color: var(--ink-2);
+  font-size: var(--text-small);
+  line-height: var(--leading-small);
+}
+
+.fb-ui-dash-bars__name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.fb-ui-dash-bars__value {
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--weight-bold);
+  text-align: right;
+}
+
+/* Gamificação: dois números de destaque, um filete e o ranking do período. */
+.fb-ui-dash-figures {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s-4);
+  margin: 0;
+}
+
+.fb-ui-dash-figures dt {
+  color: var(--muted);
+  font-size: var(--text-caption);
+}
+
+.fb-ui-dash-figures dd {
+  margin: 0;
+  color: var(--brand-strong);
+  font-size: var(--text-h2);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-title);
+  line-height: var(--leading-title);
+}
+
+/* A ordem dos termos no HTML é rótulo e valor; na tela o número vem em cima. */
+.fb-ui-dash-figures > div {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: var(--s-1);
+}
+
+.fb-ui-dash-ranking {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding-top: var(--s-4);
+  border-top: 1px solid var(--line);
+}
+
+.fb-ui-dash-ranking__title {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--text-caption);
+  font-weight: var(--weight-medium);
+}
+
+.fb-ui-dash-ranking__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fb-ui-dash-ranking__list > li {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-3);
+  font-size: var(--text-small);
+  font-variant-numeric: tabular-nums;
+}
+
+.fb-ui-dash-ranking__pos {
+  flex: 0 0 var(--s-6);
+  color: var(--muted);
+  font-weight: var(--weight-bold);
+}
+
+.fb-ui-dash-ranking__name {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.fb-ui-dash-ranking__count {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: var(--text-caption);
+}
+
+/* Atribuição de plano: o cartão do formulário e o histórico do cliente escolhido, numa coluna de leitura. */
+.fb-ui-assign {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-5);
+  max-width: 760px;
+}
+
+.fb-ui-assign__history {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+@media (max-width: 767px) {
+  .fb-ui-kpi {
+    padding: var(--s-4);
+  }
+
+  .fb-ui-dash-bars > li {
+    grid-template-columns: minmax(0, 1fr) var(--s-13);
+    row-gap: var(--s-2);
+  }
+
+  .fb-ui-dash-bars > li > .fb-ui-meter {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}

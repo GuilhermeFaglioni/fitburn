@@ -121,6 +121,7 @@ const SCREENS: Screen[] = [
     page: <DashboardPage />,
     url: "/api/dashboard",
     errorMessage: "Não foi possível carregar o dashboard.",
+    loadingMessage: "Carregando o dashboard…",
     empty: null,
     emptyMessage: "",
   },

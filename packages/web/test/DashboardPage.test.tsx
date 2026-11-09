@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
-import { render, screen, within } from "@testing-library/react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { render, screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { QueryClient, QueryClientProvider, onlineManager } from "@tanstack/react-query";
 import { http, HttpResponse } from "msw";
 import { MemoryRouter } from "react-router-dom";
 import type { Dashboard, RankingPeriodName } from "@fitburn/contracts";
 import { AuthProvider, useAuth } from "../src/lib/auth/AuthContext";
 import { DashboardPage } from "../src/pages/DashboardPage";
 import { mockSuccessfulLogin } from "./auth-mocks";
+import { setBrowserOnline } from "./connectivity-helpers";
 import { server } from "./msw-server";
 
 // Hoje: quarta-feira 2026-09-30, em torno das 10h na academia (UTC-3).
@@ -124,6 +126,11 @@ describe("Dashboard administrativo", () => {
     mockSuccessfulLogin("Administrador");
   });
 
+  afterEach(() => {
+    onlineManager.setOnline(true);
+    setBrowserOnline(true);
+  });
+
   function serve(build: (period: RankingPeriodName) => Dashboard) {
     server.use(
       http.get("/api/dashboard", ({ request }) => {
@@ -139,10 +146,10 @@ describe("Dashboard administrativo", () => {
     serve((period) => dashboardOf(period));
     renderPage();
 
-    const clients = (await screen.findByText("Clientes ativos")).closest("div")!;
+    const clients = (await screen.findByText("Clientes ativos", { selector: "dt" })).closest("div")!;
     expect(within(clients).getByText("42")).toBeInTheDocument();
     // 10 reservas em 20 vagas na semana (Treino Funcional 9/12 e Pilates 1/8).
-    const occupancy = screen.getByText("Ocupação média da semana").closest("div")!;
+    const occupancy = screen.getByText("Ocupação média da semana", { selector: "dt" }).closest("div")!;
     expect(within(occupancy).getByText("50%")).toBeInTheDocument();
     const points = screen.getByText("Pontos distribuídos no mês").closest("div")!;
     expect(within(points).getByText("240")).toBeInTheDocument();
@@ -153,6 +160,9 @@ describe("Dashboard administrativo", () => {
     const bars = screen.getByRole("list", { name: "Ocupação por aula" });
     const rows = within(bars).getAllByRole("listitem");
     expect(rows.map((row) => row.textContent)).toEqual(["Treino Funcional75%", "Pilates13%"]);
+    // A barra é a medida da base (Meter) e diz o valor por extenso para leitores de tela.
+    expect(within(bars).getByRole("img", { name: "Treino Funcional: 75%" })).toBeInTheDocument();
+    expect(within(bars).getByRole("img", { name: "Pilates: 13%" })).toBeInTheDocument();
 
     const top = screen.getByRole("list", { name: "Topo do ranking" });
     expect(within(top).getAllByRole("listitem")).toHaveLength(1);
@@ -195,7 +205,8 @@ describe("Dashboard administrativo", () => {
       "Yoga90%",
       "Muay Thai40%",
     ]);
-    expect(screen.getByText("48.200", { selector: ".fb-dash__figure-value" })).toBeInTheDocument();
+    const figures = screen.getByText("pontos distribuídos", { selector: "dt" }).closest("div")!;
+    expect(within(figures).getByText("48.200")).toBeInTheDocument();
     const top = screen.getByRole("list", { name: "Topo do ranking" });
     expect(within(top).getAllByRole("listitem")).toHaveLength(3);
     expect(within(top).getByText("1 presença")).toBeInTheDocument();
@@ -234,7 +245,120 @@ describe("Dashboard administrativo", () => {
     expect(await screen.findByText("Clientes ativos")).toBeInTheDocument();
     expect(screen.queryByText("Ocupação média da semana")).not.toBeInTheDocument();
     expect(screen.queryByText(/Ocupação por aula/)).not.toBeInTheDocument();
-    expect(screen.queryByText("Gamificação")).not.toBeInTheDocument();
+    expect(screen.queryByText("FitPoints")).not.toBeInTheDocument();
     expect(screen.queryByText("Streaks ativos")).not.toBeInTheDocument();
+  });
+
+  it("títulos em ordem: Dashboard, depois um por painel e o ranking abaixo de FitPoints", async () => {
+    serve((period) => dashboardOf(period));
+    renderPage();
+
+    await screen.findByRole("heading", { level: 2, name: "FitPoints" });
+    const headings = screen.getAllByRole("heading").map((heading) => [
+      heading.tagName,
+      heading.textContent,
+    ]);
+    expect(headings).toEqual([
+      ["H1", "Dashboard"],
+      ["H2", "Ocupação por aula · semana atual"],
+      ["H2", "FitPoints"],
+      ["H3", "Ranking do período"],
+    ]);
+  });
+
+  it("os KPIs são uma lista de termos e valores rotulada, e os painéis são regiões com nome", async () => {
+    serve((period) => dashboardOf(period));
+    renderPage();
+
+    const kpis = await screen.findByLabelText("Indicadores");
+    expect(kpis.tagName).toBe("DL");
+    expect(within(kpis).getAllByRole("term").map((term) => term.textContent)).toEqual([
+      "Clientes ativos",
+      "Ocupação média da semana",
+      "Pontos distribuídos no mês",
+      "Streaks ativos",
+    ]);
+    expect(screen.getByRole("region", { name: "Ocupação por aula · semana atual" })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "FitPoints" })).toBeInTheDocument();
+  });
+
+  it("não inventa dado: sem variação nem comparação nos cartões", async () => {
+    serve((period) => dashboardOf(period));
+    renderPage();
+
+    const kpis = await screen.findByLabelText("Indicadores");
+    expect(kpis).not.toHaveTextContent(/[+\-−]\s?\d+\s?%|vs\.?|em relação/i);
+  });
+
+  it("semana sem aulas e período sem pontuação mostram os estados vazios da base", async () => {
+    serve((period) =>
+      dashboardOf(period, {
+        occupancy: { today: [], week: [] },
+        gamification: { pointsDistributed: 0, attendances: 0, clientsWithActiveStreak: 0, top: [] },
+      }),
+    );
+    renderPage();
+
+    expect(await screen.findByText("Nenhuma aula nesta semana.")).toBeInTheDocument();
+    expect(screen.getByText("Ninguém pontuou neste período.")).toBeInTheDocument();
+    // Sem aula na semana a ocupação média não existe: travessão, não 0%.
+    expect(
+      within(screen.getByText("Ocupação média da semana", { selector: "dt" }).closest("div")!).getByText("—"),
+    ).toBeInTheDocument();
+  });
+
+  it("carregando: mostra o estado de carregamento até o dado chegar", async () => {
+    server.use(
+      http.get("/api/dashboard", async () => {
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        return HttpResponse.json(dashboardOf("month"));
+      }),
+    );
+    renderPage();
+
+    expect(await screen.findByText("Carregando o dashboard…")).toBeInTheDocument();
+    expect(await screen.findByText("Clientes ativos", { selector: "dt" })).toBeInTheDocument();
+    expect(screen.queryByText("Carregando o dashboard…")).not.toBeInTheDocument();
+  });
+
+  it("erro: mostra a mensagem com a ação de tentar de novo, que recarrega", async () => {
+    let calls = 0;
+    server.use(
+      http.get("/api/dashboard", () => {
+        calls += 1;
+        return calls === 1
+          ? HttpResponse.json({ message: "falha" }, { status: 500 })
+          : HttpResponse.json(dashboardOf("month"));
+      }),
+    );
+    const user = userEvent.setup();
+    renderPage();
+
+    const error = await screen.findByRole("alert");
+    expect(error).toHaveTextContent("Não foi possível carregar o dashboard.");
+    await user.click(within(error).getByRole("button", { name: "Tentar novamente" }));
+
+    expect(await screen.findByText("Clientes ativos", { selector: "dt" })).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("offline: mostra o estado sem conexão (não um erro) e o dashboard vem com a rede", async () => {
+    serve((period) => dashboardOf(period));
+    onlineManager.setOnline(false);
+    setBrowserOnline(false);
+    renderPage();
+
+    const offline = await waitFor(() => {
+      const found = document.querySelector('[data-state="offline"]');
+      expect(found).not.toBeNull();
+      return found as HTMLElement;
+    });
+    expect(offline).toHaveTextContent("Sem conexão");
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+
+    onlineManager.setOnline(true);
+    setBrowserOnline(true);
+
+    expect(await screen.findByText("Clientes ativos", { selector: "dt" })).toBeInTheDocument();
   });
 });

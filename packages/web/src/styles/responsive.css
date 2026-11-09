@@ -20,8 +20,6 @@
   max-width: 100%;
 }
 
-.fb-dash__columns > *,
-.fb-dash__metrics > *,
 .fb-modal__grid > * {
   min-width: 0;
 }

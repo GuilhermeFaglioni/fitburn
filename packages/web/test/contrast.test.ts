@@ -172,7 +172,6 @@ const WHITE_NO_BACKGROUND = new Map<string, "orange" | "no-text">([
   // cartão (.fb-home__plan), não no selo. Vale o mesmo piso de 3:1 do par do design.
   [".fb-home__badge", "orange"],
   [".fb-goals__bar-fill", "no-text"],
-  [".fb-dash__meter-fill", "no-text"],
 ]);
 
 /**

@@ -1,7 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { RankingPeriod, type Dashboard, type DashboardOccupancyItem } from "@fitburn/contracts";
 import { getDashboard } from "../lib/dashboard/api";
-import { EmptyState, ErrorState, LoadingState } from "../components/states";
+import { QueryBlockState } from "../components/QueryBlockState";
+import { Card } from "../components/ui/Card";
+import { Meter } from "../components/ui/Meter";
+import { PageHeader } from "../components/ui/PageHeader";
+import { EmptyState } from "../components/ui/States";
 
 /** Quantas posições do ranking o painel mostra (a tela de referência tem 3). */
 const RANKING_ROWS = 3;
@@ -49,38 +53,34 @@ function weekOccupancy(week: DashboardOccupancyItem[]): string {
 
 function Kpi({ label, value }: { label: string; value: string }) {
   return (
-    <div className="fb-dash__kpi">
-      <span className="fb-dash__kpi-label">{label}</span>
-      <span className="fb-dash__kpi-value">{value}</span>
-    </div>
+    <Card className="fb-ui-kpi">
+      <dt>{label}</dt>
+      <dd>{value}</dd>
+    </Card>
   );
 }
 
 function OccupancyPanel({ week }: { week: DashboardOccupancyItem[] }) {
   const classes = occupancyByClass(week);
   return (
-    <section className="fb-dash__panel" aria-labelledby="fb-dash-occupancy">
-      <h2 id="fb-dash-occupancy" className="fb-dash__panel-title">
+    <Card as="section" aria-labelledby="dashboard-occupancy" className="fb-ui-dash-panel">
+      <h2 id="dashboard-occupancy" className="fb-ui-dash-panel__title">
         Ocupação por aula · semana atual
       </h2>
       {classes.length === 0 ? (
-        <EmptyState message="Nenhuma aula nesta semana." />
+        <EmptyState title="Nenhuma aula nesta semana." />
       ) : (
-        <ul className="fb-dash__bars" aria-label="Ocupação por aula">
+        <ul className="fb-ui-dash-bars" aria-label="Ocupação por aula">
           {classes.map((item) => (
-            <li key={item.name} className="fb-dash__bar-row">
-              <div className="fb-dash__bar-head">
-                <span className="fb-dash__bar-name">{item.name}</span>
-                <span className="fb-dash__bar-value">{item.percent}%</span>
-              </div>
-              <div className="fb-dash__meter-track" aria-hidden="true">
-                <div className="fb-dash__meter-fill" style={{ width: `${item.percent}%` }} />
-              </div>
+            <li key={item.name}>
+              <span className="fb-ui-dash-bars__name">{item.name}</span>
+              <Meter value={item.percent} max={100} label={`${item.name}: ${item.percent}%`} />
+              <span className="fb-ui-dash-bars__value">{item.percent}%</span>
             </li>
           ))}
         </ul>
       )}
-    </section>
+    </Card>
   );
 }
 
@@ -90,52 +90,47 @@ function GamificationPanel({
   gamification: NonNullable<Dashboard["gamification"]>;
 }) {
   return (
-    <section className="fb-dash__panel" aria-labelledby="fb-dash-gamification">
-      <h2 id="fb-dash-gamification" className="fb-dash__panel-title">
+    <Card as="section" aria-labelledby="dashboard-gamification" className="fb-ui-dash-panel">
+      <h2 id="dashboard-gamification" className="fb-ui-dash-panel__title">
         FitPoints
       </h2>
-      <div className="fb-dash__figures">
-        <div className="fb-dash__figure">
-          <span className="fb-dash__figure-value">
-            {formatNumber(gamification.pointsDistributed)}
-          </span>
-          <span className="fb-dash__figure-label">pontos distribuídos</span>
+      <dl className="fb-ui-dash-figures">
+        <div>
+          <dt>pontos distribuídos</dt>
+          <dd>{formatNumber(gamification.pointsDistributed)}</dd>
         </div>
-        <div className="fb-dash__figure">
-          <span className="fb-dash__figure-value">
-            {formatNumber(gamification.clientsWithActiveStreak)}
-          </span>
-          <span className="fb-dash__figure-label">streaks ativos</span>
+        <div>
+          <dt>streaks ativos</dt>
+          <dd>{formatNumber(gamification.clientsWithActiveStreak)}</dd>
         </div>
-      </div>
-      <div className="fb-dash__divider" role="presentation" />
-      <div className="fb-dash__ranking">
-        <h3 className="fb-dash__ranking-title">Ranking do período</h3>
+      </dl>
+      <div className="fb-ui-dash-ranking">
+        <h3 className="fb-ui-dash-ranking__title">Ranking do período</h3>
         {gamification.top.length === 0 ? (
-          <EmptyState message="Ninguém pontuou neste período." />
+          <EmptyState title="Ninguém pontuou neste período." />
         ) : (
-          <ol className="fb-dash__ranking-list" aria-label="Topo do ranking">
+          <ul className="fb-ui-dash-ranking__list" aria-label="Topo do ranking">
             {gamification.top.slice(0, RANKING_ROWS).map((entry) => (
-              <li key={entry.clientId} className="fb-dash__ranking-row">
-                <span className="fb-dash__ranking-pos">{entry.position}º</span>
-                <span className="fb-dash__ranking-name">{entry.fullName}</span>
-                <span className="fb-dash__ranking-count">
+              <li key={entry.clientId}>
+                <span className="fb-ui-dash-ranking__pos">{entry.position}º</span>
+                <span className="fb-ui-dash-ranking__name">{entry.fullName}</span>
+                <span className="fb-ui-dash-ranking__count">
                   {plural(entry.attendances, "presença", "presenças")}
                 </span>
               </li>
             ))}
-          </ol>
+          </ul>
         )}
       </div>
-    </section>
+    </Card>
   );
 }
 
 /**
- * Dashboard administrativo: quatro cartões de KPI (clientes ativos, ocupação
- * média da semana, pontos distribuídos e streaks ativos no mês), o painel "Ocupação por aula" com uma
- * barra por modalidade na semana atual e o painel "FitPoints" com o ranking do mês. Cada bloco só
- * chega quando a pessoa enxerga o módulo que o alimenta, já limitado ao escopo dela.
+ * Dashboard administrativo (D-038, #156): quatro cartões de KPI (clientes ativos, ocupação média da semana, pontos
+ * distribuídos e streaks ativos no mês), o painel "Ocupação por aula" com uma barra por modalidade na semana atual e o
+ * painel "FitPoints" com o ranking do mês. Cada bloco só chega quando a pessoa enxerga o módulo que o alimenta, já
+ * limitado ao escopo dela; a tela não mostra variação nem outro número que a API não devolva.
  */
 export function DashboardPage() {
   const dashboardQuery = useQuery({
@@ -145,23 +140,19 @@ export function DashboardPage() {
   const dashboard = dashboardQuery.data;
 
   return (
-    <div className="fb-dash">
-      <div className="fb-dash__heading">
-        <h1 className="fb-page-title">Dashboard</h1>
-        <span className="fb-dash__subtitle">Visão geral do Fitburn</span>
-      </div>
+    <div className="fb-ui-page">
+      <PageHeader kicker="Visão geral" title="Dashboard" />
 
-      {dashboardQuery.isLoading && <LoadingState />}
-      {dashboardQuery.isError && (
-        <ErrorState
-          message="Não foi possível carregar o dashboard."
-          onRetry={() => void dashboardQuery.refetch()}
-        />
-      )}
+      <QueryBlockState
+        query={dashboardQuery}
+        hasData={dashboard !== undefined}
+        loading="Carregando o dashboard…"
+        error="Não foi possível carregar o dashboard."
+      />
 
       {dashboard && (
         <>
-          <div className="fb-dash__kpis">
+          <dl className="fb-ui-kpis" aria-label="Indicadores">
             {dashboard.activeClients && (
               <Kpi label="Clientes ativos" value={formatNumber(dashboard.activeClients.total)} />
             )}
@@ -183,12 +174,14 @@ export function DashboardPage() {
                 />
               </>
             )}
-          </div>
+          </dl>
 
           {(dashboard.occupancy || dashboard.gamification) && (
-            <div className="fb-dash__panels">
+            <div className="fb-ui-dash-panels">
               {dashboard.occupancy && <OccupancyPanel week={dashboard.occupancy.week} />}
-              {dashboard.gamification && <GamificationPanel gamification={dashboard.gamification} />}
+              {dashboard.gamification && (
+                <GamificationPanel gamification={dashboard.gamification} />
+              )}
             </div>
           )}
         </>
