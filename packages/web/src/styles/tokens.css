@@ -1,63 +1,9 @@
 /**
- * Design tokens da marca Fitburn Brasil.
- * Fonte: project/ds/fitburn/tokens.json do proposta de design,
- * — ver docs/Fitburn Brasil
- * — Design System, Branding e Marketing.md para o histórico da marca.
+ * Design tokens do Fitburn (base de design aprovada, D-038; docs/design/design-system.md é a tabela de referência).
+ * Este arquivo tem dois grupos: os tokens que não mudam com o tema (espaçamento, tipografia, movimento), no primeiro
+ * :root, e os da base de design (cor, raio, sombra), que seguem o tema claro/escuro, no fim do arquivo.
  */
 :root {
-  /* Cores legadas (--color-*): aliases dos tokens da base de design (bloco "Base de design" abaixo), para que as telas
-     ainda não migradas sigam o tema (D-038, #156). Cada PR de tela troca o alias pelo token real; o último apaga este
-     bloco. Os nomes "-on-dark" valem agora para o texto e a superfície da página, nos dois temas. */
-
-  /* Superfícies e bordas. */
-  --color-line: var(--line);
-  --color-line-2: var(--line-2);
-  --color-surface-000: var(--bg);
-  --color-surface-raised: var(--surface);
-  --color-surface-2: var(--surface-2);
-
-  /* Texto. */
-  --color-ink-on-dark: var(--ink);
-  --color-ink-2-on-dark: var(--ink-2);
-  --color-text-muted-on-dark: var(--muted);
-  --color-text-faint-on-dark: var(--faint);
-  /* Os cinco alphas de texto secundário viram dois níveis sólidos: 40 e 45% -> --faint; 50, 55 e 65% -> --muted. */
-  --color-on-dark-40: var(--faint);
-  --color-on-dark-45: var(--faint);
-  --color-on-dark-50: var(--muted);
-  --color-on-dark-55: var(--muted);
-  --color-on-dark-65: var(--muted);
-
-  /* Texto sobre superfície clara fixa (cartões e painéis que continuam claros nos dois temas): valores do tema claro. */
-  --color-ink-on-light: #1c1714;
-  --color-text-muted-on-light: #6b5d55;
-  --color-text-faint-on-light: #8e7f76;
-  --color-accent-on-light: #a8401a;
-  --color-error-text-on-light: #b42318;
-  --color-success-text-on-light: #1e6b34;
-
-  /* Marca. O laranja e o vermelho-chama não mudam entre temas; o laranja de texto segue o tema (--brand-strong). */
-  --color-primary-orange: var(--brand);
-  --color-flame-red: var(--flame);
-  --color-brand-strong: var(--brand-strong);
-  /* Texto branco sobre o laranja da marca: exceção de contraste aprovada para texto grande e negrito (decisão #136). */
-  --color-on-orange: #ffffff;
-  --gradient-cta: var(--grad-cta);
-
-  /* Estados. Sem equivalente na base: aviso e caixa de aviso usam a tinta e a borda de marca; o info (só o selo de
-     perfil em UsersPage) usa o selo neutro. */
-  --color-danger: var(--danger);
-  --color-danger-bg: var(--danger-bg);
-  --color-danger-border: var(--danger-line);
-  --color-success: var(--success);
-  --color-success-bg: var(--success-bg);
-  --color-success-border: var(--success-line);
-  --color-warn: var(--warn);
-  --color-warn-border: var(--brand-line);
-  --color-warm-bg: var(--brand-tint);
-  --color-info: var(--ink-2);
-  --color-info-bg: var(--surface-2);
-
   /* Espaçamento base 4 (DS5): --s-1 é 4px, --s-24 é 96px. Layouts compartilhados usam estes tokens. */
   --s-1: 4px;
   --s-2: 8px;
@@ -72,16 +18,7 @@
   --s-11: 44px;
   --s-12: 48px;
   --s-13: 52px;
-  --s-14: 56px;
-  --s-15: 60px;
   --s-16: 64px;
-  --s-17: 68px;
-  --s-18: 72px;
-  --s-19: 76px;
-  --s-20: 80px;
-  --s-21: 84px;
-  --s-22: 88px;
-  --s-23: 92px;
   --s-24: 96px;
   /* Largura máxima do conteúdo e respiro lateral (mobile primeiro). */
   --container-max: 1200px;
@@ -117,18 +54,8 @@
   --tracking-title: -0.035em;
   --tracking-kicker: 0.32em;
 
-  /* Raio. O 5px é o raio da marca (cartões, botões, campos); os demais são as exceções que o design já usa. */
-  --radius-sm: 5px;
-  /* Checkbox de 18px e a barra de progresso das metas. */
-  --radius-xs: 4px;
-  /* Pílulas: chips de dia e de filtro, trilhas de barra, contadores em círculo. */
-  --radius-pill: 999px;
-  /* Bottom sheet do mobile: só os cantos de cima. */
-  --radius-sheet: 16px 16px 0 0;
-
   /* Motion: curvas e deslocamentos compartilhados (os keyframes ficam em global.css). */
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
-  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
   --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
   --press-scale: 0.97;
   --press-scale-soft: 0.98;
@@ -169,6 +96,8 @@
   --brand-tint: #FFF4EE;
   --brand-tint-2: #FFE8DC;
   --brand-line: #F7CDB7;
+  /* Texto e traço sobre o laranja, o vermelho-chama e o gradiente CTA: branco nos dois temas (decisão #136). */
+  --on-brand: #FFFFFF;
   --grad-cta: linear-gradient(145deg,#F58A55 0%,#ED6E34 45%,#C23A1F 100%);
   --grad-text: linear-gradient(100deg,#C23A1F,#ED6E34 60%,#F7A274);
   --bg: #FFFFFF;

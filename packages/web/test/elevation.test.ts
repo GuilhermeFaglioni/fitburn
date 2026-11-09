@@ -4,7 +4,7 @@ import { THEMES, token } from "./theme-tokens";
 
 /**
  * Raio, sombras e bordas (DS3, decisões #133 e #134; sombras nos dois temas, D-038). Lê o CSS, sem navegador.
- * O raio fica em 5px: nenhum `border-radius` literal novo fora de tokens.css.
+ * O raio vem dos tokens `--r-*` (6 a 28px e a pílula): nenhum `border-radius` em px literal fora de tokens.css.
  */
 // Vitest roda a partir de packages/web (pnpm --filter).
 const SRC = join(process.cwd(), "src");
@@ -54,7 +54,7 @@ describe("elevação e foco", () => {
 });
 
 describe("raio e bordas", () => {
-  it("nenhum border-radius em px literal fora de tokens.css (o raio da marca é --radius-sm)", () => {
+  it("nenhum border-radius em px literal fora de tokens.css (o raio vem dos tokens --r-*)", () => {
     const offenders = files.filter(({ css }) => /border-radius:\s*\d+px/.test(css)).map(({ path }) => path);
     expect(offenders).toEqual([]);
   });

@@ -12,7 +12,8 @@ import {
 import { getMyPlan } from "../lib/plans/api";
 import { HomeReservations } from "./home/HomeReservations";
 import { formatGreetingDate, formatPlanEnd } from "./home/format";
-import { HomeBlockState, HomeEmpty } from "./home/HomeBlockState";
+import { HomeEmpty } from "./home/HomeEmpty";
+import { QueryBlockState } from "../components/QueryBlockState";
 import { Card } from "../components/ui/Card";
 
 /** Quantos badges recentes cabem na fileira da evolução. */
@@ -38,7 +39,7 @@ function CheckIcon() {
 /**
  * Home do cliente (D-038): kicker da data e saudação, cartão do plano ativo, próximas aulas e o resumo de
  * FitPoints, nessa ordem no celular; no desktop, coluna de 400px (saudação, plano, FitPoints) ao lado das
- * aulas (grade em home.css). Cada bloco carrega, falha e fica sem conexão sozinho (HomeBlockState).
+ * aulas (grade em home.css). Cada bloco carrega, falha e fica sem conexão sozinho (QueryBlockState).
  */
 export function ClientHomePage() {
   const { user } = useAuth();
@@ -56,7 +57,8 @@ export function ClientHomePage() {
           <h1 className="fb-home__greeting">{firstName ? `Olá, ${firstName}` : "Olá"}</h1>
         </div>
 
-        <HomeBlockState
+        <QueryBlockState
+          className="fb-home__state"
           query={planQuery}
           loading="Carregando seu plano…"
           error="Não foi possível carregar o seu plano."
@@ -117,7 +119,8 @@ function Evolution() {
         </Link>
       </div>
 
-      <HomeBlockState
+      <QueryBlockState
+        className="fb-home__state"
         query={summaryQuery}
         loading="Carregando seus FitPoints…"
         error="Não foi possível carregar seus FitPoints."

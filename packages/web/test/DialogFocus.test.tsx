@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { Modal } from "../src/components/Modal";
+import { Dialog } from "../src/components/ui/Dialog";
 
 function Harness() {
   const [open, setOpen] = useState(false);
@@ -11,22 +11,30 @@ function Harness() {
         Abrir
       </button>
       {open && (
-        <Modal title="Novo cliente" onClose={() => setOpen(false)}>
+        <Dialog
+          title="Novo cliente"
+          onClose={() => setOpen(false)}
+          actions={
+            <>
+              <button type="button">Salvar</button>
+              <button type="button" onClick={() => setOpen(false)}>
+                Cancelar
+              </button>
+            </>
+          }
+        >
           <label>
             Nome
             <input />
           </label>
-          <button type="button">Salvar</button>
-          <button type="button" onClick={() => setOpen(false)}>
-            Cancelar
-          </button>
-        </Modal>
+        </Dialog>
       )}
     </>
   );
 }
 
-describe("Modal", () => {
+/** Foco e teclado do diálogo (hooks de components/Modal.tsx, usados pelo Dialog): entra, fica preso, volta. */
+describe("Dialog: foco e teclado", () => {
   it("leva o foco para dentro do diálogo ao abrir", async () => {
     render(<Harness />);
     const user = userEvent.setup();

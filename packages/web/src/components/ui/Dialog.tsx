@@ -31,7 +31,7 @@ export interface DialogProps {
 /**
  * Diálogo base (#156, D-038): cantos `--r-xl`, sombra `--sh-3`, fundo escurecido por token. Foco inicial no primeiro
  * controle, Tab preso dentro, Escape e clique no fundo fecham, e o foco volta a quem abriu (os três últimos vêm de
- * `useDialogFocus`/`useCloseOnEscape`, os mesmos do `Modal` legado). Monte-o só enquanto estiver aberto.
+ * `useDialogFocus`/`useCloseOnEscape`, de components/Modal.tsx). Monte-o só enquanto estiver aberto.
  */
 export function Dialog({
   title,

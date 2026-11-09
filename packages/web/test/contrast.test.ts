@@ -1,6 +1,5 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import adminCss from "../src/styles/admin.css?raw";
 import componentsCss from "../src/styles/components.css?raw";
 import {
   THEMES,
@@ -23,8 +22,8 @@ import {
  * (ou o mínimo da própria exceção), para o texto não deslizar para cinzas ainda mais claros:
  * - branco sobre o laranja da marca (botões, chips, abas): 3.05:1 (o preto daria 6.5:1); o design usa 700 e 13-15px;
  * - laranja da marca como texto/traço sobre branco (tema claro): 3.05:1; o texto laranja do tema claro é --brand-strong;
- * - --faint (rótulos auxiliares, linhas inativas): 3.85:1 sobre branco no tema claro e 4.48:1 sobre o cartão no escuro;
- * - branco a 45% sobre o cartão elevado (literais ainda não migrados): 4.47:1; a 40%: 3.83:1; placeholder a 32%: 2.90:1.
+ * - --faint (rótulos auxiliares, linhas inativas): 3.85:1 sobre branco no tema claro e 4.48:1 sobre o cartão no escuro.
+ * Não há mais branco translúcido nem cor literal de texto nas folhas de estilo (PR 18, #156): todo texto vem de token.
  */
 
 const WHITE: Rgb = [255, 255, 255];
@@ -62,7 +61,6 @@ describe.each(THEMES)("contraste dos tokens de texto (tema %s)", (theme) => {
 
   it("gradiente CTA (decisão #136): o branco passa de 4.5:1 no fim (#C23A1F, 5.36:1), mas o início (#F58A55) dá 2.43:1, abaixo de 3:1 — registrado para decisão", () => {
     expect(token(theme, "grad-cta")).toContain("#C23A1F");
-    expect(token(theme, "gradient-cta")).toBe(token(theme, "grad-cta"));
     expect(contrast(WHITE, hex("#c23a1f"))).toBeGreaterThanOrEqual(4.5);
     expect(contrast(WHITE, hex("#f58a55"))).toBeCloseTo(2.43, 1);
   });
@@ -100,34 +98,6 @@ describe("texto secundário (--muted e --faint)", () => {
     expect(contrast(color("dark", "faint"), color("dark", "bg"))).toBeGreaterThanOrEqual(4.5);
     expect(contrast(color("dark", "faint"), color("dark", "surface"))).toBeCloseTo(4.48, 1);
   });
-
-  it("os níveis legados 50, 55 e 65% viram --muted e passam de 4.5:1; 40 e 45% viram --faint (as exceções acima)", () => {
-    for (const theme of THEMES) {
-      for (const name of ["color-on-dark-50", "color-on-dark-55", "color-on-dark-65"]) {
-        expect(token(theme, name), name).toBe(token(theme, "muted"));
-        expect(contrast(color(theme, name), surfaceOf(theme)), `${name} ${theme}`).toBeGreaterThanOrEqual(4.5);
-      }
-      for (const name of ["color-on-dark-40", "color-on-dark-45"]) {
-        expect(token(theme, name), name).toBe(token(theme, "faint"));
-      }
-    }
-  });
-
-  it("texto sobre painel claro fixo (-on-light) são os valores do tema claro e passam sobre branco", () => {
-    const fixed: [string, string, number][] = [
-      ["color-ink-on-light", "ink", 4.5],
-      ["color-text-muted-on-light", "muted", 4.5],
-      ["color-text-faint-on-light", "faint", 3.8],
-      ["color-accent-on-light", "brand-strong", 4.5],
-    ];
-    for (const [legacy, target, floor] of fixed) {
-      expect(token("light", legacy).toLowerCase(), legacy).toBe(token("light", target).toLowerCase());
-      expect(contrast(hex(token("light", legacy)), WHITE), legacy).toBeGreaterThanOrEqual(floor);
-    }
-    expect(
-      contrast(hex(token("light", "color-error-text-on-light")), color("light", "danger-bg")),
-    ).toBeGreaterThanOrEqual(4.5);
-  });
 });
 
 /**
@@ -137,10 +107,9 @@ describe("texto secundário (--muted e --faint)", () => {
  * NOMEADAS abaixo, cada uma com o piso mínimo da razão de contraste medida. Qualquer outro valor exige 4.5:1.
  * (`color: rgba(255,255,255,0.2); /* design *\/` falha, por exemplo.)
  *
- * Cor vinda de token é resolvida no tema (o alias `--color-ink-on-dark` vale branco no escuro e #1c1714 no claro) e
- * medida contra o fundo da própria regra ou, sem ele, contra o cartão do tema.
- * Branco translúcido LITERAL (`rgba(255,255,255,x)`) só existe nas telas ainda não migradas e é checado no tema escuro,
- * que é para onde foi escrito; no claro ele é dívida de migração, limitada em "dívida de migração" abaixo.
+ * Cor vinda de token é resolvida no tema (`--ink` vale branco no escuro e #1c1714 no claro) e medida contra o fundo
+ * da própria regra ou, sem ele, contra o cartão do tema.
+ * Branco translúcido LITERAL (`rgba(255,255,255,x)`) como cor de texto é proibido: falha sempre, em qualquer tema.
  */
 
 /** Piso do par "branco sobre o laranja da marca" (3.05:1 medido). */
@@ -150,7 +119,6 @@ const WHITE_ON_ORANGE_FLOOR = 3;
 const HEX_EXCEPTIONS: Record<ThemeName, Record<string, { floor: number; why: string }>> = {
   light: {
     "#8e7f76": { floor: 3.8, why: "--faint: cinza de linha inativa da proposta (3.85:1), não é texto de conteúdo" },
-    "#c8c8c8": { floor: 1.6, why: "travessão da coluna de ações (1.67:1, decorativo)" },
   },
   dark: {
     "#857b75": { floor: 4.4, why: "--faint: rótulo secundário da proposta (4.48:1 sobre o cartão)" },
@@ -159,41 +127,28 @@ const HEX_EXCEPTIONS: Record<ThemeName, Record<string, { floor: number; why: str
 
 /**
  * Seletores EXATOS cuja cor de texto é branco sem fundo na própria regra:
- * - "orange": o fundo laranja vem de outra regra (o visto do checkbox, gráfico; o botão primário, que herda o
- *   gradiente CTA): vale o piso de 3:1 do par do design;
- * - "no-text": seletor sem texto (ex.: uma barra de progresso), ignorado pela checagem em vez de ganhar um `color`
- *   inócuo no CSS. Hoje nenhuma barra entra aqui (a do gamification e a de Metas saíram).
+ * - "orange": o fundo laranja vem de outra regra (o selo do cartão do plano, que herda o gradiente CTA do cartão):
+ *   vale o piso de 3:1 do par do design;
+ * - "no-text": seletor sem texto, ignorado pela checagem. Hoje nenhum entra aqui; os de fundo laranja sem texto
+ *   (barras, traços) estão em NO_TEXT_ORANGE_SELECTORS, abaixo.
  */
 const WHITE_NO_BACKGROUND = new Map<string, "orange" | "no-text">([
-  [".fb-checkbox:checked::after", "orange"],
-  [".fb-checkbox.fb-checkbox--fixed:disabled:checked::after", "orange"],
-  [".fb-btn-primary", "orange"],
   // Selo "ATIVO" do cartão do plano da Home (D-038): negrito branco translúcido-sobre-laranja; o gradiente CTA está no
   // cartão (.fb-home__plan), não no selo. Vale o mesmo piso de 3:1 do par do design.
   [".fb-home__badge", "orange"],
 ]);
 
 /**
- * Regras laranja do checkbox (o fundo está na regra; o visto `::after` está em WHITE_NO_BACKGROUND):
- * só estes seletores exatos ficam sem `color` explícito.
+ * Seletores EXATOS de fundo laranja SEM texto: barras de progresso, traços de ícone e a seleção de texto do navegador.
+ * São ignorados por orangeFailures em vez de ganhar um `color` inócuo no CSS. Ficar aqui exige não declarar `color`
+ * (testado abaixo), então um seletor com texto de verdade não consegue se esconder nesta lista.
  */
-const ORANGE_CHECKBOX_SELECTORS = new Set([
-  ".fb-checkbox:checked",
-  ".fb-checkbox.fb-checkbox--fixed:disabled:checked",
+const NO_TEXT_ORANGE_SELECTORS = new Set([
+  ".fb-ui-meter__fill",
+  ".fb-ui-accordion__icon::before, .fb-ui-accordion__icon::after",
+  ".fb-ui-accordion__item[open] .fb-ui-accordion__icon",
+  "::selection",
 ]);
-
-/** Níveis de branco translúcido do design nas telas escuras, com o piso da razão sobre o cartão elevado. */
-const DARK_ALPHA_EXCEPTIONS: Record<string, { floor: number; only?: string; why: string }> = {
-  "0.32": { floor: 2.85, only: "::placeholder", why: "placeholder (2.90:1), não é o texto digitado" },
-  "0.4": { floor: 3.8, why: "datas, rótulos, rodapé (3.83:1)" },
-  "0.45": { floor: 4.4, why: "datas, rótulos de campo (4.47:1)" },
-  "0.5": { floor: 4.5, why: "subtítulos (passa de 4.5:1)" },
-  "0.55": { floor: 4.5, why: "legendas (passa de 4.5:1)" },
-};
-
-/** Pares nomeados (seletor exato, cor de texto) sobre fundo que não é o cartão elevado (tema escuro). */
-// Vazia desde o FitPoints (PR 10): o único par nomeado era o marco pendente, que agora usa tokens (--muted sobre --surface-2).
-const DARK_NAMED_PAIRS: { selector: string; value: string; floor: number; bg: Rgb; why: string }[] = [];
 
 function stripComments(css: string): string {
   return css.replace(/\/\*[\s\S]*?\*\//g, "");
@@ -228,7 +183,7 @@ function textColors(css: string): { selector: string; raw: string; body: string 
 const isHex = (value: string) => /^#[0-9a-f]{3,6}$/i.test(value);
 const WHITE_ALPHA = /^rgba\(255,\s*255,\s*255,\s*([\d.]+)\)$/;
 const hasOrangeBackground = (body: string) =>
-  /background(-color)?:[^;]*(primary-orange|gradient-cta|grad-cta|#ed6e34)/i.test(body);
+  /background(-color)?:[^;]*(var\(--brand\)|grad-cta|#ed6e34)/i.test(body);
 
 /** Fundo sólido da regra: hex, token, ou `color-mix(in srgb, A N%, B)` de duas cores sólidas (o aviso de sem conexão). */
 function backgroundOf(body: string, theme: ThemeName): Rgb | undefined {
@@ -279,20 +234,8 @@ function failures(css: string, theme: ThemeName): string[] {
       continue;
     }
 
-    // Branco translúcido literal: telas ainda não migradas, escritas para o tema escuro.
-    const alpha = value.match(WHITE_ALPHA)?.[1];
-    if (alpha === undefined || theme !== "dark") continue;
-    const pair = DARK_NAMED_PAIRS.find((p) => p.selector === selector && p.value === value.replace(/,\s*/g, ", "));
-    let floor = 4.5;
-    let bg = surface;
-    if (pair) {
-      floor = pair.floor;
-      bg = pair.bg;
-    } else {
-      const named = DARK_ALPHA_EXCEPTIONS[String(Number(alpha))];
-      if (named && (!named.only || selector.includes(named.only))) floor = named.floor;
-    }
-    if (contrast(over(WHITE, Number(alpha), bg), bg) < floor) out.push(label);
+    // Branco translúcido literal como cor de texto: proibido (o texto secundário é --muted ou --faint).
+    if (WHITE_ALPHA.test(value)) out.push(label);
   }
   return out;
 }
@@ -317,12 +260,13 @@ describe("a política de contraste", () => {
     expect(failures(".x { color: rgba(255, 255, 255, 0.35); }", "dark")).not.toEqual([]);
   });
 
-  it("os níveis nomeados do design continuam valendo no escuro (0.32 só no placeholder)", () => {
-    for (const alpha of ["0.4", "0.45", "0.5", "0.55", "0.6"]) {
-      expect(failures(`.x { color: rgba(255, 255, 255, ${alpha}); }`, "dark"), alpha).toEqual([]);
+  it("branco translúcido literal como cor de texto é proibido em qualquer tema, com qualquer opacidade", () => {
+    for (const theme of THEMES) {
+      for (const alpha of ["0.4", "0.5", "0.6", "0.9"]) {
+        expect(failures(`.x { color: rgba(255, 255, 255, ${alpha}); }`, theme), `${theme} ${alpha}`).not.toEqual([]);
+      }
+      expect(failures(".x::placeholder { color: rgba(255, 255, 255, 0.32); }", theme)).not.toEqual([]);
     }
-    expect(failures(".x::placeholder { color: rgba(255, 255, 255, 0.32); }", "dark")).toEqual([]);
-    expect(failures(".x { color: rgba(255, 255, 255, 0.32); }", "dark")).not.toEqual([]);
   });
 
   it("cinzas claros fora da lista nomeada falham no tema claro, com ou sem /* design */", () => {
@@ -336,20 +280,20 @@ describe("a política de contraste", () => {
     expect(failures(".x { color: #857b75; }", "dark")).toEqual([]);
   });
 
-  it("token de texto é medido no tema: o alias passa nos dois, e um fundo fixo escuro reprova o tema claro", () => {
-    const css = ".x { color: var(--color-text-muted-on-dark); }";
+  it("token de texto é medido no tema: o token passa nos dois, e um fundo fixo escuro reprova o tema claro", () => {
+    const css = ".x { color: var(--muted); }";
     for (const theme of THEMES) expect(failures(css, theme), theme).toEqual([]);
-    const onDark = ".x { background: #0a0a0a; color: var(--color-ink-on-dark); }";
+    const onDark = ".x { background: #0a0a0a; color: var(--ink); }";
     expect(failures(onDark, "dark")).toEqual([]);
-    expect(failures(onDark, "light")).toEqual([".x → var(--color-ink-on-dark)"]);
+    expect(failures(onDark, "light")).toEqual([".x → var(--ink)"]);
   });
 
   it("branco só passa sobre fundo conhecido ou nos seletores nomeados", () => {
     expect(failures(".x { color: #ffffff; }", "light")).toEqual([".x → #ffffff"]);
     expect(failures(".x { background: #f2f2f2; color: #ffffff; /* design */ }", "dark")).not.toEqual([]);
-    expect(failures(".x { background: var(--color-primary-orange); color: #ffffff; }", "light")).toEqual([]);
-    expect(failures(".fb-checkbox:checked::after { color: #ffffff; }", "light")).toEqual([]);
-    expect(failures(".fb-checkbox-extra { color: #ffffff; }", "light")).not.toEqual([]);
+    expect(failures(".x { background: var(--brand); color: #ffffff; }", "light")).toEqual([]);
+    expect(failures(".fb-home__badge { color: #ffffff; }", "light")).toEqual([]);
+    expect(failures(".fb-home__badge-extra { color: #ffffff; }", "light")).not.toEqual([]);
   });
 });
 
@@ -363,16 +307,12 @@ function allSheets(): [string, string][] {
   return sheets.map((path) => [path, readFileSync(resolve(root, path), "utf8")]);
 }
 
-describe("dívida de migração: branco translúcido literal nas telas ainda não migradas", () => {
-  /** Quantidade medida em #156 (45 no PR 2; 43 depois da Agenda; 39 depois do Login; 19 depois da Ficha e do FitPoints; 10 depois da casca do admin; 0 depois do lote C do admin, com Presença e o voltar em tokens). Cada PR de tela só pode reduzir; o PR 18 troca este teste por proibição. */
-  const LITERAL_WHITE_ALPHA_TEXT_CEILING = 0;
-
-  it("não cresce: texto novo usa tokens, que seguem o tema", () => {
-    const count = allSheets()
+describe("estado final: nenhuma folha de estilo escreve branco translúcido literal como cor de texto", () => {
+  it("rgba(255,255,255,x) em `color` não existe em nenhuma folha (o teto de PR 2 a 17 era 0 desde o lote C)", () => {
+    const found = allSheets()
       .filter(([name]) => name !== "styles/tokens.css")
-      .flatMap(([, css]) => textColors(css))
-      .filter(({ raw }) => WHITE_ALPHA.test(raw)).length;
-    expect(count).toBeLessThanOrEqual(LITERAL_WHITE_ALPHA_TEXT_CEILING);
+      .flatMap(([name, css]) => textColors(css).filter(({ raw }) => WHITE_ALPHA.test(raw)).map(({ selector }) => `${name}: ${selector}`));
+    expect(found).toEqual([]);
   });
 });
 
@@ -398,7 +338,7 @@ function orangeBackgrounds(css: string): { selector: string; color: string | und
 function orangeFailures(css: string, theme: ThemeName = "dark"): string[] {
   const orange = hex(token(theme, "brand"));
   return orangeBackgrounds(css)
-    .filter(({ selector }) => !ORANGE_CHECKBOX_SELECTORS.has(selector))
+    .filter(({ selector }) => !NO_TEXT_ORANGE_SELECTORS.has(selector))
     .filter(
       ({ color: text }) =>
         text === undefined || contrast(resolveColor(text, theme, orange), orange) < WHITE_ON_ORANGE_FLOOR,
@@ -411,9 +351,9 @@ describe.each(THEMES)("botões primários (texto sobre o laranja da marca, tema 
   /** Exceção do design: branco em negrito sobre o laranja, 3.05:1 (o preto daria 6.5:1). Piso da exceção: 3:1. */
   const DESIGN_PAIR_MIN = 3;
 
-  it("exceção do design: o texto sobre o laranja (token color-on-orange) é branco e dá 3.05:1", () => {
-    expect(token(theme, "color-on-orange").toLowerCase()).toBe("#ffffff");
-    const ratio = contrast(resolveColor("var(--color-on-orange)", theme), ORANGE);
+  it("exceção do design: o texto sobre o laranja (token on-brand) é branco e dá 3.05:1", () => {
+    expect(token(theme, "on-brand").toLowerCase()).toBe("#ffffff");
+    const ratio = contrast(resolveColor("var(--on-brand)", theme), ORANGE);
     expect(ratio).toBeCloseTo(3.05, 1);
     expect(ratio).toBeGreaterThanOrEqual(DESIGN_PAIR_MIN);
   });
@@ -426,15 +366,6 @@ describe.each(THEMES)("botões primários (texto sobre o laranja da marca, tema 
     expect(orangeFailures(css, theme)).toEqual([]);
   });
 
-  it("o botão primário do painel usa o par do design", () => {
-    const rules = orangeBackgrounds(adminCss + componentsCss);
-    for (const selector of [".fb-btn-primary"]) {
-      const rule = rules.find((r) => r.selector === selector);
-      expect(rule, selector).toBeDefined();
-      expect(contrast(resolveColor(rule?.color ?? "#ffffff", theme), ORANGE)).toBeGreaterThanOrEqual(DESIGN_PAIR_MIN);
-    }
-  });
-
   it("o botão de entrar do login é o Button primário compartilhado, cujo texto sobre o laranja chega a 3:1", () => {
     const login = readFileSync(resolve(process.cwd(), "src/pages/LoginPage.tsx"), "utf8");
     expect(login).toMatch(/<Button type="submit" variant="primary" block/);
@@ -445,25 +376,41 @@ describe.each(THEMES)("botões primários (texto sobre o laranja da marca, tema 
 });
 
 describe("botões primários: a política", () => {
-  it("o /* design */ não isenta: texto que não chega a 3:1 sobre o laranja falha; o checkbox só pelos seletores exatos", () => {
+  it("o /* design */ não isenta: texto que não chega a 3:1 sobre o laranja falha; só os seletores nomeados sem texto são ignorados", () => {
     expect(orangeFailures(".x { background: #ed6e34; color: rgba(255,255,255,0.2); /* design */ }")).not.toEqual([]);
     expect(orangeFailures(".x { background: #ed6e34; color: #ffffff; /* design */ }")).toEqual([]);
     expect(orangeFailures(".x { background: #ed6e34; color: #000000; }")).toEqual([]);
     expect(orangeFailures(".x { background: #ed6e34; }")).toEqual([".x → sem color explícito"]);
-    expect(orangeFailures(".fb-checkbox:checked { background: var(--color-primary-orange); }")).toEqual([]);
-    expect(orangeFailures(".fb-checkbox-extra:checked { background: #ed6e34; }")).not.toEqual([]);
-    expect(orangeFailures(".fb-checkbox:hover { background: #ed6e34; }")).not.toEqual([]);
+    expect(orangeFailures(".fb-ui-meter__fill { background: var(--grad-cta); }")).toEqual([]);
+    expect(orangeFailures(".fb-ui-meter__fill-extra { background: var(--grad-cta); }")).not.toEqual([]);
+    expect(orangeFailures(".x { background: var(--brand); }")).toEqual([".x → sem color explícito"]);
   });
 
-  it("o chip de dia marcado da agenda é o Chip compartilhado: texto sobre o laranja (token color-on-orange) com 3:1 ou mais", () => {
+  it("os seletores sem texto existem no CSS, são de fundo laranja e não declaram color (não escondem texto)", () => {
+    const found = new Map(allSheets().flatMap(([, css]) => orangeBackgrounds(css)).map((r) => [r.selector, r.color]));
+    for (const selector of NO_TEXT_ORANGE_SELECTORS) {
+      expect(found.has(selector), `${selector} existe`).toBe(true);
+      expect(found.get(selector), `${selector} sem color`).toBeUndefined();
+    }
+  });
+
+  it("a seleção de texto (::selection) deixa a tinta legível nos dois temas", () => {
+    for (const theme of THEMES) {
+      const page = hex(token(theme, "bg"));
+      const selected = over(hex(token(theme, "brand")), 0.32, page);
+      expect(contrast(color(theme, "ink"), selected), theme).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  it("o chip de dia marcado da agenda é o Chip compartilhado: texto sobre o laranja (token on-brand) com 3:1 ou mais", () => {
     const agendaCss = readFileSync(resolve(process.cwd(), "src/styles/agenda.css"), "utf8");
     // A agenda não tem chip de dia próprio: usa .fb-ui-chip (components.css), já coberto por orangeFailures.
     expect(agendaCss).not.toMatch(/daychip|fb-ui-chip/);
     const marked = orangeBackgrounds(componentsCss).find(({ selector }) => selector === '.fb-ui-chip[aria-pressed="true"]');
-    expect(marked?.color).toBe("var(--color-on-orange)");
+    expect(marked?.color).toBe("var(--on-brand)");
     for (const theme of THEMES) {
       const orange = hex(token(theme, "brand"));
-      expect(contrast(resolveColor("var(--color-on-orange)", theme), orange), theme).toBeGreaterThanOrEqual(3);
+      expect(contrast(resolveColor("var(--on-brand)", theme), orange), theme).toBeGreaterThanOrEqual(3);
     }
   });
 });

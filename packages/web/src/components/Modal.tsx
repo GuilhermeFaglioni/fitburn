@@ -1,46 +1,9 @@
-import { useEffect, useId, useRef, type ReactNode } from "react";
+import { useEffect, useRef } from "react";
 
-/** Diálogo modal (fundo escurecido, cartão branco de 460px). */
-export function Modal({
-  title,
-  onClose,
-  width,
-  children,
-}: {
-  title: string;
-  onClose: () => void;
-  /** Largura do cartão em px (padrão 460, como na maioria dos diálogos do design). */
-  width?: number;
-  children: ReactNode;
-}) {
-  const titleId = useId();
-  const dialogRef = useDialogFocus<HTMLDivElement>();
-  useCloseOnEscape(onClose);
-
-  return (
-    <div
-      className="fb-modal-backdrop"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
-      }}
-    >
-      <div
-        ref={dialogRef}
-        className="fb-modal"
-        style={width ? { width } : undefined}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        tabIndex={-1}
-      >
-        <h2 id={titleId} className="fb-modal__title">
-          {title}
-        </h2>
-        {children}
-      </div>
-    </div>
-  );
-}
+/**
+ * Foco e teclado dos diálogos. O diálogo em si é `ui/Dialog` (D-038); aqui ficam os hooks que ele usa:
+ * `useDialogFocus` (foco inicial, Tab preso e foco de volta) e `useCloseOnEscape`.
+ */
 
 /** Fecha um diálogo com Esc. */
 export function useCloseOnEscape(onClose: () => void) {

@@ -7,8 +7,8 @@ import { join } from "node:path";
  * - claro: o `:root` sem media query;
  * - escuro do sistema: `@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) }`;
  * - escuro manual: `:root[data-theme="dark"]`.
- * O escuro vale sobre o claro. `var(--x)` é resolvido dentro do tema (como o navegador faz no :root), então um alias
- * legado (`--color-line: var(--line)`) devolve o valor do tema pedido.
+ * O escuro vale sobre o claro. `var(--x)` é resolvido dentro do tema (como o navegador faz no :root), então um token
+ * que aponta para outro (`--container-gutter: var(--s-4)`) devolve o valor do tema pedido.
  */
 export type ThemeName = "light" | "dark";
 export type Rgb = [number, number, number];
