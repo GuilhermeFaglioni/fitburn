@@ -3,7 +3,7 @@ import { RankingPeriod, type Dashboard, type DashboardOccupancyItem } from "@fit
 import { getDashboard } from "../lib/dashboard/api";
 import { EmptyState, ErrorState, LoadingState } from "../components/states";
 
-/** Quantas posições do ranking o painel mostra (o artboard tem 3). */
+/** Quantas posições do ranking o painel mostra (a tela de referência tem 3). */
 const RANKING_ROWS = 3;
 
 function plural(count: number, singular: string, pluralForm: string): string {
@@ -132,7 +132,7 @@ function GamificationPanel({
 }
 
 /**
- * Dashboard administrativo (DashboardAdmin.dc.html): quatro cartões de KPI (clientes ativos, ocupação
+ * Dashboard administrativo: quatro cartões de KPI (clientes ativos, ocupação
  * média da semana, pontos distribuídos e streaks ativos no mês), o painel "Ocupação por aula" com uma
  * barra por modalidade na semana atual e o painel "FitPoints" com o ranking do mês. Cada bloco só
  * chega quando a pessoa enxerga o módulo que o alimenta, já limitado ao escopo dela.

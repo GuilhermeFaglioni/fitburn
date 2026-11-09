@@ -13,7 +13,7 @@ const ERROR_MESSAGES: Record<string, string> = {
 
 /**
  * Cadastro e edição de um membro da equipe (nome, e-mail e perfil de acesso).
- * O artboard só mostra os botões "+ Novo usuário" e "Editar"; o formulário usa
+ * O tela de referência só mostra os botões "+ Novo usuário" e "Editar"; o formulário usa
  * o padrão dos demais diálogos administrativos.
  */
 export function StaffFormModal({

@@ -69,7 +69,7 @@ function viewValue(profile: UserDetail, key: keyof FormState): string {
 }
 
 /**
- * Perfil / Minha conta (PerfilDesktop.dc.html / PerfilMobile.dc.html): os
+ * Perfil / Minha conta: os
  * dados pessoais e troca de senha de quem está logado, além do logout. Serve
  * ao cliente (casca escura) e à equipe (casca administrativa, clara). Perfil
  * de acesso e status não aparecem para edição.

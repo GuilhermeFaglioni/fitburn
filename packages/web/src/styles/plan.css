@@ -1,6 +1,5 @@
 /**
- * Plano do cliente — PlanoDesktop.dc.html e PlanoMobile.dc.html no canvas de
- * design (Claude Design), https://claude.ai/artifact/VncuMf9CffiWGUEQYywLVX.
+ * Plano do cliente.
  * Mobile: cartão de 20px 18px e título de 19px; desktop (≥768px): cartão de
  * 24px, no máximo 640px de largura, título de 24px.
  */
@@ -98,7 +97,7 @@
   border: 1px dashed var(--color-line-2);
   border-radius: var(--radius-sm);
   text-align: center;
-  /* Como no artboard: o contêiner tem a fonte padrão e só o texto (span) tem 13px/19px. */
+  /* Como na tela de referência: o contêiner tem a fonte padrão e só o texto (span) tem 13px/19px. */
   font-size: 16px;
   line-height: normal;
   color: rgba(255, 255, 255, 0.6);

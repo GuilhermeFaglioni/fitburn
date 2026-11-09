@@ -18,9 +18,9 @@ import { EmptyState, ErrorState, Feedback, LoadingState } from "../components/st
 import { HealthDataNotice } from "../components/HealthDataNotice";
 
 /**
- * Metas individuais (MetasAdmin.dc.html): à esquerda os alunos do professor
+ * Metas individuais: à esquerda os alunos do professor
  * (o escopo "clientes atribuídos"), à direita as metas do aluno escolhido e o
- * formulário de nova meta. O artboard tem "valor alvo" e barra de progresso,
+ * formulário de nova meta. O tela de referência tem "valor alvo" e barra de progresso,
  * que dependem de dados que a API ainda não tem (a meta é concluída à mão pelo professor):
  * ficam de fora até o backend trazer valor alvo e progresso.
  */

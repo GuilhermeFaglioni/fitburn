@@ -10,11 +10,11 @@ import { cancelReservation, listMyReservations } from "../../lib/reservations/ap
 import { ErrorState, Feedback, LoadingState } from "../../components/states";
 import { RequiresNetwork } from "../../components/RequiresNetwork";
 
-/** Quantas reservas cabem na Home (HomeDesktop.dc.html mostra três). */
+/** Quantas reservas cabem na Home. */
 const MAX_RESERVATIONS = 3;
 
 /**
- * "Próximas aulas" da Home (HomeMobile/HomeDesktop.dc.html): as próximas
+ * "Próximas aulas" da Home: as próximas
  * reservas confirmadas, com atalho para a agenda e as ações Remarcar e
  * Cancelar. O cancelamento pede confirmação; remarcar abre a agenda já no
  * modo de remarcação, onde se escolhe a nova aula.

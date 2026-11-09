@@ -76,7 +76,7 @@ interface MarkVariables {
 }
 
 /**
- * Presença (PresencaMobile.dc.html): o professor marca cada cliente com
+ * Presença: o professor marca cada cliente com
  * reserva confirmada como presente ou faltou, com um toque; um toque no outro
  * botão corrige uma marcação errada (o servidor estorna os pontos e recalcula
  * streak e bônus). A linha muda na hora e o pedido segue em segundo plano —

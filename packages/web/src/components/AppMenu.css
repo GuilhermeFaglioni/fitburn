@@ -124,7 +124,7 @@
   }
 }
 
-/* Barra superior e gaveta: só existem no mobile (o canvas de design tem apenas o desktop). */
+/* Barra superior e gaveta: só existem no mobile (a proposta de design tem apenas o desktop). */
 .app-topbar,
 .app-menu__scrim {
   display: none;

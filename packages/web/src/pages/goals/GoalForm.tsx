@@ -19,7 +19,7 @@ interface GoalFormProps {
   onSubmit: (values: GoalFormValues) => Promise<void>;
 }
 
-/** "+ Nova meta" do artboard (MetasAdmin.dc.html), que também edita uma meta ativa. */
+/** "+ Nova meta" da tela de referência, que também edita uma meta ativa. */
 export function GoalForm({ editing, allowed, pending, onCancel, onSubmit }: GoalFormProps) {
   const id = useId();
   const initial: GoalFormValues = {

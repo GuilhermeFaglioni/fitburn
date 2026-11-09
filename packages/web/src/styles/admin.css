@@ -1,9 +1,8 @@
 /**
  * Estilos compartilhados das telas administrativas (sidebar + conteúdo),
- * portados pixel-a-pixel de project/UsuariosPerfis.dc.html no canvas de
- * design (Claude Design), https://claude.ai/artifact/VncuMf9CffiWGUEQYywLVX.
+ * portados da proposta de design.
  * Classes fb-field/fb-th/fb-td/fb-row-btn/fb-tab-btn/fb-role-item/fb-mtd/
- * fb-checkbox/fb-scope reproduzem exatamente as regras do artboard; o
+ * fb-checkbox/fb-scope reproduzem exatamente as regras da tela de referência; o
  * restante (badges, botões primários, formulários, banner de bloqueio)
  * reaproveita as mesmas cores e espaçamentos para telas/estados sem
  * mockup próprio (ex.: formulário de cadastro).
@@ -276,7 +275,7 @@
   color: var(--color-warn);
 }
 
-/* Aviso menor da aba "Atribuir a cliente" (12px/18px no artboard). */
+/* Aviso menor da aba "Atribuir a cliente" (12px/18px na tela de referência). */
 .fb-lock-banner--sm {
   font-size: 12px;
   line-height: 18px;
@@ -429,7 +428,7 @@
   width: 100%;
 }
 
-/* Agenda administrativa — AgendaAdmin.dc.html */
+/* Agenda administrativa — */
 .fb-week-grid {
   flex-grow: 1;
   min-height: 0;
@@ -452,7 +451,7 @@
   border-bottom: 2px solid var(--color-line);
 }
 
-/* O rótulo é um <span> dentro de um bloco de 16px, como no artboard (a cabeça fica com 35px). */
+/* O rótulo é um <span> dentro de um bloco de 16px, como na tela de referência (a cabeça fica com 35px). */
 .fb-day-head > span {
   font-size: 12px;
   font-weight: 700;

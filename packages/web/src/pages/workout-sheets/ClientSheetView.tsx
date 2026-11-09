@@ -4,7 +4,7 @@ import { firstName } from "../../lib/names";
 import { statusBadge } from "./status";
 import { EmptyState } from "../../components/states";
 
-/** Os campos de um exercício, na ordem do artboard; os que o professor não preencheu ficam de fora. */
+/** Os campos de um exercício, na ordem da tela de referência; os que o professor não preencheu ficam de fora. */
 const CHIPS: Array<{ field: "sets" | "reps" | "load" | "duration" | "distance"; label: string }> = [
   { field: "sets", label: "Séries" },
   { field: "reps", label: "Repetições" },
@@ -36,8 +36,8 @@ function ExerciseCard({ exercise }: { exercise: WorkoutExercise }) {
 }
 
 /**
- * Uma ficha de treino do cliente por inteiro (FichaTreinoDesktop.dc.html /
- * FichaTreinoMobile.dc.html): título da tela (`showPageTitle`), nome e status
+ * Uma ficha de treino do cliente por inteiro ( /
+ *): título da tela (`showPageTitle`), nome e status
  * da ficha, quem montou e desde quando, e os cartões de exercício, em uma
  * coluna no celular e duas no desktop. Somente leitura.
  */
@@ -78,7 +78,7 @@ export function ClientSheetView({
         </ul>
       )}
 
-      {/* O artboard não tem lugar para a observação geral; fica discreta, depois dos exercícios. */}
+      {/* O tela de referência não tem lugar para a observação geral; fica discreta, depois dos exercícios. */}
       {sheet.notes && <p className="fb-workout__notes">{sheet.notes}</p>}
     </>
   );

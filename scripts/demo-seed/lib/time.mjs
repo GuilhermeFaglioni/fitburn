@@ -4,7 +4,7 @@
  * Todo o seed trabalha com "dia local" (YYYY-MM-DD) e "hora local" (HH:mm), como
  * a API: o instante UTC só aparece na hora de gravar no banco.
  */
-import { addDays, gymToday, weekdayOf } from "../../design-compare/lib/env.mjs";
+import { addDays, gymToday, weekdayOf } from "../../lib/env.mjs";
 
 export { addDays, gymToday, weekdayOf };
 

@@ -24,9 +24,9 @@ export interface AdminMenuItem {
 // menos um dos módulos listados (ex.: "Usuários e perfis" cobre USUARIOS e
 // PERFIS_DE_ACESSO), e o escopo total quando o item o pede.
 export const ADMIN_MENU_ITEMS: AdminMenuItem[] = [
-  // Ordem e rótulos do design (project/ClientesAdmin.dc.html); "Configurações" do design
+  // Ordem e rótulos do design; "Configurações" do design
   // ainda não tem tela nem rota, então não aparece. "Minhas aulas" e "Atribuições" não
-  // têm artboard, mas são telas reais do app: ficam no fim da lista.
+  // têm tela de referência, mas são telas reais do app: ficam no fim da lista.
   { modules: [Module.DASHBOARD], label: "Dashboard", to: "/dashboard" },
   { modules: [Module.CLIENTES], label: "Clientes", to: "/clientes" },
   {

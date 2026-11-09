@@ -28,7 +28,7 @@ import { firstName } from "../lib/names";
 
 type AgendaTab = "upcoming" | "history";
 
-/** Controle "Próximas | Histórico" de AgendaMobile/AgendaDesktop.dc.html. */
+/** Controle "Próximas | Histórico" de AgendaMobile/. */
 const AGENDA_TABS: Array<{ value: AgendaTab; label: string }> = [
   { value: "upcoming", label: "Próximas" },
   { value: "history", label: "Histórico" },

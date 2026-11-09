@@ -158,7 +158,7 @@ describe("Dashboard administrativo", () => {
     expect(within(top).getAllByRole("listitem")).toHaveLength(1);
     expect(within(top).getByText("Ana Paula Souza")).toBeInTheDocument();
     expect(within(top).getByText("9 presenças")).toBeInTheDocument();
-    // O painel de gamificação mostra o período do mês (o artboard não tem seletor).
+    // O painel de gamificação mostra o período do mês (a tela de referência não tem seletor).
     expect(periods).toEqual(["month"]);
   });
 

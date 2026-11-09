@@ -93,7 +93,7 @@ describe("rota inicial da equipe (homeRouteFor)", () => {
 });
 
 describe("ordem do menu administrativo (design)", () => {
-  it("segue ClientesAdmin.dc.html, com as telas sem artboard no fim", () => {
+  it("segue a ordem de menu definida no design, com as telas fora do design no fim", () => {
     expect(ADMIN_MENU_ITEMS.map((item) => item.label)).toEqual([
       "Dashboard",
       "Clientes",

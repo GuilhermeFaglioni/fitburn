@@ -51,9 +51,9 @@ interface SheetEditorProps {
 }
 
 /**
- * Editor de ficha do professor (FichaTreinoAdmin.dc.html): título, observações,
+ * Editor de ficha do professor: título, observações,
  * status e a lista de exercícios em linhas repetíveis (adicionar, subir,
- * descer e remover). O artboard tem "Repetições / tempo" numa coluna só; aqui
+ * descer e remover). O tela de referência tem "Repetições / tempo" numa coluna só; aqui
  * repetições, tempo e distância são campos separados, como o spec pede.
  */
 export function SheetEditor({ editing, allowed, pending, onCancel, onSubmit }: SheetEditorProps) {

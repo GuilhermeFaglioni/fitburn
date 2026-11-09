@@ -34,7 +34,7 @@ function RankingRow({ entry }: { entry: RankingEntry }) {
 
 /**
  * Ranking semanal e mensal da tela Sua evolução (GamificacaoMobile /
- * GamificacaoDesktop.dc.html): pontos no período, desempate por presenças; a
+ *): pontos no período, desempate por presenças; a
  * minha posição destacada e o rótulo "empate" para quem continua empatado.
  */
 export function RankingSection() {

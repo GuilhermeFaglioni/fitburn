@@ -149,7 +149,7 @@ describe("Metas individuais (professor)", () => {
     return user;
   }
 
-  /** As ações da meta ficam recolhidas sob o botão "⋯" (o cartão do artboard não tem botões). */
+  /** As ações da meta ficam recolhidas sob o botão "⋯" (o cartão da tela de referência não tem botões). */
   async function pickAction(
     user: ReturnType<typeof userEvent.setup>,
     goalTitle: string,

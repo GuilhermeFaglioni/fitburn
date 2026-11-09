@@ -48,11 +48,10 @@ Prevalecem sobre o fluxo em caso de conflito.
 
 ## 5. Fidelidade às telas (UI)
 
-- **Fonte da verdade:** as decisões registradas em `docs/decisions.md` e as issues de UI (tokens, tipografia, componentes). Os artboards do Claude Design deixam de ser referência obrigatória e não entram em portão de PR.
+- **Fonte da verdade:** as decisões registradas em `docs/decisions.md` e as issues de UI (tokens, tipografia, componentes). O Claude Design está excluído do ciclo de desenvolvimento: não é fonte de design, não gera artefatos e não entra em portão de PR. A referência visual é a proposta de design do repositório (ver `docs/design/`).
 - Toda issue de UI cita os componentes reutilizados de `packages/web/src/components` e os estados (vazio, offline, erro, carregando).
 - Sem cor, raio, espaçamento ou fonte literal fora dos tokens do design system. Componente que falta entra primeiro como componente compartilhado.
 - Respeitar o que já existe: motion tokens e reduced motion (`plans/`), estados offline (`OfflineBanner`, `RequiresNetwork`), foco ao navegar (`useFocusOnNavigation`).
-- **Sem portão visual contra o Claude Design:** `pnpm design:compare` continua disponível como ferramenta de apoio (ver `scripts/design-compare/README.md`), mas não é exigido no PR.
 - **PR de UI não usa auto-merge:** fica com `ready-for-human` até o Guilherme aprovar. API, contratos e docs seguem com auto-merge.
 
 ## 6. Como o T3 Code faz a orquestração

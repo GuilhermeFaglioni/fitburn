@@ -27,7 +27,7 @@ import { OccurrenceErrorBox } from "./OccurrenceErrorBox";
 
 type View = "form" | "confirm-cancel" | "confirm-delete";
 
-/** "Editar aula" e a confirmação de cancelamento de AgendaAdmin.dc.html. */
+/** "Editar aula" e a confirmação de cancelamento de. */
 export function OccurrenceEditModal({
   occurrence,
   onClose,

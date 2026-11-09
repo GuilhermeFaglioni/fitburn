@@ -26,7 +26,7 @@ export function formatPlanEnd(date: string): string {
 }
 
 /**
- * Quando uma aula acontece, como nas "Próximas aulas" da Home (HomeDesktop.dc.html):
+ * Quando uma aula acontece, como nas "Próximas aulas" da Home:
  * "Hoje, 18h00", "Quinta, 07h00". Depois de uma semana o dia entra junto ("Quinta 08/10, 07h00"),
  * para não confundir com a quinta desta semana.
  */

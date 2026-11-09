@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
+export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 
 /** Lê o .env da raiz (KEY="valor"), sem depender de dotenv. */
 export function loadEnv() {
@@ -32,7 +32,7 @@ export function weekdayOf(date) {
 }
 
 // ---------------------------------------------------------------- massa da demonstração
-// Nomes, planos, horários e números vêm dos artboards do Claude Design.
+// Nomes, planos, horários e números são fictícios (dados de demonstração).
 export const DEMO = {
   adminName: "Guilherme Faglioni",
   staff: [

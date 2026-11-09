@@ -21,7 +21,7 @@
  */
 import { createRequire } from "node:module";
 import path from "node:path";
-import { ROOT, loadEnv } from "../design-compare/lib/env.mjs";
+import { ROOT, loadEnv } from "../lib/env.mjs";
 import { ApiError, createApi, idempotency } from "./lib/api.mjs";
 import {
   CANCELLED_CLASS,

@@ -29,7 +29,7 @@ Referências: `docs/mvp-web-pwa.md:420-430` (sessão com refresh `HttpOnly`), `:
 
 ## Boundaries
 
-- **Fidelidade de design:** as telas seguem o canvas pixel a pixel. Não mude layout, espaçamento, cores ou tipografia; use os componentes de estado/feedback já existentes, com o visual que já têm. Não mexa no contraste dos CTAs.
+- **Fidelidade de design:** as telas seguem a proposta de design. Não mude layout, espaçamento, cores ou tipografia; use os componentes de estado/feedback já existentes, com o visual que já têm. Não mexa no contraste dos CTAs.
 - Não mude a API nem os contratos.
 - Não introduza bibliotecas novas.
 

@@ -100,7 +100,7 @@ export function AppRoutes() {
         <Route path="/fichas" element={<WorkoutSheetsPage />} />
         <Route path="/metas" element={<GoalsPage />} />
       </Route>
-      {/* Presença é uma tela cheia (PresencaMobile.dc.html), sem a sidebar administrativa. */}
+      {/* Presença é uma tela cheia, sem a sidebar administrativa. */}
       <Route
         path="/presenca/:occurrenceId"
         element={

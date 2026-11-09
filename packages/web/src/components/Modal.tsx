@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, type ReactNode } from "react";
 
-/** Diálogo modal do canvas de design (fundo escurecido, cartão branco de 460px). */
+/** Diálogo modal (fundo escurecido, cartão branco de 460px). */
 export function Modal({
   title,
   onClose,

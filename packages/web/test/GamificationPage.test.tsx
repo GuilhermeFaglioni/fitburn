@@ -256,7 +256,7 @@ describe("Gamificação do cliente", () => {
     ).toBeInTheDocument();
   });
 
-  it("mostra só os 3 ganhos mais recentes, como o artboard", async () => {
+  it("mostra só os 3 ganhos mais recentes, como a tela de referência", async () => {
     mockSummary({
       ...NO_STREAK,
       totalPoints: 40,

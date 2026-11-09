@@ -27,8 +27,8 @@ function sheetsErrorMessage(error: unknown): string {
 /**
  * Ficha de treino de um aluno, aberta a partir da lista de alunos de uma aula
  * (Presença). Somente leitura: mostra a ficha ativa e, abaixo, as anteriores,
- * no mesmo visual da ficha do próprio aluno (FichaTreinoDesktop/Mobile.dc.html).
- * Não há artboard para esta rota; a casca é a da Presença.
+ * no mesmo visual da ficha do próprio aluno.
+ * Não há tela de referência para esta rota; a casca é a da Presença.
  */
 export function ClassStudentSheetPage() {
   const { occurrenceId = "", clientId = "" } = useParams();

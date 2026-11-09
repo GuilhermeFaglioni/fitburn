@@ -1,6 +1,6 @@
 /**
- * Casca e agenda do cliente — AgendaMobile.dc.html / AgendaDesktop.dc.html
- * e o detalhe de ReservaMobile.dc.html no canvas de design.
+ * Casca e agenda do cliente — /
+ * e o detalhe de.
  */
 .fb-client {
   flex-grow: 1;
@@ -308,7 +308,7 @@
   border: none;
   border-radius: var(--radius-pill);
   background: transparent;
-  /* Quirk do design: <button> sem font-family renderiza em Arial (AgendaMobile.dc.html). */
+  /* Quirk do design: <button> sem font-family renderiza em Arial. */
   font-family: Arial, Helvetica, sans-serif;
   color: var(--color-ink-on-dark);
   cursor: pointer;
@@ -411,7 +411,7 @@
 }
 
 /* Cabeçalho da agenda: título à esquerda; semana e o controle
-   "Próximas | Histórico" à direita (AgendaDesktop.dc.html). */
+   "Próximas | Histórico" à direita. */
 .fb-client-header {
   position: relative;
   display: flex;
@@ -428,7 +428,7 @@
   flex-wrap: wrap;
 }
 
-/* Controle "Próximas | Histórico" (AgendaMobile/AgendaDesktop.dc.html). */
+/* Controle "Próximas | Histórico". */
 .fb-client-tabs {
   display: flex;
   gap: 4px;
@@ -482,7 +482,7 @@
   color: var(--color-on-orange);
 }
 
-/* Seções do histórico: título no tamanho de "Próximas aulas" (HomeMobile.dc.html). */
+/* Seções do histórico: título no tamanho de "Próximas aulas". */
 .fb-reservation-section {
   display: flex;
   flex-direction: column;
@@ -501,7 +501,7 @@
   color: var(--color-danger);
 }
 
-/* Cartão de reserva (HomeMobile.dc.html: "Próximas aulas"). */
+/* Cartão de reserva. */
 .fb-reservation-list {
   margin: 0;
   padding: 0;
@@ -568,7 +568,7 @@
   cursor: pointer;
 }
 
-/* Detalhe da aula (ReservaDesktop/ReservaMobile.dc.html): cartão de 460px
+/* Detalhe da aula: cartão de 460px
    centralizado no desktop, bottom sheet no mobile. */
 .fb-sheet-backdrop {
   animation: fb-fade 200ms var(--ease-out) both;

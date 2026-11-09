@@ -29,7 +29,7 @@ const BADGE_CLASS = {
 } as const;
 
 /**
- * Fichas de treino do professor (FichaTreinoAdmin.dc.html): à esquerda os
+ * Fichas de treino do professor: à esquerda os
  * alunos do escopo, à direita o editor da ficha e as fichas do aluno
  * escolhido. O status da ficha muda no próprio editor.
  */

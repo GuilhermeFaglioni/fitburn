@@ -1,9 +1,9 @@
 /**
- * Presença do professor — PresencaMobile.dc.html no canvas de design
- * (Claude Design), https://claude.ai/artifact/VncuMf9CffiWGUEQYywLVX.
- * As regras de .fb-att* reproduzem os estilos inline do artboard (390px de
+ * Presença do professor —
+ *.
+ * As regras de .fb-att* reproduzem os estilos inline da tela de referência (390px de
  * largura, fundo var(--color-surface-000)); em telas maiores a coluna fica centralizada.
- * "Minhas aulas" (fb-myclass*) não tem artboard: usa a casca administrativa
+ * "Minhas aulas" (fb-myclass*) não tem tela de referência: usa a casca administrativa
  * clara com as cores e os espaçamentos de admin.css.
  */
 .fb-att {
@@ -84,7 +84,7 @@
   color: rgba(255, 255, 255, 0.4);
 }
 
-/* Estados sem artboard (aula que ainda não começou, erro): a mesma faixa do andamento. */
+/* Estados sem tela de referência (aula que ainda não começou, erro): a mesma faixa do andamento. */
 .fb-att__notice {
   margin: 0;
   box-sizing: border-box;
@@ -150,7 +150,7 @@
   font-weight: 500;
 }
 
-/* O artboard não tem link no nome: ele mantém a tipografia e ganha só um chevron discreto. */
+/* O tela de referência não tem link no nome: ele mantém a tipografia e ganha só um chevron discreto. */
 .fb-att__name--link {
   display: inline-flex;
   align-items: center;
@@ -206,7 +206,7 @@
   cursor: default;
 }
 
-/* Sem artboard: a opção que não vale mais (linha já marcada ou aula que não começou) esmaece. */
+/* Sem tela de referência: a opção que não vale mais (linha já marcada ou aula que não começou) esmaece. */
 .fb-seg-btn:disabled:not([aria-pressed="true"]) {
   opacity: 0.45;
 }
@@ -227,7 +227,7 @@
 }
 
 /*
- * Alturas do artboard (botões de 39px, linhas de 67px, botão voltar de 32px). O alvo de toque de
+ * Alturas da tela de referência (botões de 39px, linhas de 67px, botão voltar de 32px). O alvo de toque de
  * 44px+ do mobile (responsive.css) vira uma área invisível em volta, sem mexer no layout.
  */
 .fb-att .fb-seg-btn,

@@ -5,7 +5,7 @@ Planos auto-contidos para corrigir os achados **Altos** e **Médios** da auditor
 **Decisões válidas para todos os planos:**
 
 - **Sobreposição de aulas:** vale a regra do Coolify. Aulas simultâneas são **permitidas** quando os professores são diferentes; o conflito continua proibido apenas para o **mesmo professor** (exclusion constraint por `instructorId`, como no código atual). O código não muda nesse ponto; a documentação é que passa a refletir a regra (plano 006).
-- **Contraste branco sobre laranja (`#fff` em `#ed6e34`):** fora deste lote. É um trade-off de design registrado em `docs/design-fidelity-report.md`, e o port das telas segue o canvas pixel a pixel; mudar exige decisão de produto.
+- **Contraste branco sobre laranja (`#fff` em `#ed6e34`):** fora deste lote. É um trade-off de design registrado na decisão de design, e o port das telas segue o canvas pixel a pixel; mudar exige decisão de produto.
 - Cada plano roda em worktree própria, faz commits locais na sua branch e **não** faz push nem abre PR.
 - Testes da API exigem banco próprio por worktree (ver "Ambiente" em cada plano) — a suíte limpa as tabelas e não pode compartilhar o `fitburn_test` com outra worktree.
 

@@ -1,12 +1,12 @@
 /*
- * Dashboard administrativo — DashboardAdmin.dc.html no canvas de design (Claude Design),
- * https://claude.ai/artifact/VncuMf9CffiWGUEQYywLVX. Cores literais do artboard.
+ * Dashboard administrativo —,
+ *. Cores literais da tela de referência.
  */
 .fb-dash {
   display: flex;
   flex-direction: column;
   gap: 24px;
-  /* Os painéis crescem até o fim da área de conteúdo, como no artboard. */
+  /* Os painéis crescem até o fim da área de conteúdo, como na tela de referência. */
   min-height: 100%;
 }
 
@@ -21,7 +21,7 @@
   color: var(--color-text-muted-on-dark);
 }
 
-/* Cartões de KPI: quatro colunas iguais (266x110 no artboard). */
+/* Cartões de KPI: quatro colunas iguais (266x110 na tela de referência). */
 .fb-dash__kpis {
   display: flex;
   gap: 16px;
@@ -226,7 +226,7 @@
   color: var(--color-text-muted-on-dark);
 }
 
-/* Padding do conteúdo do artboard (32px 48px); no mobile vale o da casca. */
+/* Padding do conteúdo da tela de referência (32px 48px); no mobile vale o da casca. */
 @media (min-width: 768px) {
   .fb-admin-content:has(> .fb-dash) {
     --fb-admin-pad-x: 48px;

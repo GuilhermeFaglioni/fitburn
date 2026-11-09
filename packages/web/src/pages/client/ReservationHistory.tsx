@@ -46,9 +46,9 @@ const SECTIONS: Array<{ when: MyReservationsQuery["when"]; title: string; empty:
 ];
 
 /**
- * Aba "Histórico" da agenda (AgendaMobile/AgendaDesktop.dc.html): as minhas
+ * Aba "Histórico" da agenda: as minhas
  * reservas, próximas e anteriores, com filtro de estado. Os cartões seguem
- * os de "Próximas aulas" de HomeMobile.dc.html; uma aula que ainda não
+ * os de "Próximas aulas" de; uma aula que ainda não
  * começou abre o detalhe, com as ações de cancelar e remarcar.
  */
 export function ReservationHistory({

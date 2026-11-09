@@ -27,8 +27,8 @@ function GoalItem({ goal }: { goal: GoalDetail }) {
 }
 
 /**
- * "Metas do professor" da tela Sua evolução (GamificacaoMobile/Desktop.dc.html):
- * as metas ativas e as concluídas do cliente. O artboard mostra "3/4" e uma
+ * "Metas do professor" da tela Sua evolução:
+ * as metas ativas e as concluídas do cliente. O tela de referência mostra "3/4" e uma
  * barra de progresso, que o spec não prevê (a meta é concluída à mão pelo
  * professor): cada meta mostra o prazo ou a data de conclusão.
  */

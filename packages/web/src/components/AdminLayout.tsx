@@ -4,10 +4,9 @@ import { useFocusOnNavigation } from "./useFocusOnNavigation";
 
 /**
  * Casca das telas administrativas (Dashboard, Usuários e perfis, ...):
- * sidebar escura + conteúdo claro, como em project/UsuariosPerfis.dc.html no
- * canvas de design. É uma layout route própria porque o Cliente (Home) usa
- * uma casca completamente diferente no mesmo canvas. No mobile a barra lateral
- * vira uma barra superior com o botão Menu (o canvas só tem o desktop).
+ * sidebar escura + conteúdo claro. É uma layout route própria porque o Cliente (Home) usa
+ * uma casca completamente diferente. No mobile a barra lateral
+ * vira uma barra superior com o botão Menu (a proposta só mostra o desktop).
  */
 export function AdminLayout() {
   const mainRef = useFocusOnNavigation();

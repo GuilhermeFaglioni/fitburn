@@ -6,9 +6,9 @@ import { ClientSheetView } from "./workout-sheets/ClientSheetView";
 import { Feedback } from "../components/states";
 
 /**
- * Uma ficha de treino do cliente (FichaTreinoDesktop.dc.html / FichaTreinoMobile.dc.html):
+ * Uma ficha de treino do cliente:
  * o mesmo bloco da ficha ativa de `/ficha-treino`, aberto a partir de "Fichas
- * anteriores". O artboard não tem esta rota; o link de volta é do app.
+ * anteriores". O tela de referência não tem esta rota; o link de volta é do app.
  */
 export function ClientWorkoutSheetPage() {
   const { id = "" } = useParams();

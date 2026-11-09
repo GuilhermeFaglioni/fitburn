@@ -4,7 +4,7 @@ import { AssignTab } from "./plans/AssignTab";
 
 type Tab = "catalogo" | "atribuir";
 
-/** Planos (PlanosAdmin.dc.html): o catálogo e a atribuição de planos a clientes. */
+/** Planos: o catálogo e a atribuição de planos a clientes. */
 export function PlansPage() {
   const [tab, setTab] = useState<Tab>("catalogo");
 

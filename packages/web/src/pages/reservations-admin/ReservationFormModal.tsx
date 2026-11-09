@@ -34,7 +34,7 @@ export type ReservationFormMode =
   | { kind: "reschedule"; reservation: AdminReservationDetail };
 
 /**
- * "Nova reserva (administrativa)" (ReservasAdmin.dc.html) e a remarcação em
+ * "Nova reserva (administrativa)" e a remarcação em
  * nome do cliente. O cliente fica em destaque, a prévia de elegibilidade
  * ("pode reservar? por quê?") aparece antes de confirmar, e cada intenção
  * (cliente + aula) leva a sua chave de idempotência, reenviada só se a tentativa
