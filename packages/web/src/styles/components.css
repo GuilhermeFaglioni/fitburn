@@ -146,3 +146,483 @@
     min-height: 44px;
   }
 }
+
+/* ==========================================================================
+   Componentes base I (issue 156, D-038): botão, campo, card, badge, chip, pílula e segmented.
+   Classes novas com o prefixo `fb-ui-`, para não colidir com as `fb-field`, `fb-btn-*`, `fb-badge*` e `fb-card*`
+   acima, que as telas ainda não migradas usam. Cada PR de tela troca a classe antiga pela nova; o último PR apaga as
+   antigas. Só tokens (nada de cor, raio ou sombra literal); tema claro e escuro pelos tokens.
+   Os componentes React estão em src/components/ui.
+   ========================================================================== */
+
+/* ---- Botão ---- */
+.fb-ui-btn {
+  --h: 48px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-2);
+  min-height: var(--h);
+  padding: 0 var(--s-5);
+  border: 1px solid transparent;
+  border-radius: var(--r-md);
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  font-weight: var(--weight-bold);
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    transform var(--duration-press) var(--ease-out),
+    filter var(--duration-press) var(--ease-out),
+    background-color var(--duration-state) var(--ease-out),
+    border-color var(--duration-state) var(--ease-out),
+    color var(--duration-state) var(--ease-out),
+    box-shadow var(--duration-press) var(--ease-out);
+}
+
+.fb-ui-btn:focus-visible {
+  box-shadow: var(--sh-focus);
+}
+
+.fb-ui-btn:active:not(:disabled):not([aria-busy="true"]) {
+  transform: scale(var(--press-scale));
+}
+
+.fb-ui-btn--primary {
+  color: var(--color-on-orange); /* branco sobre o laranja: exceção aprovada (decisão 136), texto em negrito */
+  background: var(--grad-cta);
+  border-color: var(--brand);
+  box-shadow: var(--sh-cta);
+}
+
+.fb-ui-btn--primary:focus-visible {
+  box-shadow: var(--sh-focus), var(--sh-cta);
+}
+
+.fb-ui-btn--secondary {
+  color: var(--ink-2);
+  background: var(--surface);
+  border-color: var(--faint); /* borda de controle: 3:1 mínimo (WCAG 1.4.11), como no botão secundário antigo */
+}
+
+.fb-ui-btn--soft {
+  color: var(--brand-strong);
+  background: var(--brand-tint);
+  border-color: var(--brand-line);
+}
+
+.fb-ui-btn--ghost {
+  color: var(--muted);
+  background: transparent;
+  padding: 0 var(--s-2);
+}
+
+.fb-ui-btn--danger {
+  color: var(--color-on-orange); /* branco sobre o vermelho-chama: 5,36:1 nos dois temas */
+  background: var(--flame);
+  border-color: var(--flame);
+}
+
+.fb-ui-btn--sm {
+  --h: 38px;
+  padding: 0 var(--s-4);
+  border-radius: var(--r-sm);
+  font-size: var(--text-small);
+}
+
+.fb-ui-btn--block {
+  width: 100%;
+}
+
+.fb-ui-btn:disabled,
+.fb-ui-btn[aria-disabled="true"] {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+  filter: none;
+}
+
+/* Carregando: mantém o tamanho e a aparência e não aceita um segundo envio. */
+.fb-ui-btn[aria-busy="true"] {
+  cursor: progress;
+  pointer-events: none;
+}
+
+@media (hover: hover) {
+  .fb-ui-btn--primary:hover:not(:disabled) {
+    filter: brightness(1.05);
+    transform: translateY(-1px);
+  }
+
+  .fb-ui-btn--secondary:hover:not(:disabled) {
+    background: var(--surface-2);
+  }
+
+  .fb-ui-btn--soft:hover:not(:disabled) {
+    background: var(--brand-tint-2);
+  }
+
+  .fb-ui-btn--ghost:hover:not(:disabled) {
+    color: var(--ink);
+  }
+
+  .fb-ui-btn--danger:hover:not(:disabled) {
+    filter: brightness(1.08);
+  }
+}
+
+/* Spinner do botão ocupado: acompanha a cor do texto e gira (mais devagar com reduced motion). */
+.fb-ui-spinner {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  border: 2px solid color-mix(in srgb, currentColor 40%, transparent);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: fb-ui-spin 0.8s linear infinite;
+}
+
+@keyframes fb-ui-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fb-ui-spinner {
+    animation-duration: 2.4s;
+  }
+}
+
+/* ---- Campo ---- */
+.fb-ui-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  min-width: 0;
+}
+
+.fb-ui-field__label {
+  font-size: var(--text-small);
+  font-weight: var(--weight-medium);
+  color: var(--ink-2);
+}
+
+.fb-ui-input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 52px;
+  padding: var(--s-3) var(--s-4);
+  border: 1px solid var(--faint); /* borda de controle: 3:1 mínimo (WCAG 1.4.11) */
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  box-shadow: var(--sh-1);
+  transition:
+    border-color var(--duration-state) var(--ease-out),
+    box-shadow var(--duration-state) var(--ease-out);
+}
+
+.fb-ui-input::placeholder {
+  color: var(--faint);
+}
+
+.fb-ui-input:focus {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: var(--sh-focus);
+}
+
+.fb-ui-input[aria-invalid="true"] {
+  border-color: var(--danger);
+}
+
+.fb-ui-input[aria-invalid="true"]:focus {
+  border-color: var(--danger);
+}
+
+.fb-ui-input--ok {
+  border-color: var(--success);
+}
+
+.fb-ui-input:disabled {
+  background: var(--surface-2);
+  color: var(--faint);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+/* Mensagem de apoio do campo: ajuda, erro e sucesso. O texto diz o estado; a cor só reforça. */
+.fb-ui-help {
+  font-size: var(--text-caption);
+  color: var(--muted);
+}
+
+.fb-ui-help--err {
+  color: var(--danger);
+}
+
+.fb-ui-help--ok {
+  color: var(--success);
+}
+
+/* ---- Card ---- */
+.fb-ui-card {
+  box-sizing: border-box;
+  min-width: 0;
+  padding: var(--s-6);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-2);
+}
+
+.fb-ui-card--flat {
+  box-shadow: none;
+}
+
+/* Destaque (plano recomendado, item escolhido): a borda de 2px na cor de marca não muda o tamanho do card. */
+.fb-ui-card--selected {
+  padding: calc(var(--s-6) - 1px);
+  background: linear-gradient(160deg, var(--brand-tint), var(--surface) 60%);
+  border: 2px solid var(--brand);
+}
+
+/* ---- Badge ---- */
+.fb-ui-badge {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  height: 24px;
+  padding: 0 var(--s-3);
+  background: var(--surface-2);
+  color: var(--ink-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  font-size: var(--text-caption);
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.fb-ui-badge__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.fb-ui-badge--neutral {
+  background: var(--surface-2);
+  color: var(--ink-2);
+  border-color: var(--line);
+}
+
+.fb-ui-badge--brand {
+  background: var(--brand-tint);
+  color: var(--brand-strong);
+  border-color: var(--brand-line);
+}
+
+.fb-ui-badge--solid {
+  background: var(--brand);
+  color: var(--color-on-orange); /* branco sobre o laranja: exceção aprovada (decisão 136) */
+  border-color: var(--brand);
+}
+
+.fb-ui-badge--ok {
+  background: var(--success-bg);
+  color: var(--success);
+  border-color: var(--success-line);
+}
+
+.fb-ui-badge--err {
+  background: var(--danger-bg);
+  color: var(--danger);
+  border-color: var(--danger-line);
+}
+
+.fb-ui-badge--warn {
+  background: var(--warn-bg);
+  color: var(--warn);
+  border-color: transparent;
+}
+
+/* ---- Chip de dia (rótulo + número) ---- */
+.fb-ui-chip {
+  box-sizing: border-box;
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 52px;
+  min-height: 60px;
+  padding: 0 var(--s-3);
+  background: var(--surface);
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  font-family: var(--font-sans);
+  font-size: var(--text-caption);
+  cursor: pointer;
+  transition:
+    transform var(--duration-press) var(--ease-out),
+    background-color var(--duration-state) var(--ease-out),
+    border-color var(--duration-state) var(--ease-out),
+    box-shadow var(--duration-press) var(--ease-out);
+}
+
+.fb-ui-chip__value {
+  color: var(--ink);
+  font-size: var(--text-h3);
+  letter-spacing: -0.02em;
+}
+
+.fb-ui-chip:active {
+  transform: scale(var(--press-scale));
+}
+
+.fb-ui-chip:focus-visible {
+  box-shadow: var(--sh-focus);
+}
+
+.fb-ui-chip[aria-pressed="true"] {
+  color: var(--color-on-orange);
+  background: var(--grad-cta);
+  border-color: transparent;
+  box-shadow: var(--sh-cta);
+}
+
+.fb-ui-chip[aria-pressed="true"]:focus-visible {
+  box-shadow: var(--sh-focus), var(--sh-cta);
+}
+
+.fb-ui-chip[aria-pressed="true"] .fb-ui-chip__value {
+  color: inherit;
+}
+
+.fb-ui-chip:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ---- Pílula de filtro ---- */
+.fb-ui-pill {
+  box-sizing: border-box;
+  flex: 0 0 auto;
+  height: 34px;
+  padding: 0 var(--s-4);
+  background: var(--surface);
+  color: var(--ink-2);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-pill);
+  font-family: var(--font-sans);
+  font-size: var(--text-small);
+  font-weight: var(--weight-medium);
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    transform var(--duration-press) var(--ease-out),
+    background-color var(--duration-state) var(--ease-out),
+    color var(--duration-state) var(--ease-out),
+    border-color var(--duration-state) var(--ease-out),
+    box-shadow var(--duration-press) var(--ease-out);
+}
+
+.fb-ui-pill:active {
+  transform: scale(var(--press-scale));
+}
+
+.fb-ui-pill:focus-visible {
+  box-shadow: var(--sh-focus);
+}
+
+.fb-ui-pill[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--bg);
+  border-color: var(--ink);
+}
+
+.fb-ui-pill:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ---- Segmented (controle de período) ---- */
+.fb-ui-segmented {
+  box-sizing: border-box;
+  display: inline-flex;
+  max-width: 100%;
+  padding: var(--s-1);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  overflow-x: auto;
+}
+
+.fb-ui-segmented button {
+  height: 34px;
+  padding: 0 var(--s-4);
+  background: transparent;
+  color: var(--muted);
+  border: 0;
+  border-radius: var(--r-pill);
+  font-family: var(--font-sans);
+  font-size: var(--text-small);
+  font-weight: var(--weight-medium);
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    transform var(--duration-press) var(--ease-out),
+    background-color var(--duration-state) var(--ease-out),
+    color var(--duration-state) var(--ease-out),
+    box-shadow var(--duration-press) var(--ease-out);
+}
+
+.fb-ui-segmented button:active {
+  transform: scale(var(--press-scale));
+}
+
+.fb-ui-segmented button:focus-visible {
+  box-shadow: var(--sh-focus);
+}
+
+.fb-ui-segmented button[aria-pressed="true"] {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--sh-1);
+}
+
+@media (hover: hover) {
+  .fb-ui-chip:hover:not(:disabled):not([aria-pressed="true"]) {
+    border-color: var(--line-2);
+  }
+
+  .fb-ui-pill:hover:not(:disabled):not([aria-pressed="true"]) {
+    background: var(--surface-2);
+  }
+
+  .fb-ui-segmented button:hover:not([aria-pressed="true"]) {
+    color: var(--ink);
+  }
+}
+
+/* Alvo de toque mínimo de 44px em telas de toque: botão pequeno, pílula e segmented sobem de 38/34px; o campo (52px),
+   o botão padrão (48px) e o chip (60px) já passam. */
+@media (pointer: coarse) {
+  .fb-ui-btn--sm {
+    --h: 44px;
+  }
+
+  .fb-ui-pill,
+  .fb-ui-segmented button {
+    min-height: 44px;
+  }
+}
