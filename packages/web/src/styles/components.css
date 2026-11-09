@@ -626,3 +626,412 @@
     min-height: 44px;
   }
 }
+
+/* ==========================================================================
+   Componentes base II (issue 156, D-038): tabela, acordeão, diálogo, estados e barra inferior.
+   Mesmo prefixo `fb-ui-`; só tokens, claro e escuro pelo tema. Os componentes React estão em src/components/ui
+   (Table, Accordion, Dialog, States, BottomNav). As telas ainda não usam: cada PR de tela migra a sua.
+   ========================================================================== */
+
+/* ---- Tabela ----
+   A rolagem horizontal fica no contêiner, nunca na página (o contêiner é uma região focável para o teclado). */
+.fb-ui-table-wrap {
+  box-sizing: border-box;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+}
+
+.fb-ui-table-wrap:focus-visible {
+  outline: none;
+  box-shadow: var(--sh-focus);
+}
+
+.fb-ui-table {
+  width: 100%;
+  min-width: 520px;
+  border-collapse: collapse;
+  font-size: var(--text-small);
+  line-height: var(--leading-small);
+}
+
+.fb-ui-table th {
+  padding: var(--s-3) var(--s-4);
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  font-size: var(--text-kicker);
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.12em;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.fb-ui-table td {
+  padding: var(--s-3) var(--s-4);
+  border-bottom: 1px solid var(--line);
+  color: var(--ink-2);
+  vertical-align: middle;
+}
+
+.fb-ui-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.fb-ui-table th.fb-ui-table__actions,
+.fb-ui-table td.fb-ui-table__actions,
+.fb-ui-table__actions {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.fb-ui-table td.fb-ui-table__empty {
+  padding: var(--s-8) var(--s-4);
+  color: var(--muted);
+  text-align: center;
+}
+
+@media (hover: hover) {
+  .fb-ui-table tbody tr:hover td {
+    background: var(--bg-soft);
+  }
+}
+
+/* ---- Acordeão ---- */
+.fb-ui-accordion {
+  min-width: 0;
+}
+
+.fb-ui-accordion__item {
+  border-bottom: 1px solid var(--line);
+}
+
+.fb-ui-accordion__item:first-child {
+  border-top: 1px solid var(--line);
+}
+
+.fb-ui-accordion__item summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-4);
+  min-height: 44px;
+  padding: var(--s-4) var(--s-1);
+  border-radius: var(--r-sm);
+  color: var(--ink);
+  cursor: pointer;
+  font-size: var(--text-body);
+  font-weight: var(--weight-medium);
+  letter-spacing: -0.01em;
+  list-style: none;
+}
+
+.fb-ui-accordion__item summary::-webkit-details-marker {
+  display: none;
+}
+
+.fb-ui-accordion__item summary:focus-visible {
+  outline: none;
+  box-shadow: var(--sh-focus);
+}
+
+.fb-ui-accordion__icon {
+  position: relative;
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  box-sizing: border-box;
+  border: 1px solid var(--line-2);
+  border-radius: 50%;
+  transition:
+    transform var(--duration-press) var(--ease-out),
+    background-color var(--duration-state) var(--ease-out);
+}
+
+.fb-ui-accordion__icon::before,
+.fb-ui-accordion__icon::after {
+  content: "";
+  position: absolute;
+  top: 14px;
+  right: 8px;
+  left: 8px;
+  height: 2px;
+  border-radius: var(--r-pill);
+  background: var(--brand);
+}
+
+.fb-ui-accordion__icon::after {
+  transform: rotate(90deg);
+  transition: transform var(--duration-press) var(--ease-out);
+}
+
+.fb-ui-accordion__item[open] .fb-ui-accordion__icon {
+  background: var(--brand);
+  border-color: var(--brand);
+  transform: rotate(180deg);
+}
+
+.fb-ui-accordion__item[open] .fb-ui-accordion__icon::before,
+.fb-ui-accordion__item[open] .fb-ui-accordion__icon::after {
+  background: var(--color-on-orange); /* branco sobre o laranja: traço decorativo, não texto */
+}
+
+.fb-ui-accordion__item[open] .fb-ui-accordion__icon::after {
+  transform: rotate(0);
+}
+
+.fb-ui-accordion__panel {
+  max-width: 620px;
+  margin: 0 0 var(--s-4);
+  padding: 0 var(--s-1);
+  color: var(--muted);
+  font-size: var(--text-small);
+  line-height: var(--leading-body);
+}
+
+/* ---- Diálogo ---- */
+.fb-ui-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  padding: var(--s-4);
+  background: color-mix(in srgb, var(--ink) 55%, transparent);
+  animation: fb-fade 180ms var(--ease-out) both;
+}
+
+.fb-ui-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  box-sizing: border-box;
+  width: 100%;
+  max-width: min(460px, 100%);
+  max-height: 100%;
+  overflow-y: auto;
+  padding: var(--s-7);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-xl);
+  box-shadow: var(--sh-3);
+  color: var(--ink);
+  animation: fb-enter 200ms var(--ease-out) both;
+}
+
+/* O foco inicial pode cair no próprio cartão (sem controles): o título já o anuncia, sem contorno extra. */
+.fb-ui-dialog:focus-visible {
+  outline: none;
+}
+
+.fb-ui-dialog__title {
+  margin: 0;
+  font-size: var(--text-h2);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-title);
+  line-height: var(--leading-title);
+}
+
+.fb-ui-dialog__description {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--text-body);
+  line-height: var(--leading-body);
+}
+
+.fb-ui-dialog__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--s-3);
+  margin-top: var(--s-2);
+}
+
+/* ---- Estados ---- */
+.fb-ui-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-2);
+  box-sizing: border-box;
+  min-width: 0;
+  margin: 0;
+  padding: var(--s-8) var(--s-4);
+  border-radius: var(--r-lg);
+  color: var(--ink-2);
+  font-size: var(--text-small);
+  line-height: var(--leading-small);
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+
+.fb-ui-state__title {
+  margin: 0;
+  font-size: var(--text-body);
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.01em;
+}
+
+.fb-ui-state__text {
+  margin: 0;
+  max-width: 44ch;
+  color: var(--muted);
+}
+
+.fb-ui-state__action {
+  margin-top: var(--s-2);
+}
+
+.fb-ui-state__icon {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+}
+
+.fb-ui-state--empty {
+  background: var(--surface);
+  border: 1px dashed var(--line-2);
+}
+
+.fb-ui-state--error {
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-line);
+  color: var(--danger);
+}
+
+.fb-ui-state--error .fb-ui-state__text {
+  color: var(--danger);
+}
+
+/* Offline: ícone de sem sinal, título e borda tracejada além do fundo neutro: não depende de cor. */
+.fb-ui-state--offline {
+  background: var(--surface-2);
+  border: 1px dashed var(--faint);
+}
+
+.fb-ui-state--loading {
+  flex-direction: row;
+  justify-content: center;
+  gap: var(--s-3);
+  padding: var(--s-4);
+  color: var(--muted);
+}
+
+.fb-ui-state__spinner {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  box-sizing: border-box;
+  border: 2px solid color-mix(in srgb, currentColor 30%, transparent);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: fb-ui-spin 0.8s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fb-ui-state__spinner {
+    animation-duration: 2.4s;
+  }
+
+  /* Sem giro: o indicador só troca de cor e de traço. */
+  .fb-ui-accordion__item[open] .fb-ui-accordion__icon {
+    transform: none;
+  }
+
+  .fb-ui-accordion__icon {
+    transition-property: background-color;
+  }
+
+  .fb-ui-accordion__icon::after {
+    transition-property: none;
+  }
+}
+
+/* ---- Barra inferior ----
+   Colunas por quantidade de itens (definidas pelo componente); o item tem alvo de toque de 44px. */
+.fb-ui-bottom-nav {
+  display: grid;
+  gap: var(--s-1);
+  box-sizing: border-box;
+  padding: var(--s-2) var(--s-2) max(var(--s-3), env(safe-area-inset-bottom, 0px));
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+}
+
+.fb-ui-bottom-nav__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-1);
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 44px;
+  padding: var(--s-1) 0;
+  border-radius: var(--r-sm);
+  color: var(--muted);
+  font-size: var(--text-caption);
+  font-weight: var(--weight-medium);
+  line-height: 1.2;
+  text-decoration: none;
+  transition:
+    color var(--duration-state) var(--ease-out),
+    transform var(--duration-press) var(--ease-out);
+}
+
+.fb-ui-bottom-nav__item:focus-visible {
+  outline: none;
+  box-shadow: var(--sh-focus);
+}
+
+.fb-ui-bottom-nav__item:active {
+  transform: scale(var(--press-scale));
+}
+
+.fb-ui-bottom-nav__item[aria-current="page"] {
+  color: var(--brand-strong);
+  font-weight: var(--weight-bold);
+}
+
+.fb-ui-bottom-nav__icon {
+  display: inline-flex;
+  width: 22px;
+  height: 22px;
+}
+
+.fb-ui-bottom-nav__icon svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.fb-ui-bottom-nav__item[aria-current="page"] .fb-ui-bottom-nav__icon svg {
+  stroke: var(--brand);
+}
+
+.fb-ui-bottom-nav__label {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (hover: hover) {
+  .fb-ui-bottom-nav__item:hover {
+    color: var(--ink);
+  }
+
+  .fb-ui-bottom-nav__item[aria-current="page"]:hover {
+    color: var(--brand-strong);
+  }
+}
