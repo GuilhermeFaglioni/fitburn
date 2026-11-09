@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, onlineManager } from "@tanstack/react-query";
 import { http, HttpResponse } from "msw";
 import { MemoryRouter } from "react-router-dom";
 import {
@@ -15,6 +15,7 @@ import {
 import { AuthProvider, useAuth } from "../src/lib/auth/AuthContext";
 import { PlansPage } from "../src/pages/PlansPage";
 import { mockSuccessfulLogin } from "./auth-mocks";
+import { setBrowserOnline } from "./connectivity-helpers";
 import { server } from "./msw-server";
 
 function plan(id: string, name: string, overrides: Partial<PlanDetail> = {}): PlanDetail {
@@ -126,21 +127,110 @@ describe("Planos (administração)", () => {
     );
   });
 
+  afterEach(() => {
+    onlineManager.setOnline(true);
+    setBrowserOnline(true);
+  });
+
   function row(name: string) {
-    return screen.getByText(name).closest("tr")!;
+    return screen.getByText(name, { selector: "td" }).closest("tr")!;
   }
+
+  async function expectOfflineState() {
+    const offline = await waitFor(() => {
+      const found = document.querySelector('[data-state="offline"]');
+      expect(found).not.toBeNull();
+      return found as HTMLElement;
+    });
+    expect(offline).toHaveTextContent("Sem conexão");
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  }
+
+  describe("Página", () => {
+    it("o título vem do cabeçalho da base e as seções são um controle segmentado com aria-pressed", async () => {
+      const user = userEvent.setup();
+      renderPage();
+
+      expect(await screen.findByRole("heading", { level: 1, name: "Planos" })).toBeInTheDocument();
+      const sections = screen.getByRole("group", { name: "Seção de planos" });
+      const catalog = within(sections).getByRole("button", { name: "Catálogo de planos" });
+      const assign = within(sections).getByRole("button", { name: "Atribuir a cliente" });
+      expect(catalog).toHaveAttribute("aria-pressed", "true");
+      expect(assign).toHaveAttribute("aria-pressed", "false");
+
+      await user.click(assign);
+
+      expect(assign).toHaveAttribute("aria-pressed", "true");
+      expect(catalog).toHaveAttribute("aria-pressed", "false");
+      expect(await screen.findByLabelText("Cliente")).toBeInTheDocument();
+      expect(screen.queryByRole("table", { name: "Catálogo de planos" })).not.toBeInTheDocument();
+
+      await user.click(catalog);
+
+      expect(await screen.findByRole("table", { name: "Catálogo de planos" })).toBeInTheDocument();
+      expect(screen.queryByLabelText("Cliente")).not.toBeInTheDocument();
+    });
+
+    it("o + Novo plano só existe no catálogo", async () => {
+      const user = userEvent.setup();
+      renderPage();
+      expect(await screen.findByRole("button", { name: "+ Novo plano" })).toBeInTheDocument();
+
+      await user.click(screen.getByRole("button", { name: "Atribuir a cliente" }));
+
+      expect(screen.queryByRole("button", { name: "+ Novo plano" })).not.toBeInTheDocument();
+    });
+
+    it("títulos em ordem: h1 e, na atribuição, h2 sem salto", async () => {
+      const user = userEvent.setup();
+      renderPage();
+      await screen.findByRole("table", { name: "Catálogo de planos" });
+      expect(screen.getAllByRole("heading").map((heading) => heading.tagName)).toEqual(["H1"]);
+
+      await user.click(screen.getByRole("button", { name: "Atribuir a cliente" }));
+      await screen.findByLabelText("Cliente");
+
+      expect(screen.getAllByRole("heading").map((heading) => [heading.tagName, heading.textContent])).toEqual([
+        ["H1", "Planos"],
+        ["H2", "Atribuir a cliente"],
+      ]);
+    });
+  });
 
   describe("Catálogo", () => {
     it("lista os planos com descrição, situação e quantos clientes o têm ativo", async () => {
       renderPage();
 
-      const active = row(
-        await screen.findByText("Plano Performance").then((el) => el.textContent!),
-      );
+      const table = await screen.findByRole("table", { name: "Catálogo de planos" });
+      expect(
+        within(table).getAllByRole("columnheader").map((header) => header.textContent),
+      ).toEqual(["Nome", "Descrição", "Status", "Clientes ativos", "Ações"]);
+      const active = row("Plano Performance");
       expect(within(active).getByText("Acesso ilimitado")).toBeInTheDocument();
       expect(within(active).getByText("ATIVO")).toBeInTheDocument();
       expect(within(active).getByText("3")).toBeInTheDocument();
-      expect(within(row("Plano Antigo")).getByText("INATIVO")).toBeInTheDocument();
+      const inactive = row("Plano Antigo");
+      expect(within(inactive).getByText("INATIVO")).toBeInTheDocument();
+      // Sem descrição: travessão, não célula em branco.
+      expect(within(inactive).getByText("—")).toBeInTheDocument();
+    });
+
+    it("os botões de ação dizem de qual plano são", async () => {
+      renderPage();
+      await screen.findByText("Plano Performance");
+
+      expect(
+        within(row("Plano Performance")).getByRole("button", { name: "Editar plano Plano Performance" }),
+      ).toBeInTheDocument();
+      expect(
+        within(row("Plano Performance")).getByRole("button", { name: "Desativar plano Plano Performance" }),
+      ).toBeInTheDocument();
+      expect(
+        within(row("Plano Antigo")).getByRole("button", { name: "Editar plano Plano Antigo" }),
+      ).toBeInTheDocument();
+      expect(
+        within(row("Plano Antigo")).getByRole("button", { name: "Ativar plano Plano Antigo" }),
+      ).toBeInTheDocument();
     });
 
     it("cria um plano com nome e descrição", async () => {
@@ -170,8 +260,10 @@ describe("Planos (administração)", () => {
       renderPage();
       await screen.findByText("Plano Performance");
 
-      await user.click(within(row("Plano Performance")).getByRole("button", { name: "Editar" }));
-      const dialog = screen.getByRole("dialog");
+      await user.click(
+        within(row("Plano Performance")).getByRole("button", { name: "Editar plano Plano Performance" }),
+      );
+      const dialog = screen.getByRole("dialog", { name: "Editar plano" });
       expect(within(dialog).getByLabelText("Nome")).toHaveValue("Plano Performance");
       await user.clear(within(dialog).getByLabelText("Nome"));
       await user.type(within(dialog).getByLabelText("Nome"), "Plano Performance Plus");
@@ -187,24 +279,150 @@ describe("Planos (administração)", () => {
       ]);
     });
 
-    it("desativa um plano ativo e reativa um inativo", async () => {
+    it("desativar pede confirmação: nada é enviado antes, e Cancelar deixa tudo como estava", async () => {
       const user = userEvent.setup();
       renderPage();
       await screen.findByText("Plano Performance");
 
-      await user.click(within(row("Plano Performance")).getByRole("button", { name: "Desativar" }));
+      await user.click(
+        within(row("Plano Performance")).getByRole("button", { name: "Desativar plano Plano Performance" }),
+      );
+
+      const dialog = screen.getByRole("dialog", { name: "Desativar o plano Plano Performance?" });
+      expect(dialog).toHaveAccessibleDescription(/deixa de poder ser atribuído a novos clientes/);
+      expect(calls).toEqual([]);
+      // O foco inicial fica na saída segura.
+      expect(within(dialog).getByRole("button", { name: "Cancelar" })).toHaveFocus();
+
+      await user.click(within(dialog).getByRole("button", { name: "Cancelar" }));
+
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+      expect(calls).toEqual([]);
+      expect(within(row("Plano Performance")).getByText("ATIVO")).toBeInTheDocument();
+    });
+
+    it("confirma a desativação e a reativação: envia, atualiza a linha e fecha o diálogo", async () => {
+      const user = userEvent.setup();
+      renderPage();
+      await screen.findByText("Plano Performance");
+
+      await user.click(
+        within(row("Plano Performance")).getByRole("button", { name: "Desativar plano Plano Performance" }),
+      );
+      await user.click(
+        within(screen.getByRole("dialog")).getByRole("button", { name: "Confirmar desativação" }),
+      );
       await waitFor(() =>
         expect(within(row("Plano Performance")).getByText("INATIVO")).toBeInTheDocument(),
       );
-      await user.click(within(row("Plano Antigo")).getByRole("button", { name: "Ativar" }));
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+
+      await user.click(
+        within(row("Plano Antigo")).getByRole("button", { name: "Ativar plano Plano Antigo" }),
+      );
+      const dialog = screen.getByRole("dialog", { name: "Ativar o plano Plano Antigo?" });
+      expect(dialog).toHaveAccessibleDescription("O plano volta a poder ser atribuído a clientes.");
+      await user.click(within(dialog).getByRole("button", { name: "Confirmar ativação" }));
       await waitFor(() =>
         expect(within(row("Plano Antigo")).getByText("ATIVO")).toBeInTheDocument(),
       );
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 
       expect(calls).toEqual([
         { method: "POST", path: "/api/plans/p-performance/deactivate" },
         { method: "POST", path: "/api/plans/p-old/activate" },
       ]);
+    });
+
+    it("a recusa da API aparece dentro do diálogo, que continua aberto, e a linha não muda", async () => {
+      server.use(
+        http.post("/api/plans/:id/:action", () =>
+          HttpResponse.json(
+            { code: "FORBIDDEN", message: "Este plano não pode ser alterado agora." },
+            { status: 409 },
+          ),
+        ),
+      );
+      const user = userEvent.setup();
+      renderPage();
+      await screen.findByText("Plano Performance");
+
+      await user.click(
+        within(row("Plano Performance")).getByRole("button", { name: "Desativar plano Plano Performance" }),
+      );
+      const dialog = screen.getByRole("dialog");
+      await user.click(within(dialog).getByRole("button", { name: "Confirmar desativação" }));
+
+      expect(await within(dialog).findByRole("alert")).toHaveTextContent(
+        "Este plano não pode ser alterado agora.",
+      );
+      expect(screen.getByRole("dialog")).toBeInTheDocument();
+      expect(within(row("Plano Performance")).getByText("ATIVO")).toBeInTheDocument();
+      // O botão volta a responder (não fica preso em "carregando").
+      expect(within(dialog).getByRole("button", { name: "Confirmar desativação" })).not.toHaveAttribute(
+        "aria-busy",
+      );
+    });
+
+    it("Escape fecha a confirmação sem enviar nada", async () => {
+      const user = userEvent.setup();
+      renderPage();
+      await screen.findByText("Plano Performance");
+      await user.click(
+        within(row("Plano Performance")).getByRole("button", { name: "Desativar plano Plano Performance" }),
+      );
+
+      await user.keyboard("{Escape}");
+
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+      expect(calls).toEqual([]);
+    });
+
+    it("criar sem nome mostra o erro no campo (aria-invalid e aria-describedby), sem enviar, e some ao corrigir", async () => {
+      const user = userEvent.setup();
+      renderPage();
+      await screen.findByText("Plano Performance");
+      await user.click(screen.getByRole("button", { name: "+ Novo plano" }));
+      const dialog = screen.getByRole("dialog", { name: "Novo plano" });
+
+      await user.click(within(dialog).getByRole("button", { name: "Salvar" }));
+
+      const name = within(dialog).getByLabelText("Nome");
+      expect(name).toHaveAttribute("aria-invalid", "true");
+      const message = within(dialog).getByRole("alert");
+      expect(message).toHaveTextContent("O nome do plano é obrigatório.");
+      expect(name).toHaveAccessibleDescription("O nome do plano é obrigatório.");
+      expect(name.getAttribute("aria-describedby")).toBe(message.id);
+      expect(within(dialog).getByLabelText("Descrição")).not.toHaveAttribute("aria-invalid", "true");
+      expect(calls).toEqual([]);
+
+      await user.type(name, "Plano Essencial");
+      await user.click(within(dialog).getByRole("button", { name: "Salvar" }));
+
+      expect(await screen.findByText("Plano Essencial", { selector: "td" })).toBeInTheDocument();
+      expect(calls).toHaveLength(1);
+    });
+
+    it("recusa no campo um nome acima de 80 caracteres e uma descrição acima de 500", async () => {
+      const user = userEvent.setup();
+      renderPage();
+      await screen.findByText("Plano Performance");
+      await user.click(screen.getByRole("button", { name: "+ Novo plano" }));
+      const dialog = screen.getByRole("dialog");
+      await user.click(within(dialog).getByLabelText("Nome"));
+      await user.paste("a".repeat(81));
+      await user.click(within(dialog).getByLabelText("Descrição"));
+      await user.paste("b".repeat(501));
+
+      await user.click(within(dialog).getByRole("button", { name: "Salvar" }));
+
+      expect(within(dialog).getByLabelText("Nome")).toHaveAccessibleDescription(
+        "O nome pode ter no máximo 80 caracteres.",
+      );
+      expect(within(dialog).getByLabelText("Descrição")).toHaveAccessibleDescription(
+        "A descrição pode ter no máximo 500 caracteres.",
+      );
+      expect(calls).toEqual([]);
     });
 
     it("mostra o motivo quando a API recusa o nome", async () => {
@@ -251,11 +469,57 @@ describe("Planos (administração)", () => {
 
       expect(screen.getByRole("button", { name: "+ Novo plano" })).toBeDisabled();
       expect(
-        within(row("Plano Performance")).getByRole("button", { name: "Editar" }),
+        within(row("Plano Performance")).getByRole("button", { name: "Editar plano Plano Performance" }),
       ).toBeDisabled();
       expect(
-        within(row("Plano Performance")).getByRole("button", { name: "Desativar" }),
+        within(row("Plano Performance")).getByRole("button", { name: "Desativar plano Plano Performance" }),
       ).toBeDisabled();
+    });
+
+    it("carregando: mostra o estado de carregamento até a lista chegar", async () => {
+      server.use(
+        http.get("/api/plans", async () => {
+          await new Promise((resolve) => setTimeout(resolve, 50));
+          return HttpResponse.json(plans);
+        }),
+      );
+      renderPage();
+
+      expect(await screen.findByText("Carregando planos…")).toBeInTheDocument();
+      expect(await screen.findByText("Plano Performance")).toBeInTheDocument();
+      expect(screen.queryByText("Carregando planos…")).not.toBeInTheDocument();
+    });
+
+    it("erro: mostra a mensagem com tentar de novo, que recarrega a lista", async () => {
+      let calls = 0;
+      server.use(
+        http.get("/api/plans", () => {
+          calls += 1;
+          return calls === 1
+            ? HttpResponse.json({ message: "falha" }, { status: 500 })
+            : HttpResponse.json(plans);
+        }),
+      );
+      const user = userEvent.setup();
+      renderPage();
+
+      const error = await screen.findByRole("alert");
+      expect(error).toHaveTextContent("Não foi possível carregar os planos.");
+      await user.click(within(error).getByRole("button", { name: "Tentar novamente" }));
+
+      expect(await screen.findByText("Plano Performance")).toBeInTheDocument();
+    });
+
+    it("offline: mostra o estado sem conexão (não um erro) e a tabela volta com a rede", async () => {
+      onlineManager.setOnline(false);
+      setBrowserOnline(false);
+      renderPage();
+
+      await expectOfflineState();
+      onlineManager.setOnline(true);
+      setBrowserOnline(true);
+
+      expect(await screen.findByRole("table", { name: "Catálogo de planos" })).toBeInTheDocument();
     });
   });
 
@@ -418,13 +682,122 @@ describe("Planos (administração)", () => {
 
       await user.selectOptions(screen.getByLabelText("Cliente"), "Marina Souza (plano ativo)");
 
-      const history = await screen.findByRole("region", { name: "Histórico de planos do cliente" });
-      const items = within(history).getAllByRole("listitem");
-      expect(items).toHaveLength(2);
-      expect(within(items[0]).getByText("Plano Performance")).toBeInTheDocument();
-      expect(within(items[0]).getByText("15/08/2026 – 15/11/2026")).toBeInTheDocument();
-      expect(within(items[0]).getByText("ATIVO")).toBeInTheDocument();
-      expect(within(items[1]).getByText("ENCERRADO")).toBeInTheDocument();
+      const history = await screen.findByRole("table", { name: "Planos de Marina Souza" });
+      expect(
+        within(history).getAllByRole("columnheader").map((header) => header.textContent),
+      ).toEqual(["Plano", "Período", "Situação"]);
+      const rows = within(history).getAllByRole("row").slice(1);
+      expect(rows).toHaveLength(2);
+      expect(within(rows[0]).getByText("Plano Performance")).toBeInTheDocument();
+      expect(within(rows[0]).getByText("15/08/2026 – 15/11/2026")).toBeInTheDocument();
+      expect(within(rows[0]).getByText("ATIVO")).toBeInTheDocument();
+      expect(within(rows[1]).getByText("ENCERRADO")).toBeInTheDocument();
+      expect(
+        screen.getByRole("heading", { level: 2, name: "Histórico de planos do cliente" }),
+      ).toBeInTheDocument();
+    });
+
+    it("cliente sem planos anteriores mostra o estado vazio no lugar da tabela", async () => {
+      const user = await openAssign();
+
+      await user.selectOptions(screen.getByLabelText("Cliente"), "Bruno Lima (sem plano ativo)");
+
+      expect(await screen.findByText("Este cliente ainda não tem planos.")).toBeInTheDocument();
+      expect(screen.queryByRole("table")).not.toBeInTheDocument();
+    });
+
+    it("sem cliente escolhido não há histórico nem consulta de planos", async () => {
+      await openAssign();
+
+      expect(screen.queryByRole("heading", { name: "Histórico de planos do cliente" })).not.toBeInTheDocument();
+    });
+
+    it("erro no histórico mostra a mensagem com tentar de novo", async () => {
+      server.use(
+        http.get("/api/plan-assignments", () =>
+          HttpResponse.json({ message: "falha" }, { status: 500 }),
+        ),
+      );
+      const user = await openAssign();
+
+      await user.selectOptions(screen.getByLabelText("Cliente"), "Marina Souza (plano ativo)");
+
+      const error = await screen.findByRole("alert");
+      expect(error).toHaveTextContent("Não foi possível carregar o histórico de planos.");
+      expect(within(error).getByRole("button", { name: "Tentar novamente" })).toBeInTheDocument();
+    });
+
+    it("erro ao carregar clientes e planos mostra a mensagem e não o formulário", async () => {
+      server.use(
+        http.get("/api/plans/options", () => HttpResponse.json({ message: "falha" }, { status: 500 })),
+      );
+      const user = userEvent.setup();
+      renderPage();
+      await screen.findByText("Plano Performance");
+      await user.click(screen.getByRole("button", { name: "Atribuir a cliente" }));
+
+      expect(await screen.findByRole("alert")).toHaveTextContent(
+        "Não foi possível carregar os clientes e os planos.",
+      );
+      expect(screen.queryByLabelText("Cliente")).not.toBeInTheDocument();
+    });
+
+    it("offline ao abrir a atribuição: sem conexão, não erro; o formulário vem com a rede", async () => {
+      const user = userEvent.setup();
+      renderPage();
+      await screen.findByText("Plano Performance");
+      onlineManager.setOnline(false);
+      setBrowserOnline(false);
+      await user.click(screen.getByRole("button", { name: "Atribuir a cliente" }));
+
+      await expectOfflineState();
+      onlineManager.setOnline(true);
+      setBrowserOnline(true);
+
+      expect(await screen.findByLabelText("Cliente")).toBeInTheDocument();
+    });
+
+    it("cliente, plano e datas são campos rotulados; o erro de datas liga ao Término por aria-invalid e aria-describedby", async () => {
+      const user = await openAssign();
+      expect(screen.getByLabelText("Cliente").tagName).toBe("SELECT");
+      expect(screen.getByLabelText("Plano").tagName).toBe("SELECT");
+      expect(screen.getByLabelText("Início")).toHaveAttribute("type", "date");
+      expect(screen.getByLabelText("Término")).not.toHaveAttribute("aria-invalid", "true");
+
+      await user.selectOptions(screen.getByLabelText("Cliente"), "Bruno Lima (sem plano ativo)");
+      await user.selectOptions(screen.getByLabelText("Plano"), "Plano Performance");
+      await user.type(screen.getByLabelText("Início"), "2026-12-31");
+      await user.type(screen.getByLabelText("Término"), "2026-10-01");
+
+      const end = screen.getByLabelText("Término");
+      expect(end).toHaveAttribute("aria-invalid", "true");
+      expect(end).toHaveAccessibleDescription("A data de término não pode ser anterior à de início.");
+      expect(screen.getByLabelText("Início")).not.toHaveAttribute("aria-invalid", "true");
+    });
+
+    it("depois de atribuir, o cartão confirma em status e o formulário volta limpo (menos o cliente)", async () => {
+      const user = await openAssign();
+      await user.selectOptions(screen.getByLabelText("Cliente"), "Bruno Lima (sem plano ativo)");
+      await user.selectOptions(screen.getByLabelText("Plano"), "Plano Performance");
+      await user.type(screen.getByLabelText("Início"), "2026-10-01");
+      await user.type(screen.getByLabelText("Término"), "2026-12-31");
+      await user.click(screen.getByRole("button", { name: "Atribuir plano" }));
+
+      expect(await screen.findByRole("status")).toHaveTextContent("Plano atribuído a Bruno Lima.");
+      expect(screen.getByLabelText("Plano")).toHaveValue("");
+      expect(screen.getByLabelText("Início")).toHaveValue("");
+      expect(screen.getByLabelText("Cliente")).toHaveValue("c-bruno");
+    });
+
+    it("sem permissão de atribuir, o botão fica bloqueado com o motivo", async () => {
+      mockSuccessfulLogin("Professor", [
+        { module: Module.PLANOS, actions: [PermissionAction.VIEW], scope: PermissionScope.ALL },
+      ]);
+      await openAssign();
+
+      const button = screen.getByRole("button", { name: "Atribuir plano" });
+      expect(button).toBeDisabled();
+      expect(button).toHaveAttribute("title", "Você não tem permissão para atribuir planos.");
     });
   });
 });

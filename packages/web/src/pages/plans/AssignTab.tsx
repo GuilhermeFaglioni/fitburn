@@ -1,22 +1,56 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { assignPlanRequestSchema, Module, PermissionAction } from "@fitburn/contracts";
+import {
+  assignPlanRequestSchema,
+  Module,
+  PermissionAction,
+  PlanAssignmentStatus,
+  type PlanAssignment,
+} from "@fitburn/contracts";
 import { BlockedAction } from "../../components/BlockedAction";
+import { QueryBlockState } from "../../components/QueryBlockState";
+import { Alert } from "../../components/ui/Alert";
+import { Badge } from "../../components/ui/Badge";
+import { Button } from "../../components/ui/Button";
+import { Card } from "../../components/ui/Card";
+import { Field } from "../../components/ui/Field";
+import { Select } from "../../components/ui/Select";
+import { EmptyState } from "../../components/ui/States";
+import { Table, type TableColumn } from "../../components/ui/Table";
 import { formatLocalDate } from "../../lib/agenda/format";
 import { errorMessage } from "../../lib/auth/api";
 import { useAuth } from "../../lib/auth/AuthContext";
-import { PlanHistoryList } from "./PlanHistoryList";
 import { assignPlan, getPlanAssignmentOptions, listClientPlans } from "../../lib/plans/api";
-import { ErrorState, Feedback, LoadingState } from "../../components/states";
 
-/**
- * "Atribuir a cliente": cliente, plano e as datas de
- * início e término; se o cliente já tem um plano ativo, o aviso de que a nova
- * atribuição o substitui (o atual termina na véspera do início do novo).
- * Abaixo, o histórico de planos do cliente escolhido. O tela de referência não tem as datas (o spec as pede na atribuição).
- */
 const EMPTY_FORM = { clientId: "", planId: "", startDate: "", endDate: "" };
 
+const HISTORY_COLUMNS: TableColumn<PlanAssignment>[] = [
+  { key: "plan", header: "Plano", className: "fb-ui-table__name", cell: (item) => item.plan.name },
+  {
+    key: "period",
+    header: "Período",
+    className: "fb-ui-table__muted",
+    cell: (item) => `${formatLocalDate(item.startDate)} – ${formatLocalDate(item.endDate)}`,
+  },
+  {
+    key: "status",
+    header: "Situação",
+    cell: (item) =>
+      item.status === PlanAssignmentStatus.ACTIVE ? (
+        <Badge tone="ok" dot>
+          ATIVO
+        </Badge>
+      ) : (
+        <Badge dot>ENCERRADO</Badge>
+      ),
+  },
+];
+
+/**
+ * "Atribuir a cliente" (D-038, #156): cliente, plano e as datas de início e término; se o cliente já tem um plano
+ * ativo, o aviso de que a nova atribuição o substitui (o atual termina na véspera do início do novo). Abaixo, o
+ * histórico de planos do cliente escolhido. A tela de referência não tem as datas; o spec as pede na atribuição.
+ */
 export function AssignTab() {
   const { can } = useAuth();
   const queryClient = useQueryClient();
@@ -59,120 +93,127 @@ export function AssignTab() {
   }
 
   return (
-    <div
-      className="fb-assign"
-      style={{ maxWidth: 620, display: "flex", flexDirection: "column", gap: 16 }}
-    >
-      {optionsQuery.isLoading && <LoadingState />}
-      {optionsQuery.isError && (
-        <ErrorState
-          message="Não foi possível carregar os clientes e os planos."
-          onRetry={() => void optionsQuery.refetch()}
-        />
+    <div className="fb-ui-assign">
+      <QueryBlockState
+        query={optionsQuery}
+        hasData={options !== undefined}
+        loading="Carregando clientes e planos…"
+        error="Não foi possível carregar os clientes e os planos."
+      />
+
+      {options && (
+        <Card as="section" aria-labelledby="assign-title" className="fb-ui-stack">
+          <h2 id="assign-title" className="fb-ui-section-title">
+            Atribuir a cliente
+          </h2>
+          <div className="fb-ui-form-grid">
+            <Select
+              label="Cliente"
+              className="fb-ui-field--full"
+              value={clientId}
+              onChange={(event) => {
+                setField("clientId", event.target.value);
+                setAssignedTo(null);
+                assignMutation.reset();
+              }}
+            >
+              <option value="">Selecione um cliente</option>
+              {options.clients.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.fullName} {item.activePlan ? "(plano ativo)" : "(sem plano ativo)"}
+                </option>
+              ))}
+            </Select>
+            <Select
+              label="Plano"
+              className="fb-ui-field--full"
+              value={planId}
+              onChange={(event) => setField("planId", event.target.value)}
+            >
+              <option value="">Selecione um plano</option>
+              {options.plans.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name}
+                </option>
+              ))}
+            </Select>
+            <Field
+              label="Início"
+              type="date"
+              value={startDate}
+              onChange={(event) => setField("startDate", event.target.value)}
+            />
+            <Field
+              label="Término"
+              type="date"
+              value={endDate}
+              error={invalidReason ?? undefined}
+              onChange={(event) => setField("endDate", event.target.value)}
+            />
+          </div>
+
+          {client?.activePlan && (
+            <p role="note" className="fb-ui-notice">
+              <span>
+                <strong>{client.fullName} já possui um plano ativo</strong> (
+                {client.activePlan.name}, até {formatLocalDate(client.activePlan.endDate)}). Um
+                cliente só pode ter um plano ativo por vez — ao atribuir este novo plano, o atual
+                passa a terminar na véspera do início do novo plano (ou mantém o término atual, se
+                ele já for anterior a essa data).
+              </span>
+            </p>
+          )}
+
+          {assignMutation.isError && (
+            <Alert>
+              {errorMessage(assignMutation.error, "Não foi possível atribuir o plano.")}
+            </Alert>
+          )}
+          {assignedTo && <Alert tone="ok">Plano atribuído a {assignedTo}.</Alert>}
+
+          <div className="fb-ui-dialog__actions">
+            <Button disabled={assignMutation.isPending} onClick={reset}>
+              Cancelar
+            </Button>
+            <BlockedAction
+              allowed={canAssign}
+              reason="Você não tem permissão para atribuir planos."
+            >
+              <Button
+                variant="primary"
+                busy={assignMutation.isPending}
+                disabled={!complete || !parsed.success}
+                onClick={() => assignMutation.mutate({ clientId, planId, startDate, endDate })}
+              >
+                {client?.activePlan ? "Encerrar atual e atribuir" : "Atribuir plano"}
+              </Button>
+            </BlockedAction>
+          </div>
+        </Card>
       )}
 
-      <div className="fb-modal__field">
-        <label htmlFor="assign-client">Cliente</label>
-        <select
-          id="assign-client"
-          className="fb-field"
-          value={clientId}
-          onChange={(event) => {
-            setField("clientId", event.target.value);
-            setAssignedTo(null);
-            assignMutation.reset();
-          }}
-        >
-          <option value="">Selecione um cliente</option>
-          {options?.clients.map((item) => (
-            <option key={item.id} value={item.id}>
-              {item.fullName} {item.activePlan ? "(plano ativo)" : "(sem plano ativo)"}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div className="fb-modal__field">
-        <label htmlFor="assign-plan">Plano</label>
-        <select
-          id="assign-plan"
-          className="fb-field"
-          value={planId}
-          onChange={(event) => setField("planId", event.target.value)}
-        >
-          <option value="">Selecione um plano</option>
-          {options?.plans.map((item) => (
-            <option key={item.id} value={item.id}>
-              {item.name}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div className="fb-modal__grid">
-        <div className="fb-modal__field">
-          <label htmlFor="assign-start">Início</label>
-          <input
-            id="assign-start"
-            type="date"
-            className="fb-field"
-            value={startDate}
-            onChange={(event) => setField("startDate", event.target.value)}
-          />
-        </div>
-        <div className="fb-modal__field">
-          <label htmlFor="assign-end">Término</label>
-          <input
-            id="assign-end"
-            type="date"
-            className="fb-field"
-            value={endDate}
-            onChange={(event) => setField("endDate", event.target.value)}
-          />
-        </div>
-      </div>
-
-      {client?.activePlan && (
-        <div className="fb-lock-banner fb-lock-banner--sm" role="note">
-          <span>
-            <strong>{client.fullName} já possui um plano ativo</strong> ({client.activePlan.name},
-            até {formatLocalDate(client.activePlan.endDate)}). Um cliente só pode ter um plano ativo
-            por vez — ao atribuir este novo plano, o atual passa a terminar na véspera do início do
-            novo plano (ou mantém o término atual, se ele já for anterior a essa data).
-          </span>
-        </div>
-      )}
-
-      {invalidReason && <Feedback tone="error">{invalidReason}</Feedback>}
-      {assignMutation.isError && (
-        <Feedback tone="error">
-          {errorMessage(assignMutation.error, "Não foi possível atribuir o plano.")}
-        </Feedback>
-      )}
-      {assignedTo && <p className="fb-note">Plano atribuído a {assignedTo}.</p>}
-
-      <div className="fb-modal__footer fb-modal__footer--end">
-        <button type="button" className="fb-btn-secondary fb-btn-secondary--lg" onClick={reset}>
-          Cancelar
-        </button>
-        <BlockedAction allowed={canAssign} reason="Você não tem permissão para atribuir planos.">
-          <button
-            type="button"
-            className="fb-btn-primary fb-btn-primary--lg"
-            disabled={!complete || !parsed.success || assignMutation.isPending}
-            onClick={() => assignMutation.mutate({ clientId, planId, startDate, endDate })}
-          >
-            {client?.activePlan ? "Encerrar atual e atribuir" : "Atribuir plano"}
-          </button>
-        </BlockedAction>
-      </div>
-
-      {client && historyQuery.isSuccess && historyQuery.data.length > 0 && (
-        <section aria-labelledby="assign-history" className="fb-plan__admin-history">
-          <h2 id="assign-history" className="fb-plan__admin-history-title">
+      {client && (
+        <section className="fb-ui-assign__history" aria-labelledby="assign-history">
+          <h2 id="assign-history" className="fb-ui-section-title">
             Histórico de planos do cliente
           </h2>
-          <PlanHistoryList items={historyQuery.data} light />
+          <QueryBlockState
+            query={historyQuery}
+            hasData={historyQuery.data !== undefined}
+            loading="Carregando histórico…"
+            error="Não foi possível carregar o histórico de planos."
+          />
+          {historyQuery.data && historyQuery.data.length === 0 && (
+            <EmptyState title="Este cliente ainda não tem planos." />
+          )}
+          {historyQuery.data && historyQuery.data.length > 0 && (
+            <Table
+              label={`Planos de ${client.fullName}`}
+              columns={HISTORY_COLUMNS}
+              rows={historyQuery.data}
+              rowKey={(item) => item.id}
+            />
+          )}
         </section>
       )}
     </div>

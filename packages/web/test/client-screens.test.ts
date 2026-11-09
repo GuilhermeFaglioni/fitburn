@@ -41,9 +41,8 @@ const gamificationTsx = [
   read("pages/gamification/icons.tsx"),
 ].join("\n");
 const profileCss = read("styles/profile.css");
-const planCss = read("styles/plan.css");
-// Só a parte do cliente: a consulta da administração (acima do marcador) segue o PR 16.
-const clientPlanCss = planCss.slice(0, planCss.indexOf("/* Consulta da administração"));
+// plan.css é só do plano do cliente: a consulta da administração é uma tabela (lote D, PR 16).
+const clientPlanCss = read("styles/plan.css");
 const profileTsx = [
   read("pages/ProfilePage.tsx"),
   read("pages/OnboardingPage.tsx"),
@@ -233,7 +232,7 @@ describe("FitPoints do cliente (D-038, tela extrapolada da base)", () => {
 });
 
 describe("Perfil, Onboarding, Privacidade e Termos (D-038, telas extrapoladas da base)", () => {
-  it("profile.css e a parte do cliente de plan.css só usam tokens da base: sem hex, rgba/hsla, --color-* legado nem --radius-*", () => {
+  it("profile.css e plan.css só usam tokens da base: sem hex, rgba/hsla, --color-* legado nem --radius-*", () => {
     for (const css of [profileCss, clientPlanCss]) {
       expect(css.length).toBeGreaterThan(500);
       expect(css.match(HEX) ?? []).toEqual([]);
@@ -245,11 +244,6 @@ describe("Perfil, Onboarding, Privacidade e Termos (D-038, telas extrapoladas da
     }
     // Sem a variante clara do perfil: o tema decide (os tokens valem nas duas cascas).
     expect(profileCss).not.toMatch(/fb-profile--light|--fb-profile-/);
-  });
-
-  it("a consulta da administração no fim de plan.css também não tem cor literal", () => {
-    expect(planCss.match(HEX) ?? []).toEqual([]);
-    expect(planCss.match(COLOR_FUNCTION) ?? []).toEqual([]);
   });
 
   it("as telas (TSX) não têm cor literal nem a prop surface; estados, card, campo, botão e selo vêm de ui/", () => {

@@ -1,131 +1,97 @@
 import { useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Module, PermissionAction, type PlanDetail } from "@fitburn/contracts";
 import { BlockedAction } from "../../components/BlockedAction";
+import { QueryBlockState } from "../../components/QueryBlockState";
+import { Badge } from "../../components/ui/Badge";
+import { Button } from "../../components/ui/Button";
+import { EmptyState } from "../../components/ui/States";
+import { Table, type TableColumn } from "../../components/ui/Table";
 import { useAuth } from "../../lib/auth/AuthContext";
-import { errorMessage } from "../../lib/auth/api";
-import { listPlans, setPlanActive } from "../../lib/plans/api";
-import { PlanForm } from "./PlanForm";
-import { EmptyState, ErrorState, Feedback, LoadingState } from "../../components/states";
+import { listPlans } from "../../lib/plans/api";
+import { PlanToggleDialog } from "./PlanToggleDialog";
 
-type FormState = { mode: "closed" } | { mode: "create" } | { mode: "edit"; plan: PlanDetail };
-
-/** Catálogo de planos: tabela com criar, editar, ativar e desativar. */
-export function CatalogTab() {
+/**
+ * Catálogo de planos (D-038, #156): tabela com editar, ativar e desativar por linha. Editar abre o formulário, que
+ * vive na página (o "+ Novo plano" fica no cabeçalho); ativar e desativar pedem confirmação em diálogo.
+ */
+export function CatalogTab({ onEdit }: { onEdit: (plan: PlanDetail) => void }) {
   const { can } = useAuth();
-  const queryClient = useQueryClient();
-  const [form, setForm] = useState<FormState>({ mode: "closed" });
+  const [toggling, setToggling] = useState<PlanDetail | null>(null);
 
   const plansQuery = useQuery({ queryKey: ["plans"], queryFn: listPlans });
-  const toggleMutation = useMutation({
-    mutationFn: (plan: PlanDetail) => setPlanActive(plan.id, !plan.isActive),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["plans"] }),
-  });
-
-  const canCreate = can(Module.PLANOS, PermissionAction.CREATE);
   const canEdit = can(Module.PLANOS, PermissionAction.EDIT);
+  const reason = "Você não tem permissão para alterar planos.";
+
+  const columns: TableColumn<PlanDetail>[] = [
+    { key: "name", header: "Nome", className: "fb-ui-table__name", cell: (plan) => plan.name },
+    {
+      key: "description",
+      header: "Descrição",
+      className: "fb-ui-table__muted",
+      cell: (plan) => plan.description ?? "—",
+    },
+    {
+      key: "status",
+      header: "Status",
+      cell: (plan) => (
+        <Badge tone={plan.isActive ? "ok" : "neutral"} dot>
+          {plan.isActive ? "ATIVO" : "INATIVO"}
+        </Badge>
+      ),
+    },
+    {
+      key: "clients",
+      header: "Clientes ativos",
+      className: "fb-ui-table__muted",
+      cell: (plan) => plan.activeClientCount,
+    },
+    {
+      key: "actions",
+      header: "Ações",
+      actions: true,
+      cell: (plan) => (
+        <div className="fb-ui-row-actions">
+          <BlockedAction allowed={canEdit} reason={reason}>
+            <Button size="sm" aria-label={`Editar plano ${plan.name}`} onClick={() => onEdit(plan)}>
+              Editar
+            </Button>
+          </BlockedAction>
+          <BlockedAction allowed={canEdit} reason={reason}>
+            <Button
+              size="sm"
+              aria-label={`${plan.isActive ? "Desativar" : "Ativar"} plano ${plan.name}`}
+              onClick={() => setToggling(plan)}
+            >
+              {plan.isActive ? "Desativar" : "Ativar"}
+            </Button>
+          </BlockedAction>
+        </div>
+      ),
+    },
+  ];
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 14, flexGrow: 1, minHeight: 0 }}>
-      <div className="fb-toolbar-end">
-        <BlockedAction allowed={canCreate} reason="Você não tem permissão para criar planos.">
-          <button
-            type="button"
-            className="fb-btn-primary"
-            onClick={() => setForm({ mode: "create" })}
-          >
-            + Novo plano
-          </button>
-        </BlockedAction>
-      </div>
-
-      {plansQuery.isLoading && <LoadingState />}
-      {plansQuery.isError && (
-        <ErrorState
-          message="Não foi possível carregar os planos."
-          onRetry={() => void plansQuery.refetch()}
+    <div className="fb-ui-stack">
+      <QueryBlockState
+        query={plansQuery}
+        hasData={plansQuery.data !== undefined}
+        loading="Carregando planos…"
+        error="Não foi possível carregar os planos."
+      />
+      {plansQuery.data && plansQuery.data.length === 0 && (
+        <EmptyState title="Nenhum plano cadastrado." />
+      )}
+      {plansQuery.data && plansQuery.data.length > 0 && (
+        <Table
+          label="Catálogo de planos"
+          columns={columns}
+          rows={plansQuery.data}
+          rowKey={(plan) => plan.id}
         />
       )}
-      {toggleMutation.isError && (
-        <Feedback tone="error">
-          {errorMessage(toggleMutation.error, "Não foi possível alterar o plano.")}
-        </Feedback>
-      )}
-      {plansQuery.isSuccess && plansQuery.data.length === 0 && (
-        <EmptyState message="Nenhum plano cadastrado." />
-      )}
 
-      {plansQuery.isSuccess && plansQuery.data.length > 0 && (
-        <div className="fb-table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th className="fb-th">Nome</th>
-                <th className="fb-th">Descrição</th>
-                <th className="fb-th">Status</th>
-                <th className="fb-th">Clientes ativos</th>
-                <th className="fb-th" style={{ textAlign: "right" }}>
-                  Ações
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {plansQuery.data.map((plan) => (
-                <tr key={plan.id} className={plan.isActive ? undefined : "fb-row--inactive"}>
-                  <td className="fb-td fb-td--name">{plan.name}</td>
-                  <td className="fb-td fb-td--soft">{plan.description}</td>
-                  <td className="fb-td">
-                    <span
-                      className={`fb-badge ${plan.isActive ? "fb-badge--active" : "fb-badge--inactive"}`}
-                    >
-                      {plan.isActive ? "ATIVO" : "INATIVO"}
-                    </span>
-                  </td>
-                  <td className="fb-td fb-td--soft">{plan.activeClientCount}</td>
-                  <td className="fb-td fb-td--actions" style={{ textAlign: "right" }}>
-                    <BlockedAction
-                      allowed={canEdit}
-                      reason="Você não tem permissão para alterar planos."
-                    >
-                      <button
-                        type="button"
-                        className="fb-row-btn"
-                        onClick={() => setForm({ mode: "edit", plan })}
-                      >
-                        Editar
-                      </button>
-                    </BlockedAction>
-                    <BlockedAction
-                      allowed={canEdit}
-                      reason="Você não tem permissão para alterar planos."
-                    >
-                      <button
-                        type="button"
-                        className="fb-row-btn"
-                        disabled={toggleMutation.isPending}
-                        onClick={() => toggleMutation.mutate(plan)}
-                      >
-                        {plan.isActive ? "Desativar" : "Ativar"}
-                      </button>
-                    </BlockedAction>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {form.mode !== "closed" && (
-        <PlanForm
-          plan={form.mode === "edit" ? form.plan : undefined}
-          onSaved={() => {
-            setForm({ mode: "closed" });
-            void queryClient.invalidateQueries({ queryKey: ["plans"] });
-          }}
-          onClose={() => setForm({ mode: "closed" })}
-        />
-      )}
+      {toggling && <PlanToggleDialog plan={toggling} onClose={() => setToggling(null)} />}
     </div>
   );
 }
