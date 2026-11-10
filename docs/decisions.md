@@ -82,6 +82,13 @@ Registro das decisões tomadas durante a conversa. O documento separa decisões 
 |---|---|---|---|
 | D-038 | Tema claro e escuro pela preferência do sistema (`prefers-color-scheme`), em cliente e admin, com alternância manual salva por aparelho (`localStorage`) | Aprovado | Revisa a #134 (escuro sempre). A proposta de design traz os dois temas; o escopo e a alternância foram confirmados pelo dono do produto. |
 
+### D-039 e D-040: landing
+
+| ID | Decisão | Status | Motivo principal |
+|---|---|---|---|
+| D-039 | Landing page em `packages/landing` (Astro estático): pacote separado, sem JS próprio, tokens importados do app, em `site.fitburn.faglionidev.com` com `noindex` enquanto for proposta comercial. Domínio de produção (`fitburnbrasil.com.br`) por variável de ambiente | Aprovado (2026-11-10) | Desempenho e SEO de página de marketing, e o PWA do app fica intocado. O D-031 continua pendente para o domínio de produção do app. |
+| D-040 | Landing só no tema escuro | Aprovado (2026-11-10) | Exceção ao D-038, que vale para cliente e admin. A landing segue o registro noturno da marca (site e Instagram) e não tem alternância. |
+
 ## Regra de mudança
 
 Decisões marcadas como “No desenho” não devem ser tratadas como definitivas até serem ratificadas. Decisões aprovadas podem ganhar detalhamento posterior sem alterar sua direção, salvo nova decisão explícita.

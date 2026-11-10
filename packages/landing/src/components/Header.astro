@@ -1,0 +1,63 @@
+---
+import { header } from "../content/copy";
+import { site } from "../content/site";
+import CtaLink from "./CtaLink.astro";
+import Logo from "./Logo.astro";
+---
+
+<header class="header">
+  <div class="container bar">
+    <Logo />
+    <nav class="nav" aria-label={header.navLabel}>
+      <ul>
+        {header.nav.map((item) => <li><a href={item.href}>{item.label}</a></li>)}
+      </ul>
+    </nav>
+    <CtaLink kind="whatsapp" message={site.messages.trial} local="header" small>{header.cta}</CtaLink>
+  </div>
+</header>
+
+<style>
+  .header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: var(--bg);
+    border-bottom: 1px solid var(--line);
+  }
+  .bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-4);
+    min-height: var(--s-16);
+  }
+  /* Sem JS não há menu hambúrguer: a navegação só aparece onde cabe. */
+  .nav {
+    display: none;
+  }
+  .nav ul {
+    display: flex;
+    gap: var(--s-8);
+  }
+  .nav a {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--s-12);
+    color: var(--ink-2);
+    font-size: var(--text-small);
+    font-weight: var(--weight-medium);
+    text-decoration: none;
+    transition: color var(--duration-state) var(--ease-out);
+  }
+  @media (hover: hover) {
+    .nav a:hover {
+      color: var(--brand-strong);
+    }
+  }
+  @media (min-width: 900px) {
+    .nav {
+      display: block;
+    }
+  }
+</style>

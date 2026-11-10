@@ -231,3 +231,31 @@ Rodar de novo (a cada deploy) é seguro: nada é duplicado, e em outro dia a age
 | App abre, mas login falha / "sessão expirada" | O domínio precisa ser HTTPS (cookie `Secure`) e o Domains do `web` deve ter a porta `:80`. |
 | 502/504 no domínio | `web` espera o `api` ficar saudável; aguarde o `start_period` (~90s) ou veja os logs do `api`. |
 | `DEMO_USER_PASSWORD é obrigatória` | Defina com 12+ caracteres, ou ponha `DEMO_SEED=false`. |
+
+## 9. Landing
+
+A landing da Fitburn Brasil (`packages/landing`, D-039) é o serviço `landing` do mesmo compose: Nginx servindo HTML estático, sem API nem banco. Hoje é uma proposta comercial: fica em `site.fitburn.faglionidev.com`, fora do índice do Google. O app continua em `fitburn.faglionidev.com`, sem mudança.
+
+Variáveis (todas opcionais; os padrões servem para a proposta):
+
+| Variável | Padrão | Efeito |
+|---|---|---|
+| `LANDING_SITE_URL` | `https://site.fitburn.faglionidev.com` | canonical, `og:url`, sitemap e JSON-LD (é variável de **build**) |
+| `LANDING_INDEXABLE` | `false` | `true` remove o `noindex` e coloca o `Sitemap:` no `robots.txt` (build) |
+| `LANDING_UMAMI_SRC` / `LANDING_UMAMI_WEBSITE_ID` | vazio | Analytics Umami; sem as duas, a página não carrega script nenhum (build) |
+| `LANDING_ANALYTICS_ORIGIN` | vazio | Origem do Umami na CSP (ex.: `https://umami.faglionidev.com`; runtime) |
+| `LANDING_ROBOTS_TAG` | `noindex, nofollow` | Header `X-Robots-Tag`; vazio = sem o header (runtime) |
+
+Passo a passo:
+
+1. Criar o DNS `A` de `site.fitburn.faglionidev.com` para o IP da VPS.
+2. No Coolify, serviço `landing` → Domains: `https://site.fitburn.faglionidev.com:80`.
+3. Cadastrar as variáveis `LANDING_*`. O Umami é opcional: crie o site no Umami e copie o `script.js` e o website ID.
+4. Redeploy. Conferir:
+   - `curl -sI https://site.fitburn.faglionidev.com/` mostra a CSP, `X-Frame-Options`, `Referrer-Policy`, `X-Content-Type-Options`, `Permissions-Policy` e `X-Robots-Tag: noindex, nofollow`;
+   - `/robots.txt` tem `Allow: /` e nenhum `Sitemap:`;
+   - `/healthz` responde `ok`;
+   - o app em `fitburn.faglionidev.com` continua igual.
+5. **Ir ao ar no domínio da Fitburn** (futuro): `LANDING_SITE_URL=https://www.fitburnbrasil.com.br`, `LANDING_INDEXABLE=true`, `LANDING_ROBOTS_TAG` vazio (defina a variável com valor vazio) e redeploy. Cumpra antes a lista de `docs/landing/antes-de-publicar.md`.
+
+Teste local da imagem: `docker build -f docker/landing/Dockerfile -t fitburn-landing .` e `docker run --rm -p 8080:80 fitburn-landing`.

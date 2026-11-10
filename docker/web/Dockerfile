@@ -12,6 +12,7 @@ RUN corepack enable && pnpm --version
 COPY pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 COPY packages/api/package.json packages/api/
 COPY packages/contracts/package.json packages/contracts/
+COPY packages/landing/package.json packages/landing/
 COPY packages/web/package.json packages/web/
 RUN pnpm install --frozen-lockfile --filter "@fitburn/web..."
 

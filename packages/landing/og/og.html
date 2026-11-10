@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <title>Molde do Open Graph</title>
+    <!-- Molde do og.png (1200x630) e do apple-touch-icon.png (180x180). Gerado por scripts/og.mjs. -->
+    <link rel="stylesheet" href="../../web/src/styles/tokens.css" />
+    <style>
+      @font-face {
+        font-family: "DM Sans";
+        font-weight: 700;
+        src: url("../node_modules/@fontsource/dm-sans/files/dm-sans-latin-700-normal.woff2") format("woff2");
+      }
+      @font-face {
+        font-family: "DM Sans";
+        font-weight: 500;
+        src: url("../node_modules/@fontsource/dm-sans/files/dm-sans-latin-500-normal.woff2") format("woff2");
+      }
+      @font-face {
+        font-family: "Cormorant";
+        font-style: italic;
+        font-weight: 700;
+        src: url("../node_modules/@fontsource/cormorant/files/cormorant-latin-700-italic.woff2") format("woff2");
+      }
+      * { box-sizing: border-box; margin: 0; }
+      html, body { background: var(--bg); color: var(--ink); font-family: var(--font-sans); }
+      .og { width: 1200px; height: 630px; padding: 72px 80px; display: flex; flex-direction: column; justify-content: space-between; border-top: 8px solid var(--brand); }
+      .brand { display: flex; align-items: center; gap: 20px; }
+      .brand svg { width: 72px; height: 72px; }
+      .brand span { font-size: 34px; font-weight: 700; letter-spacing: 0.24em; }
+      h1 { font-size: 84px; font-weight: 700; line-height: 1.04; letter-spacing: -0.045em; }
+      p { margin-top: 24px; font-size: 38px; font-weight: 500; line-height: 1.2; letter-spacing: -0.02em; color: var(--ink-2); max-width: 1000px; text-wrap: balance; }
+      em { font-family: var(--font-serif); font-style: italic; font-weight: 700; color: var(--brand-strong); }
+      .foot { font-size: 24px; color: var(--muted); }
+      .icon { display: none; width: 180px; height: 180px; align-items: center; justify-content: center; background: var(--bg); }
+      .icon svg { width: 124px; height: 124px; }
+      body.icon-mode .og { display: none; }
+      body.icon-mode .icon { display: flex; }
+    </style>
+  </head>
+  <body>
+    <div class="og">
+      <div class="brand">
+        <svg viewBox="0 0 512 512" aria-hidden="true">
+          <path fill="#C23A1F" transform="rotate(-8 210 270)" d="M210,100 C312.5,156.7 305,383.3 210,440 C115,383.3 107.5,156.7 210,100 Z" />
+          <path fill="#ED6E34" transform="rotate(7 300 250)" d="M300,70 C436.5,132 392.5,368 300,430 C207.5,368 163.5,132 300,70 Z" />
+        </svg>
+        <span>FITBURN</span>
+      </div>
+      <div>
+        <h1>Chega de treinar sozinho.</h1>
+        <p>Musculação com 1 professor para cada <em>4 alunos</em>, no Silveira, BH.</p>
+      </div>
+      <div class="foot">Aula experimental grátis · Agende pelo WhatsApp</div>
+    </div>
+    <div class="icon">
+      <svg viewBox="0 0 512 512" aria-hidden="true">
+        <path fill="#C23A1F" transform="rotate(-8 210 270)" d="M210,100 C312.5,156.7 305,383.3 210,440 C115,383.3 107.5,156.7 210,100 Z" />
+        <path fill="#ED6E34" transform="rotate(7 300 250)" d="M300,70 C436.5,132 392.5,368 300,430 C207.5,368 163.5,132 300,70 Z" />
+      </svg>
+    </div>
+  </body>
+</html>
