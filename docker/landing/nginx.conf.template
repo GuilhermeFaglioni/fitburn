@@ -59,6 +59,6 @@ server {
         add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()" always;
         add_header X-Robots-Tag $landing_robots always;
         add_header Cache-Control "no-cache";
-        try_files $uri $uri.html =404;
+        try_files $uri $uri.html $uri/index.html =404;
     }
 }
