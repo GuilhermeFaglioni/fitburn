@@ -1,0 +1,71 @@
+---
+import { modalities } from "../content/copy";
+import Photo from "./Photo.astro";
+import SectionHeading from "./SectionHeading.astro";
+---
+
+<section class="section" id="modalidades">
+  <div class="container">
+    <div class="reveal">
+      <SectionHeading kicker={modalities.kicker} title={modalities.title} />
+    </div>
+    <div class="layout">
+      <ul class="cards">
+        {
+          modalities.items.map((item) => (
+            <li class="card reveal">
+              <span class="chip">{item.tag}</span>
+              <h3>{item.name}</h3>
+              <p>{item.text}</p>
+            </li>
+          ))
+        }
+      </ul>
+      <div class="media reveal">
+        <Photo slot="modalidade" alt={modalities.photoAlt} sizes="(min-width: 900px) 560px, 100vw" />
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .layout {
+    display: grid;
+    gap: var(--s-6);
+    margin-top: var(--s-10);
+  }
+  .cards {
+    display: grid;
+    gap: var(--s-4);
+    align-content: start;
+  }
+  .card {
+    display: grid;
+    gap: var(--s-3);
+    align-content: start;
+  }
+  .chip {
+    justify-self: start;
+    padding: var(--s-1) var(--s-3);
+    border-radius: var(--r-pill);
+    background: var(--brand-tint);
+    color: var(--brand-strong);
+    font-size: var(--text-small);
+    font-weight: var(--weight-bold);
+  }
+  h3 {
+    font-size: var(--text-h1);
+    font-weight: var(--weight-bold);
+    line-height: var(--leading-title);
+    letter-spacing: var(--tracking-title);
+  }
+  .card p {
+    color: var(--muted);
+  }
+  @media (min-width: 900px) {
+    .layout {
+      grid-template-columns: 1.1fr 0.9fr;
+      align-items: start;
+    }
+  }
+</style>

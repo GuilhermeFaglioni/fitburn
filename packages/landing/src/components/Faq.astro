@@ -1,0 +1,92 @@
+---
+import { faqSection } from "../content/copy";
+import { faq } from "../content/faq";
+import { site } from "../content/site";
+import CtaLink from "./CtaLink.astro";
+import Icon from "./Icon.astro";
+import SectionHeading from "./SectionHeading.astro";
+---
+
+<section class="section" id="duvidas">
+  <div class="container narrow">
+    <div class="reveal">
+      <SectionHeading kicker={faqSection.kicker} title={faqSection.title} />
+    </div>
+    <div class="items">
+      {
+        faq.map((item) => (
+          <details class="item reveal">
+            <summary>
+              <h3>{item.question}</h3>
+              <Icon name="plus" />
+            </summary>
+            <p>{item.answer}</p>
+          </details>
+        ))
+      }
+    </div>
+    <p class="more reveal">
+      <span>{faqSection.more}</span>{" "}
+      <CtaLink kind="whatsapp" variant="ghost" message={site.messages.trial} local="duvidas">
+        {faqSection.cta}
+      </CtaLink>
+    </p>
+  </div>
+</section>
+
+<style>
+  .narrow {
+    max-width: 56rem;
+  }
+  .items {
+    display: grid;
+    gap: var(--s-3);
+    margin-top: var(--s-10);
+  }
+  .item {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+  }
+  summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-4);
+    min-height: var(--s-13);
+    padding: var(--s-3) var(--s-5);
+    cursor: pointer;
+    list-style: none;
+  }
+  summary::-webkit-details-marker {
+    display: none;
+  }
+  h3 {
+    font-size: var(--text-h3);
+    font-weight: var(--weight-bold);
+    line-height: var(--leading-title);
+  }
+  summary :global(.icon) {
+    color: var(--brand);
+  }
+  /* O "+" vira "−": a barra vertical (primeiro traço do ícone) some quando o item abre. */
+  summary :global(.icon path:first-of-type) {
+    transition: opacity var(--duration-state) var(--ease-out);
+  }
+  .item[open] summary :global(.icon path:first-of-type) {
+    opacity: 0;
+  }
+  .item p {
+    padding: 0 var(--s-5) var(--s-5);
+    color: var(--muted);
+    max-width: 62ch;
+  }
+  .more {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--s-2);
+    margin-top: var(--s-8);
+    color: var(--muted);
+  }
+</style>

@@ -1,0 +1,83 @@
+---
+import { differentials } from "../content/copy";
+import { site } from "../content/site";
+import CtaLink from "./CtaLink.astro";
+import SectionHeading from "./SectionHeading.astro";
+---
+
+<section class="section" id="diferenciais">
+  <div class="container">
+    <div class="reveal">
+      <SectionHeading kicker={differentials.kicker} title={differentials.title} />
+    </div>
+    <ol class="items">
+      {
+        differentials.items.map((item, index) => (
+          <li class="item card reveal">
+            <span class="num" aria-hidden="true">
+              {String(index + 1).padStart(2, "0")}
+            </span>
+            <h3>{item.title}</h3>
+            <p>{item.text}</p>
+          </li>
+        ))
+      }
+    </ol>
+    <p class="closing lead reveal">{differentials.closing}</p>
+    <div class="cta reveal">
+      <CtaLink kind="whatsapp" message={site.messages.trial} local="diferenciais">
+        {differentials.cta}
+      </CtaLink>
+    </div>
+  </div>
+</section>
+
+<style>
+  .items {
+    display: grid;
+    gap: var(--s-4);
+    margin-top: var(--s-10);
+  }
+  .item {
+    display: grid;
+    gap: var(--s-3);
+    align-content: start;
+  }
+  .num {
+    color: var(--brand);
+    font-size: var(--text-display);
+    font-weight: var(--weight-bold);
+    line-height: var(--leading-display);
+    letter-spacing: var(--tracking-display);
+    font-variant-numeric: tabular-nums;
+  }
+  h3 {
+    font-size: var(--text-h1);
+    font-weight: var(--weight-bold);
+    line-height: var(--leading-title);
+    letter-spacing: var(--tracking-title);
+  }
+  .item p {
+    color: var(--muted);
+  }
+  .closing {
+    margin-top: var(--s-10);
+    padding-left: var(--s-5);
+    border-left: 2px solid var(--brand);
+    color: var(--ink-2);
+    max-width: 56ch;
+  }
+  .cta {
+    margin-top: var(--s-8);
+  }
+  @media (min-width: 640px) {
+    .items {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+  @media (min-width: 1024px) {
+    .items {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+</style>

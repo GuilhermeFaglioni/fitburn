@@ -1,0 +1,60 @@
+---
+import { howItWorks } from "../content/copy";
+import SectionHeading from "./SectionHeading.astro";
+---
+
+<section class="section section--alt" id="como-funciona">
+  <div class="container">
+    <div class="reveal">
+      <SectionHeading kicker={howItWorks.kicker} title={howItWorks.title} />
+    </div>
+    <ol class="steps">
+      {
+        howItWorks.steps.map((step, index) => (
+          <li class="step card reveal">
+            <span class="num" aria-hidden="true">
+              {String(index + 1).padStart(2, "0")}
+            </span>
+            <h3>{step.title}</h3>
+            <p>{step.text}</p>
+          </li>
+        ))
+      }
+    </ol>
+  </div>
+</section>
+
+<style>
+  .steps {
+    display: grid;
+    gap: var(--s-4);
+    margin-top: var(--s-10);
+  }
+  .step {
+    display: grid;
+    gap: var(--s-3);
+    align-content: start;
+  }
+  .num {
+    color: var(--brand);
+    font-size: var(--text-display);
+    font-weight: var(--weight-bold);
+    line-height: var(--leading-display);
+    letter-spacing: var(--tracking-display);
+    font-variant-numeric: tabular-nums;
+  }
+  h3 {
+    font-size: var(--text-h1);
+    font-weight: var(--weight-bold);
+    line-height: var(--leading-title);
+    letter-spacing: var(--tracking-title);
+  }
+  .step p {
+    color: var(--muted);
+  }
+  @media (min-width: 900px) {
+    .steps {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+</style>

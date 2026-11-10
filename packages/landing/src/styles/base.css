@@ -1,0 +1,214 @@
+@import "../../../web/src/styles/tokens.css";
+@import "./landing-tokens.css";
+
+/* Fontes autohospedadas (sem Google Fonts: a CSP é font-src 'self'). */
+@font-face {
+  font-family: "DM Sans";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../../node_modules/@fontsource/dm-sans/files/dm-sans-latin-400-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "DM Sans";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("../../node_modules/@fontsource/dm-sans/files/dm-sans-latin-500-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "DM Sans";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("../../node_modules/@fontsource/dm-sans/files/dm-sans-latin-700-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Cormorant";
+  font-style: italic;
+  font-weight: 700;
+  font-display: swap;
+  src: url("../../node_modules/@fontsource/cormorant/files/cormorant-latin-700-italic.woff2") format("woff2");
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  scroll-padding-top: var(--s-24);
+}
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  font-weight: var(--weight-regular);
+  line-height: var(--leading-body);
+  -webkit-font-smoothing: antialiased;
+}
+@media (max-width: 899px) {
+  body {
+    padding-bottom: calc(var(--action-bar-h) + env(safe-area-inset-bottom));
+  }
+}
+
+h1,
+h2,
+h3,
+p,
+ul,
+ol,
+dl,
+dd,
+figure,
+address {
+  margin: 0;
+}
+ul,
+ol {
+  padding: 0;
+  list-style: none;
+}
+address {
+  font-style: normal;
+}
+a {
+  color: inherit;
+}
+img,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+/* Foco visível em tudo. */
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  box-shadow: var(--sh-focus);
+}
+
+/* Texto só para leitor de tela. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skip-link {
+  position: absolute;
+  left: var(--s-4);
+  top: var(--s-4);
+  z-index: 100;
+  padding: var(--s-3) var(--s-4);
+  border-radius: var(--r-md);
+  background: var(--brand);
+  color: var(--cta-ink);
+  font-weight: var(--weight-bold);
+  text-decoration: none;
+  transform: translateY(-200%);
+}
+.skip-link:focus {
+  transform: none;
+}
+
+/* Container e ritmo vertical. */
+.container {
+  width: 100%;
+  max-width: var(--landing-max);
+  margin-inline: auto;
+  padding-inline: var(--landing-gutter);
+}
+@media (min-width: 1024px) {
+  .container {
+    padding-inline: var(--landing-gutter-lg);
+  }
+}
+.section {
+  padding-block: var(--section-y);
+}
+.section--alt {
+  background: var(--surface);
+}
+@media (min-width: 900px) {
+  .section {
+    padding-block: var(--section-y-lg);
+  }
+}
+
+/* Títulos: DM Sans 700, e a ênfase em itálico Cormorant (uma por título). */
+.kicker {
+  margin-bottom: var(--s-4);
+  color: var(--brand-strong);
+  font-size: var(--text-kicker);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-kicker);
+  line-height: var(--leading-small);
+  text-transform: uppercase;
+}
+.section-title {
+  font-size: var(--text-h2-marketing);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-h2-marketing);
+  letter-spacing: var(--tracking-display);
+  text-wrap: balance;
+}
+h1 em,
+h2 em {
+  color: var(--brand-strong);
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: var(--weight-bold);
+}
+.lead {
+  color: var(--muted);
+  font-size: var(--text-lead);
+  line-height: var(--leading-body);
+}
+
+/* Card padrão. */
+.card {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: var(--s-6);
+}
+
+/* Reveal (fade-up): só CSS, melhoria progressiva. Nunca no herói (atrasaria o LCP). */
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .reveal {
+      animation: reveal linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 40%;
+    }
+  }
+}
+@keyframes reveal {
+  from {
+    opacity: 0;
+    transform: translateY(var(--reveal-shift));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

@@ -1,0 +1,71 @@
+---
+import dmSans700 from "@fontsource/dm-sans/files/dm-sans-latin-700-normal.woff2?url";
+import "../styles/base.css";
+import { seo, ui } from "../content/copy";
+import { faq } from "../content/faq";
+import { env } from "../lib/env";
+import { faqJsonLd, gymJsonLd, serializeJsonLd } from "../lib/schema";
+
+interface Props {
+  title?: string;
+  description?: string;
+  /** Força `noindex` (404), independente de PUBLIC_INDEXABLE. */
+  noindex?: boolean;
+  /** Metadados completos da home: Open Graph, Twitter, canonical e JSON-LD. */
+  home?: boolean;
+}
+const { title = seo.title, description = seo.description, noindex = false, home = false } = Astro.props;
+const { siteUrl, indexable, umami } = env;
+const blockIndexing = noindex || !indexable;
+---
+
+<!doctype html>
+<html lang="pt-BR" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    {home && <link rel="canonical" href={`${siteUrl}/`} />}
+    {blockIndexing && <meta name="robots" content="noindex, nofollow" />}
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#0A0A0A" />
+    <link rel="icon" type="image/svg+xml" href="/flame.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="preload" as="font" type="font/woff2" crossorigin href={dmSans700} />
+    {
+      home && (
+        <>
+          <meta property="og:type" content="website" />
+          <meta property="og:locale" content="pt_BR" />
+          <meta property="og:site_name" content="Fitburn Brasil" />
+          <meta property="og:title" content={seo.ogTitle} />
+          <meta property="og:description" content={seo.ogDescription} />
+          <meta property="og:url" content={`${siteUrl}/`} />
+          <meta property="og:image" content={`${siteUrl}/og.png`} />
+          <meta property="og:image:width" content="1200" />
+          <meta property="og:image:height" content="630" />
+          <meta property="og:image:alt" content={seo.ogImageAlt} />
+          <meta name="twitter:card" content="summary_large_image" />
+          <script is:inline type="application/ld+json" set:html={serializeJsonLd(gymJsonLd({ siteUrl, description }))} />
+          <script is:inline type="application/ld+json" set:html={serializeJsonLd(faqJsonLd(faq))} />
+        </>
+      )
+    }
+    {
+      umami && (
+        <script
+          is:inline
+          defer
+          src={umami.src}
+          data-website-id={umami.websiteId}
+          data-domains={umami.domain}
+        />
+      )
+    }
+  </head>
+  <body>
+    <a class="skip-link" href="#conteudo">{ui.skipLink}</a>
+    <slot />
+  </body>
+</html>

@@ -1,0 +1,29 @@
+---
+import { notFound } from "../content/copy";
+import CtaLink from "../components/CtaLink.astro";
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout title={notFound.title} noindex>
+  <main id="conteudo" class="container missing">
+    <h1>{notFound.heading}</h1>
+    <p class="lead">{notFound.text}</p>
+    <CtaLink kind="plain" href="/">{notFound.link}</CtaLink>
+  </main>
+</BaseLayout>
+
+<style>
+  .missing {
+    display: grid;
+    gap: var(--s-6);
+    justify-items: start;
+    min-height: 100vh;
+    align-content: center;
+  }
+  h1 {
+    font-size: var(--text-display);
+    font-weight: var(--weight-bold);
+    line-height: var(--leading-display);
+    letter-spacing: var(--tracking-display);
+  }
+</style>

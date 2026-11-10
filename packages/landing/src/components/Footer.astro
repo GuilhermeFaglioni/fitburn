@@ -1,0 +1,78 @@
+---
+import { footer } from "../content/copy";
+import { site } from "../content/site";
+import Icon from "./Icon.astro";
+import Logo from "./Logo.astro";
+
+const social = [
+  { name: "instagram", href: site.social.instagram, label: footer.socialLabels.instagram },
+  { name: "facebook", href: site.social.facebook, label: footer.socialLabels.facebook },
+  { name: "youtube", href: site.social.youtube, label: footer.socialLabels.youtube },
+] as const;
+---
+
+<footer class="footer">
+  <div class="container">
+    <div class="top">
+      <Logo />
+      <ul class="social">
+        {
+          social.map((item) => (
+            <li>
+              <a href={item.href} target="_blank" rel="noopener" aria-label={item.label}>
+                <Icon name={item.name} />
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+    <address>{site.addressDisplay}</address>
+    <p>{site.phone.display} · {site.whatsapp.display}</p>
+    <p>{site.hoursShort}</p>
+    <p class="copy">{footer.copyright}</p>
+  </div>
+</footer>
+
+<style>
+  .footer {
+    padding-block: var(--s-12);
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    font-size: var(--text-small);
+  }
+  .container {
+    display: grid;
+    gap: var(--s-3);
+  }
+  .top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-4);
+    margin-bottom: var(--s-3);
+  }
+  .social {
+    display: flex;
+    gap: var(--s-2);
+  }
+  .social a {
+    display: inline-grid;
+    place-items: center;
+    width: var(--s-12);
+    height: var(--s-12);
+    border: 1px solid var(--line-2);
+    border-radius: var(--r-pill);
+    color: var(--ink);
+    transition: border-color var(--duration-state) var(--ease-out);
+  }
+  @media (hover: hover) {
+    .social a:hover {
+      border-color: var(--brand-line);
+    }
+  }
+  .copy {
+    margin-top: var(--s-4);
+  }
+</style>
