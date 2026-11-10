@@ -1,0 +1,19 @@
+---
+import { splitEmphasis } from "../lib/emphasis";
+
+interface Props {
+  kicker: string;
+  /** Título; o trecho entre asteriscos vira ênfase em itálico. */
+  title: string;
+  id?: string;
+}
+const { kicker, title, id } = Astro.props;
+const parts = splitEmphasis(title);
+---
+
+<div class="heading">
+  <p class="kicker">{kicker}</p>
+  <h2 class="section-title" id={id}>
+    {parts.map((part) => (part.em ? <em>{part.text}</em> : part.text))}
+  </h2>
+</div>

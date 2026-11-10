@@ -1,0 +1,66 @@
+---
+import { facts } from "../content/copy";
+---
+
+<section class="facts">
+  <div class="container">
+    <ul class="list" aria-label={facts.label}>
+      {
+        facts.items.map((item) => (
+          <li class="item">
+            <span class="value" aria-hidden={"accessible" in item ? "true" : undefined}>
+              {item.value}
+            </span>
+            {"accessible" in item ? (
+              <>
+                <span class="caption" aria-hidden="true">
+                  {item.caption}
+                </span>
+                <span class="sr-only">{item.accessible}</span>
+              </>
+            ) : (
+              <span class="caption">{item.caption}</span>
+            )}
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</section>
+
+<style>
+  .facts {
+    padding-block: var(--s-12);
+    background: var(--surface);
+    border-block: 1px solid var(--line);
+  }
+  .list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--s-8) var(--s-4);
+  }
+  .item {
+    display: grid;
+    gap: var(--s-2);
+    align-content: start;
+  }
+  .value {
+    color: var(--brand);
+    font-size: var(--text-display);
+    font-weight: var(--weight-bold);
+    line-height: var(--leading-display);
+    letter-spacing: var(--tracking-display);
+    font-variant-numeric: tabular-nums;
+  }
+  .caption {
+    color: var(--muted);
+    font-size: var(--text-small);
+    line-height: var(--leading-small);
+  }
+  @media (min-width: 900px) {
+    .list {
+      grid-template-columns: repeat(4, 1fr);
+      gap: var(--s-8);
+    }
+  }
+</style>

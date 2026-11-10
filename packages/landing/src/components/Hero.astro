@@ -1,0 +1,93 @@
+---
+import { hero } from "../content/copy";
+import { site } from "../content/site";
+import { splitEmphasis } from "../lib/emphasis";
+import CtaLink from "./CtaLink.astro";
+import Photo from "./Photo.astro";
+
+const line2 = splitEmphasis(hero.line2);
+---
+
+<section class="hero" id="inicio">
+  <div class="container grid">
+    <div class="copy">
+      <p class="kicker">{hero.kicker}</p>
+      <h1>
+        <span class="line1">{hero.line1}</span>{" "}
+        <span class="line2">{line2.map((part) => (part.em ? <em>{part.text}</em> : part.text))}</span>
+      </h1>
+      <p class="lead">{hero.lead}</p>
+      <div class="actions">
+        <CtaLink kind="whatsapp" message={site.messages.trial} local="hero">{hero.primary}</CtaLink>
+        <CtaLink kind="tel" variant="secondary" local="hero">{hero.secondary}</CtaLink>
+      </div>
+      <p class="support">{hero.support}</p>
+    </div>
+    <div class="media">
+      <Photo slot="hero" alt={hero.photoAlt} sizes="(min-width: 1024px) 480px, 100vw" eager />
+    </div>
+  </div>
+</section>
+
+<style>
+  .hero {
+    padding-block: var(--s-10) var(--section-y);
+  }
+  .grid {
+    display: grid;
+    gap: var(--s-10);
+    align-items: center;
+  }
+  .copy {
+    display: grid;
+    gap: var(--s-6);
+    justify-items: start;
+  }
+  .copy .kicker {
+    margin: 0;
+  }
+  h1 {
+    display: grid;
+    gap: var(--s-3);
+  }
+  .line1,
+  .line2 {
+    display: block;
+  }
+  .line1 {
+    font-size: var(--text-display);
+    font-weight: var(--weight-bold);
+    line-height: var(--leading-display);
+    letter-spacing: var(--tracking-display);
+    text-wrap: balance;
+  }
+  .line2 {
+    color: var(--ink-2);
+    font-size: var(--text-hero-sub);
+    font-weight: var(--weight-medium);
+    line-height: var(--leading-title);
+    letter-spacing: var(--tracking-title);
+    text-wrap: balance;
+  }
+  .lead {
+    max-width: 48ch;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-3);
+  }
+  .support {
+    color: var(--muted);
+    font-size: var(--text-small);
+  }
+  @media (min-width: 1024px) {
+    .hero {
+      padding-block: var(--s-16) var(--section-y-lg);
+    }
+    .grid {
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: var(--s-16);
+    }
+  }
+</style>

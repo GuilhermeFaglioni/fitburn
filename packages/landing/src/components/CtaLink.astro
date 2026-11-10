@@ -1,0 +1,93 @@
+---
+import { ui } from "../content/copy";
+import { site, type AnalyticsLocal } from "../content/site";
+import { whatsappUrl } from "../lib/whatsapp";
+
+interface Props {
+  variant?: "primary" | "secondary" | "ghost";
+  kind: "whatsapp" | "tel" | "plain";
+  /** Mensagem pronta do WhatsApp (obrigatória em `whatsapp`). */
+  message?: string;
+  /** Destino de `plain`. */
+  href?: string;
+  /** Local do clique no analytics (obrigatório em `whatsapp` e `tel`). */
+  local?: AnalyticsLocal;
+  small?: boolean;
+  class?: string;
+}
+const { variant = "primary", kind, message, href, local, small = false, class: extra } = Astro.props;
+
+const isWhatsapp = kind === "whatsapp";
+const isTel = kind === "tel";
+const url = isWhatsapp ? whatsappUrl(message ?? site.messages.trial) : isTel ? `tel:${site.phone.tel}` : href;
+const event = isWhatsapp ? "cta-whatsapp" : isTel ? "cta-telefone" : undefined;
+---
+
+<a
+  class:list={["cta", `cta--${variant}`, { "cta--small": small }, extra]}
+  href={url}
+  target={isWhatsapp ? "_blank" : undefined}
+  rel={isWhatsapp ? "noopener" : undefined}
+  data-umami-event={event}
+  data-umami-event-local={event ? local : undefined}
+>
+  <slot />{isWhatsapp && <span class="sr-only"> {ui.newTab}</span>}
+</a>
+
+<style>
+  .cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--s-2);
+    min-height: var(--cta-min-h);
+    padding: var(--s-3) var(--s-6);
+    border: 1px solid transparent;
+    border-radius: var(--r-md);
+    font-family: inherit;
+    font-size: var(--text-cta);
+    font-weight: var(--weight-bold);
+    line-height: var(--leading-title);
+    text-align: center;
+    text-decoration: none;
+    transition:
+      background-color var(--duration-state) var(--ease-out),
+      border-color var(--duration-state) var(--ease-out),
+      transform var(--duration-press) var(--ease-out);
+  }
+  .cta:active {
+    transform: scale(var(--press-scale));
+  }
+  .cta--primary {
+    background: var(--brand);
+    color: var(--cta-ink);
+    box-shadow: var(--sh-cta);
+  }
+  .cta--secondary {
+    background: transparent;
+    border-color: var(--line-2);
+    color: var(--ink);
+  }
+  .cta--ghost {
+    background: transparent;
+    color: var(--brand-strong);
+    padding-inline: var(--s-2);
+  }
+  .cta--small {
+    min-height: var(--s-12);
+    padding: var(--s-2) var(--s-4);
+    font-size: var(--text-action);
+  }
+  /* Hover só em ponteiro preciso: no toque ele "gruda" depois do clique. */
+  @media (hover: hover) {
+    .cta--primary:hover {
+      background: var(--brand-hover);
+    }
+    .cta--secondary:hover {
+      border-color: var(--brand-line);
+    }
+    .cta--ghost:hover {
+      color: var(--brand-hover);
+    }
+  }
+</style>

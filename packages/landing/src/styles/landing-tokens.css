@@ -1,0 +1,33 @@
+/* Tokens novos da landing (seção 3.2 do plano 010; docs/design/design-system.md, "Landing"). São os únicos
+   valores literais permitidos fora de tokens.css. Os tokens do app vêm de tokens.css, sem cópia. */
+:root {
+  /* H2 de seção de marketing (proposta: 52px / 1.06, fluido, mínimo 28px). Não é token do app. */
+  --text-h2-marketing: clamp(28px, 4.6vw, 52px);
+  --leading-h2-marketing: 1.06;
+  /* Linha de apoio do H1 (segunda frase do herói). */
+  --text-hero-sub: clamp(22px, 3.2vw, 36px);
+  /* Lead (subtítulo do herói e intros de seção). */
+  --text-lead: clamp(17px, 1.6vw, 20px);
+  /* Rótulo do botão da landing: 17px, como no site atual (o app usa --text-action, 15px). */
+  --text-cta: 17px;
+  /* Alvo de toque mínimo do botão. */
+  --cta-min-h: 52px;
+  /* Texto sobre o laranja de marca: escuro, 6,49:1 sobre #ED6E34 e 8,15:1 sobre --brand-hover (decisão L6). */
+  --cta-ink: #0A0A0A;
+  /* Container da proposta (1240px) e gutter de 48px no desktop. O app usa --container-max 1200px. */
+  --landing-max: 1240px;
+  --landing-gutter: var(--s-4);
+  --landing-gutter-lg: var(--s-12);
+  /* Respiro vertical entre seções. */
+  --section-y: var(--s-16);
+  --section-y-lg: var(--s-24);
+  /* Deslocamento do fade-up de entrada (inventário: 16 a 24px). */
+  --reveal-shift: 20px;
+  /* Altura da barra fixa de ações no celular (o body reserva esse espaço). */
+  --action-bar-h: 72px;
+}
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --reveal-shift: 0px;
+  }
+}
