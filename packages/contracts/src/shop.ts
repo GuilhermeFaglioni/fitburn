@@ -84,6 +84,113 @@ function addProductRuleIssues(value: ProductRuleFields, ctx: z.RefinementCtx): v
   }
 }
 
+/** Até 3 opções por produto (Cor, Tamanho, Modelo), cada uma com 1 a 20 valores. */
+export const MAX_PRODUCT_OPTIONS = 3;
+export const MAX_OPTION_VALUES = 20;
+
+const optionNameSchema = z
+  .string()
+  .trim()
+  .min(1, "O nome da opção é obrigatório.")
+  .max(30, "O nome da opção pode ter no máximo 30 caracteres.");
+const optionValueSchema = z
+  .string()
+  .trim()
+  .min(1, "O valor é obrigatório.")
+  .max(40, "O valor pode ter no máximo 40 caracteres.");
+
+/** Comparação de nomes e valores: sem diferença de maiúsculas e de espaços nas pontas. */
+export function normalizeOptionText(text: string): string {
+  return text.trim().toLowerCase();
+}
+
+export const productOptionInputSchema = z.object({
+  name: optionNameSchema,
+  values: z
+    .array(optionValueSchema)
+    .min(1, "Cada opção precisa de pelo menos um valor.")
+    .max(MAX_OPTION_VALUES, "Cada opção pode ter no máximo 20 valores."),
+});
+export type ProductOptionInput = z.infer<typeof productOptionInputSchema>;
+
+/** Lista de opções do produto: sem nome de opção repetido, e sem valor repetido dentro da opção. */
+export const productOptionsInputSchema = z
+  .array(productOptionInputSchema)
+  .max(MAX_PRODUCT_OPTIONS, "O produto pode ter no máximo 3 opções.")
+  .superRefine((options, ctx) => {
+    const names = new Set<string>();
+    options.forEach((option, index) => {
+      const name = normalizeOptionText(option.name);
+      if (names.has(name)) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Já existe uma opção com esse nome.",
+          path: [index, "name"],
+        });
+      }
+      names.add(name);
+
+      const values = new Set<string>();
+      option.values.forEach((value, valueIndex) => {
+        const normalized = normalizeOptionText(value);
+        if (values.has(normalized)) {
+          ctx.addIssue({
+            code: "custom",
+            message: "Esse valor está repetido nesta opção.",
+            path: [index, "values", valueIndex],
+          });
+        }
+        values.add(normalized);
+      });
+    });
+  });
+export type ProductOptionsInput = z.infer<typeof productOptionsInputSchema>;
+
+/**
+ * Sobreposição de uma variação ao gravar as opções. `combination` lista os valores
+ * na ordem das opções enviadas. Campos ausentes mantêm o que a variação já tinha
+ * (ou, se for combinação nova, o padrão: estoque 0, sem preço próprio, ativa).
+ */
+export const shopVariantOverrideSchema = z.object({
+  combination: z.array(optionValueSchema),
+  stock: stockSchema.optional(),
+  priceCents: priceCentsSchema.nullable().optional(),
+  ativa: z.boolean().optional(),
+});
+export type ShopVariantOverride = z.infer<typeof shopVariantOverrideSchema>;
+
+/**
+ * Regras de sobreposição que não dependem do banco: cada combinação tem um valor
+ * por opção enviada, e não se repete.
+ */
+function addVariantOverrideIssues(
+  variants: ShopVariantOverride[],
+  optionCount: number,
+  ctx: z.RefinementCtx,
+  basePath: (string | number)[],
+): void {
+  const seen = new Set<string>();
+  variants.forEach((variant, index) => {
+    if (variant.combination.length !== optionCount) {
+      ctx.addIssue({
+        code: "custom",
+        message: "A combinação deve ter um valor para cada opção.",
+        path: [...basePath, index, "combination"],
+      });
+    }
+    const key = JSON.stringify(variant.combination.map(normalizeOptionText));
+    if (seen.has(key)) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Combinação repetida.",
+        path: [...basePath, index, "combination"],
+      });
+    }
+    seen.add(key);
+  });
+}
+
+/** Criação: `options` e `variants` são opcionais. Com opções, o estoque é por variação (`stock` = 0). */
 export const createShopProductRequestSchema = z
   .object({
     name: productNameSchema,
@@ -96,9 +203,61 @@ export const createShopProductRequestSchema = z
     destaque: z.boolean().default(false),
     permiteMaisDeUmaUnidade: z.boolean().default(false),
     limitePorPedido: orderLimitSchema.nullable().default(null),
+    options: productOptionsInputSchema.optional(),
+    variants: z.array(shopVariantOverrideSchema).optional(),
   })
-  .superRefine(addProductRuleIssues);
+  .superRefine(addProductRuleIssues)
+  .superRefine((value, ctx) => {
+    const optionCount = value.options?.length ?? 0;
+    if (optionCount > 0 && value.stock !== 0) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Defina o estoque por variação.",
+        path: ["stock"],
+      });
+    }
+    if (value.variants !== undefined && optionCount === 0) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Variações exigem pelo menos uma opção.",
+        path: ["variants"],
+      });
+    }
+    if (value.variants !== undefined && optionCount > 0) {
+      addVariantOverrideIssues(value.variants, optionCount, ctx, ["variants"]);
+    }
+  });
 export type CreateShopProductRequest = z.infer<typeof createShopProductRequestSchema>;
+
+/** Gravação completa das opções (e das sobreposições de variação) do produto, numa chamada. */
+export const setShopProductOptionsRequestSchema = z
+  .object({
+    options: productOptionsInputSchema,
+    variants: z.array(shopVariantOverrideSchema).optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.variants !== undefined) {
+      addVariantOverrideIssues(value.variants, value.options.length, ctx, ["variants"]);
+    }
+  });
+export type SetShopProductOptionsRequest = z.infer<typeof setShopProductOptionsRequestSchema>;
+
+/**
+ * Combinações do produto cartesiano, na ordem das opções (a primeira varia mais devagar).
+ * Sem opções, uma única combinação vazia (variação única).
+ */
+export function shopVariantCombinations(optionValues: string[][]): string[][] {
+  return optionValues.reduce<string[][]>(
+    (combinations, values) =>
+      combinations.flatMap((combination) => values.map((value) => [...combination, value])),
+    [[]],
+  );
+}
+
+/** Rótulo da variação: valores unidos por " · " (ex.: "Preta · M"). Sem opções, nulo. */
+export function shopVariantLabel(values: string[]): string | null {
+  return values.length === 0 ? null : values.join(" · ");
+}
 
 /** Todos os campos opcionais; null limpa descrição, categoria, promoção e limite. */
 export const updateShopProductRequestSchema = z
@@ -136,6 +295,36 @@ export const shopProductSchema = z.object({
   createdAt: z.string(),
 });
 export type ShopProduct = z.infer<typeof shopProductSchema>;
+
+/** Uma opção do produto, com os valores na ordem de exibição. */
+export const shopProductOptionSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  values: z.array(z.object({ id: z.string(), value: z.string() })),
+});
+export type ShopProductOption = z.infer<typeof shopProductOptionSchema>;
+
+/**
+ * Uma variação do produto. `values` segue a ordem das opções; `priceCents` é o
+ * preço próprio (ou null); `effectivePriceCents` é o preço que o cliente paga.
+ */
+export const shopProductVariantSchema = z.object({
+  id: z.string(),
+  label: z.string().nullable(),
+  values: z.array(z.string()),
+  stock: z.number().int(),
+  priceCents: z.number().int().nullable(),
+  effectivePriceCents: z.number().int(),
+  ativa: z.boolean(),
+});
+export type ShopProductVariant = z.infer<typeof shopProductVariantSchema>;
+
+/** Produto com opções e variações (sem as descontinuadas), para a tela de edição. */
+export const shopProductDetailSchema = shopProductSchema.extend({
+  options: z.array(shopProductOptionSchema),
+  variants: z.array(shopProductVariantSchema),
+});
+export type ShopProductDetail = z.infer<typeof shopProductDetailSchema>;
 
 export const ShopProductVisibility = { ALL: "all", VISIBLE: "visible", HIDDEN: "hidden" } as const;
 
