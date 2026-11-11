@@ -7,7 +7,6 @@ import { MemoryRouter, useLocation } from "react-router-dom";
 import {
   addDays,
   gymDateTimeToUtc,
-  gymToday,
   startOfWeek,
   weekdayOf,
   type ClientAgendaItem,
@@ -19,9 +18,21 @@ import { ClientAgendaPage } from "../src/pages/ClientAgendaPage";
 import { mockSuccessfulLogin } from "./auth-mocks";
 import { server } from "./msw-server";
 
-const TODAY = gymToday();
+/**
+ * Relógio fixo: quarta-feira, 5h na academia (antes de qualquer aula do dia). Só `Date` é falseado, para não
+ * travar MSW, React Query e user-event. "Só daqui para frente" depende do agora, então os testes não podem usar o relógio real.
+ */
+const TODAY = "2026-11-11";
+const NOW = gymDateTimeToUtc(TODAY, "05:00");
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(NOW);
+});
+afterEach(() => {
+  vi.useRealTimers();
+});
 const WEEK_START = startOfWeek(TODAY);
-const OTHER_DAY = TODAY === WEEK_START ? addDays(WEEK_START, 1) : WEEK_START;
+const OTHER_DAY = addDays(TODAY, 1);
 
 function item(
   date: string,
@@ -553,13 +564,31 @@ describe("ClientAgendaPage", () => {
     await waitFor(() => expect(screen.getByLabelText("state da rota")).toHaveTextContent("null"));
   });
 
-  it("agrupa por dia: mostra as aulas do dia selecionado (hoje por padrão) em ordem", async () => {
+  /** O grupo (`details`) do horário, pelo texto do cabeçalho ("18h"). */
+  function groupAt(day: HTMLElement, hour: string) {
+    const summary = within(day)
+      .getAllByText(hour, { selector: ".fb-hgroup__time" })
+      .map((el) => el.closest("summary")!)[0];
+    return { summary, details: summary.closest("details")! };
+  }
+
+  /** Abre o grupo do horário (se ainda fechado) e devolve o `details`. */
+  async function openGroup(user: ReturnType<typeof userEvent.setup>, day: HTMLElement, hour: string) {
+    await within(day).findAllByText(hour, { selector: ".fb-hgroup__time" });
+    const { summary, details } = groupAt(day, hour);
+    if (!details.open) await user.click(summary);
+    return details;
+  }
+
+  const mod = (id: string, name: string) => ({ name, modality: { id, name } });
+
+  it("agrupa o dia selecionado (hoje por padrão) por horário, em ordem, e mostra só o dia escolhido", async () => {
     server.use(
       http.get("/api/agenda", () =>
         HttpResponse.json([
-          item(TODAY, "07:00", { name: "Spinning", modality: { id: "m2", name: "Spinning" } }),
+          item(TODAY, "07:00", mod("m2", "Spinning")),
           item(TODAY, "18:00"),
-          item(OTHER_DAY, "10:00", { name: "Yoga", modality: { id: "m3", name: "Yoga" } }),
+          item(OTHER_DAY, "10:00", mod("m3", "Yoga")),
         ]),
       ),
     );
@@ -568,49 +597,240 @@ describe("ClientAgendaPage", () => {
     const user = userEvent.setup();
 
     const day = await screen.findByRole("region", { name: "Aulas do dia" });
-    await within(day).findByText("Spinning");
-    const cards = within(day).getAllByRole("button", { name: /Prof\./ });
-    expect(cards.map((card) => card.textContent)).toEqual([
-      expect.stringContaining("07h00"),
-      expect.stringContaining("18h00"),
+    await within(day).findByText("Spinning · Prof. Rafael");
+    const groups = [...day.querySelectorAll("details")];
+    expect(groups.map((group) => group.querySelector(".fb-hgroup__time")?.textContent)).toEqual([
+      "07hmanhã",
+      "18hnoite",
     ]);
-    for (const card of cards) {
-      expect(card).toHaveTextContent("60 min");
-      expect(card).toHaveTextContent("Prof. Rafael");
-      expect(card).not.toHaveTextContent("Andrade");
-    }
     expect(within(day).queryByText("Yoga")).not.toBeInTheDocument();
 
     await user.click(
       screen.getByRole("button", { name: formatDayLabel(OTHER_DAY, weekdayOf(OTHER_DAY)) }),
     );
-    expect(await within(day).findByText("Yoga")).toBeInTheDocument();
+    expect(await within(day).findByText("Yoga · Prof. Rafael")).toBeInTheDocument();
   });
 
-  it("indica vagas disponíveis, quase lotada e lotada, e avisa que depende de confirmação", async () => {
+  it("grupo fechado: nº de aulas, modalidades, vagas somadas e selos", async () => {
     server.use(
       http.get("/api/agenda", () =>
         HttpResponse.json([
-          item(TODAY, "07:00", { available: 9, capacity: 12 }),
-          item(TODAY, "12:00", { available: 3, capacity: 12 }),
-          item(TODAY, "19:00", { available: 0, capacity: 10 }),
+          // 06h: 2 aulas, 2 vagas de 16 (Poucas vagas)
+          item(TODAY, "06:00", { ...mod("m1", "Funcional"), id: "a", capacity: 8, available: 0 }),
+          item(TODAY, "06:00", { ...mod("m2", "Musculação"), id: "b", capacity: 8, available: 2 }),
+          // 07h: 1 aula, 1 vaga de 8
+          item(TODAY, "07:00", { ...mod("m3", "Mobilidade"), id: "c", capacity: 8, available: 1 }),
+          // 12h: lotado
+          item(TODAY, "12:00", { ...mod("m1", "Funcional"), id: "d", capacity: 16, available: 0 }),
+          // 19h: aberto, sem selo
+          item(TODAY, "19:00", { ...mod("m1", "Funcional"), id: "e", capacity: 16, available: 11 }),
         ]),
       ),
     );
 
     renderPage();
-
     const day = await screen.findByRole("region", { name: "Aulas do dia" });
-    // O nível vai no texto do selo (não só na cor): "lotada" e "quase lotada" são legíveis sem ver cor.
-    expect(await within(day).findByText("9/12 vagas")).toBeInTheDocument();
-    expect(within(day).getByText("3/12 vagas · quase lotada")).toBeInTheDocument();
-    expect(within(day).getByText("0/10 vagas · lotada")).toBeInTheDocument();
+    await within(day).findByText("2 aulas");
+
+    const g06 = groupAt(day, "06h").details;
+    expect(g06).toHaveTextContent("2 aulas");
+    expect(g06).toHaveTextContent("Funcional, Musculação");
+    expect(g06).toHaveTextContent("2 vagas de 16");
+    expect(within(g06).getByText("Poucas vagas")).toBeInTheDocument();
+
+    const g07 = groupAt(day, "07h").details;
+    expect(g07).toHaveTextContent("1 aula");
+    expect(g07).toHaveTextContent("Mobilidade · Prof. Rafael");
+    expect(g07).toHaveTextContent("1 vaga de 8");
+
+    const g12 = groupAt(day, "12h").details;
+    expect(g12).toHaveTextContent("0 vagas de 16");
+    expect(within(g12).getByText("Lotado")).toBeInTheDocument();
+    expect(g12.querySelector(".fb-hgroup__bar")).toHaveAttribute("aria-hidden", "true");
+
+    const g19 = groupAt(day, "19h").details;
+    expect(g19).toHaveTextContent("11 vagas de 16");
+    expect(g19.querySelector("summary .fb-ui-badge")).toBeNull();
+    for (const group of [g06, g07, g12, g19]) expect(group).not.toHaveAttribute("open");
     expect(
       screen.getByText("Disponibilidade sujeita a confirmação no momento da reserva."),
     ).toBeInTheDocument();
   });
 
-  it("marca na agenda as aulas que já reservei", async () => {
+  it("\"Você reservou\" vence \"Poucas vagas\" e \"Lotado\"", async () => {
+    server.use(
+      http.get("/api/agenda", () =>
+        HttpResponse.json([
+          item(TODAY, "08:00", { id: "a", capacity: 8, available: 2, myReservationId: "res-1" }),
+          item(TODAY, "09:00", { id: "b", capacity: 8, available: 0, myReservationId: "res-2" }),
+        ]),
+      ),
+    );
+
+    renderPage();
+    const day = await screen.findByRole("region", { name: "Aulas do dia" });
+    await within(day).findAllByText("Você reservou");
+
+    for (const hour of ["08h", "09h"]) {
+      const group = groupAt(day, hour).details;
+      expect(within(group).getByText("Você reservou")).toBeInTheDocument();
+      expect(within(group).queryByText("Poucas vagas")).not.toBeInTheDocument();
+      expect(within(group).queryByText("Lotado")).not.toBeInTheDocument();
+    }
+  });
+
+  it("o grupo com reserva do cliente já vem aberto; os demais, fechados; o aberto pelo usuário não é sobrescrito", async () => {
+    server.use(
+      http.get("/api/agenda", () =>
+        HttpResponse.json([
+          item(TODAY, "07:00", { id: "a", myReservationId: "res-1" }),
+          item(TODAY, "18:00", { id: "b" }),
+        ]),
+      ),
+    );
+
+    renderPage();
+    const user = userEvent.setup();
+    const day = await screen.findByRole("region", { name: "Aulas do dia" });
+    await within(day).findByText("Você reservou");
+
+    const mine = groupAt(day, "07h").details;
+    const other = groupAt(day, "18h").details;
+    expect(mine).toHaveAttribute("open");
+    expect(other).not.toHaveAttribute("open");
+
+    await user.click(groupAt(day, "18h").summary);
+    expect(other).toHaveAttribute("open");
+    // Fechar o grupo da reserva e navegar de volta ao dia mantém a escolha do usuário durante re-renders.
+    await user.click(groupAt(day, "07h").summary);
+    expect(mine).not.toHaveAttribute("open");
+    await user.click(screen.getByRole("button", { name: "Próxima semana" }));
+    expect(mine).not.toHaveAttribute("open");
+  });
+
+  it("abrir um grupo mostra as aulas (modalidade, professor, duração, vagas ou Reservada) como controles com nome acessível", async () => {
+    server.use(
+      http.get("/api/agenda", () =>
+        HttpResponse.json([
+          item(TODAY, "18:00", { id: "a", capacity: 12, available: 9 }),
+          item(TODAY, "18:00", { ...mod("m2", "Yoga"), id: "b", myReservationId: "res-1" }),
+        ]),
+      ),
+    );
+
+    renderPage();
+    const day = await screen.findByRole("region", { name: "Aulas do dia" });
+    await within(day).findByText("2 aulas");
+
+    const functional = within(day).getByRole("button", { name: /Treino Funcional.*18h00/ });
+    expect(functional).toHaveTextContent("Prof. Rafael");
+    expect(functional).not.toHaveTextContent("Andrade");
+    expect(functional).toHaveTextContent("60 min");
+    expect(functional).toHaveTextContent("9/12 vagas");
+    const yoga = within(day).getByRole("button", { name: /Yoga.*18h00/ });
+    expect(yoga).toHaveTextContent("Reservada");
+    expect(yoga).not.toHaveTextContent("vagas");
+  });
+
+  it("o filtro de modalidade age antes do agrupamento: vagas recalculadas e grupo sem aula some", async () => {
+    server.use(
+      http.get("/api/agenda", () =>
+        HttpResponse.json([
+          item(TODAY, "06:00", { ...mod("m1", "Funcional"), id: "a", capacity: 8, available: 5 }),
+          item(TODAY, "06:00", { ...mod("m2", "Yoga"), id: "b", capacity: 8, available: 2 }),
+          item(TODAY, "09:00", { ...mod("m2", "Yoga"), id: "c", capacity: 8, available: 6 }),
+        ]),
+      ),
+    );
+
+    renderPage();
+    const user = userEvent.setup();
+    const day = await screen.findByRole("region", { name: "Aulas do dia" });
+    await within(day).findByText("2 aulas");
+    expect(groupAt(day, "06h").details).toHaveTextContent("7 vagas de 16");
+
+    await user.click(within(screen.getByRole("group", { name: "Modalidade" })).getByRole("button", { name: "Yoga" }));
+    expect(groupAt(day, "06h").details).toHaveTextContent("1 aula");
+    expect(groupAt(day, "06h").details).toHaveTextContent("2 vagas de 8");
+    expect(groupAt(day, "06h").details).toHaveTextContent("Poucas vagas");
+
+    await user.click(within(screen.getByRole("group", { name: "Modalidade" })).getByRole("button", { name: "Funcional" }));
+    expect(groupAt(day, "06h").details).toHaveTextContent("5 vagas de 8");
+    expect(within(day).queryByText("09h")).not.toBeInTheDocument();
+  });
+
+  it("só daqui para frente: aula de hoje já iniciada não aparece, e o grupo some junto", async () => {
+    vi.setSystemTime(gymDateTimeToUtc(TODAY, "10:30"));
+    server.use(
+      http.get("/api/agenda", () =>
+        HttpResponse.json([
+          item(TODAY, "07:00", { id: "past" }),
+          item(TODAY, "10:00", { id: "started" }),
+          item(TODAY, "18:00", { id: "later" }),
+        ]),
+      ),
+    );
+
+    renderPage();
+    const day = await screen.findByRole("region", { name: "Aulas do dia" });
+    await within(day).findByText("1 aula");
+    expect(day.querySelectorAll("details")).toHaveLength(1);
+    expect(within(day).queryByText("07h")).not.toBeInTheDocument();
+    expect(within(day).queryByText("10h")).not.toBeInTheDocument();
+    expect(within(day).getByText("18h")).toBeInTheDocument();
+    const grid = screen.getByRole("region", { name: "Grade da semana" });
+    expect(within(grid).getAllByRole("button", { name: /1 aula/ })).toHaveLength(1);
+  });
+
+  it("hoje sem aulas futuras mostra o vazio do dia", async () => {
+    vi.setSystemTime(gymDateTimeToUtc(TODAY, "20:00"));
+    server.use(http.get("/api/agenda", () => HttpResponse.json([item(TODAY, "18:00")])));
+
+    renderPage();
+    const day = await screen.findByRole("region", { name: "Aulas do dia" });
+    expect(await within(day).findByText("Nenhuma aula agendada para este dia.")).toBeInTheDocument();
+  });
+
+  it("na semana atual a seta Semana anterior fica desativada e os chips começam em hoje; na seguinte, volta", async () => {
+    server.use(http.get("/api/agenda", () => HttpResponse.json([])));
+
+    renderPage();
+    const user = userEvent.setup();
+    await screen.findByRole("region", { name: "Aulas do dia" });
+
+    const previous = screen.getAllByRole("button", { name: "Semana anterior" })[0];
+    expect(previous).toBeDisabled();
+    const days = screen.getByRole("group", { name: "Dia" });
+    expect(within(days).getAllByRole("button")).toHaveLength(5);
+    expect(
+      within(days).queryByRole("button", { name: formatDayLabel(WEEK_START, weekdayOf(WEEK_START)) }),
+    ).not.toBeInTheDocument();
+
+    await user.click(screen.getAllByRole("button", { name: "Próxima semana" })[0]);
+    expect(screen.getAllByRole("button", { name: "Semana anterior" })[0]).toBeEnabled();
+    expect(within(screen.getByRole("group", { name: "Dia" })).getAllByRole("button")).toHaveLength(7);
+  });
+
+  it("indica quase lotada e lotada por aula e avisa que depende de confirmação", async () => {
+    server.use(
+      http.get("/api/agenda", () =>
+        HttpResponse.json([
+          item(TODAY, "07:00", { id: "a", available: 9, capacity: 12 }),
+          item(TODAY, "07:00", { ...mod("m2", "Yoga"), id: "b", available: 3, capacity: 12 }),
+          item(TODAY, "07:00", { ...mod("m3", "Spinning"), id: "c", available: 0, capacity: 10 }),
+        ]),
+      ),
+    );
+
+    renderPage();
+    const day = await screen.findByRole("region", { name: "Aulas do dia" });
+    // O nível vai no texto do selo (não só na cor).
+    expect(await within(day).findByText("9/12 vagas")).toBeInTheDocument();
+    expect(within(day).getByText("3/12 vagas · quase lotada")).toBeInTheDocument();
+    expect(within(day).getByText("0/10 vagas · lotada")).toBeInTheDocument();
+  });
+
+  it("marca na grade as aulas que já reservei", async () => {
     server.use(
       http.get("/api/agenda", () =>
         HttpResponse.json([
@@ -621,15 +841,9 @@ describe("ClientAgendaPage", () => {
     );
 
     renderPage();
-
-    const day = await screen.findByRole("region", { name: "Aulas do dia" });
-    const [reserved, open] = await within(day).findAllByRole("button", { name: /Prof\./ });
-    expect(reserved).toHaveTextContent("Reservada");
-    expect(reserved).not.toHaveTextContent("vagas");
-    expect(open).not.toHaveTextContent("Reservada");
-    expect(open).toHaveTextContent("9/12 vagas");
+    await screen.findByRole("region", { name: "Aulas do dia" });
     const grid = screen.getByRole("region", { name: "Grade da semana" });
-    expect(within(grid).getAllByText("Reservada")).toHaveLength(1);
+    expect(await within(grid).findAllByText("Você reservou")).toHaveLength(1);
   });
 
   it("mostra estado vazio quando não há aulas no dia", async () => {
@@ -665,6 +879,7 @@ describe("ClientAgendaPage", () => {
   async function openDetail(time: string) {
     const user = userEvent.setup();
     const day = await screen.findByRole("region", { name: "Aulas do dia" });
+    await openGroup(user, day, `${time.slice(0, 2)}h`);
     await user.click(await within(day).findByRole("button", { name: new RegExp(time) }));
     return { user, sheet: screen.getByRole("dialog", { name: "Treino Funcional" }) };
   }
@@ -952,10 +1167,12 @@ describe("ClientAgendaPage", () => {
     async function startRescheduling() {
       const user = userEvent.setup();
       const day = await screen.findByRole("region", { name: "Aulas do dia" });
+      await openGroup(user, day, "07h");
       await user.click(await within(day).findByRole("button", { name: /07h00/ }));
       const sheet = screen.getByRole("dialog", { name: "Treino Funcional" });
       await user.click(within(sheet).getByRole("button", { name: "Remarcar" }));
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+      await openGroup(user, day, "18h");
       await user.click(within(day).getByRole("button", { name: /18h00/ }));
       return { user, sheet: screen.getByRole("dialog", { name: "Yoga" }) };
     }
@@ -1080,3 +1297,171 @@ function reservationOf(occurrence: ClientAgendaItem) {
     cancelledAt: null,
   };
 }
+
+describe("ClientAgendaPage › grade da semana (desktop) agrupada por horário", () => {
+  beforeEach(() => {
+    mockSuccessfulLogin("Cliente");
+  });
+
+  const mod = (id: string, name: string) => ({ name, modality: { id, name } });
+  const agenda = (items: ClientAgendaItem[]) =>
+    server.use(http.get("/api/agenda", () => HttpResponse.json(items)));
+
+  async function gridRegion() {
+    await screen.findByRole("region", { name: "Aulas do dia" });
+    return screen.getByRole("region", { name: "Grade da semana" });
+  }
+
+  const block = (grid: HTMLElement, name: RegExp | string) => within(grid).findByRole("button", { name });
+
+  it("mostra um bloco por horário e dia com a contagem de aulas e a soma de vagas", async () => {
+    agenda([
+      item(TODAY, "18:00", { id: "a", available: 4, capacity: 8 }),
+      item(TODAY, "18:00", { ...mod("m2", "Yoga"), id: "b", available: 3, capacity: 8 }),
+      item(TODAY, "18:00", { ...mod("m3", "Spinning"), id: "c", available: 2, capacity: 8 }),
+    ]);
+    renderPage();
+    const grid = await gridRegion();
+
+    const cell = await block(grid, "18h, quarta 11: 3 aulas, 9 de 24 vagas");
+    expect(cell).toHaveAttribute("aria-expanded", "false");
+    expect(within(cell).getByText("3 aulas")).toBeInTheDocument();
+    expect(within(cell).getByText("9 de 24 vagas")).toBeInTheDocument();
+    expect(within(grid).queryByRole("button", { name: /Yoga/ })).not.toBeInTheDocument();
+  });
+
+  it("horário com uma só aula também vira bloco", async () => {
+    agenda([item(OTHER_DAY, "07:00", { available: 5, capacity: 8 })]);
+    renderPage();
+    const grid = await gridRegion();
+
+    const cell = await block(grid, "07h, quinta 12: 1 aula, 5 de 8 vagas");
+    expect(within(cell).getByText("1 aula")).toBeInTheDocument();
+  });
+
+  it("mostra Lotado quando o total de vagas é zero", async () => {
+    agenda([
+      item(TODAY, "12:00", { id: "a", available: 0 }),
+      item(TODAY, "12:00", { ...mod("m2", "Yoga"), id: "b", available: 0 }),
+    ]);
+    renderPage();
+    const grid = await gridRegion();
+
+    const cell = await block(grid, /^12h, quarta 11: 2 aulas, lotado/);
+    expect(within(cell).getByText("Lotado")).toBeInTheDocument();
+    expect(within(cell).queryByText(/de 24 vagas/)).not.toBeInTheDocument();
+  });
+
+  it("Poucas vagas no limite de 3 e não com 4", async () => {
+    agenda([
+      item(TODAY, "07:00", { id: "a", available: 3 }),
+      item(OTHER_DAY, "07:00", { id: "b", available: 4 }),
+    ]);
+    renderPage();
+    const grid = await gridRegion();
+
+    const low = await block(grid, /^07h, quarta 11/);
+    const ok = await block(grid, /^07h, quinta 12/);
+    expect(within(low).getByText("Poucas vagas")).toBeInTheDocument();
+    expect(within(ok).queryByText("Poucas vagas")).not.toBeInTheDocument();
+  });
+
+  it("célula com reserva já vem aberta, destacada e com o texto Você reservou", async () => {
+    agenda([
+      item(TODAY, "18:00", { id: "a", myReservationId: "res-1", available: 4 }),
+      item(TODAY, "18:00", { ...mod("m2", "Yoga"), id: "b", available: 5 }),
+    ]);
+    renderPage();
+    const grid = await gridRegion();
+
+    const cell = await block(grid, /^18h, quarta 11: 2 aulas/);
+    expect(cell).toHaveAttribute("aria-expanded", "true");
+    expect(within(cell).getByText("Você reservou")).toBeInTheDocument();
+    expect(cell.className).toContain("fb-wkblock--mine");
+    expect(within(grid).getByRole("button", { name: /Treino Funcional/ })).toHaveTextContent("Reservada");
+    expect(within(grid).getByRole("button", { name: /Yoga/ })).toHaveTextContent("5 vagas");
+  });
+
+  it("expande e recolhe pelo cabeçalho do bloco, e o estado do usuário vale nos re-renders", async () => {
+    agenda([
+      item(TODAY, "18:00", { id: "a" }),
+      item(TODAY, "18:00", { ...mod("m2", "Yoga"), id: "b" }),
+    ]);
+    renderPage();
+    const user = userEvent.setup();
+    const grid = await gridRegion();
+
+    const cell = await block(grid, /^18h, quarta 11/);
+    expect(within(grid).queryByRole("button", { name: /Yoga/ })).not.toBeInTheDocument();
+
+    await user.click(cell);
+    expect(cell).toHaveAttribute("aria-expanded", "true");
+    expect(within(grid).getByRole("button", { name: /Yoga/ })).toBeInTheDocument();
+
+    await user.click(cell);
+    expect(cell).toHaveAttribute("aria-expanded", "false");
+    expect(within(grid).queryByRole("button", { name: /Yoga/ })).not.toBeInTheDocument();
+  });
+
+  it("clicar numa aula do bloco aberto abre o detalhe", async () => {
+    const yoga = item(TODAY, "18:00", { ...mod("m2", "Yoga"), id: "b", available: 5 });
+    agenda([item(TODAY, "18:00", { id: "a" }), yoga]);
+    server.use(http.get("/api/agenda/:id", () => HttpResponse.json(yoga)));
+    renderPage();
+    const user = userEvent.setup();
+    const grid = await gridRegion();
+
+    await user.click(await block(grid, /^18h, quarta 11/));
+    await user.click(within(grid).getByRole("button", { name: /Yoga/ }));
+
+    expect(await screen.findByRole("dialog", { name: "Yoga" })).toBeInTheDocument();
+  });
+
+  it("o filtro de modalidade recalcula o total do bloco", async () => {
+    agenda([
+      item(TODAY, "18:00", { id: "a", available: 4, capacity: 8 }),
+      item(TODAY, "18:00", { ...mod("m2", "Yoga"), id: "b", available: 5, capacity: 8 }),
+    ]);
+    renderPage();
+    const user = userEvent.setup();
+    const grid = await gridRegion();
+
+    await block(grid, "18h, quarta 11: 2 aulas, 9 de 16 vagas");
+    await user.click(screen.getByRole("button", { name: "Yoga" }));
+    expect(await block(grid, "18h, quarta 11: 1 aula, 5 de 8 vagas")).toBeInTheDocument();
+  });
+
+  it("aula de hoje já iniciada fica fora da grade", async () => {
+    vi.setSystemTime(gymDateTimeToUtc(TODAY, "10:30"));
+    agenda([item(TODAY, "10:00", { id: "started" }), item(TODAY, "18:00", { id: "later" })]);
+    renderPage();
+    const grid = await gridRegion();
+
+    await block(grid, /^18h, quarta 11: 1 aula/);
+    expect(within(grid).queryByRole("button", { name: /^10h/ })).not.toBeInTheDocument();
+    expect(within(grid).queryByText("10h00")).not.toBeInTheDocument();
+  });
+
+  it("remarcação continua a partir da grade", async () => {
+    const original = item(TODAY, "07:00", { id: "occ-original", myReservationId: "res-1" });
+    const target = item(TODAY, "18:00", { ...mod("m3", "Yoga"), id: "occ-target", available: 4 });
+    agenda([original, target]);
+    server.use(
+      http.get("/api/agenda/:id", () => HttpResponse.json(target)),
+      http.post("/api/reservations/:id/reschedule", () =>
+        HttpResponse.json({ ...reservationOf(target), id: "res-2" }, { status: 201 }),
+      ),
+    );
+    renderPage({ rescheduling: { reservationId: "res-1", from: original } });
+    const user = userEvent.setup();
+    const grid = await gridRegion();
+
+    expect(screen.getByText(/Remarcando Treino Funcional/)).toBeInTheDocument();
+    await user.click(await block(grid, /^18h, quarta 11/));
+    await user.click(within(grid).getByRole("button", { name: /Yoga/ }));
+    const sheet = await screen.findByRole("dialog", { name: "Yoga" });
+    await user.click(within(sheet).getByRole("button", { name: "Remarcar para esta aula" }));
+
+    expect(await within(sheet).findByRole("status")).toHaveTextContent("Reserva remarcada. Bom treino!");
+  });
+});

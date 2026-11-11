@@ -18,6 +18,8 @@ const agendaTsx = [
   read("pages/ClientAgendaPage.tsx"),
   read("pages/client/ClassItem.tsx"),
   read("pages/client/ReservationHistory.tsx"),
+  read("pages/client/HourGroup.tsx"),
+  read("pages/client/WeekCell.tsx"),
   read("components/QueryBlockState.tsx"),
 ].join("\n");
 const gamificationCss = read("styles/gamification.css");

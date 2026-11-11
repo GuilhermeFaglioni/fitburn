@@ -3,37 +3,33 @@ import { Link, useLocation, useNavigate, useSearchParams } from "react-router-do
 import { useQuery } from "@tanstack/react-query";
 import {
   addDays,
-  AvailabilityLevel,
-  availabilityLevel,
   gymToday,
   startOfWeek,
-  utcToGymDateTime,
   weekdayOf,
   type ClientAgendaItem,
 } from "@fitburn/contracts";
 import { listClientAgenda } from "../lib/agenda/client-api";
+import { filterUpcoming, groupByHour } from "../lib/agenda/group-by-hour";
 import {
   formatDayHeading,
   formatDayLabel,
   formatHour,
   formatClassMoment,
-  formatInstantHour,
   formatWeekRange,
   formatWeekShort,
   WEEKDAYS_SHORT,
 } from "../lib/agenda/format";
 import { ClassDetailSheet, type Rescheduling } from "./client/ClassDetailSheet";
-import { ClassItem } from "./client/ClassItem";
+import { HourGroup } from "./client/HourGroup";
+import { WeekCell } from "./client/WeekCell";
 import { MyReservationsList } from "./client/MyReservationsList";
 import { ReservationHistory } from "./client/ReservationHistory";
 import { QueryBlockState } from "../components/QueryBlockState";
-import { Badge, type BadgeTone } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
 import { Chip } from "../components/ui/Chip";
 import { Pill } from "../components/ui/Pill";
 import { Segmented } from "../components/ui/Segmented";
 import { EmptyState } from "../components/ui/States";
-import { firstName } from "../lib/names";
 
 type AgendaTab = "suas" | "todas";
 
@@ -43,43 +39,19 @@ const AGENDA_TABS: Array<{ value: AgendaTab; label: string }> = [
   { value: "todas", label: "Todas" },
 ];
 
-/** Selo de vagas: o texto diz o nível (lotada, quase lotada), então a cor é só reforço. */
-function availabilityBadge(item: ClientAgendaItem): { tone: BadgeTone; text: string } {
-  const ratio = `${item.available}/${item.capacity}`;
-  switch (availabilityLevel(item.available, item.capacity)) {
-    case AvailabilityLevel.FULL:
-      return { tone: "err", text: `${ratio} vagas · lotada` };
-    case AvailabilityLevel.ALMOST_FULL:
-      return { tone: "warn", text: `${ratio} vagas · quase lotada` };
-    default:
-      return { tone: "brand", text: `${ratio} vagas` };
-  }
-}
-
-/** Texto curto de vagas da grade do desktop (a célula é estreita). */
-function availabilityChipText(item: ClientAgendaItem): string {
-  const ratio = `${item.available}/${item.capacity}`;
-  switch (availabilityLevel(item.available, item.capacity)) {
-    case AvailabilityLevel.FULL:
-      return `${ratio} · lotada`;
-    case AvailabilityLevel.ALMOST_FULL:
-      return `${ratio} · quase lotada`;
-    default:
-      return `${ratio} vagas`;
-  }
-}
-
-const RESERVED_BADGE = (
-  <Badge tone="ok" dot>
-    Reservada
-  </Badge>
-);
-
 /** Navegação entre semanas: botões nas pontas e a semana no meio (como no preview). */
-function WeekNav({ weekStart, onGo }: { weekStart: string; onGo: (offset: number) => void }) {
+function WeekNav({
+  weekStart,
+  canGoBack,
+  onGo,
+}: {
+  weekStart: string;
+  canGoBack: boolean;
+  onGo: (offset: number) => void;
+}) {
   return (
     <div className="fb-agenda__weeknav" role="group" aria-label={`Semana de ${formatWeekRange(weekStart)}`}>
-      <Button size="sm" aria-label="Semana anterior" onClick={() => onGo(-1)}>
+      <Button size="sm" aria-label="Semana anterior" disabled={!canGoBack} onClick={() => onGo(-1)}>
         <span aria-hidden="true">←</span>
       </Button>
       <b className="fb-agenda__weeklabel">{formatWeekShort(weekStart)}</b>
@@ -146,7 +118,10 @@ export function ClientAgendaPage() {
     enabled: tab === "todas",
   });
 
+  const currentWeekStart = startOfWeek(today);
   const days = Array.from({ length: 7 }, (_, index) => addDays(weekStart, index));
+  // Na semana atual os chips começam em hoje; semanas seguintes mostram os sete dias.
+  const mobileDays = days.filter((date) => date >= today);
 
   // Modalidades que existem na semana (os filtros nascem dos dados); a escolhida some junto com a semana, e volta "Todas".
   const modalities = [
@@ -156,17 +131,17 @@ export function ClientAgendaPage() {
     .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
   const activeModality = modalities.find((modality) => modality.id === modalityId) ?? null;
 
-  const visibleItems = (agendaQuery.data ?? []).filter(
+  // Só daqui para frente: aulas já iniciadas ficam de fora (as duas visões partilham esta lista) e o filtro de
+  // modalidade age antes de qualquer agrupamento.
+  const now = new Date();
+  const visibleItems = filterUpcoming(agendaQuery.data ?? [], now).filter(
     (item) => !activeModality || item.modality.id === activeModality.id,
   );
-  const byDay = new Map<string, ClientAgendaItem[]>();
-  const hours = new Set<string>();
-  for (const item of visibleItems) {
-    const { date, time } = utcToGymDateTime(item.startsAt);
-    byDay.set(date, [...(byDay.get(date) ?? []), item]);
-    hours.add(time);
-  }
-  const sortedHours = [...hours].sort();
+  const hourGroups = groupByHour(visibleItems);
+  // Grade: um bloco por (dia, horário). Os dias passados da semana atual ficam como colunas vazias.
+  const cellGroups = new Map(hourGroups.map((group) => [`${group.date} ${group.time}`, group]));
+  const sortedHours = [...new Set(hourGroups.map((group) => group.time))].sort();
+  const dayGroups = hourGroups.filter((group) => group.date === selectedDay);
 
   function goToWeek(offset: number) {
     const next = addDays(weekStart, offset * 7);
@@ -174,7 +149,6 @@ export function ClientAgendaPage() {
     setSelectedDay(next === startOfWeek(today) ? today : next);
   }
 
-  const dayItems = byDay.get(selectedDay) ?? [];
   const filterNote = activeModality ? ` de ${activeModality.name}` : "";
 
   return (
@@ -234,7 +208,7 @@ export function ClientAgendaPage() {
             </div>
           )}
 
-          <WeekNav weekStart={weekStart} onGo={goToWeek} />
+          <WeekNav weekStart={weekStart} canGoBack={weekStart > currentWeekStart} onGo={goToWeek} />
 
           {modalities.length > 1 && (
             <div className="fb-agenda__scroller" role="group" aria-label="Modalidade">
@@ -263,7 +237,7 @@ export function ClientAgendaPage() {
 
           <section className="fb-agenda__mobile" aria-label="Aulas do dia">
             <div className="fb-agenda__scroller" role="group" aria-label="Dia">
-              {days.map((date) => (
+              {mobileDays.map((date) => (
                 <Chip
                   key={date}
                   label={WEEKDAYS_SHORT[weekdayOf(date)]}
@@ -275,40 +249,21 @@ export function ClientAgendaPage() {
               ))}
             </div>
 
-            {agendaQuery.data && dayItems.length === 0 && (
+            {agendaQuery.data && dayGroups.length === 0 && (
               <EmptyState title={`Nenhuma aula${filterNote} agendada para este dia.`} />
             )}
 
-            {dayItems.length > 0 && (
+            {dayGroups.length > 0 && (
               <div className="fb-agenda__day">
                 <h2 className="fb-agenda__day-title">
                   {formatDayHeading(selectedDay, weekdayOf(selectedDay), today)}
                 </h2>
                 <ul className="fb-agenda__list">
-                  {dayItems.map((item) => {
-                    const badge = availabilityBadge(item);
-                    return (
-                      <li key={item.id}>
-                        <ClassItem
-                          time={formatInstantHour(item.startsAt)}
-                          timeNote={`${item.durationMinutes} min`}
-                          title={item.modality.name}
-                          instructor={
-                            item.instructor ? `Prof. ${firstName(item.instructor.fullName)}` : undefined
-                          }
-                          booked={Boolean(item.myReservationId)}
-                          end={
-                            item.myReservationId ? (
-                              RESERVED_BADGE
-                            ) : (
-                              <Badge tone={badge.tone}>{badge.text}</Badge>
-                            )
-                          }
-                          onClick={() => openClass(item)}
-                        />
-                      </li>
-                    );
-                  })}
+                  {dayGroups.map((group) => (
+                    <li key={`${group.date} ${group.time}`}>
+                      <HourGroup group={group} onOpenClass={openClass} />
+                    </li>
+                  ))}
                 </ul>
               </div>
             )}
@@ -339,24 +294,13 @@ export function ClientAgendaPage() {
                         key={date}
                         className={`fb-agenda__cell${date === today ? " fb-agenda__cell--today" : ""}`}
                       >
-                        {(byDay.get(date) ?? [])
-                          .filter((item) => utcToGymDateTime(item.startsAt).time === hour)
-                          .map((item) => (
-                            <button
-                              key={item.id}
-                              type="button"
-                              className={`fb-agenda__slot${item.myReservationId ? " fb-agenda__slot--booked" : ""}`}
-                              onClick={() => openClass(item)}
-                            >
-                              <span className="fb-agenda__slot-title">{item.modality.name}</span>
-                              <span
-                                className={`fb-agenda__slot-sub fb-agenda__slot-sub--${availabilityLevel(item.available, item.capacity)}`}
-                              >
-                                {availabilityChipText(item)}
-                              </span>
-                              {item.myReservationId && RESERVED_BADGE}
-                            </button>
-                          ))}
+                        {cellGroups.get(`${date} ${hour}`) && (
+                          <WeekCell
+                            group={cellGroups.get(`${date} ${hour}`)!}
+                            weekday={weekdayOf(date)}
+                            onOpenClass={openClass}
+                          />
+                        )}
                       </div>
                     ))}
                   </div>

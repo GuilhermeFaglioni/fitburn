@@ -7,8 +7,6 @@ import { MemoryRouter } from "react-router-dom";
 import {
   addDays,
   gymDateTimeToUtc,
-  gymToday,
-  startOfWeek,
   weekdayOf,
   type ClientAgendaItem,
   type ReservationDetail,
@@ -23,9 +21,20 @@ import { server } from "./msw-server";
  * Agenda do cliente na base de design (D-038): "Suas aulas | Todas", dias (Chip), modalidades (Pill) e os
  * estados vazio, erro, carregando e sem conexão, nas duas abas.
  */
-const TODAY = gymToday();
-const WEEK_START = startOfWeek(TODAY);
-const OTHER_DAY = TODAY === WEEK_START ? addDays(WEEK_START, 1) : WEEK_START;
+/**
+ * Relógio fixo: quarta-feira, 5h na academia (antes de qualquer aula do dia). Só `Date` é falseado, para não
+ * travar MSW, React Query e user-event. "Só daqui para frente" depende do agora, então os testes não podem usar o relógio real.
+ */
+const TODAY = "2026-11-11";
+const NOW = gymDateTimeToUtc(TODAY, "05:00");
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(NOW);
+});
+afterEach(() => {
+  vi.useRealTimers();
+});
+const OTHER_DAY = addDays(TODAY, 1);
 
 function item(date: string, time: string, name: string, overrides: Partial<ClientAgendaItem> = {}): ClientAgendaItem {
   const startsAt = gymDateTimeToUtc(date, time);
@@ -181,7 +190,8 @@ describe("Agenda: dia e modalidade", () => {
     const days = await screen.findByRole("group", { name: "Dia" });
     const todayChip = within(days).getByRole("button", { name: formatDayLabel(TODAY, weekdayOf(TODAY)) });
     const otherChip = within(days).getByRole("button", { name: formatDayLabel(OTHER_DAY, weekdayOf(OTHER_DAY)) });
-    expect(within(days).getAllByRole("button")).toHaveLength(7);
+    // Semana atual: os chips começam em hoje (quarta), então faltam segunda e terça.
+    expect(within(days).getAllByRole("button")).toHaveLength(5);
     expect(todayChip).toHaveAttribute("aria-pressed", "true");
     expect(otherChip).toHaveAttribute("aria-pressed", "false");
 
@@ -215,17 +225,17 @@ describe("Agenda: dia e modalidade", () => {
 
     const day = screen.getByRole("region", { name: "Aulas do dia" });
     await within(day).findByText("Mobilidade");
-    expect(within(day).getAllByRole("button", { name: /Prof\./ })).toHaveLength(3);
+    expect(day.querySelectorAll("details")).toHaveLength(3);
 
     await user.click(functional);
 
     expect(functional).toHaveAttribute("aria-pressed", "true");
     expect(all).toHaveAttribute("aria-pressed", "false");
-    expect(within(day).getAllByRole("button", { name: /Prof\./ })).toHaveLength(2);
+    expect(day.querySelectorAll("details")).toHaveLength(2);
     expect(within(day).queryByText("Mobilidade")).not.toBeInTheDocument();
 
     await user.click(all);
-    expect(within(day).getAllByRole("button", { name: /Prof\./ })).toHaveLength(3);
+    expect(day.querySelectorAll("details")).toHaveLength(3);
   });
 
   it("modalidade sem aula no dia escolhido mostra o vazio dizendo qual é o filtro", async () => {
@@ -243,15 +253,15 @@ describe("Agenda: dia e modalidade", () => {
     mockAgenda([item(TODAY, "07:00", "Mobilidade")]);
     renderPage();
 
-    await screen.findByText("Mobilidade", { selector: "b" });
+    await within(await screen.findByRole("region", { name: "Aulas do dia" })).findByText("1 aula");
     expect(screen.queryByRole("group", { name: "Modalidade" })).not.toBeInTheDocument();
   });
 
   it("o selo de vagas diz o nível por extenso, sem depender de cor", async () => {
     mockAgenda([
       item(TODAY, "07:00", "A", { available: 0, capacity: 8 }),
-      item(TODAY, "08:00", "B", { available: 2, capacity: 8 }),
-      item(TODAY, "09:00", "C", { available: 6, capacity: 8 }),
+      item(TODAY, "07:00", "B", { available: 2, capacity: 8 }),
+      item(TODAY, "07:00", "C", { available: 6, capacity: 8 }),
     ]);
     renderPage();
 
@@ -303,7 +313,9 @@ describe("Agenda: estados", () => {
     expect(alert).toHaveTextContent("Não foi possível carregar a agenda.");
     await user.click(within(alert).getByRole("button", { name: "Tentar novamente" }));
 
-    expect(await screen.findByText("Mobilidade", { selector: "b" })).toBeInTheDocument();
+    expect(
+      await within(await screen.findByRole("region", { name: "Aulas do dia" })).findByText("1 aula"),
+    ).toBeInTheDocument();
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
@@ -325,7 +337,9 @@ describe("Agenda: estados", () => {
 
     onlineManager.setOnline(true);
 
-    expect(await screen.findByText("Mobilidade", { selector: "b" })).toBeInTheDocument();
+    expect(
+      await within(await screen.findByRole("region", { name: "Aulas do dia" })).findByText("1 aula"),
+    ).toBeInTheDocument();
     expect(document.querySelector('[data-state="offline"]')).toBeNull();
   });
 });

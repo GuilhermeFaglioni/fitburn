@@ -69,6 +69,11 @@ const WEEKDAYS_FULL = [
   "sábado",
 ];
 
+/** "quarta 11": dia da semana por extenso (sem "-feira") e o número, para nomes acessíveis. */
+export function formatWeekdayAndDay(date: string, weekday: number): string {
+  return `${WEEKDAYS_FULL[weekday].replace("-feira", "")} ${parts(date).day}`;
+}
+
 /** "Hoje, terça-feira 22" ou "Quarta-feira 23". */
 export function formatDayHeading(date: string, weekday: number, today: string): string {
   const label = `${WEEKDAYS_FULL[weekday]} ${parts(date).day}`;
