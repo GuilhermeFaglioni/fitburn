@@ -3,11 +3,8 @@ import { Link, useLocation, useNavigate, useSearchParams } from "react-router-do
 import { useQuery } from "@tanstack/react-query";
 import {
   addDays,
-  AvailabilityLevel,
-  availabilityLevel,
   gymToday,
   startOfWeek,
-  utcToGymDateTime,
   weekdayOf,
   type ClientAgendaItem,
 } from "@fitburn/contracts";
@@ -24,10 +21,10 @@ import {
 } from "../lib/agenda/format";
 import { ClassDetailSheet, type Rescheduling } from "./client/ClassDetailSheet";
 import { HourGroup } from "./client/HourGroup";
+import { WeekCell } from "./client/WeekCell";
 import { MyReservationsList } from "./client/MyReservationsList";
 import { ReservationHistory } from "./client/ReservationHistory";
 import { QueryBlockState } from "../components/QueryBlockState";
-import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
 import { Chip } from "../components/ui/Chip";
 import { Pill } from "../components/ui/Pill";
@@ -41,25 +38,6 @@ const AGENDA_TABS: Array<{ value: AgendaTab; label: string }> = [
   { value: "suas", label: "Suas aulas" },
   { value: "todas", label: "Todas" },
 ];
-
-/** Texto curto de vagas da grade do desktop (a célula é estreita). */
-function availabilityChipText(item: ClientAgendaItem): string {
-  const ratio = `${item.available}/${item.capacity}`;
-  switch (availabilityLevel(item.available, item.capacity)) {
-    case AvailabilityLevel.FULL:
-      return `${ratio} · lotada`;
-    case AvailabilityLevel.ALMOST_FULL:
-      return `${ratio} · quase lotada`;
-    default:
-      return `${ratio} vagas`;
-  }
-}
-
-const RESERVED_BADGE = (
-  <Badge tone="ok" dot>
-    Reservada
-  </Badge>
-);
 
 /** Navegação entre semanas: botões nas pontas e a semana no meio (como no preview). */
 function WeekNav({
@@ -159,14 +137,11 @@ export function ClientAgendaPage() {
   const visibleItems = filterUpcoming(agendaQuery.data ?? [], now).filter(
     (item) => !activeModality || item.modality.id === activeModality.id,
   );
-  const byDay = new Map<string, ClientAgendaItem[]>();
-  const hours = new Set<string>();
-  for (const item of visibleItems) {
-    const { date, time } = utcToGymDateTime(item.startsAt);
-    byDay.set(date, [...(byDay.get(date) ?? []), item]);
-    hours.add(time);
-  }
-  const sortedHours = [...hours].sort();
+  const hourGroups = groupByHour(visibleItems);
+  // Grade: um bloco por (dia, horário). Os dias passados da semana atual ficam como colunas vazias.
+  const cellGroups = new Map(hourGroups.map((group) => [`${group.date} ${group.time}`, group]));
+  const sortedHours = [...new Set(hourGroups.map((group) => group.time))].sort();
+  const dayGroups = hourGroups.filter((group) => group.date === selectedDay);
 
   function goToWeek(offset: number) {
     const next = addDays(weekStart, offset * 7);
@@ -174,7 +149,6 @@ export function ClientAgendaPage() {
     setSelectedDay(next === startOfWeek(today) ? today : next);
   }
 
-  const dayGroups = groupByHour(byDay.get(selectedDay) ?? []);
   const filterNote = activeModality ? ` de ${activeModality.name}` : "";
 
   return (
@@ -320,24 +294,13 @@ export function ClientAgendaPage() {
                         key={date}
                         className={`fb-agenda__cell${date === today ? " fb-agenda__cell--today" : ""}`}
                       >
-                        {(byDay.get(date) ?? [])
-                          .filter((item) => utcToGymDateTime(item.startsAt).time === hour)
-                          .map((item) => (
-                            <button
-                              key={item.id}
-                              type="button"
-                              className={`fb-agenda__slot${item.myReservationId ? " fb-agenda__slot--booked" : ""}`}
-                              onClick={() => openClass(item)}
-                            >
-                              <span className="fb-agenda__slot-title">{item.modality.name}</span>
-                              <span
-                                className={`fb-agenda__slot-sub fb-agenda__slot-sub--${availabilityLevel(item.available, item.capacity)}`}
-                              >
-                                {availabilityChipText(item)}
-                              </span>
-                              {item.myReservationId && RESERVED_BADGE}
-                            </button>
-                          ))}
+                        {cellGroups.get(`${date} ${hour}`) && (
+                          <WeekCell
+                            group={cellGroups.get(`${date} ${hour}`)!}
+                            weekday={weekdayOf(date)}
+                            onOpenClass={openClass}
+                          />
+                        )}
                       </div>
                     ))}
                   </div>

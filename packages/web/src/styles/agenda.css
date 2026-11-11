@@ -539,14 +539,6 @@
   border-top: 1px solid var(--line);
 }
 
-/* Duas ou mais aulas no mesmo dia e horário empilham (uma por linha) em vez de ficarem espremidas lado a lado. */
-.fb-agenda__cell:has(> .fb-agenda__slot + .fb-agenda__slot) {
-  flex-direction: column;
-  align-items: stretch;
-  justify-content: center;
-  gap: var(--s-1);
-}
-
 .fb-agenda__cell--head {
   min-height: 0;
   flex-direction: column;
@@ -585,21 +577,30 @@
   color: var(--muted);
 }
 
-/* A aula na grade encolhe ao conteúdo. */
-.fb-agenda__slot {
+/* Bloco da célula da grade (#189, D-043): fechado resume o horário; aberto lista as aulas na própria célula. */
+.fb-wkcell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  width: 100%;
+  min-width: 0;
+}
+
+.fb-wkblock {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: var(--s-1);
   box-sizing: border-box;
+  width: 100%;
   min-width: 0;
-  max-width: 100%;
   padding: var(--s-2);
   background: var(--surface-2);
   border: 1px solid var(--line);
   border-radius: var(--r-sm);
   color: var(--ink);
   font-family: var(--font-sans);
+  font-size: var(--text-caption);
   text-align: left;
   cursor: pointer;
   transition:
@@ -608,37 +609,39 @@
     box-shadow var(--duration-press) var(--ease-out);
 }
 
-.fb-agenda__slot:focus-visible {
+.fb-wkblock:focus-visible {
   outline: none;
   box-shadow: var(--sh-focus);
 }
 
-.fb-agenda__slot--booked {
+.fb-wkblock--mine {
   border-color: var(--brand);
+  background: var(--brand-tint);
 }
 
-.fb-agenda__slot-title {
-  font-size: var(--text-caption);
-  font-weight: var(--weight-bold);
+.fb-wkblock--full {
+  opacity: 0.6;
 }
 
-.fb-agenda__slot-sub {
+.fb-wkblock--class {
+  padding: var(--s-1) var(--s-2);
+}
+
+.fb-wkblock__spots {
   font-size: var(--text-kicker);
   color: var(--muted);
 }
 
-.fb-agenda__slot-sub--ALMOST_FULL {
-  color: var(--warn);
-}
-
-.fb-agenda__slot-sub--FULL {
-  color: var(--danger);
-}
-
 @media (hover: hover) and (pointer: fine) {
-  .fb-agenda__slot:hover {
+  .fb-wkblock:hover:not(.fb-wkblock--mine) {
     background: var(--surface);
     border-color: var(--line-2);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fb-wkblock {
+    transition: none;
   }
 }
 
