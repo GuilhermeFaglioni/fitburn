@@ -108,6 +108,26 @@ describe("AppMenu", () => {
     expect(await screen.findByRole("link", { name: "Metas" })).toHaveAttribute("href", "/metas");
   });
 
+  it("Loja aparece só para quem pode ver o módulo LOJA", async () => {
+    mockSuccessfulLogin("Professor", [
+      { module: Module.LOJA, actions: [PermissionAction.CREATE], scope: PermissionScope.ALL },
+      { module: Module.PRESENCA, actions: [PermissionAction.VIEW], scope: PermissionScope.ASSIGNED_CLASSES },
+    ]);
+    renderMenuAsAuthenticated();
+
+    expect(await screen.findByRole("link", { name: "Minhas aulas" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Loja" })).not.toBeInTheDocument();
+  });
+
+  it("Loja com Ver aparece no menu e leva a /loja-admin", async () => {
+    mockSuccessfulLogin("Professor", [
+      { module: Module.LOJA, actions: [PermissionAction.VIEW], scope: PermissionScope.ALL },
+    ]);
+    renderMenuAsAuthenticated();
+
+    expect(await screen.findByRole("link", { name: "Loja" })).toHaveAttribute("href", "/loja-admin");
+  });
+
   it("Reservas aparece para quem pode ver o módulo de reservas", async () => {
     mockSuccessfulLogin("Professor", [
       {

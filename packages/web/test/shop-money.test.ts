@@ -1,7 +1,7 @@
 import { centsToInput, formatCents, parseMoneyToCents } from "../src/lib/shop/money";
 
-/** O Intl usa espaço sem quebra entre "R$" e o valor; os testes comparam com espaço comum. */
-const plain = (text: string) => text.replace(/ /g, " ");
+/** O Intl usa espaço sem quebra (NBSP) entre "R$" e o valor; os testes comparam com espaço comum. */
+const plain = (text: string) => text.split(String.fromCharCode(0xa0)).join(" ");
 
 describe("parseMoneyToCents", () => {
   it.each([

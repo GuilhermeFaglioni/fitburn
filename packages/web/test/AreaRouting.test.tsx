@@ -136,6 +136,28 @@ describe("Área de cada perfil", () => {
     await expectLocation("/minhas-aulas");
   });
 
+  it("a equipe sem Ver na Loja não abre as telas da loja pela URL e vai para a tela inicial", async () => {
+    mockSession("Professor", [
+      {
+        module: Module.PRESENCA,
+        actions: [PermissionAction.VIEW],
+        scope: PermissionScope.ASSIGNED_CLASSES,
+      },
+    ]);
+
+    renderAt("/loja-admin/produtos/novo");
+
+    await expectLocation("/minhas-aulas");
+  });
+
+  it("quem pode ver a Loja abre as telas dela", async () => {
+    mockSession("Administrador", ADMIN_PERMISSIONS);
+
+    renderAt("/loja-admin/categorias");
+
+    await expectLocation("/loja-admin/categorias");
+  });
+
   it("quem pode usar a tela continua nela", async () => {
     mockSession("Administrador", ADMIN_PERMISSIONS);
 
