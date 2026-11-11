@@ -779,7 +779,7 @@ describe("ClientAgendaPage", () => {
     expect(within(day).queryByText("10h")).not.toBeInTheDocument();
     expect(within(day).getByText("18h")).toBeInTheDocument();
     const grid = screen.getByRole("region", { name: "Grade da semana" });
-    expect(within(grid).getAllByRole("button", { name: /Treino Funcional/ })).toHaveLength(1);
+    expect(within(grid).getAllByRole("button", { name: /1 aula/ })).toHaveLength(1);
   });
 
   it("hoje sem aulas futuras mostra o vazio do dia", async () => {
@@ -843,7 +843,7 @@ describe("ClientAgendaPage", () => {
     renderPage();
     await screen.findByRole("region", { name: "Aulas do dia" });
     const grid = screen.getByRole("region", { name: "Grade da semana" });
-    expect(await within(grid).findAllByText("Reservada")).toHaveLength(1);
+    expect(await within(grid).findAllByText("Você reservou")).toHaveLength(1);
   });
 
   it("mostra estado vazio quando não há aulas no dia", async () => {
@@ -1297,3 +1297,171 @@ function reservationOf(occurrence: ClientAgendaItem) {
     cancelledAt: null,
   };
 }
+
+describe("ClientAgendaPage › grade da semana (desktop) agrupada por horário", () => {
+  beforeEach(() => {
+    mockSuccessfulLogin("Cliente");
+  });
+
+  const mod = (id: string, name: string) => ({ name, modality: { id, name } });
+  const agenda = (items: ClientAgendaItem[]) =>
+    server.use(http.get("/api/agenda", () => HttpResponse.json(items)));
+
+  async function gridRegion() {
+    await screen.findByRole("region", { name: "Aulas do dia" });
+    return screen.getByRole("region", { name: "Grade da semana" });
+  }
+
+  const block = (grid: HTMLElement, name: RegExp | string) => within(grid).findByRole("button", { name });
+
+  it("mostra um bloco por horário e dia com a contagem de aulas e a soma de vagas", async () => {
+    agenda([
+      item(TODAY, "18:00", { id: "a", available: 4, capacity: 8 }),
+      item(TODAY, "18:00", { ...mod("m2", "Yoga"), id: "b", available: 3, capacity: 8 }),
+      item(TODAY, "18:00", { ...mod("m3", "Spinning"), id: "c", available: 2, capacity: 8 }),
+    ]);
+    renderPage();
+    const grid = await gridRegion();
+
+    const cell = await block(grid, "18h, quarta 11: 3 aulas, 9 de 24 vagas");
+    expect(cell).toHaveAttribute("aria-expanded", "false");
+    expect(within(cell).getByText("3 aulas")).toBeInTheDocument();
+    expect(within(cell).getByText("9 de 24 vagas")).toBeInTheDocument();
+    expect(within(grid).queryByRole("button", { name: /Yoga/ })).not.toBeInTheDocument();
+  });
+
+  it("horário com uma só aula também vira bloco", async () => {
+    agenda([item(OTHER_DAY, "07:00", { available: 5, capacity: 8 })]);
+    renderPage();
+    const grid = await gridRegion();
+
+    const cell = await block(grid, "07h, quinta 12: 1 aula, 5 de 8 vagas");
+    expect(within(cell).getByText("1 aula")).toBeInTheDocument();
+  });
+
+  it("mostra Lotado quando o total de vagas é zero", async () => {
+    agenda([
+      item(TODAY, "12:00", { id: "a", available: 0 }),
+      item(TODAY, "12:00", { ...mod("m2", "Yoga"), id: "b", available: 0 }),
+    ]);
+    renderPage();
+    const grid = await gridRegion();
+
+    const cell = await block(grid, /^12h, quarta 11: 2 aulas, lotado/);
+    expect(within(cell).getByText("Lotado")).toBeInTheDocument();
+    expect(within(cell).queryByText(/de 24 vagas/)).not.toBeInTheDocument();
+  });
+
+  it("Poucas vagas no limite de 3 e não com 4", async () => {
+    agenda([
+      item(TODAY, "07:00", { id: "a", available: 3 }),
+      item(OTHER_DAY, "07:00", { id: "b", available: 4 }),
+    ]);
+    renderPage();
+    const grid = await gridRegion();
+
+    const low = await block(grid, /^07h, quarta 11/);
+    const ok = await block(grid, /^07h, quinta 12/);
+    expect(within(low).getByText("Poucas vagas")).toBeInTheDocument();
+    expect(within(ok).queryByText("Poucas vagas")).not.toBeInTheDocument();
+  });
+
+  it("célula com reserva já vem aberta, destacada e com o texto Você reservou", async () => {
+    agenda([
+      item(TODAY, "18:00", { id: "a", myReservationId: "res-1", available: 4 }),
+      item(TODAY, "18:00", { ...mod("m2", "Yoga"), id: "b", available: 5 }),
+    ]);
+    renderPage();
+    const grid = await gridRegion();
+
+    const cell = await block(grid, /^18h, quarta 11: 2 aulas/);
+    expect(cell).toHaveAttribute("aria-expanded", "true");
+    expect(within(cell).getByText("Você reservou")).toBeInTheDocument();
+    expect(cell.className).toContain("fb-wkblock--mine");
+    expect(within(grid).getByRole("button", { name: /Treino Funcional/ })).toHaveTextContent("Reservada");
+    expect(within(grid).getByRole("button", { name: /Yoga/ })).toHaveTextContent("5 vagas");
+  });
+
+  it("expande e recolhe pelo cabeçalho do bloco, e o estado do usuário vale nos re-renders", async () => {
+    agenda([
+      item(TODAY, "18:00", { id: "a" }),
+      item(TODAY, "18:00", { ...mod("m2", "Yoga"), id: "b" }),
+    ]);
+    renderPage();
+    const user = userEvent.setup();
+    const grid = await gridRegion();
+
+    const cell = await block(grid, /^18h, quarta 11/);
+    expect(within(grid).queryByRole("button", { name: /Yoga/ })).not.toBeInTheDocument();
+
+    await user.click(cell);
+    expect(cell).toHaveAttribute("aria-expanded", "true");
+    expect(within(grid).getByRole("button", { name: /Yoga/ })).toBeInTheDocument();
+
+    await user.click(cell);
+    expect(cell).toHaveAttribute("aria-expanded", "false");
+    expect(within(grid).queryByRole("button", { name: /Yoga/ })).not.toBeInTheDocument();
+  });
+
+  it("clicar numa aula do bloco aberto abre o detalhe", async () => {
+    const yoga = item(TODAY, "18:00", { ...mod("m2", "Yoga"), id: "b", available: 5 });
+    agenda([item(TODAY, "18:00", { id: "a" }), yoga]);
+    server.use(http.get("/api/agenda/:id", () => HttpResponse.json(yoga)));
+    renderPage();
+    const user = userEvent.setup();
+    const grid = await gridRegion();
+
+    await user.click(await block(grid, /^18h, quarta 11/));
+    await user.click(within(grid).getByRole("button", { name: /Yoga/ }));
+
+    expect(await screen.findByRole("dialog", { name: "Yoga" })).toBeInTheDocument();
+  });
+
+  it("o filtro de modalidade recalcula o total do bloco", async () => {
+    agenda([
+      item(TODAY, "18:00", { id: "a", available: 4, capacity: 8 }),
+      item(TODAY, "18:00", { ...mod("m2", "Yoga"), id: "b", available: 5, capacity: 8 }),
+    ]);
+    renderPage();
+    const user = userEvent.setup();
+    const grid = await gridRegion();
+
+    await block(grid, "18h, quarta 11: 2 aulas, 9 de 16 vagas");
+    await user.click(screen.getByRole("button", { name: "Yoga" }));
+    expect(await block(grid, "18h, quarta 11: 1 aula, 5 de 8 vagas")).toBeInTheDocument();
+  });
+
+  it("aula de hoje já iniciada fica fora da grade", async () => {
+    vi.setSystemTime(gymDateTimeToUtc(TODAY, "10:30"));
+    agenda([item(TODAY, "10:00", { id: "started" }), item(TODAY, "18:00", { id: "later" })]);
+    renderPage();
+    const grid = await gridRegion();
+
+    await block(grid, /^18h, quarta 11: 1 aula/);
+    expect(within(grid).queryByRole("button", { name: /^10h/ })).not.toBeInTheDocument();
+    expect(within(grid).queryByText("10h00")).not.toBeInTheDocument();
+  });
+
+  it("remarcação continua a partir da grade", async () => {
+    const original = item(TODAY, "07:00", { id: "occ-original", myReservationId: "res-1" });
+    const target = item(TODAY, "18:00", { ...mod("m3", "Yoga"), id: "occ-target", available: 4 });
+    agenda([original, target]);
+    server.use(
+      http.get("/api/agenda/:id", () => HttpResponse.json(target)),
+      http.post("/api/reservations/:id/reschedule", () =>
+        HttpResponse.json({ ...reservationOf(target), id: "res-2" }, { status: 201 }),
+      ),
+    );
+    renderPage({ rescheduling: { reservationId: "res-1", from: original } });
+    const user = userEvent.setup();
+    const grid = await gridRegion();
+
+    expect(screen.getByText(/Remarcando Treino Funcional/)).toBeInTheDocument();
+    await user.click(await block(grid, /^18h, quarta 11/));
+    await user.click(within(grid).getByRole("button", { name: /Yoga/ }));
+    const sheet = await screen.findByRole("dialog", { name: "Yoga" });
+    await user.click(within(sheet).getByRole("button", { name: "Remarcar para esta aula" }));
+
+    expect(await within(sheet).findByRole("status")).toHaveTextContent("Reserva remarcada. Bom treino!");
+  });
+});

@@ -253,7 +253,7 @@ describe("Agenda: dia e modalidade", () => {
     mockAgenda([item(TODAY, "07:00", "Mobilidade")]);
     renderPage();
 
-    await screen.findByText("1 aula");
+    await within(await screen.findByRole("region", { name: "Aulas do dia" })).findByText("1 aula");
     expect(screen.queryByRole("group", { name: "Modalidade" })).not.toBeInTheDocument();
   });
 
@@ -313,7 +313,9 @@ describe("Agenda: estados", () => {
     expect(alert).toHaveTextContent("Não foi possível carregar a agenda.");
     await user.click(within(alert).getByRole("button", { name: "Tentar novamente" }));
 
-    expect(await screen.findByText("1 aula")).toBeInTheDocument();
+    expect(
+      await within(await screen.findByRole("region", { name: "Aulas do dia" })).findByText("1 aula"),
+    ).toBeInTheDocument();
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
@@ -335,7 +337,9 @@ describe("Agenda: estados", () => {
 
     onlineManager.setOnline(true);
 
-    expect(await screen.findByText("1 aula")).toBeInTheDocument();
+    expect(
+      await within(await screen.findByRole("region", { name: "Aulas do dia" })).findByText("1 aula"),
+    ).toBeInTheDocument();
     expect(document.querySelector('[data-state="offline"]')).toBeNull();
   });
 });
