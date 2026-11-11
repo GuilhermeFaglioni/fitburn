@@ -120,6 +120,190 @@
   list-style: none;
 }
 
+/* Todas (celular): horários agrupados (#189, D-043). Fechado resume o horário; aberto lista as aulas. */
+.fb-hgroup {
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  box-shadow: var(--sh-1);
+  overflow: hidden;
+  font-family: var(--font-sans);
+}
+
+.fb-hgroup--mine {
+  border-color: var(--brand-line);
+}
+
+.fb-hgroup__summary {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr) auto var(--s-4);
+  gap: var(--s-3);
+  align-items: center;
+  padding: var(--s-3);
+  cursor: pointer;
+  list-style: none;
+}
+
+.fb-hgroup__summary::-webkit-details-marker {
+  display: none;
+}
+
+.fb-hgroup__summary:focus-visible {
+  outline: none;
+  box-shadow: inset var(--sh-focus);
+}
+
+/* Seta do resumo: só anima por token (reduced motion zera a duração). */
+.fb-hgroup__summary::after {
+  content: "";
+  width: var(--s-2);
+  height: var(--s-2);
+  border-right: 2px solid var(--muted);
+  border-bottom: 2px solid var(--muted);
+  transform: rotate(45deg) translateY(-3px);
+  justify-self: center;
+  transition: transform var(--duration-state) var(--ease-out);
+}
+
+.fb-hgroup[open] > .fb-hgroup__summary::after {
+  transform: rotate(-135deg) translateY(-1px);
+}
+
+.fb-hgroup__time {
+  padding: var(--s-2) 0;
+  border-radius: var(--r-sm);
+  background: var(--brand-tint);
+  color: var(--brand-strong);
+  font-size: 15px;
+  font-weight: var(--weight-bold);
+  line-height: 1.1;
+  text-align: center;
+}
+
+.fb-hgroup__time small {
+  display: block;
+  font-size: var(--text-kicker);
+  font-weight: var(--weight-medium);
+}
+
+.fb-hgroup--full .fb-hgroup__time {
+  background: var(--surface-2);
+  /* A proposta usa --faint; sobre --surface-2 ele não passa de 4.5:1, então o horário lotado usa --muted. */
+  color: var(--muted);
+}
+
+.fb-hgroup__meta {
+  min-width: 0;
+}
+
+.fb-hgroup__meta b {
+  display: block;
+  font-size: 14px;
+  letter-spacing: -0.01em;
+}
+
+.fb-hgroup__meta span {
+  display: block;
+  overflow: hidden;
+  font-size: var(--text-caption);
+  color: var(--muted);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.fb-hgroup__end {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--s-1);
+}
+
+.fb-hgroup__spots {
+  font-size: var(--text-small);
+  font-weight: var(--weight-bold);
+}
+
+.fb-hgroup__spots small {
+  font-size: inherit;
+  font-weight: var(--weight-regular);
+  color: var(--muted);
+}
+
+.fb-hgroup__bar {
+  width: 72px;
+  height: var(--s-1);
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  background: var(--surface-2);
+  box-sizing: content-box;
+}
+
+.fb-hgroup__bar i {
+  display: block;
+  height: 100%;
+  background: var(--grad-cta);
+  color: var(--on-brand);
+}
+
+.fb-hgroup__list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--line);
+}
+
+.fb-hgroup__list li + li {
+  border-top: 1px solid var(--line);
+}
+
+.fb-hclass {
+  box-sizing: border-box;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  padding: var(--s-3) var(--s-4) var(--s-3) calc(var(--s-16) + var(--s-4));
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-sans);
+  text-align: left;
+  cursor: pointer;
+}
+
+.fb-hclass--mine {
+  background: var(--brand-tint);
+}
+
+.fb-hclass:focus-visible {
+  outline: none;
+  box-shadow: inset var(--sh-focus);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .fb-hclass:hover:not(.fb-hclass--mine) {
+    background: var(--surface-2);
+  }
+}
+
+.fb-hclass__meta {
+  min-width: 0;
+}
+
+.fb-hclass__meta b {
+  display: block;
+  font-size: var(--text-small);
+}
+
+.fb-hclass__meta span {
+  font-size: var(--text-caption);
+  color: var(--muted);
+}
+
 /* Suas aulas: o item de aula e as ações Remarcar/Cancelar formam um só cartão. */
 .fb-agenda__resv {
   display: flex;
