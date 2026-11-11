@@ -127,14 +127,14 @@ const HEX_EXCEPTIONS: Record<ThemeName, Record<string, { floor: number; why: str
 
 /**
  * Seletores EXATOS cuja cor de texto é branco sem fundo na própria regra:
- * - "orange": o fundo laranja vem de outra regra (o selo do cartão do plano, que herda o gradiente CTA do cartão):
+ * - "orange": o fundo laranja vem de outra regra (um selo que herda o gradiente CTA do contêiner):
  *   vale o piso de 3:1 do par do design;
  * - "no-text": seletor sem texto, ignorado pela checagem. Hoje nenhum entra aqui; os de fundo laranja sem texto
  *   (barras, traços) estão em NO_TEXT_ORANGE_SELECTORS, abaixo.
  */
 const WHITE_NO_BACKGROUND = new Map<string, "orange" | "no-text">([
-  // Selo "ATIVO" do cartão do plano da Home (D-038): negrito branco translúcido-sobre-laranja; o gradiente CTA está no
-  // cartão (.fb-home__plan), não no selo. Vale o mesmo piso de 3:1 do par do design.
+  // Exemplo do mecanismo: selo de negrito branco sobre o laranja do contêiner (o cartão do plano saiu do Início, D-043;
+  // a entrada fica porque os testes sintéticos abaixo exercitam o caminho "orange"). Vale o piso de 3:1 do par do design.
   [".fb-home__badge", "orange"],
 ]);
 
