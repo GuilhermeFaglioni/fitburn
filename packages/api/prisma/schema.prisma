@@ -48,6 +48,7 @@ enum Module {
   PRESENCA
   FICHAS_DE_TREINO
   GAMIFICACAO
+  LOJA
 }
 
 enum PermissionAction {

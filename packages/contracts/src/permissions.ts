@@ -12,6 +12,7 @@ export const Module = {
   PRESENCA: "PRESENCA",
   FICHAS_DE_TREINO: "FICHAS_DE_TREINO",
   GAMIFICACAO: "GAMIFICACAO",
+  LOJA: "LOJA",
 } as const;
 export type ModuleName = (typeof Module)[keyof typeof Module];
 export const ALL_MODULES = Object.values(Module) as ModuleName[];

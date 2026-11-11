@@ -12,6 +12,7 @@ export const MODULE_LABELS: Record<ModuleName, string> = {
   PRESENCA: "Presença",
   FICHAS_DE_TREINO: "Fichas de treino",
   GAMIFICACAO: "Metas",
+  LOJA: "Loja",
 };
 
 export const ACTION_LABELS: Record<PermissionActionName, string> = {
