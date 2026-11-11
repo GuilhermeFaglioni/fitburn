@@ -5,7 +5,9 @@ import {
   ErrorStatus,
   type CreateShopProductRequest,
   type ListShopProductsQuery,
+  type SetShopProductOptionsRequest,
   type ShopProduct,
+  type ShopProductDetail,
   type UpdateShopProductRequest,
 } from "@fitburn/contracts";
 import { PrismaService } from "../prisma/prisma.service.js";
@@ -17,15 +19,20 @@ import {
   SHOP_FEATURED_LOCK,
   SHOP_FULL_SCOPE_MESSAGE,
 } from "./shop-constants.js";
+import { effectivePriceCents } from "./shop-pricing.js";
+import { planVariants, valuesOfVariant } from "./shop-variants.js";
 
 /** Quantos produtos podem estar em destaque no Início ao mesmo tempo (não excluídos). */
 const FEATURED_LIMIT = 3;
 
 const PRODUCT_INCLUDE = {
   category: { select: { id: true, name: true } },
+  options: {
+    orderBy: { position: "asc" },
+    include: { values: { orderBy: { position: "asc" } } },
+  },
   variants: {
-    select: { id: true, ativa: true, stock: true },
-    orderBy: { createdAt: "asc" },
+    orderBy: [{ position: "asc" }, { createdAt: "asc" }],
   },
 } satisfies Prisma.ProductInclude;
 
@@ -66,12 +73,17 @@ export class ShopProductsService {
     return rows.map(toShopProduct);
   }
 
-  async get(id: string, requester: ScopedRequester): Promise<ShopProduct> {
+  /** Produto com opções e variações (sem as descontinuadas), para a tela de edição. */
+  async get(id: string, requester: ScopedRequester): Promise<ShopProductDetail> {
     assertFullScope(requester, SHOP_FULL_SCOPE_MESSAGE);
-    return toShopProduct(await findActiveOrThrow(this.prisma, id));
+    return toShopProductDetail(await findActiveOrThrow(this.prisma, id));
   }
 
-  /** Cria o produto e a variação única (com o estoque) numa transação. */
+  /**
+   * Cria o produto numa transação. Sem opções, a variação única com o estoque (L1).
+   * Com opções, as opções e o produto cartesiano de variações (estoque 0, salvo as
+   * sobreposições enviadas). As regras de variação são checadas antes de qualquer escrita.
+   */
   async create(input: CreateShopProductRequest, requester: ScopedRequester): Promise<ShopProduct> {
     assertFullScope(requester, SHOP_FULL_SCOPE_MESSAGE);
     assertSaleRules({
@@ -80,6 +92,19 @@ export class ShopProductsService {
       permiteMaisDeUmaUnidade: input.permiteMaisDeUmaUnidade,
       limitePorPedido: input.limitePorPedido,
     });
+
+    const options = input.options ?? [];
+    const variants =
+      options.length > 0
+        ? planVariants(options, input.variants).map((plan) => ({
+            label: plan.label,
+            combinationKey: plan.key,
+            position: plan.position,
+            stock: plan.override?.stock ?? 0,
+            priceCents: plan.override?.priceCents ?? null,
+            ativa: plan.override?.ativa ?? true,
+          }))
+        : [{ label: null, stock: input.stock, ativa: true }];
 
     const created = await this.prisma.$transaction(async (tx) => {
       if (input.categoryId) await lockAndAssertCategory(tx, input.categoryId);
@@ -95,12 +120,105 @@ export class ShopProductsService {
           destaque: input.destaque,
           permiteMaisDeUmaUnidade: input.permiteMaisDeUmaUnidade,
           limitePorPedido: input.limitePorPedido,
-          variants: { create: { label: null, stock: input.stock, ativa: true } },
+          options: {
+            create: options.map((option, position) => ({
+              name: option.name,
+              position,
+              values: {
+                create: option.values.map((value, valuePosition) => ({
+                  value,
+                  position: valuePosition,
+                })),
+              },
+            })),
+          },
+          variants: { create: variants },
         },
         include: PRODUCT_INCLUDE,
       });
     });
     return toShopProduct(created);
+  }
+
+  /**
+   * Grava as opções e as variações de uma vez. Mesma ordem de travamento da L1
+   * (produto), e a leitura e a escrita ficam sob o lock. As opções são recriadas e
+   * as variações são reconciliadas pela chave de combinação: a que continua mantém
+   * estoque, preço próprio e ativa; a que volta é reativada com o estoque que tinha;
+   * a nova nasce com estoque 0; a que sai é desativada e marcada descontinuada.
+   */
+  async setOptions(
+    id: string,
+    input: SetShopProductOptionsRequest,
+    requester: ScopedRequester,
+  ): Promise<ShopProductDetail> {
+    assertFullScope(requester, SHOP_FULL_SCOPE_MESSAGE);
+    const updated = await this.prisma.$transaction(async (tx) => {
+      await lockProductRow(tx, id);
+      const current = await findActiveOrThrow(tx, id);
+      const plans = planVariants(input.options, input.variants);
+      const wanted = new Set(plans.map((plan) => plan.key));
+
+      await tx.productOption.deleteMany({ where: { productId: id } });
+      for (const [position, option] of input.options.entries()) {
+        await tx.productOption.create({
+          data: {
+            productId: id,
+            name: option.name,
+            position,
+            values: {
+              create: option.values.map((value, valuePosition) => ({
+                value,
+                position: valuePosition,
+              })),
+            },
+          },
+        });
+      }
+
+      for (const variant of current.variants) {
+        if (!wanted.has(variant.combinationKey) && !variant.descontinuada) {
+          await tx.productVariant.update({
+            where: { id: variant.id },
+            data: { descontinuada: true, ativa: false },
+          });
+        }
+      }
+
+      const existing = new Map(current.variants.map((variant) => [variant.combinationKey, variant]));
+      for (const plan of plans) {
+        const row = existing.get(plan.key);
+        const override = plan.override;
+        if (row) {
+          await tx.productVariant.update({
+            where: { id: row.id },
+            data: {
+              label: plan.label,
+              position: plan.position,
+              descontinuada: false,
+              stock: override?.stock ?? row.stock,
+              priceCents: override?.priceCents !== undefined ? override.priceCents : row.priceCents,
+              ativa: override?.ativa ?? (row.descontinuada ? true : row.ativa),
+            },
+          });
+        } else {
+          await tx.productVariant.create({
+            data: {
+              productId: id,
+              combinationKey: plan.key,
+              label: plan.label,
+              position: plan.position,
+              stock: override?.stock ?? 0,
+              priceCents: override?.priceCents ?? null,
+              ativa: override?.ativa ?? true,
+            },
+          });
+        }
+      }
+
+      return tx.product.findUniqueOrThrow({ where: { id }, include: PRODUCT_INCLUDE });
+    });
+    return toShopProductDetail(updated);
   }
 
   /**
@@ -118,6 +236,13 @@ export class ShopProductsService {
     const updated = await this.prisma.$transaction(async (tx) => {
       await lockProductRow(tx, id);
       const current = await findActiveOrThrow(tx, id);
+      if (input.stock !== undefined && current.options.length > 0) {
+        throw new DomainError(
+          ErrorCode.VALIDATION_ERROR,
+          "Defina o estoque por variação.",
+          ErrorStatus.VALIDATION,
+        );
+      }
       if (input.categoryId) await lockAndAssertCategory(tx, input.categoryId);
 
       const next = mergeSaleState(current, input);
@@ -245,17 +370,18 @@ function assertSaleRules(state: SaleState): void {
 }
 
 /**
- * Produto simples guarda o estoque na primeira variação ativa. Sem nenhuma ativa,
- * cria uma nova ativa com o estoque; as inativas ficam como estão.
+ * Produto simples guarda o estoque na variação única (chave ""). Só o estoque muda:
+ * se ela estiver desativada, continua desativada. Se não existir, é criada.
+ * Só vale sem opções (a API já recusa o resto).
  */
 async function setSingleVariantStock(
   tx: Prisma.TransactionClient,
   product: ProductRow,
   stock: number,
 ): Promise<void> {
-  const variant = product.variants.find((candidate) => candidate.ativa);
-  if (variant) {
-    await tx.productVariant.update({ where: { id: variant.id }, data: { stock } });
+  const single = product.variants.find((candidate) => candidate.combinationKey === "");
+  if (single) {
+    await tx.productVariant.update({ where: { id: single.id }, data: { stock } });
   } else {
     await tx.productVariant.create({
       data: { productId: product.id, label: null, stock, ativa: true },
@@ -263,8 +389,10 @@ async function setSingleVariantStock(
   }
 }
 
+/** Variações não descontinuadas contam; estoque e rupturas olham só as ativas. */
 function toShopProduct(row: ProductRow): ShopProduct {
-  const active = row.variants.filter((variant) => variant.ativa);
+  const live = row.variants.filter((variant) => !variant.descontinuada);
+  const active = live.filter((variant) => variant.ativa);
   return {
     id: row.id,
     name: row.name,
@@ -276,9 +404,35 @@ function toShopProduct(row: ProductRow): ShopProduct {
     destaque: row.destaque,
     permiteMaisDeUmaUnidade: row.permiteMaisDeUmaUnidade,
     limitePorPedido: row.limitePorPedido,
-    variantCount: row.variants.length,
+    variantCount: live.length,
     stock: active.reduce((total, variant) => total + variant.stock, 0),
     soldOutVariantCount: active.filter((variant) => variant.stock === 0).length,
     createdAt: row.createdAt.toISOString(),
+  };
+}
+
+function toShopProductDetail(row: ProductRow): ShopProductDetail {
+  return {
+    ...toShopProduct(row),
+    options: row.options.map((option) => ({
+      id: option.id,
+      name: option.name,
+      values: option.values.map((value) => ({ id: value.id, value: value.value })),
+    })),
+    variants: row.variants
+      .filter((variant) => !variant.descontinuada)
+      .map((variant) => ({
+        id: variant.id,
+        label: variant.label,
+        values: valuesOfVariant(variant.combinationKey, row.options),
+        stock: variant.stock,
+        priceCents: variant.priceCents,
+        effectivePriceCents: effectivePriceCents({
+          priceCents: row.priceCents,
+          promoPriceCents: row.promoPriceCents,
+          variantPriceCents: variant.priceCents,
+        }),
+        ativa: variant.ativa,
+      })),
   };
 }
