@@ -800,4 +800,14 @@ describe("Loja: produtos no admin (HTTP)", () => {
       }
     });
   });
+
+  describe("Regras no banco", () => {
+    it("recusa promoção negativa gravada direto no banco (CHECK products_promo_nonnegative)", async () => {
+      await expect(
+        testPrisma.product.create({
+          data: { name: "Direto", priceCents: 15_000, promoPriceCents: -1 },
+        }),
+      ).rejects.toThrow(/products_promo_nonnegative/);
+    });
+  });
 });
