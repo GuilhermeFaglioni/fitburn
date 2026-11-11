@@ -22,7 +22,7 @@ Registro das decisões tomadas durante a conversa. O documento separa decisões 
 | D-009 | Amazon SQS para processamento assíncrono | Aprovado | Fila para notificações e futuras integrações sem bloquear a API. |
 | D-010 | EventBridge Scheduler para lembretes | Aprovado | Agendamento de eventos únicos ou recorrentes antes da publicação na SQS. |
 | D-011 | Cache adiado | Aprovado | Volume inicial não justifica Redis/Valkey e a disponibilidade de vagas não deve depender de cache. |
-| D-012 | S3 para arquivos | No desenho | Previsto para arquivos, mas o escopo obrigatório e a política de armazenamento ainda não foram detalhados. |
+| D-012 | S3 para arquivos | No desenho (detalhado por D-040 no MVP) | Previsto para arquivos, mas o escopo obrigatório e a política de armazenamento ainda não foram detalhados. |
 
 ## Compute e rede
 
@@ -54,7 +54,7 @@ Registro das decisões tomadas durante a conversa. O documento separa decisões 
 |---|---|---|---|
 | D-027 | Não criar app próprio para Apple Watch | Aprovado | O objetivo é apenas consultar dados, se possível. |
 | D-028 | Avaliar HealthKit e Health Connect | Aprovado | Caminhos nativos para dados do Apple Watch e dispositivos Android. |
-| D-029 | Não haverá venda dentro do app | Aprovado | Podem existir consultas, inputs, automações e integrações financeiras. |
+| D-029 | Não haverá venda dentro do app | Revisado por D-039 | Podem existir consultas, inputs, automações e integrações financeiras. |
 | D-030 | Uma filial e poucos clientes no início | Requisito aprovado | Permite começar com robustez operacional proporcional ao cenário, preservando evolução futura. |
 | D-031 | Domínio não será definido agora | Pendente | Não bloqueia o desenho de componentes. |
 
@@ -81,6 +81,29 @@ Registro das decisões tomadas durante a conversa. O documento separa decisões 
 | ID | Decisão | Status | Motivo principal |
 |---|---|---|---|
 | D-038 | Tema claro e escuro pela preferência do sistema (`prefers-color-scheme`), em cliente e admin, com alternância manual salva por aparelho (`localStorage`) | Aprovado | Revisa a #134 (escuro sempre). A proposta de design traz os dois temas; o escopo e a alternância foram confirmados pelo dono do produto. |
+
+## Loja, bioimpedância e navegação do cliente
+
+| ID | Decisão | Status | Motivo principal |
+|---|---|---|---|
+| D-039 | Loja no app com pedido sem pagamento, aprovado pela equipe | Aprovado | Revisa D-029: o cliente reserva produtos (o pedido separa estoque); pagamento e retirada são na recepção. |
+| D-040 | Fotos de produto no PostgreSQL (`bytea`) no MVP | Aprovado | Evita infraestrutura nova agora; rever para storage S3 compatível ao ir para produção. |
+| D-041 | Laudo de bioimpedância lido no navegador; só os valores são guardados | Aprovado | A imagem do laudo (dado de saúde com nome) não sai do computador de quem envia. |
+| D-042 | Consentimento específico para bioimpedância, com revogação | Aprovado | Dado de saúde (LGPD). Sem consentimento não há registro; revogado, a equipe deixa de ver e o cliente mantém e pode excluir as suas avaliações. |
+| D-043 | Início sem cartão do plano, com atalhos deslizantes; Agenda "Suas aulas \| Todas" agrupada por horário | Aprovado | Início mais curto e Agenda mais legível. Telas aprovadas em `docs/design/proposta-home.html` e `docs/design/proposta-agenda.html`. |
+
+### D-039 — Loja com pedido sem pagamento
+
+- **Data:** 2026-11-11.
+- **Contexto:** a Fitburn vende produtos da marca e quer oferecê-los no app; o MVP não terá pagamento.
+- **Decisão:** o cliente faz um **pedido** que separa o estoque e fica aguardando aprovação; a equipe aprova, recusa ou marca como entregue. Estados: Aguardando aprovação, Aprovado, Entregue, Recusado e Cancelado (pelo cliente, só enquanto aguarda).
+- **Consequências:** criação de pedido transacional e idempotente, como a reserva de aula (D-032, D-033). Spec e telas: `docs/design/proposta-loja.html`.
+
+### D-042 — Consentimento de bioimpedância
+
+- **Data:** 2026-11-11.
+- **Decisão:** manifestação imutável `CONSENT_BIOIMPEDANCE`, com versão do texto. Revogar impede novos registros e esconde as avaliações da equipe; o cliente continua vendo e pode excluir as suas.
+- **Consequências:** a API recusa criar avaliação sem consentimento vigente. Telas: `docs/design/proposta-bioimpedancia.html`.
 
 ## Regra de mudança
 

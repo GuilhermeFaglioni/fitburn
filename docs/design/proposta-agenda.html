@@ -1,0 +1,843 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fitburn: proposta da Agenda</title>
+<meta name="description" content="Agenda do cliente: Suas aulas e Todas, com aulas agrupadas por horário. Dados fictícios.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@1,600;1,700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap" rel="stylesheet">
+<style>
+/* =========================================================
+   Tokens. Cores da marca Fitburn (tokens.css do app):
+   laranja #ED6E34 e vermelho-chama #C23A1F. Neutros tingidos
+   de quente, como o Oratry tinge os dele de azul.
+   ========================================================= */
+:root{
+  color-scheme: light;
+  --brand: #ED6E34;            /* laranja Fitburn */
+  --flame: #C23A1F;            /* vermelho-chama do logo */
+  --brand-strong: #A8401A;     /* texto/link laranja sobre claro (6,15:1) */
+  --brand-hover: #D85F28;
+  --brand-tint: #FFF4EE;       /* superfície suave */
+  --brand-tint-2: #FFE8DC;
+  --brand-line: #F7CDB7;       /* borda de controle de marca */
+  --grad-cta: linear-gradient(145deg,#F58A55 0%,#ED6E34 45%,#C23A1F 100%);
+  --grad-text: linear-gradient(100deg,#C23A1F,#ED6E34 60%,#F7A274);
+
+  --bg: #FFFFFF;
+  --bg-soft: #FFFAF7;
+  --surface: #FFFFFF;
+  --surface-2: #FBF5F1;
+  --ink: #1C1714;
+  --ink-2: #3A302A;
+  --muted: #6B5D55;
+  --faint: #8E7F76;
+  --line: #EFE2DA;
+  --line-2: #E5D3C8;
+
+  --danger: #B42318;  --danger-bg: #FDECEA;  --danger-line: #F5C2BC;
+  --success: #1E6B34; --success-bg: #EAF7EE; --success-line: #BFE3CA;
+  --warn: #8A5A00;    --warn-bg: #FFF5DB;
+
+  --font-sans: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-serif: "Cormorant", Georgia, serif;
+
+  --r-xs: 6px; --r-sm: 10px; --r-md: 14px; --r-lg: 20px; --r-xl: 28px; --r-pill: 999px;
+
+  --sh-1: 0 5px 14px rgba(120,52,20,.06);
+  --sh-2: 0 12px 38px rgba(120,52,20,.08);
+  --sh-3: 0 22px 60px rgba(120,52,20,.10);
+  --sh-cta: 0 10px 23px rgba(237,110,52,.28);
+  --sh-focus: 0 0 0 3px rgba(237,110,52,.35);
+
+  --s-1:4px; --s-2:8px; --s-3:12px; --s-4:16px; --s-5:20px; --s-6:24px; --s-8:32px; --s-12:48px; --s-16:64px; --s-24:96px;
+  --ease-out: cubic-bezier(.23,1,.32,1);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --brand-strong:#F08A5A; --brand-hover:#F58A55;
+    --brand-tint:#2A1810; --brand-tint-2:#3A1F12; --brand-line:#5A2E1A;
+    --grad-text: linear-gradient(100deg,#F06A3A,#ED6E34 55%,#FFB48C);
+    --bg:#0A0A0A; --bg-soft:#100D0C; --surface:#161311; --surface-2:#1E1916;
+    --ink:#FFFFFF; --ink-2:#E9E1DC; --muted:#A39A94; --faint:#857B75;
+    --line:#2A2320; --line-2:#3A302B;
+    --danger:#FF6D5A; --danger-bg:rgba(255,109,90,.1); --danger-line:rgba(255,109,90,.35);
+    --success:#5CC98A; --success-bg:rgba(92,201,138,.1); --success-line:rgba(92,201,138,.35);
+    --warn:#F2C25C; --warn-bg:rgba(242,194,92,.1);
+    --sh-1: 0 5px 14px rgba(0,0,0,.35);
+    --sh-2: 0 12px 38px rgba(0,0,0,.45);
+    --sh-3: 0 22px 60px rgba(0,0,0,.55);
+    --sh-cta: 0 10px 26px rgba(237,110,52,.30);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --brand-strong:#F08A5A; --brand-hover:#F58A55;
+  --brand-tint:#2A1810; --brand-tint-2:#3A1F12; --brand-line:#5A2E1A;
+  --grad-text: linear-gradient(100deg,#F06A3A,#ED6E34 55%,#FFB48C);
+  --bg:#0A0A0A; --bg-soft:#100D0C; --surface:#161311; --surface-2:#1E1916;
+  --ink:#FFFFFF; --ink-2:#E9E1DC; --muted:#A39A94; --faint:#857B75;
+  --line:#2A2320; --line-2:#3A302B;
+  --danger:#FF6D5A; --danger-bg:rgba(255,109,90,.1); --danger-line:rgba(255,109,90,.35);
+  --success:#5CC98A; --success-bg:rgba(92,201,138,.1); --success-line:rgba(92,201,138,.35);
+  --warn:#F2C25C; --warn-bg:rgba(242,194,92,.1);
+  --sh-1: 0 5px 14px rgba(0,0,0,.35);
+  --sh-2: 0 12px 38px rgba(0,0,0,.45);
+  --sh-3: 0 22px 60px rgba(0,0,0,.55);
+  --sh-cta: 0 10px 26px rgba(237,110,52,.30);
+}
+
+/* ========================= Base ========================= */
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+html,body{overflow-x:clip}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.55 var(--font-sans)}
+img,svg{display:block;max-width:100%}
+a{color:var(--brand-strong);text-decoration:none}
+a:hover{text-decoration:underline}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--brand);outline-offset:3px;border-radius:6px}
+.wrap{max-width:1240px;margin:0 auto;padding:0 clamp(16px,5vw,48px)}
+.kicker{margin:0 0 14px;font-size:11px;font-weight:700;letter-spacing:.32em;text-transform:uppercase;color:var(--brand-strong)}
+h1,h2,h3,h4{margin:0;color:var(--ink);font-weight:700}
+.h-display{font-size:clamp(38px,6.4vw,72px);line-height:1.04;letter-spacing:-.045em;text-wrap:balance}
+.h-display em,.h2 em{font-family:var(--font-serif);font-style:italic;font-weight:700;letter-spacing:-.02em;background:var(--grad-text);-webkit-background-clip:text;background-clip:text;color:transparent;padding-right:.06em}
+.h2{font-size:clamp(30px,4.2vw,52px);line-height:1.06;letter-spacing:-.045em;text-wrap:balance}
+.lead{font-size:clamp(16px,1.6vw,19px);line-height:1.6;color:var(--muted);max-width:620px;margin:20px 0 0}
+section{padding:clamp(64px,9vw,112px) 0;position:relative}
+section + section{border-top:1px solid var(--line)}
+.sec-head{max-width:760px;margin:0 0 clamp(32px,5vw,56px)}
+.sec-head.center{margin-left:auto;margin-right:auto;text-align:center}
+.sec-head.center .lead{margin-left:auto;margin-right:auto}
+.sub{font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin:40px 0 16px}
+.sub:first-child{margin-top:0}
+
+/* ========================= Header ========================= */
+.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:saturate(1.4) blur(12px);-webkit-backdrop-filter:saturate(1.4) blur(12px);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;gap:24px;height:72px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.18em;font-size:15px;color:var(--ink)}
+.brand svg{width:30px;height:30px}
+.top nav{display:flex;gap:28px;margin-left:auto}
+.top nav a{color:var(--muted);font-size:14px;font-weight:500}
+.top nav a:hover{color:var(--ink);text-decoration:none}
+.theme-btn{border:1px solid var(--line-2);background:var(--surface);border-radius:var(--r-pill);height:38px;padding:0 14px;font-size:13px;font-weight:500;color:var(--ink-2);cursor:pointer;display:flex;align-items:center;gap:8px}
+.theme-btn:hover{background:var(--surface-2)}
+@media (max-width:820px){.top nav{display:none}.theme-btn{margin-left:auto}}
+
+/* ========================= Hero ========================= */
+.hero{padding:clamp(48px,8vw,104px) 0 clamp(56px,8vw,96px);background:
+  radial-gradient(circle at 12% 20%,rgba(237,110,52,.10),transparent 32%),
+  radial-gradient(circle at 88% 70%,rgba(194,58,31,.08),transparent 34%),var(--bg)}
+.hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:48px;align-items:center}
+.hero .actions{display:flex;flex-wrap:wrap;gap:14px;margin-top:32px}
+.hero .facts{display:flex;flex-wrap:wrap;gap:24px;margin-top:40px}
+.hero .facts div{padding-left:14px;border-left:1px solid var(--line-2);font-size:13px;color:var(--muted);line-height:1.45}
+.hero .facts strong{display:block;color:var(--ink);font-size:20px;letter-spacing:-.03em}
+.orbit-scene{position:relative;aspect-ratio:1;max-width:460px;margin-inline:auto;width:100%}
+.orbit-scene::before{content:"";position:absolute;inset:10%;border-radius:50%;background:radial-gradient(circle,rgba(237,110,52,.22),rgba(237,110,52,.06) 45%,transparent 70%);filter:blur(10px)}
+.orbit-ring{position:absolute;left:4%;top:30%;width:92%;height:40%;border:1px solid var(--brand-line);border-radius:50%;transform:rotate(-20deg)}
+.orbit-flame{position:absolute;left:26%;top:26%;width:48%;height:48%;filter:drop-shadow(0 24px 40px rgba(194,58,31,.25))}
+.float{position:absolute;display:flex;gap:10px;align-items:center;padding:12px 14px;width:min(196px,48%);border-radius:var(--r-lg);background:color-mix(in srgb,var(--surface) 92%,transparent);border:1px solid var(--line);box-shadow:var(--sh-2);font-size:12px;color:var(--muted);line-height:1.35}
+.float strong{display:block;font-size:13px;color:var(--ink)}
+.float .ic{flex:0 0 34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--brand-tint);color:var(--brand-strong)}
+.f1{top:4%;left:0}.f2{top:42%;right:0}.f3{bottom:4%;left:8%}
+@media (max-width:900px){.hero-grid{grid-template-columns:1fr}.orbit-scene{max-width:380px}}
+
+/* ========================= Botões ========================= */
+.btn{--h:48px;display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:var(--h);padding:0 22px;border-radius:var(--r-md);border:1px solid transparent;font-weight:700;font-size:15px;cursor:pointer;text-decoration:none;white-space:nowrap;transition:transform .16s var(--ease-out),filter .16s var(--ease-out),background-color .14s var(--ease-out),box-shadow .16s var(--ease-out)}
+.btn:hover{text-decoration:none}
+.btn:active{transform:scale(.97)}
+.btn-primary{color:#fff;background:var(--grad-cta);border-color:#E0602A;box-shadow:var(--sh-cta)}
+.btn-primary:hover{filter:brightness(1.05);transform:translateY(-1px)}
+.btn-secondary{color:var(--ink-2);background:var(--surface);border-color:var(--line-2)}
+.btn-secondary:hover{background:var(--surface-2)}
+.btn-soft{color:var(--brand-strong);background:var(--brand-tint);border-color:var(--brand-line)}
+.btn-soft:hover{background:var(--brand-tint-2)}
+.btn-ghost{color:var(--muted);background:transparent;padding:0 6px}
+.btn-ghost:hover{color:var(--ink)}
+.btn-danger{color:#fff;background:#B42318;border-color:#B42318}
+.btn[disabled],.btn[aria-disabled="true"]{opacity:.45;cursor:not-allowed;box-shadow:none;transform:none;filter:none}
+.btn-sm{--h:38px;padding:0 14px;font-size:13px;border-radius:var(--r-sm)}
+.btn-block{width:100%}
+.btn-choice{justify-content:space-between;width:100%}
+.btn .arr{transition:transform .16s var(--ease-out)}
+.btn:hover .arr{transform:translateX(3px)}
+.spin{width:16px;height:16px;border-radius:50%;border:2px solid rgba(255,255,255,.45);border-top-color:#fff;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+
+/* ========================= Inputs ========================= */
+.field{display:flex;flex-direction:column;gap:7px;min-width:0}
+.field label{font-size:13px;font-weight:500;color:var(--ink-2)}
+.input{width:100%;min-height:52px;padding:14px 16px;border:1px solid var(--line-2);background:var(--surface);border-radius:var(--r-md);font-size:16px;color:var(--ink);box-shadow:var(--sh-1);transition:border-color .14s,box-shadow .14s}
+.input::placeholder{color:var(--faint)}
+.input:focus{outline:none;border-color:var(--brand);box-shadow:var(--sh-focus)}
+.input.is-focus{border-color:var(--brand);box-shadow:var(--sh-focus)}
+.input.is-error{border-color:var(--danger);box-shadow:0 0 0 3px var(--danger-bg)}
+.input.is-ok{border-color:var(--success)}
+.input[disabled]{background:var(--surface-2);color:var(--faint);box-shadow:none}
+.help{font-size:12.5px;color:var(--muted)}
+.help.err{color:var(--danger)}
+.help.ok{color:var(--success)}
+.check{display:flex;gap:10px;align-items:flex-start;font-size:14px;color:var(--muted)}
+.check input{width:20px;height:20px;accent-color:var(--brand);margin:1px 0 0;flex:0 0 auto}
+
+/* ========================= Cards, badges, chips ========================= */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:var(--s-6);box-shadow:var(--sh-2);min-width:0}
+.card.flat{box-shadow:none}
+.card.hl{border:2px solid var(--brand);background:linear-gradient(160deg,var(--brand-tint),var(--surface) 60%);box-shadow:0 20px 50px rgba(237,110,52,.14)}
+.badge{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:var(--r-pill);font-size:11px;font-weight:700;letter-spacing:.04em;background:var(--surface-2);color:var(--ink-2);border:1px solid var(--line);white-space:nowrap}
+.badge .dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+.badge.brand{background:var(--brand-tint);color:var(--brand-strong);border-color:var(--brand-line)}
+.badge.solid{background:var(--brand);color:#fff;border-color:var(--brand)}
+.badge.ok{background:var(--success-bg);color:var(--success);border-color:var(--success-line)}
+.badge.err{background:var(--danger-bg);color:var(--danger);border-color:var(--danger-line)}
+.badge.warn{background:var(--warn-bg);color:var(--warn);border-color:transparent}
+.chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:52px;height:60px;padding:0 10px;border-radius:var(--r-md);border:1px solid var(--line);background:var(--surface);font-size:11px;color:var(--muted);cursor:pointer}
+.chip b{font-size:17px;color:var(--ink);letter-spacing:-.02em}
+.chip[aria-pressed="true"]{background:var(--grad-cta);border-color:transparent;color:rgba(255,255,255,.85);box-shadow:var(--sh-cta)}
+.chip[aria-pressed="true"] b{color:#fff}
+.pill{flex:0 0 auto;height:34px;padding:0 14px;border-radius:var(--r-pill);border:1px solid var(--line-2);background:var(--surface);font-size:13px;font-weight:500;color:var(--ink-2);cursor:pointer}
+.pill[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.ic-circle{flex:0 0 40px;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(140deg,var(--brand-tint),var(--brand-tint-2));color:var(--brand-strong)}
+.ic-circle svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.alert{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:var(--r-md);font-size:13.5px;line-height:1.45;border:1px solid}
+.alert.err{background:var(--danger-bg);border-color:var(--danger-line);color:var(--danger)}
+.alert.ok{background:var(--success-bg);border-color:var(--success-line);color:var(--success)}
+.meter{height:8px;border-radius:var(--r-pill);background:var(--surface-2);overflow:hidden;border:1px solid var(--line)}
+.meter i{display:block;height:100%;border-radius:inherit;background:var(--grad-cta)}
+
+/* ========================= Telas (mockups) ========================= */
+.screens{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:28px;align-items:start}
+.screen-label{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:0 0 12px;font-size:13px;color:var(--muted)}
+.screen-label b{color:var(--ink);font-size:15px}
+.device{position:relative;width:100%;max-width:360px;margin:0 auto;background:var(--bg-soft);border:1px solid var(--line);border-radius:var(--r-xl);box-shadow:var(--sh-3);overflow:hidden;display:flex;flex-direction:column;min-height:640px}
+.status{display:flex;justify-content:space-between;padding:12px 20px 4px;font-size:12px;font-weight:700;color:var(--ink-2)}
+.app-top{display:flex;align-items:center;justify-content:space-between;padding:10px 18px 6px}
+.app-top .brand{font-size:12px}
+.app-top .brand svg{width:22px;height:22px}
+.avatar{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:700;background:var(--brand-tint);color:var(--brand-strong);border:1px solid var(--brand-line)}
+.app-body{flex:1;padding:8px 18px 18px;display:flex;flex-direction:column;gap:18px}
+.app-body h3{font-size:24px;letter-spacing:-.035em;line-height:1.1}
+.app-body .sec-t{display:flex;justify-content:space-between;align-items:baseline;font-size:15px;font-weight:700;letter-spacing:-.01em}
+.app-body .sec-t a{font-size:12.5px;font-weight:500}
+.plan-card{padding:18px;border-radius:var(--r-lg);background:var(--grad-cta);color:#fff;box-shadow:var(--sh-cta);position:relative;overflow:hidden}
+.plan-card::after{content:"";position:absolute;right:-30px;top:-30px;width:130px;height:130px;border-radius:50%;border:1px solid rgba(255,255,255,.28)}
+.plan-card small{font-size:10px;font-weight:700;letter-spacing:.24em;opacity:.85}
+.plan-card strong{display:block;font-size:20px;letter-spacing:-.03em;margin-top:6px}
+.plan-card span{font-size:12.5px;opacity:.9}
+.stat-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{padding:14px;border-radius:var(--r-md);background:var(--surface);border:1px solid var(--line);box-shadow:var(--sh-1)}
+.stat small{display:block;font-size:11px;color:var(--muted)}
+.stat strong{font-size:24px;letter-spacing:-.04em}
+.stat em{font-style:normal;font-size:11px;color:var(--success);font-weight:700}
+.class-item{display:flex;gap:12px;align-items:center;padding:12px;border-radius:var(--r-md);background:var(--surface);border:1px solid var(--line);box-shadow:var(--sh-1)}
+.class-item .time{flex:0 0 52px;text-align:center;padding:6px 0;border-radius:var(--r-sm);background:var(--brand-tint);color:var(--brand-strong);font-weight:700;font-size:14px;line-height:1.1}
+.class-item .time small{display:block;font-size:10px;font-weight:500;opacity:.8}
+.class-item .meta{flex:1;min-width:0}
+.class-item .meta b{display:block;font-size:14px;letter-spacing:-.01em}
+.class-item .meta span{font-size:12px;color:var(--muted)}
+.class-item .end{display:flex;flex-direction:column;align-items:flex-end;gap:4px;font-size:11px;color:var(--muted)}
+.tabbar{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line);background:var(--surface);padding:8px 6px 12px}
+.tabbar a{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10.5px;color:var(--faint);font-weight:500;padding:4px 0;border-radius:var(--r-sm)}
+.tabbar a:hover{text-decoration:none;color:var(--ink)}
+.tabbar svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.tabbar a[aria-current="page"]{color:var(--brand-strong)}
+.tabbar a[aria-current="page"] svg{stroke:var(--brand)}
+.back{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);padding:10px 18px 0}
+.hero-class{margin:0 18px;padding:20px;border-radius:var(--r-lg);background:var(--surface);border:1px solid var(--line);box-shadow:var(--sh-2)}
+.kv{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
+.kv div{font-size:12px;color:var(--muted)}
+.kv b{display:block;font-size:14px;color:var(--ink)}
+.spots{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin:14px 0 8px}
+.spots b{color:var(--ink)}
+.sticky-cta{margin-top:auto;padding:14px 18px 18px;border-top:1px solid var(--line);background:var(--surface)}
+.login-art{height:170px;position:relative;overflow:hidden;background:radial-gradient(circle at 70% 40%,rgba(237,110,52,.28),transparent 55%),radial-gradient(circle at 20% 90%,rgba(194,58,31,.18),transparent 50%),var(--bg-soft)}
+.login-art svg{position:absolute;width:96px;height:96px;left:50%;top:50%;transform:translate(-50%,-46%)}
+.login-art .orbit-ring{left:-10%;top:28%;width:120%;height:46%}
+
+/* ========================= Tokens ========================= */
+.swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,150px),1fr));gap:12px}
+.sw{border:1px solid var(--line);border-radius:var(--r-md);overflow:hidden;background:var(--surface);font-size:12px}
+.sw i{display:block;height:72px}
+.sw div{padding:10px 12px}
+.sw b{display:block;font-size:13px;color:var(--ink)}
+.sw code{font-size:11.5px;color:var(--muted)}
+.sw span{display:block;color:var(--faint);font-size:11px;margin-top:2px}
+.type-row{display:grid;grid-template-columns:130px 1fr;gap:16px;align-items:baseline;padding:14px 0;border-bottom:1px solid var(--line)}
+.type-row code{font-size:12px;color:var(--muted)}
+.type-row p{margin:0;min-width:0;overflow-wrap:anywhere}
+@media (max-width:560px){.type-row{grid-template-columns:1fr;gap:4px}}
+.space-row{display:flex;align-items:center;gap:14px;font-size:12px;color:var(--muted);padding:5px 0}
+.space-row code{width:64px;flex:0 0 auto}
+.space-row i{display:block;height:12px;border-radius:3px;background:var(--grad-cta)}
+.grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:24px}
+.grid-3{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:20px}
+.radius-demo{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:12px}
+.radius-demo div{height:84px;background:var(--brand-tint);border:1px solid var(--brand-line);display:flex;align-items:flex-end;padding:8px 10px;font-size:11.5px;color:var(--brand-strong);font-weight:500}
+.shadow-demo{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:20px}
+.shadow-demo div{height:96px;border-radius:var(--r-lg);background:var(--surface);border:1px solid var(--line);display:flex;align-items:flex-end;padding:12px;font-size:12px;color:var(--muted)}
+
+/* ========================= Componentes extras ========================= */
+.segmented{display:inline-flex;padding:4px;border-radius:var(--r-pill);background:var(--surface-2);border:1px solid var(--line);max-width:100%;overflow-x:auto}
+.segmented button{border:0;background:transparent;height:34px;padding:0 16px;border-radius:var(--r-pill);font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;white-space:nowrap}
+.segmented button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--sh-1)}
+.topnav-demo{display:flex;align-items:center;gap:20px;padding:14px 18px;border:1px solid var(--line);border-radius:var(--r-lg);background:var(--surface);flex-wrap:wrap}
+.topnav-demo a{font-size:14px;color:var(--muted);font-weight:500}
+.topnav-demo a[aria-current="page"]{color:var(--ink);position:relative}
+.topnav-demo a[aria-current="page"]::after{content:"";position:absolute;left:0;right:0;bottom:-6px;height:2px;border-radius:2px;background:var(--brand)}
+details.acc{border-bottom:1px solid var(--line)}
+details.acc:first-of-type{border-top:1px solid var(--line)}
+details.acc summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:16px;padding:18px 2px;font-weight:500;font-size:16px;letter-spacing:-.01em}
+details.acc summary::-webkit-details-marker{display:none}
+details.acc summary span{position:relative;flex:0 0 32px;height:32px;border-radius:50%;border:1px solid var(--line-2);transition:transform .3s var(--ease-out),background .2s}
+details.acc summary span::before,details.acc summary span::after{content:"";position:absolute;left:9px;right:9px;top:15px;height:2px;border-radius:2px;background:var(--brand)}
+details.acc summary span::after{transform:rotate(90deg);transition:transform .3s var(--ease-out)}
+details.acc[open] summary span{background:var(--brand);border-color:var(--brand);transform:rotate(180deg)}
+details.acc[open] summary span::before,details.acc[open] summary span::after{background:#fff}
+details.acc[open] summary span::after{transform:rotate(0)}
+details.acc p{margin:0 0 18px;color:var(--muted);font-size:14.5px;max-width:620px}
+.dialog-demo{max-width:420px;padding:28px;border-radius:24px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--sh-3)}
+.dialog-wrap{padding:28px 16px;border-radius:var(--r-xl);background:color-mix(in srgb,var(--ink) 12%,var(--bg))}
+.table-wrap{border:1px solid var(--line);border-radius:var(--r-lg);overflow-x:auto;background:var(--surface)}
+table{width:100%;border-collapse:collapse;font-size:14px;min-width:520px}
+th{text-align:left;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);font-weight:700;padding:12px 16px;background:var(--surface-2);border-bottom:1px solid var(--line)}
+td{padding:14px 16px;border-bottom:1px solid var(--line);color:var(--ink-2)}
+tr:last-child td{border-bottom:0}
+tbody tr:hover td{background:var(--bg-soft)}
+
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+:root{--sidebar-w:224px;--list-w:260px}
+/* ========================= Preview: acréscimos ========================= */
+.pv-hero{padding:clamp(40px,6vw,72px) 0 clamp(24px,4vw,40px);background:radial-gradient(circle at 12% 20%,rgba(237,110,52,.10),transparent 32%),var(--bg)}
+.idx-group{margin:28px 0 0}
+.idx{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,190px),1fr));gap:10px;margin:0;padding:0;list-style:none}
+.idx a{display:flex;flex-direction:column;gap:2px;padding:12px 14px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--surface);box-shadow:var(--sh-1);color:var(--ink);font-weight:700;font-size:14px;letter-spacing:-.01em;height:100%}
+.idx a:hover{text-decoration:none;border-color:var(--brand-line);background:var(--brand-tint)}
+.idx a small{font-weight:500;font-size:12px;color:var(--muted);letter-spacing:0;overflow-wrap:anywhere}
+.idx a .badge{margin-top:6px;align-self:flex-start;height:20px;font-size:10px}
+section.scr{padding:clamp(40px,6vw,64px) 0}
+.scr-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;margin:0 0 24px}
+.scr-head h2{font-size:clamp(24px,3.4vw,36px);letter-spacing:-.04em;line-height:1.1}
+.scr-head code{font-size:13px;color:var(--muted);background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r-xs);padding:2px 8px}
+.group-title{padding:clamp(40px,6vw,64px) 0 0;border-top:1px solid var(--line)}
+.group-title + section.scr{border-top:0}
+.top .wrap{gap:16px}
+.top nav a.cur{color:var(--ink)}
+
+/* cliente (celular) */
+.tabbar.t5{grid-template-columns:repeat(5,1fr)}
+.tabbar.t5 a{font-size:10px}
+.app-body .meta-line{margin:6px 0 0;font-size:13px;color:var(--muted)}
+.app-body .stack{display:flex;flex-direction:column;gap:10px}
+.app-body .note{font-size:12.5px;color:var(--faint);margin:0}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap}
+.hint-card{padding:14px;border-radius:var(--r-md);border:1px dashed var(--line-2);background:var(--surface);font-size:13.5px;color:var(--muted)}
+.plan-card .badge{position:absolute;right:16px;top:16px;background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.4);color:#fff}
+.resv{padding:12px;border-radius:var(--r-md);background:var(--surface);border:1px solid var(--line);box-shadow:var(--sh-1);display:flex;flex-direction:column;gap:10px}
+.resv .meta b{display:block;font-size:14px}
+.resv .meta span{font-size:12px;color:var(--muted)}
+.big-num{font-size:34px;font-weight:700;letter-spacing:-.05em;line-height:1}
+.big-num small{display:block;font-size:11px;font-weight:500;letter-spacing:0;color:var(--muted);margin-top:4px}
+.pts-row{display:flex;justify-content:space-between;gap:12px;align-items:flex-end}
+.discs{display:flex;gap:8px;margin:0;padding:0;list-style:none}
+.disc{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(140deg,var(--brand-tint),var(--brand-tint-2));color:var(--brand-strong);border:1px solid var(--brand-line)}
+.disc.locked{background:var(--surface-2);color:var(--faint);border-color:var(--line)}
+.disc svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.marks{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.mark{height:28px;padding:0 10px;border-radius:var(--r-pill);display:inline-flex;align-items:center;font-size:12px;font-weight:700;background:var(--grad-cta);color:#fff}
+.mark.pending{background:var(--surface-2);color:var(--faint);border:1px solid var(--line)}
+.hist{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+.hist:last-child{border-bottom:0}
+.hist small{display:block;color:var(--muted);font-size:11.5px}
+.pts{font-weight:700;color:var(--success)}
+.pts.neg{color:var(--danger)}
+.rank{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:var(--r-md);border:1px solid var(--line);background:var(--surface);font-size:13.5px}
+.rank .pos{flex:0 0 24px;font-weight:700;color:var(--brand-strong)}
+.rank.me{border-color:var(--brand);background:var(--brand-tint)}
+.rank .meta{flex:1;min-width:0}
+.rank .meta small{display:block;color:var(--muted);font-size:11.5px}
+.ex{padding:14px;border-radius:var(--r-md);background:var(--surface);border:1px solid var(--line);box-shadow:var(--sh-1);display:flex;flex-direction:column;gap:10px}
+.ex h4{font-size:15px;letter-spacing:-.01em}
+.ex-chips{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.ex-chip{padding:8px 10px;border-radius:var(--r-sm);background:var(--brand-tint);border:1px solid var(--brand-line);font-size:11px;color:var(--brand-strong)}
+.ex-chip b{display:block;font-size:15px;color:var(--ink);letter-spacing:-.02em}
+.ex p{margin:0;font-size:12.5px;color:var(--muted)}
+.fcard{padding:14px;border-radius:var(--r-md);background:var(--surface);border:1px solid var(--line);display:flex;flex-direction:column;gap:12px}
+.sec-t-row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.legal-text{padding:16px;border-radius:var(--r-md);background:var(--surface);border:1px solid var(--line);font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:10px}
+.legal-text h4{font-size:14px;color:var(--ink)}
+.legal-text p{margin:0}
+.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.steps li{display:flex;align-items:center;gap:12px;padding:12px;border-radius:var(--r-md);border:1px solid var(--line);background:var(--surface);font-size:14px;font-weight:500}
+.steps li .n{flex:0 0 28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:700;background:var(--surface-2);color:var(--muted);border:1px solid var(--line)}
+.steps li.cur{border-color:var(--brand);background:var(--brand-tint)}
+.steps li.cur .n{background:var(--grad-cta);color:#fff;border-color:transparent}
+.att-row{display:flex;flex-direction:column;gap:10px;padding:12px;border-radius:var(--r-md);background:var(--surface);border:1px solid var(--line);box-shadow:var(--sh-1)}
+.att-who{display:flex;justify-content:space-between;align-items:center;gap:8px;font-weight:700;font-size:14px}
+.att-who .badge{height:20px;font-size:10px}
+.seg2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.seg2 button{height:40px;border-radius:var(--r-sm);border:1px solid var(--line-2);background:var(--surface);font-weight:700;font-size:13px;color:var(--ink-2);cursor:pointer}
+.seg2 button.on-ok{background:var(--success-bg);border-color:var(--success);color:var(--success)}
+.seg2 button.on-err{background:var(--danger-bg);border-color:var(--danger);color:var(--danger)}
+.seg2 button[disabled]{opacity:.45;cursor:not-allowed}
+.progress-line{display:flex;justify-content:space-between;font-size:12.5px;color:var(--muted)}
+.progress-line b{color:var(--ink)}
+.legal-links{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;font-size:12.5px}
+.pw{position:relative}
+.pw button{position:absolute;right:8px;top:50%;transform:translateY(-50%);border:0;background:transparent;color:var(--muted);font-size:12.5px;font-weight:500;cursor:pointer;padding:8px}
+.pw .input{padding-right:70px}
+
+/* admin (desktop) */
+.adm{display:grid;grid-template-columns:var(--sidebar-w) minmax(0,1fr);border:1px solid var(--line);border-radius:var(--r-xl);overflow:hidden;box-shadow:var(--sh-3);background:var(--bg-soft)}
+.adm-side{background:var(--surface);border-right:1px solid var(--line);padding:20px 12px;display:flex;flex-direction:column;gap:2px}
+.adm-side .brand{padding:0 12px 16px;font-size:13px}
+.adm-side .brand svg{width:24px;height:24px}
+.adm-side a{padding:9px 12px;border-radius:var(--r-sm);font-size:13.5px;font-weight:500;color:var(--muted);white-space:nowrap}
+.adm-side a:hover{text-decoration:none;background:var(--surface-2);color:var(--ink)}
+.adm-side a[aria-current="page"]{background:var(--brand-tint);color:var(--brand-strong);font-weight:700}
+.adm-side .sp{flex:1;min-height:12px}
+.adm-main{padding:clamp(16px,3vw,28px);display:flex;flex-direction:column;gap:20px;min-width:0}
+.adm-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px 16px;flex-wrap:wrap}
+.adm-head .kicker{margin-bottom:6px}
+.adm-head h3{font-size:clamp(22px,3vw,30px);letter-spacing:-.04em;line-height:1.1}
+.adm-head .sub-t{font-size:13px;color:var(--muted);margin-top:4px;display:block}
+.adm-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap}
+.toolbar .input{min-height:44px;font-size:14px;padding:10px 14px;flex:1 1 180px;width:auto;box-shadow:none}
+.adm-main .table-wrap{box-shadow:var(--sh-1)}
+.adm-main table{min-width:640px}
+td .cell-actions{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap}
+td b{color:var(--ink)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,170px),1fr));gap:14px}
+.kpi{padding:18px;border-radius:var(--r-lg);background:var(--surface);border:1px solid var(--line);box-shadow:var(--sh-1)}
+.kpi small{display:block;font-size:12px;color:var(--muted)}
+.kpi strong{display:block;font-size:30px;letter-spacing:-.05em;margin-top:6px;line-height:1.1}
+.kpi em{font-style:normal;font-size:11.5px;color:var(--success);font-weight:700}
+.card.sm{padding:var(--s-5);box-shadow:var(--sh-1)}
+.card h4{font-size:15px;letter-spacing:-.01em;margin-bottom:14px}
+.bar-row{display:grid;grid-template-columns:minmax(120px,200px) 1fr 56px;gap:12px;align-items:center;font-size:13px;color:var(--ink-2);padding:6px 0}
+.bar-row span:last-child{text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
+.two-col{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:16px}
+.figures{display:flex;gap:28px;flex-wrap:wrap;margin-bottom:14px}
+.figures strong{display:block;font-size:26px;letter-spacing:-.04em}
+.figures span{font-size:12px;color:var(--muted)}
+ol.rk{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+ol.rk li{display:flex;gap:12px;align-items:center;font-size:13.5px;padding:8px 12px;border-radius:var(--r-sm);background:var(--surface-2)}
+ol.rk li b:first-child{color:var(--brand-strong);width:20px}
+ol.rk li span{margin-left:auto;color:var(--muted)}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.form-grid .full{grid-column:1/-1}
+.dl{display:grid;grid-template-columns:minmax(120px,200px) 1fr;gap:0}
+.dl dt,.dl dd{margin:0;padding:12px 0;border-bottom:1px solid var(--line);font-size:14px}
+.dl dt{color:var(--muted)}
+.dl dd{color:var(--ink);font-weight:500}
+.crumb{font-size:13px;color:var(--muted)}
+.md{display:grid;grid-template-columns:var(--list-w) minmax(0,1fr);gap:16px;align-items:start}
+.stu-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.stu-list a{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 12px;border-radius:var(--r-sm);border:1px solid transparent;color:var(--ink-2);font-size:13.5px;font-weight:500}
+.stu-list a:hover{text-decoration:none;background:var(--surface-2)}
+.stu-list a[aria-current="true"]{background:var(--brand-tint);border-color:var(--brand-line);color:var(--brand-strong);font-weight:700}
+.wk-scroll{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r-lg);background:var(--surface)}
+.wk{display:grid;grid-template-columns:repeat(7,minmax(112px,1fr));min-width:800px}
+.wk > div{padding:10px;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:8px;min-height:170px}
+.wk > div:last-child{border-right:0}
+.wk .dh{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);font-weight:700;margin:0}
+.wk .dh b{display:block;font-size:17px;letter-spacing:-.02em;color:var(--ink);text-transform:none}
+.wk .today .dh b{color:var(--brand-strong)}
+.wk .today{background:var(--brand-tint)}
+.occ{padding:8px 10px;border-radius:var(--r-sm);background:var(--surface);border:1px solid var(--line);box-shadow:var(--sh-1);font-size:12px;color:var(--muted);line-height:1.35}
+.occ b{display:block;color:var(--ink);font-size:12.5px}
+.occ.cancel{opacity:.7}
+.occ.cancel b{text-decoration:line-through}
+.mx td,.mx th{padding:10px 12px;white-space:nowrap}
+.mx td.c{text-align:center}
+.mx input[type=checkbox]{width:18px;height:18px;accent-color:var(--brand)}
+.mx select{min-height:36px;font-size:13px;padding:6px 10px}
+.goal{padding:16px;border-radius:var(--r-md);border:1px solid var(--line);background:var(--surface);display:flex;flex-direction:column;gap:10px}
+.goal .top-r{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.goal b{font-size:15px}
+.goal p{margin:0;font-size:13px;color:var(--muted)}
+.ex-edit{display:grid;grid-template-columns:2fr repeat(4,1fr);gap:10px;padding:14px;border-radius:var(--r-md);border:1px solid var(--line);background:var(--surface-2)}
+.ex-edit .field{font-size:12px}
+.ex-edit .input{min-height:42px;font-size:14px;padding:8px 12px;box-shadow:none}
+.ex-edit .full{grid-column:1/-1}
+.mc{display:flex;gap:14px;align-items:center;padding:14px;border-radius:var(--r-md);background:var(--surface);border:1px solid var(--line);box-shadow:var(--sh-1);flex-wrap:wrap}
+.mc .time{flex:0 0 64px;text-align:center;padding:8px 0;border-radius:var(--r-sm);background:var(--brand-tint);color:var(--brand-strong);font-weight:700;font-size:15px;line-height:1.1}
+.mc .meta{flex:1;min-width:160px}
+.mc .meta b{display:block;font-size:15px}
+.mc .meta span{font-size:12.5px;color:var(--muted)}
+.day-t{font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin:0 0 10px}
+@media (max-width:820px){
+  .adm{grid-template-columns:1fr}
+  .adm-side{flex-direction:row;overflow-x:auto;border-right:0;border-bottom:1px solid var(--line);padding:10px;gap:4px;scrollbar-width:none}
+  .adm-side .brand,.adm-side .sp{display:none}
+  .md{grid-template-columns:1fr}
+  .form-grid{grid-template-columns:1fr}
+  .ex-edit{grid-template-columns:1fr 1fr}
+  .ex-edit .wide{grid-column:1/-1}
+  .bar-row{grid-template-columns:1fr 56px}
+  .bar-row .meter{grid-column:1/-1;grid-row:2}
+  .dl{grid-template-columns:1fr}
+  .dl dt{border-bottom:0;padding-bottom:0}
+}
+.adm-main td{white-space:nowrap}
+.adm-main td .cell-actions{flex-wrap:nowrap}
+
+
+/* ================= Proposta: componentes novos (loja e bioimpedância) ================= */
+.proposal-note{margin:0 0 20px;padding:14px 16px;border-radius:var(--r-md);background:var(--brand-tint);border:1px solid var(--brand-line);font-size:14px;color:var(--ink-2)}
+.proposal-note b{color:var(--brand-strong)}
+.new-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--brand);margin-left:6px;vertical-align:middle}
+.app-top .top-actions{display:flex;gap:8px;align-items:center}
+.cart-btn{position:relative;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+.cart-btn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.cart-btn .count{position:absolute;top:-4px;right:-4px;min-width:18px;height:18px;padding:0 5px;border-radius:var(--r-pill);background:var(--brand);color:var(--on-brand,#fff);font-size:10.5px;font-weight:700;display:grid;place-items:center}
+.ph{aspect-ratio:1;border-radius:var(--r-md);background:linear-gradient(160deg,var(--surface-2),var(--brand-tint));border:1px solid var(--line);display:grid;place-items:center;color:var(--brand-strong);position:relative;overflow:hidden}
+.ph svg{width:46%;height:46%;fill:none;stroke:currentColor;stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round;opacity:.85}
+.ph.dark{background:linear-gradient(160deg,#2b2320,#161311);color:#F08A5A}
+.ph .tag{position:absolute;left:8px;top:8px}
+.prod-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.prod{display:flex;flex-direction:column;gap:8px;color:var(--ink)}
+.prod:hover{text-decoration:none}
+.prod b{font-size:13.5px;letter-spacing:-.01em;line-height:1.25}
+.price{font-size:15px;font-weight:700;letter-spacing:-.02em;color:var(--ink)}
+.price s{font-weight:400;color:var(--faint);font-size:12px;margin-right:6px}
+.price.big{font-size:24px;letter-spacing:-.04em}
+.price.big s{font-size:14px}
+.hscroll{display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;margin:0 -18px;padding:0 18px 2px}
+.hscroll::-webkit-scrollbar{display:none}
+.hscroll .prod{flex:0 0 132px}
+.cat-chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none}
+.cat-chips::-webkit-scrollbar{display:none}
+.opt{flex:0 0 auto;height:36px;min-width:44px;padding:0 14px;border-radius:var(--r-pill);border:1px solid var(--line-2);background:var(--surface);font-size:13px;font-weight:500;color:var(--ink-2);cursor:pointer}
+.opt[aria-pressed="true"]{border-color:var(--brand);background:var(--brand-tint);color:var(--brand-strong);font-weight:700}
+.opt[disabled]{opacity:.45;text-decoration:line-through;cursor:not-allowed}
+.opt-group{display:flex;flex-direction:column;gap:8px}
+.opt-group > span{font-size:12.5px;font-weight:700;color:var(--ink-2)}
+.opt-group > span small{font-weight:400;color:var(--muted);margin-left:6px}
+.opt-row{display:flex;flex-wrap:wrap;gap:8px}
+.swatch{width:14px;height:14px;border-radius:50%;display:inline-block;vertical-align:-2px;margin-right:6px;border:1px solid var(--line-2)}
+.gallery{display:flex;flex-direction:column;gap:8px}
+.dots{display:flex;gap:6px;justify-content:center}
+.dots i{width:6px;height:6px;border-radius:50%;background:var(--line-2)}
+.dots i.on{background:var(--brand);width:16px;border-radius:var(--r-pill)}
+.stepper{display:inline-flex;align-items:center;border:1px solid var(--line-2);border-radius:var(--r-pill);overflow:hidden;background:var(--surface)}
+.stepper button{width:40px;height:40px;border:0;background:transparent;font-size:18px;color:var(--ink);cursor:pointer}
+.stepper span{min-width:28px;text-align:center;font-weight:700}
+.cart-item{display:grid;grid-template-columns:64px 1fr;gap:12px;padding:12px;border-radius:var(--r-md);background:var(--surface);border:1px solid var(--line);box-shadow:var(--sh-1)}
+.cart-item .ph{border-radius:var(--r-sm)}
+.cart-item .meta{display:flex;flex-direction:column;gap:4px;min-width:0}
+.cart-item .meta b{font-size:14px}
+.cart-item .meta span{font-size:12px;color:var(--muted)}
+.cart-item .foot{display:flex;justify-content:space-between;align-items:center;margin-top:4px}
+.cart-item .stepper button{width:32px;height:32px;font-size:15px}
+.total-row{display:flex;justify-content:space-between;align-items:baseline;font-size:14px;color:var(--muted)}
+.total-row b{font-size:22px;color:var(--ink);letter-spacing:-.04em}
+.timeline{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:0}
+.timeline li{position:relative;padding:0 0 16px 26px;font-size:13px;color:var(--muted)}
+.timeline li b{display:block;font-size:14px;color:var(--ink)}
+.timeline li::before{content:"";position:absolute;left:5px;top:16px;bottom:0;width:2px;background:var(--line)}
+.timeline li:last-child::before{display:none}
+.timeline li::after{content:"";position:absolute;left:0;top:3px;width:12px;height:12px;border-radius:50%;background:var(--surface);border:2px solid var(--line-2)}
+.timeline li.done::after{background:var(--brand);border-color:var(--brand)}
+.timeline li.now::after{background:var(--surface);border-color:var(--brand);box-shadow:var(--sh-focus)}
+.timeline li.no::after{background:var(--danger);border-color:var(--danger)}
+.order-card{display:flex;flex-direction:column;gap:8px;padding:14px;border-radius:var(--r-md);background:var(--surface);border:1px solid var(--line);box-shadow:var(--sh-1);color:var(--ink)}
+.order-card:hover{text-decoration:none}
+.order-card .top-line{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.order-card .top-line b{font-size:14px}
+.order-card span.sub2{font-size:12.5px;color:var(--muted)}
+.status-card{display:flex;gap:12px;align-items:center;padding:14px;border-radius:var(--r-md);background:var(--success-bg);border:1px solid var(--success-line);color:var(--ink)}
+.status-card .ic{flex:0 0 36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--surface);color:var(--success)}
+.status-card .ic svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.status-card b{display:block;font-size:14px}
+.status-card span{font-size:12.5px;color:var(--muted)}
+.menu-list{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:var(--r-md);background:var(--surface);overflow:hidden}
+.menu-list a{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:14px 16px;color:var(--ink);font-size:14px;font-weight:500;border-bottom:1px solid var(--line)}
+.menu-list a:last-child{border-bottom:0}
+.menu-list a:hover{text-decoration:none;background:var(--surface-2)}
+.menu-list a small{font-size:12px;color:var(--muted);font-weight:400}
+.app-header-back{display:flex;align-items:center;gap:10px;padding:10px 18px 0}
+.app-header-back h3{font-size:20px;letter-spacing:-.03em}
+.sticky-bar{border-top:1px solid var(--line);background:var(--surface);padding:12px 18px 16px;display:flex;flex-direction:column;gap:8px}
+/* Admin */
+.photo-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.photo-grid .slot{position:relative}
+.photo-grid .slot .badge{position:absolute;left:6px;bottom:6px}
+.photo-grid .add{aspect-ratio:1;border-radius:var(--r-md);border:1.5px dashed var(--line-2);display:grid;place-items:center;color:var(--muted);font-size:12px;text-align:center;padding:8px;background:var(--surface)}
+.builder{display:flex;flex-direction:column;gap:12px}
+.builder-row{display:grid;grid-template-columns:200px 1fr auto;gap:12px;align-items:start;padding:12px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--surface-2)}
+.tok{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 10px;border-radius:var(--r-pill);background:var(--surface);border:1px solid var(--line-2);font-size:12.5px}
+.tok button{border:0;background:transparent;color:var(--faint);cursor:pointer;padding:0}
+.tok-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.tok-row .input{width:150px;height:30px;font-size:12.5px}
+.form-cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.form-cols .full{grid-column:1 / -1}
+.switch-row{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:12px 0;border-bottom:1px solid var(--line)}
+.switch-row:last-child{border-bottom:0}
+.switch-row b{display:block;font-size:14px}
+.switch-row span{font-size:12.5px;color:var(--muted)}
+.tgl{flex:0 0 auto;width:44px;height:26px;border-radius:var(--r-pill);background:var(--line-2);position:relative;border:0}
+.tgl::after{content:"";position:absolute;left:3px;top:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:var(--sh-1)}
+.tgl[aria-checked="true"]{background:var(--brand)}
+.tgl[aria-checked="true"]::after{left:21px}
+.adm-main td .input.sm{height:34px;width:90px;font-size:13px}
+.thumb{width:40px;height:40px;border-radius:var(--r-sm);display:inline-grid;vertical-align:middle;margin-right:10px}
+.thumb svg{width:60%;height:60%}
+.cell-prod{display:flex;align-items:center}
+.muted{color:var(--muted)}
+.kpis-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+@media (max-width:900px){.kpis-row{grid-template-columns:1fr 1fr}.form-cols{grid-template-columns:1fr}.builder-row{grid-template-columns:1fr}.photo-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+/* Bioimpedância */
+.delta{font-size:11.5px;font-weight:700}
+.delta.good{color:var(--success)}
+.delta.bad{color:var(--danger)}
+.delta.flat{color:var(--muted)}
+.metric-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.metric{padding:12px 14px;border-radius:var(--r-md);background:var(--surface);border:1px solid var(--line);box-shadow:var(--sh-1);display:flex;flex-direction:column;gap:2px}
+.metric small{font-size:11px;color:var(--muted)}
+.metric strong{font-size:22px;letter-spacing:-.04em;line-height:1.15}
+.metric strong u{text-decoration:none;font-size:12px;font-weight:500;color:var(--muted);margin-left:2px;letter-spacing:0}
+.score{display:flex;align-items:center;gap:14px;padding:16px;border-radius:var(--r-lg);background:var(--grad-cta);color:#fff;box-shadow:var(--sh-cta);position:relative;overflow:hidden}
+.score::after{content:"";position:absolute;right:-30px;top:-30px;width:130px;height:130px;border-radius:50%;border:1px solid rgba(255,255,255,.28)}
+.score .n{font-size:40px;font-weight:700;letter-spacing:-.05em;line-height:1}
+.score .n small{font-size:14px;font-weight:500;opacity:.85}
+.score p{margin:0;font-size:12.5px;opacity:.92;line-height:1.4}
+.score p b{display:block;font-size:10px;letter-spacing:.24em;opacity:.85;margin-bottom:4px}
+.chart{width:100%;height:auto;overflow:visible}
+.chart .grid line{stroke:var(--line);stroke-width:1}
+.chart .band{fill:var(--success-bg)}
+.chart .ln{fill:none;stroke:var(--brand);stroke-width:2.2;stroke-linejoin:round;stroke-linecap:round}
+.chart .ar{fill:url(#area)}
+.chart .pt{fill:var(--surface);stroke:var(--brand);stroke-width:2}
+.chart .pt.last{fill:var(--brand)}
+.chart text{font:500 9.5px var(--font-sans);fill:var(--faint)}
+.chart text.v{fill:var(--ink-2);font-weight:700;font-size:10px}
+.range{display:flex;flex-direction:column;gap:6px;padding:12px 0;border-bottom:1px solid var(--line)}
+.range:last-child{border-bottom:0}
+.range .hd{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.range .hd b{font-size:13.5px}
+.range .hd span{font-size:13.5px;font-weight:700}
+.range .hd span small{font-weight:400;color:var(--muted);font-size:11.5px}
+.rbar{position:relative;display:grid;grid-template-columns:1fr 1fr 1.6fr;gap:3px;height:8px}
+.rbar i{border-radius:var(--r-pill);background:var(--surface-2);border:1px solid var(--line)}
+.rbar i:nth-child(2){background:var(--success-bg);border-color:var(--success-line)}
+.rbar b{position:absolute;top:-4px;width:4px;height:16px;border-radius:2px;background:var(--brand);box-shadow:0 0 0 2px var(--surface)}
+.rlab{display:flex;justify-content:space-between;font-size:10.5px;color:var(--faint)}
+.body-map{display:grid;grid-template-columns:1fr 1fr 1fr;grid-template-rows:auto auto;gap:8px;align-items:stretch}
+.seg{padding:10px 8px;border-radius:var(--r-md);background:var(--surface);border:1px solid var(--line);text-align:center;display:flex;flex-direction:column;gap:2px}
+.seg small{font-size:10.5px;color:var(--muted)}
+.seg b{font-size:15px;letter-spacing:-.02em}
+.seg span{font-size:11px;color:var(--muted)}
+.seg.trunk{grid-row:1 / span 2;grid-column:2;justify-content:center;background:var(--brand-tint);border-color:var(--brand-line)}
+.figure{grid-row:1 / span 2;grid-column:2}
+.acc{border:1px solid var(--line);border-radius:var(--r-md);background:var(--surface);overflow:hidden}
+.acc summary{list-style:none;display:flex;justify-content:space-between;align-items:center;padding:14px 16px;font-weight:700;font-size:14px;cursor:pointer}
+.acc summary::-webkit-details-marker{display:none}
+.acc summary::after{content:"+";color:var(--muted);font-weight:500;font-size:18px}
+.acc[open] summary::after{content:"–"}
+.acc .acc-b{padding:0 16px 8px;border-top:1px solid var(--line)}
+.kvt{width:100%;border-collapse:collapse;font-size:13px}
+.kvt td{padding:9px 0;border-bottom:1px solid var(--line)}
+.kvt tr:last-child td{border-bottom:0}
+.kvt td:last-child{text-align:right;font-weight:700}
+.kvt td small{display:block;font-weight:400;color:var(--muted);font-size:11px}
+.ocr{display:grid;grid-template-columns:minmax(0,0.9fr) minmax(0,1.1fr);gap:20px;align-items:start}
+.sheet{position:relative;aspect-ratio:1420/2000;border-radius:var(--r-md);border:1px solid var(--line);background:#fff;overflow:hidden;box-shadow:var(--sh-1)}
+.sheet .hdr{position:absolute;left:4%;top:1.6%;font:700 22px/1 var(--font-sans);color:#9b1c1c;letter-spacing:-.03em}
+.sheet .bar{position:absolute;left:0;right:38%;top:6.4%;height:.5%;background:#9b1c1c}
+.sheet .blk{position:absolute;background:#e8eaee;border-radius:2px}
+.sheet .z{position:absolute;border:1.5px solid var(--brand);background:rgba(237,110,52,.12);border-radius:2px}
+.sheet .z.warn{border-color:#d29b00;background:rgba(242,194,92,.25)}
+.sheet .z.ok{border-color:var(--success);background:rgba(92,201,138,.14)}
+.fld-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.fld{display:flex;flex-direction:column;gap:4px}
+.fld label{font-size:11.5px;color:var(--muted);font-weight:500}
+.fld .input{height:36px;font-size:13.5px}
+.fld.flag .input{border-color:#d29b00;background:var(--warn-bg)}
+.fld.flag label::after{content:" · conferir";color:var(--warn);font-weight:700}
+.fset{border:1px solid var(--line);border-radius:var(--r-md);padding:12px 14px 14px;margin:0;display:flex;flex-direction:column;gap:10px;background:var(--surface)}
+.fset legend{padding:0 6px;font-size:12.5px;font-weight:700;color:var(--ink-2)}
+.drop{border:1.5px dashed var(--brand-line);border-radius:var(--r-lg);background:var(--brand-tint);padding:28px;text-align:center;display:flex;flex-direction:column;gap:8px;align-items:center}
+.drop svg{width:34px;height:34px;fill:none;stroke:var(--brand-strong);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.steps-h{display:flex;gap:8px;align-items:center;font-size:12.5px;color:var(--muted);flex-wrap:wrap}
+.steps-h b{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--surface-2);border:1px solid var(--line-2);font-size:11px;margin-right:6px;color:var(--ink-2)}
+.steps-h .on{color:var(--ink);font-weight:700}
+.steps-h .on b{background:var(--brand);border-color:var(--brand);color:#fff}
+.steps-h i{width:24px;height:1px;background:var(--line-2)}
+@media (max-width:980px){.ocr{grid-template-columns:1fr}.fld-grid{grid-template-columns:1fr 1fr}}
+.kvt{min-width:0}
+.kvt td{padding:9px 0}
+.kvt td:last-child{padding-left:12px;white-space:nowrap}
+.app-body > .segmented[aria-label="Visões"]{display:grid;grid-template-columns:repeat(4,1fr);width:100%}
+.app-body > .segmented[aria-label="Visões"] button{padding:0 4px;font-size:12.5px}
+.photo-grid .add{font-size:11.5px}
+textarea.input{font-family:inherit}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tile{display:flex;flex-direction:column;gap:3px;padding:14px;border-radius:var(--r-lg);background:var(--surface);border:1px solid var(--line);box-shadow:var(--sh-1);color:var(--ink);min-width:0}
+.tile:hover{text-decoration:none}
+.tile .tile-ic{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--brand-tint);color:var(--brand-strong);margin-bottom:6px}
+.tile .tile-ic svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.tile small{font-size:11px;color:var(--muted)}
+.tile b{font-size:20px;letter-spacing:-.04em;line-height:1.15}
+.tile b u{text-decoration:none;font-size:12px;font-weight:500;color:var(--muted);letter-spacing:0}
+.tile em{font-style:normal;font-size:12.5px;font-weight:700;color:var(--brand-strong);margin-top:6px}
+.showcase{display:grid;grid-template-columns:96px 1fr;gap:14px;align-items:center;padding:12px;border-radius:var(--r-lg);background:linear-gradient(160deg,var(--brand-tint),var(--surface) 70%);border:1px solid var(--brand-line);color:var(--ink)}
+.showcase:hover{text-decoration:none}
+.showcase small{display:block;font-size:10px;font-weight:700;letter-spacing:.2em;color:var(--brand-strong)}
+.showcase b{display:block;font-size:16px;letter-spacing:-.02em;margin:4px 0 2px}
+.showcase em{display:block;font-style:normal;font-size:12.5px;font-weight:700;color:var(--brand-strong);margin-top:6px}
+.cli-desk{display:grid;grid-template-columns:220px minmax(0,1fr);border:1px solid var(--line);border-radius:var(--r-xl);overflow:hidden;box-shadow:var(--sh-3);background:var(--bg-soft)}
+.cli-side{background:var(--surface);border-right:1px solid var(--line);padding:20px 12px;display:flex;flex-direction:column;gap:2px}
+.cli-side .brand{padding:0 12px 16px;font-size:13px}
+.cli-side .brand svg{width:24px;height:24px}
+.cli-side a{padding:10px 12px;border-radius:var(--r-sm);font-size:14px;font-weight:500;color:var(--muted)}
+.cli-side a[aria-current="page"]{background:var(--brand-tint);color:var(--brand-strong);font-weight:700}
+.cli-main{padding:20px 28px 28px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.cli-top{display:flex;justify-content:space-between}
+.cli-grid{display:grid;grid-template-columns:400px minmax(0,1fr);gap:28px;align-items:start}
+.sec-t2{display:flex;justify-content:space-between;align-items:baseline;font-size:15px;font-weight:700}
+.sec-t2 a{font-size:12.5px;font-weight:500}
+.desk-prods{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.desk-prods .prod{flex:none}
+@media (max-width:980px){.cli-desk{grid-template-columns:1fr}.cli-side{display:none}.cli-grid{grid-template-columns:1fr}.desk-prods{grid-template-columns:1fr 1fr}}
+/* Atalhos deslizantes (alternativa B refinada) */
+.tiles.car{align-items:stretch}
+.tcar{position:relative;display:flex;flex-direction:column;border-radius:var(--r-lg);background:var(--surface);border:1px solid var(--line);box-shadow:var(--sh-1);min-width:0;overflow:hidden}
+.tcar-track{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;flex:1;overscroll-behavior-x:contain}
+.tcar-track::-webkit-scrollbar{display:none}
+.tslide{flex:0 0 100%;scroll-snap-align:start;display:flex;flex-direction:column;gap:3px;padding:14px 14px 4px;color:var(--ink);min-width:0}
+.tslide:hover{text-decoration:none}
+.tslide small{font-size:11px;color:var(--muted)}
+.tslide b{font-size:22px;letter-spacing:-.04em;line-height:1.1}
+.tslide b u{text-decoration:none;font-size:12px;font-weight:500;color:var(--muted);letter-spacing:0;margin-left:2px}
+.tslide .spark{width:100%;height:30px;margin-top:4px}
+.tslide .spark polyline{fill:none;stroke:var(--brand);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.tslide .spark circle{fill:var(--brand)}
+.tslide.photo{padding:0 0 4px}
+.tslide.photo .ph{aspect-ratio:4/3;border-radius:0;border:0;border-bottom:1px solid var(--line)}
+.tslide.photo .ph svg{width:38%;height:38%}
+.tslide.photo .txt{padding:8px 12px 0;display:flex;flex-direction:column;gap:2px}
+.tslide.photo .txt span:first-child{font-size:12.5px;font-weight:700;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tslide.photo .price{font-size:14px}
+.tslide.photo .price s{font-size:11px}
+.tslide.more{justify-content:center;align-items:flex-start;gap:8px}
+.tslide.more em{font-style:normal;font-size:13px;font-weight:700;color:var(--brand-strong)}
+.tcar-head{position:absolute;left:10px;top:10px;z-index:1;display:flex;gap:6px;pointer-events:none}
+.tcar-head .badge{background:color-mix(in srgb,var(--surface) 88%,transparent)}
+.tcar-foot{display:flex;justify-content:space-between;align-items:center;padding:6px 12px 10px}
+.tcar-foot a{font-size:12px;font-weight:700}
+.tcar-dots{display:flex;gap:4px}
+.tcar-dots i{width:5px;height:5px;border-radius:50%;background:var(--line-2);transition:width var(--duration-state,140ms) var(--ease-out),background var(--duration-state,140ms)}
+.tcar-dots i.on{width:14px;border-radius:var(--r-pill);background:var(--brand)}
+.tile-label{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--brand-strong)}
+.tile-label svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.swipe-hint{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--faint);justify-content:center}
+/* Agenda: grupos por horário */
+.hgroup{border:1px solid var(--line);border-radius:var(--r-md);background:var(--surface);box-shadow:var(--sh-1);overflow:hidden}
+.hgroup summary{list-style:none;display:grid;grid-template-columns:56px 1fr auto 16px;gap:12px;align-items:center;padding:12px;cursor:pointer}
+.hgroup summary::-webkit-details-marker{display:none}
+.hgroup summary::after{content:"";width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg) translateY(-3px);justify-self:center;transition:transform var(--duration-state,140ms) var(--ease-out)}
+.hgroup[open] summary::after{transform:rotate(-135deg) translateY(-1px)}
+.hgroup .hh{text-align:center;padding:6px 0;border-radius:var(--r-sm);background:var(--brand-tint);color:var(--brand-strong);font-weight:700;font-size:15px;line-height:1.1}
+.hgroup .hh small{display:block;font-size:10px;font-weight:500;opacity:.8}
+.hgroup .hm{min-width:0}
+.hgroup .hm b{display:block;font-size:14px;letter-spacing:-.01em}
+.hgroup .hm span{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.hgroup .hv{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.hgroup .hv .spots-n{font-size:13px;font-weight:700}
+.hgroup .hv .spots-n small{font-weight:400;color:var(--muted)}
+.hgroup.mine{border-color:var(--brand-line)}
+.hgroup.full .hh{background:var(--surface-2);color:var(--faint)}
+.hgroup-list{border-top:1px solid var(--line);display:flex;flex-direction:column}
+.hclass{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:12px 14px 12px 80px;border-bottom:1px solid var(--line);color:var(--ink)}
+.hclass:last-child{border-bottom:0}
+.hclass:hover{text-decoration:none;background:var(--surface-2)}
+.hclass b{display:block;font-size:13.5px}
+.hclass span.s{font-size:12px;color:var(--muted)}
+.hclass.mine{background:var(--brand-tint)}
+.minibar{height:4px;border-radius:var(--r-pill);background:var(--surface-2);overflow:hidden;width:72px;border:1px solid var(--line)}
+.minibar i{display:block;height:100%;background:var(--grad-cta)}
+.day-head{font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin:4px 0 -6px}
+.link-row{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-radius:var(--r-md);border:1px solid var(--line);background:var(--surface);color:var(--ink);font-weight:600;font-size:14px}
+.link-row:hover{text-decoration:none;background:var(--surface-2)}
+.link-row small{font-weight:400;color:var(--muted);font-size:12px;display:block}
+.dgrid{display:grid;grid-template-columns:64px repeat(6,minmax(0,1fr));border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;background:var(--surface)}
+.dgrid > div{border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:8px;min-height:56px;font-size:12px}
+.dgrid .hd{background:var(--surface-2);text-align:center;font-weight:700;min-height:0}
+.dgrid .hd small{display:block;font-weight:500;color:var(--muted);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase}
+.dgrid .hr{font-weight:700;color:var(--muted);text-align:right}
+.dgrid .today{background:color-mix(in srgb,var(--brand-tint) 60%,transparent)}
+.dslot{display:flex;flex-direction:column;gap:2px;padding:8px;border-radius:var(--r-sm);background:var(--surface-2);border:1px solid var(--line);color:var(--ink);cursor:pointer;width:100%;text-align:left}
+.dslot b{font-size:12px}
+.dslot span{font-size:11px;color:var(--muted)}
+.dslot.mine{border-color:var(--brand);background:var(--brand-tint)}
+.dslot.full{opacity:.6}
+.dslot-open{display:flex;flex-direction:column;gap:4px}
+.dslot-open .dslot{padding:6px 8px}
+
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="flame" viewBox="0 0 512 512">
+      <path fill="#C23A1F" transform="rotate(-8 210 270)" d="M210,100 C312.5,156.7 305,383.3 210,440 C115,383.3 107.5,156.7 210,100 Z"/>
+      <path fill="#ED6E34" transform="rotate(7 300 250)" d="M300,70 C436.5,132 392.5,368 300,430 C207.5,368 163.5,132 300,70 Z"/>
+    </symbol>
+  </defs>
+</svg>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="i-shirt" viewBox="0 0 24 24"><path d="M8 3l-5 3 2 4 2-1v12h10V9l2 1 2-4-5-3c-.5 1.5-2 2.5-4 2.5S8.5 4.5 8 3z"/></symbol>
+<symbol id="i-bottle" viewBox="0 0 24 24"><path d="M10 2h4v3l1.5 2v13a2 2 0 0 1-2 2h-3a2 2 0 0 1-2-2V7L10 5z"/><path d="M8.5 11h7M8.5 16h7"/></symbol>
+<symbol id="i-cap" viewBox="0 0 24 24"><path d="M3 15c0-5 4-9 9-9s9 4 9 9H3z"/><path d="M12 15h9.5c.5 1.5-1 2.5-3 2.5H12"/></symbol>
+<symbol id="i-towel" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M5 8h14M9 21v-5h6v5"/></symbol>
+<symbol id="i-bag" viewBox="0 0 24 24"><path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7"/></symbol>
+<symbol id="i-up" viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></symbol>
+<symbol id="i-scan" viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><path d="M8 12h8"/></symbol>
+</defs></svg>
+<header class="top"><div class="wrap">
+<a class="brand" href="#topo" aria-label="Fitburn, topo"><svg aria-hidden="true"><use href="#flame"/></svg>FITBURN</a>
+<nav aria-label="Grupos"><a href="proposta-home.html"><b>Início</b></a><a href="proposta-agenda.html"><b>Agenda</b></a><a href="proposta-loja.html"><b>Loja</b></a><a href="proposta-bioimpedancia.html"><b>Bioimpedância</b></a></nav>
+<button class="theme-btn" id="themeBtn" type="button" aria-label="Alternar tema claro e escuro"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><span id="themeLabel">Tema</span></button>
+</div></header>
+<main id="topo">
+<section class="pv-hero"><div class="wrap">
+<p class="kicker">Proposta · Agenda do cliente</p>
+<h1 class="h2">Suas aulas primeiro, <em>todas</em> por horário.</h1>
+<p class="lead">A agenda troca "Próximas | Histórico" por "Suas aulas | Todas". Suas aulas mostra o que você reservou daqui para frente, com o histórico a um toque. Todas mostra as aulas futuras agrupadas por horário: fechado, cada horário mostra o total de vagas somando todos os professores; aberto, mostra cada aula. Os grupos abrem e fecham de verdade aqui. Dados fictícios.</p>
+<div class="idx-group"><p class="sub">Telas</p><ul class="idx"><li><a href="#todas">Todas<small>/agenda?aba=todas · grupos por horário</small></a></li><li><a href="#suas">Suas aulas<small>/agenda · padrão</small></a></li><li><a href="#desktop">Desktop<small>grade da semana agrupada</small></a></li></ul></div>
+</div></section>
+<section class="scr" id="todas"><div class="wrap"><div class="scr-head"><h2>Todas</h2><code>/agenda?aba=todas</code><span class="badge brand">Proposta</span></div>
+<p class="proposal-note"><b>Grupo fechado:</b> horário, quantas aulas, as modalidades, o total de vagas livres do horário (todas as aulas, de qualquer professor) e uma barrinha de ocupação. Selos: "Você reservou" quando você tem aula naquele horário, "Poucas vagas" com 3 ou menos, "Lotado" quando nenhuma aula tem vaga. <b>Aberto:</b> cada aula com professor, duração e vagas; tocar abre o detalhe da aula e a reserva, como hoje. Só aparecem aulas daqui para frente: horários que já passaram hoje somem e não há semana anterior.</p>
+<div class="screens"><div><p class="screen-label"><b>Todas · fechado</b><span>todos os horários fechados</span></p><div class="device"><div class="status"><span>9:41</span><span>5G ▮▮▮</span></div><div class="app-body"><div><p class="kicker" style="margin-bottom:8px">Semana de 11 a 17 de novembro</p><h3>Agenda</h3></div><div class="segmented" role="group" aria-label="Visão" style="align-self:flex-start"><button type="button">Suas aulas</button><button type="button" aria-pressed="true">Todas</button></div><div class="row" style="justify-content:space-between;flex-wrap:nowrap"><button class="btn btn-secondary btn-sm" type="button" aria-label="Semana anterior" disabled>←</button><b style="font-size:13px">11 a 17 nov</b><button class="btn btn-secondary btn-sm" type="button" aria-label="Próxima semana">→</button></div><div class="chips" role="group" aria-label="Dia"><button class="chip" type="button" aria-pressed="true">Qua<b>11</b></button><button class="chip" type="button">Qui<b>12</b></button><button class="chip" type="button">Sex<b>13</b></button><button class="chip" type="button">Sáb<b>14</b></button><button class="chip" type="button">Seg<b>16</b></button><button class="chip" type="button">Ter<b>17</b></button></div><div class="chips" role="group" aria-label="Modalidade"><button class="pill" type="button" aria-pressed="true">Todas</button><button class="pill" type="button">Funcional</button><button class="pill" type="button">Musculação guiada</button><button class="pill" type="button">Mobilidade</button></div><div class="stack"><details class="hgroup"><summary><span class="hh">06h<small>manhã</small></span><span class="hm"><b>2 aulas</b><span>Musculação guiada, Funcional</span></span><span class="hv"><span class="spots-n">2 vagas <small>de 16</small></span><span class="minibar"><i style="width:88%"></i></span><span class="badge warn">POUCAS VAGAS</span></span></summary><div class="hgroup-list"><a class="hclass" href="#"><span><b>Musculação guiada</b><span class="s">Prof. Exemplo · 60 min</span></span><span><span class="badge err">8/8 · lotada</span></span></a><a class="hclass" href="#"><span><b>Funcional</b><span class="s">Prof. Modelo · 45 min</span></span><span><span class="badge warn">2 vagas</span></span></a></div></details><details class="hgroup"><summary><span class="hh">07h<small>manhã</small></span><span class="hm"><b>1 aula</b><span>Mobilidade · Prof. Modelo</span></span><span class="hv"><span class="spots-n">3 vagas <small>de 8</small></span><span class="minibar"><i style="width:62%"></i></span><span class="badge warn">POUCAS VAGAS</span></span></summary><div class="hgroup-list"><a class="hclass" href="#"><span><b>Mobilidade</b><span class="s">Prof. Modelo · 45 min</span></span><span><span class="badge warn">3 vagas</span></span></a></div></details><details class="hgroup full"><summary><span class="hh">12h<small>almoço</small></span><span class="hm"><b>2 aulas</b><span>Funcional, Musculação guiada</span></span><span class="hv"><span class="spots-n">0 vagas <small>de 16</small></span><span class="minibar"><i style="width:100%"></i></span><span class="badge err">LOTADO</span></span></summary><div class="hgroup-list"><a class="hclass" href="#"><span><b>Funcional</b><span class="s">Prof. Exemplo · 45 min</span></span><span><span class="badge err">8/8 · lotada</span></span></a><a class="hclass" href="#"><span><b>Musculação guiada</b><span class="s">Prof. Teste · 60 min</span></span><span><span class="badge err">8/8 · lotada</span></span></a></div></details><details class="hgroup mine"><summary><span class="hh">18h<small>noite</small></span><span class="hm"><b>3 aulas</b><span>Funcional, Musculação guiada, Mobilidade</span></span><span class="hv"><span class="spots-n">9 vagas <small>de 24</small></span><span class="minibar"><i style="width:62%"></i></span><span class="badge ok"><span class="dot"></span>VOCÊ RESERVOU</span></span></summary><div class="hgroup-list"><a class="hclass mine" href="#"><span><b>Funcional</b><span class="s">Prof. Teste · 60 min</span></span><span><span class="badge ok"><span class="dot"></span>RESERVADA</span></span></a><a class="hclass" href="#"><span><b>Musculação guiada</b><span class="s">Prof. Exemplo · 60 min</span></span><span><span class="badge brand">4 vagas</span></span></a><a class="hclass" href="#"><span><b>Mobilidade</b><span class="s">Prof. Modelo · 45 min</span></span><span><span class="badge brand">5 vagas</span></span></a></div></details><details class="hgroup"><summary><span class="hh">19h<small>noite</small></span><span class="hm"><b>2 aulas</b><span>Funcional, Mobilidade</span></span><span class="hv"><span class="spots-n">11 vagas <small>de 16</small></span><span class="minibar"><i style="width:31%"></i></span></span></summary><div class="hgroup-list"><a class="hclass" href="#"><span><b>Funcional</b><span class="s">Prof. Exemplo · 60 min</span></span><span><span class="badge brand">6 vagas</span></span></a><a class="hclass" href="#"><span><b>Mobilidade</b><span class="s">Prof. Modelo · 45 min</span></span><span><span class="badge brand">5 vagas</span></span></a></div></details></div><p class="note">Vagas somadas de todas as aulas do horário. Disponibilidade sujeita a confirmação no momento da reserva.</p></div><nav class="tabbar t5" aria-label="Navegação inferior"><a href="#"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Início</a><a href="#" aria-current="page"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>Agenda</a><a href="#"><svg viewBox="0 0 24 24"><path d="M12 2l3 7h7l-5.5 4.5L18.5 21 12 16.5 5.5 21l2-7.5L2 9h7z"/></svg>FitPoints</a><a href="#"><svg viewBox="0 0 24 24"><path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>Treino</a><a href="#"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>Perfil</a></nav></div></div><div><p class="screen-label"><b>Todas · horário aberto</b><span>18h aberto, com sua reserva</span></p><div class="device"><div class="status"><span>9:41</span><span>5G ▮▮▮</span></div><div class="app-body"><div><p class="kicker" style="margin-bottom:8px">Semana de 11 a 17 de novembro</p><h3>Agenda</h3></div><div class="segmented" role="group" aria-label="Visão" style="align-self:flex-start"><button type="button">Suas aulas</button><button type="button" aria-pressed="true">Todas</button></div><div class="row" style="justify-content:space-between;flex-wrap:nowrap"><button class="btn btn-secondary btn-sm" type="button" aria-label="Semana anterior" disabled>←</button><b style="font-size:13px">11 a 17 nov</b><button class="btn btn-secondary btn-sm" type="button" aria-label="Próxima semana">→</button></div><div class="chips" role="group" aria-label="Dia"><button class="chip" type="button" aria-pressed="true">Qua<b>11</b></button><button class="chip" type="button">Qui<b>12</b></button><button class="chip" type="button">Sex<b>13</b></button><button class="chip" type="button">Sáb<b>14</b></button><button class="chip" type="button">Seg<b>16</b></button><button class="chip" type="button">Ter<b>17</b></button></div><div class="chips" role="group" aria-label="Modalidade"><button class="pill" type="button" aria-pressed="true">Todas</button><button class="pill" type="button">Funcional</button><button class="pill" type="button">Musculação guiada</button><button class="pill" type="button">Mobilidade</button></div><div class="stack"><details class="hgroup"><summary><span class="hh">06h<small>manhã</small></span><span class="hm"><b>2 aulas</b><span>Musculação guiada, Funcional</span></span><span class="hv"><span class="spots-n">2 vagas <small>de 16</small></span><span class="minibar"><i style="width:88%"></i></span><span class="badge warn">POUCAS VAGAS</span></span></summary><div class="hgroup-list"><a class="hclass" href="#"><span><b>Musculação guiada</b><span class="s">Prof. Exemplo · 60 min</span></span><span><span class="badge err">8/8 · lotada</span></span></a><a class="hclass" href="#"><span><b>Funcional</b><span class="s">Prof. Modelo · 45 min</span></span><span><span class="badge warn">2 vagas</span></span></a></div></details><details class="hgroup"><summary><span class="hh">07h<small>manhã</small></span><span class="hm"><b>1 aula</b><span>Mobilidade · Prof. Modelo</span></span><span class="hv"><span class="spots-n">3 vagas <small>de 8</small></span><span class="minibar"><i style="width:62%"></i></span><span class="badge warn">POUCAS VAGAS</span></span></summary><div class="hgroup-list"><a class="hclass" href="#"><span><b>Mobilidade</b><span class="s">Prof. Modelo · 45 min</span></span><span><span class="badge warn">3 vagas</span></span></a></div></details><details class="hgroup full"><summary><span class="hh">12h<small>almoço</small></span><span class="hm"><b>2 aulas</b><span>Funcional, Musculação guiada</span></span><span class="hv"><span class="spots-n">0 vagas <small>de 16</small></span><span class="minibar"><i style="width:100%"></i></span><span class="badge err">LOTADO</span></span></summary><div class="hgroup-list"><a class="hclass" href="#"><span><b>Funcional</b><span class="s">Prof. Exemplo · 45 min</span></span><span><span class="badge err">8/8 · lotada</span></span></a><a class="hclass" href="#"><span><b>Musculação guiada</b><span class="s">Prof. Teste · 60 min</span></span><span><span class="badge err">8/8 · lotada</span></span></a></div></details><details class="hgroup mine" open><summary><span class="hh">18h<small>noite</small></span><span class="hm"><b>3 aulas</b><span>Funcional, Musculação guiada, Mobilidade</span></span><span class="hv"><span class="spots-n">9 vagas <small>de 24</small></span><span class="minibar"><i style="width:62%"></i></span><span class="badge ok"><span class="dot"></span>VOCÊ RESERVOU</span></span></summary><div class="hgroup-list"><a class="hclass mine" href="#"><span><b>Funcional</b><span class="s">Prof. Teste · 60 min</span></span><span><span class="badge ok"><span class="dot"></span>RESERVADA</span></span></a><a class="hclass" href="#"><span><b>Musculação guiada</b><span class="s">Prof. Exemplo · 60 min</span></span><span><span class="badge brand">4 vagas</span></span></a><a class="hclass" href="#"><span><b>Mobilidade</b><span class="s">Prof. Modelo · 45 min</span></span><span><span class="badge brand">5 vagas</span></span></a></div></details><details class="hgroup"><summary><span class="hh">19h<small>noite</small></span><span class="hm"><b>2 aulas</b><span>Funcional, Mobilidade</span></span><span class="hv"><span class="spots-n">11 vagas <small>de 16</small></span><span class="minibar"><i style="width:31%"></i></span></span></summary><div class="hgroup-list"><a class="hclass" href="#"><span><b>Funcional</b><span class="s">Prof. Exemplo · 60 min</span></span><span><span class="badge brand">6 vagas</span></span></a><a class="hclass" href="#"><span><b>Mobilidade</b><span class="s">Prof. Modelo · 45 min</span></span><span><span class="badge brand">5 vagas</span></span></a></div></details></div><p class="note">Vagas somadas de todas as aulas do horário. Disponibilidade sujeita a confirmação no momento da reserva.</p></div><nav class="tabbar t5" aria-label="Navegação inferior"><a href="#"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Início</a><a href="#" aria-current="page"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>Agenda</a><a href="#"><svg viewBox="0 0 24 24"><path d="M12 2l3 7h7l-5.5 4.5L18.5 21 12 16.5 5.5 21l2-7.5L2 9h7z"/></svg>FitPoints</a><a href="#"><svg viewBox="0 0 24 24"><path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>Treino</a><a href="#"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>Perfil</a></nav></div></div><div><p class="screen-label"><b>Todas · remarcando</b><span>vindo de Suas aulas</span></p><div class="device"><div class="status"><span>9:41</span><span>5G ▮▮▮</span></div><div class="app-body"><div><p class="kicker" style="margin-bottom:8px">Semana de 11 a 17 de novembro</p><h3>Agenda</h3></div><div class="segmented" role="group" aria-label="Visão" style="align-self:flex-start"><button type="button">Suas aulas</button><button type="button" aria-pressed="true">Todas</button></div><div class="alert" style="background:var(--brand-tint);border:1px solid var(--brand-line);color:var(--ink-2);justify-content:space-between"><span>Remarcando Funcional (qua, 18h00). Escolha a nova aula.</span><button class="btn btn-ghost btn-sm" type="button">Desistir</button></div><div class="row" style="justify-content:space-between;flex-wrap:nowrap"><button class="btn btn-secondary btn-sm" type="button" aria-label="Semana anterior" disabled>←</button><b style="font-size:13px">11 a 17 nov</b><button class="btn btn-secondary btn-sm" type="button" aria-label="Próxima semana">→</button></div><div class="chips" role="group" aria-label="Dia"><button class="chip" type="button" aria-pressed="true">Qua<b>11</b></button><button class="chip" type="button">Qui<b>12</b></button><button class="chip" type="button">Sex<b>13</b></button><button class="chip" type="button">Sáb<b>14</b></button><button class="chip" type="button">Seg<b>16</b></button><button class="chip" type="button">Ter<b>17</b></button></div><div class="chips" role="group" aria-label="Modalidade"><button class="pill" type="button" aria-pressed="true">Todas</button><button class="pill" type="button">Funcional</button><button class="pill" type="button">Musculação guiada</button><button class="pill" type="button">Mobilidade</button></div><div class="stack"><details class="hgroup"><summary><span class="hh">06h<small>manhã</small></span><span class="hm"><b>2 aulas</b><span>Musculação guiada, Funcional</span></span><span class="hv"><span class="spots-n">2 vagas <small>de 16</small></span><span class="minibar"><i style="width:88%"></i></span><span class="badge warn">POUCAS VAGAS</span></span></summary><div class="hgroup-list"><a class="hclass" href="#"><span><b>Musculação guiada</b><span class="s">Prof. Exemplo · 60 min</span></span><span><span class="badge err">8/8 · lotada</span></span></a><a class="hclass" href="#"><span><b>Funcional</b><span class="s">Prof. Modelo · 45 min</span></span><span><span class="badge warn">2 vagas</span></span></a></div></details><details class="hgroup"><summary><span class="hh">07h<small>manhã</small></span><span class="hm"><b>1 aula</b><span>Mobilidade · Prof. Modelo</span></span><span class="hv"><span class="spots-n">3 vagas <small>de 8</small></span><span class="minibar"><i style="width:62%"></i></span><span class="badge warn">POUCAS VAGAS</span></span></summary><div class="hgroup-list"><a class="hclass" href="#"><span><b>Mobilidade</b><span class="s">Prof. Modelo · 45 min</span></span><span><span class="badge warn">3 vagas</span></span></a></div></details><details class="hgroup full"><summary><span class="hh">12h<small>almoço</small></span><span class="hm"><b>2 aulas</b><span>Funcional, Musculação guiada</span></span><span class="hv"><span class="spots-n">0 vagas <small>de 16</small></span><span class="minibar"><i style="width:100%"></i></span><span class="badge err">LOTADO</span></span></summary><div class="hgroup-list"><a class="hclass" href="#"><span><b>Funcional</b><span class="s">Prof. Exemplo · 45 min</span></span><span><span class="badge err">8/8 · lotada</span></span></a><a class="hclass" href="#"><span><b>Musculação guiada</b><span class="s">Prof. Teste · 60 min</span></span><span><span class="badge err">8/8 · lotada</span></span></a></div></details><details class="hgroup mine"><summary><span class="hh">18h<small>noite</small></span><span class="hm"><b>3 aulas</b><span>Funcional, Musculação guiada, Mobilidade</span></span><span class="hv"><span class="spots-n">9 vagas <small>de 24</small></span><span class="minibar"><i style="width:62%"></i></span><span class="badge ok"><span class="dot"></span>VOCÊ RESERVOU</span></span></summary><div class="hgroup-list"><a class="hclass mine" href="#"><span><b>Funcional</b><span class="s">Prof. Teste · 60 min</span></span><span><span class="badge ok"><span class="dot"></span>RESERVADA</span></span></a><a class="hclass" href="#"><span><b>Musculação guiada</b><span class="s">Prof. Exemplo · 60 min</span></span><span><span class="badge brand">4 vagas</span></span></a><a class="hclass" href="#"><span><b>Mobilidade</b><span class="s">Prof. Modelo · 45 min</span></span><span><span class="badge brand">5 vagas</span></span></a></div></details><details class="hgroup"><summary><span class="hh">19h<small>noite</small></span><span class="hm"><b>2 aulas</b><span>Funcional, Mobilidade</span></span><span class="hv"><span class="spots-n">11 vagas <small>de 16</small></span><span class="minibar"><i style="width:31%"></i></span></span></summary><div class="hgroup-list"><a class="hclass" href="#"><span><b>Funcional</b><span class="s">Prof. Exemplo · 60 min</span></span><span><span class="badge brand">6 vagas</span></span></a><a class="hclass" href="#"><span><b>Mobilidade</b><span class="s">Prof. Modelo · 45 min</span></span><span><span class="badge brand">5 vagas</span></span></a></div></details></div><p class="note">Vagas somadas de todas as aulas do horário. Disponibilidade sujeita a confirmação no momento da reserva.</p></div><nav class="tabbar t5" aria-label="Navegação inferior"><a href="#"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Início</a><a href="#" aria-current="page"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>Agenda</a><a href="#"><svg viewBox="0 0 24 24"><path d="M12 2l3 7h7l-5.5 4.5L18.5 21 12 16.5 5.5 21l2-7.5L2 9h7z"/></svg>FitPoints</a><a href="#"><svg viewBox="0 0 24 24"><path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>Treino</a><a href="#"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>Perfil</a></nav></div></div></div></div></section>
+<section class="scr" id="suas"><div class="wrap"><div class="scr-head"><h2>Suas aulas</h2><code>/agenda</code><span class="badge brand">Proposta</span></div>
+<p class="proposal-note"><b>Proposta:</b> é a aba que abre por padrão. Mostra só as suas reservas daqui para frente, agrupadas por dia, com Remarcar e Cancelar. No fim, "Histórico" leva às aulas anteriores (concluídas, canceladas e faltas), com filtro por estado. Sem reservas, um atalho leva para Todas.</p>
+<div class="screens"><div><p class="screen-label"><b>Suas aulas</b><span>próximas reservas</span></p><div class="device"><div class="status"><span>9:41</span><span>5G ▮▮▮</span></div><div class="app-body"><div><p class="kicker" style="margin-bottom:8px">Reservas</p><h3>Agenda</h3></div><div class="segmented" role="group" aria-label="Visão" style="align-self:flex-start"><button type="button" aria-pressed="true">Suas aulas</button><button type="button">Todas</button></div><p class="day-head">Hoje · qua, 11</p><div class="resv"><div class="meta"><b>Funcional · 18h00</b><span>Prof. Teste · 60 min</span></div><div class="btn-row"><button class="btn btn-secondary btn-sm" type="button">Remarcar</button><button class="btn btn-ghost btn-sm" type="button">Cancelar</button></div></div><p class="day-head">Amanhã · qui, 12</p><div class="resv"><div class="meta"><b>Mobilidade · 07h00</b><span>Prof. Modelo · 45 min</span></div><div class="btn-row"><button class="btn btn-secondary btn-sm" type="button">Remarcar</button><button class="btn btn-ghost btn-sm" type="button">Cancelar</button></div></div><p class="day-head">Seg, 16</p><div class="resv"><div class="meta"><b>Musculação guiada · 06h00</b><span>Prof. Exemplo · 60 min</span></div><div class="btn-row"><button class="btn btn-secondary btn-sm" type="button">Remarcar</button><button class="btn btn-ghost btn-sm" type="button">Cancelar</button></div></div><a class="link-row" href="#"><span>Histórico<small>12 aulas anteriores</small></span><span>→</span></a></div><nav class="tabbar t5" aria-label="Navegação inferior"><a href="#"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Início</a><a href="#" aria-current="page"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>Agenda</a><a href="#"><svg viewBox="0 0 24 24"><path d="M12 2l3 7h7l-5.5 4.5L18.5 21 12 16.5 5.5 21l2-7.5L2 9h7z"/></svg>FitPoints</a><a href="#"><svg viewBox="0 0 24 24"><path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>Treino</a><a href="#"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>Perfil</a></nav></div></div><div><p class="screen-label"><b>Suas aulas · histórico</b><span>aulas anteriores</span></p><div class="device"><div class="status"><span>9:41</span><span>5G ▮▮▮</span></div><div class="app-body"><a class="back" href="#" style="padding:0">← Suas aulas</a><div><p class="kicker" style="margin-bottom:8px">Suas aulas</p><h3>Histórico</h3></div><div class="chips" role="group" aria-label="Filtrar por estado"><button class="pill" type="button" aria-pressed="true">Todas</button><button class="pill" type="button">Concluídas</button><button class="pill" type="button">Canceladas</button><button class="pill" type="button">Não compareceu</button></div><p class="day-head">Novembro</p><div class="class-item"><div class="time">07h<small>09/11</small></div><div class="meta"><b>Mobilidade</b><span>Prof. Modelo</span></div><div class="end"><span class="badge">CONCLUÍDA</span></div></div><div class="class-item"><div class="time">18h<small>05/11</small></div><div class="meta"><b>Funcional</b><span>Prof. Exemplo</span></div><div class="end"><span class="badge err">CANCELADA</span></div></div><div class="class-item"><div class="time">12h<small>03/11</small></div><div class="meta"><b>Funcional</b><span>Prof. Exemplo</span></div><div class="end"><span class="badge warn">NÃO COMPARECEU</span></div></div><p class="day-head">Outubro</p><div class="class-item"><div class="time">18h<small>30/10</small></div><div class="meta"><b>Musculação guiada</b><span>Prof. Teste</span></div><div class="end"><span class="badge">CONCLUÍDA</span></div></div><button class="btn btn-ghost" type="button" style="align-self:center">Carregar mais</button></div><nav class="tabbar t5" aria-label="Navegação inferior"><a href="#"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Início</a><a href="#" aria-current="page"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>Agenda</a><a href="#"><svg viewBox="0 0 24 24"><path d="M12 2l3 7h7l-5.5 4.5L18.5 21 12 16.5 5.5 21l2-7.5L2 9h7z"/></svg>FitPoints</a><a href="#"><svg viewBox="0 0 24 24"><path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>Treino</a><a href="#"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>Perfil</a></nav></div></div><div><p class="screen-label"><b>Suas aulas · vazio</b><span>sem reservas futuras</span></p><div class="device"><div class="status"><span>9:41</span><span>5G ▮▮▮</span></div><div class="app-body"><div><p class="kicker" style="margin-bottom:8px">Reservas</p><h3>Agenda</h3></div><div class="segmented" role="group" aria-label="Visão" style="align-self:flex-start"><button type="button" aria-pressed="true">Suas aulas</button><button type="button">Todas</button></div><div class="hint-card">Você não tem aulas reservadas daqui para frente.</div><button class="btn btn-primary btn-block" type="button">Ver todas as aulas</button><a class="link-row" href="#"><span>Histórico<small>12 aulas anteriores</small></span><span>→</span></a></div><nav class="tabbar t5" aria-label="Navegação inferior"><a href="#"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Início</a><a href="#" aria-current="page"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>Agenda</a><a href="#"><svg viewBox="0 0 24 24"><path d="M12 2l3 7h7l-5.5 4.5L18.5 21 12 16.5 5.5 21l2-7.5L2 9h7z"/></svg>FitPoints</a><a href="#"><svg viewBox="0 0 24 24"><path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>Treino</a><a href="#"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>Perfil</a></nav></div></div></div></div></section>
+<section class="scr" id="desktop"><div class="wrap"><div class="scr-head"><h2>Desktop</h2><code>/agenda?aba=todas</code><span class="badge brand">Proposta</span></div>
+<p class="proposal-note"><b>Proposta:</b> no computador, a grade da semana continua, mas cada célula de horário vira um bloco fechado com o número de aulas e o total de vagas. Clicar abre as aulas daquele horário dentro da célula (exemplo: quarta, 18h).</p>
+<div class="cli-desk"><nav class="cli-side" aria-label="Navegação principal"><span class="brand"><svg aria-hidden="true"><use href="#flame"/></svg>FITBURN</span><a href="#">Início</a><a href="#" aria-current="page">Agenda</a><a href="#">FitPoints</a><a href="#">Ficha de treino</a><a href="#">Perfil</a></nav><div class="cli-main"><div class="row" style="justify-content:space-between"><div><p class="kicker" style="margin-bottom:8px">Semana de 11 a 17 de novembro</p><h3 style="font-size:28px;letter-spacing:-.04em">Agenda</h3></div><div class="segmented" role="group" aria-label="Visão"><button type="button">Suas aulas</button><button type="button" aria-pressed="true">Todas</button></div></div><div class="row" style="justify-content:space-between"><div class="chips" role="group" aria-label="Modalidade"><button class="pill" type="button" aria-pressed="true">Todas</button><button class="pill" type="button">Funcional</button><button class="pill" type="button">Musculação guiada</button><button class="pill" type="button">Mobilidade</button></div><div class="row"><button class="btn btn-secondary btn-sm" type="button" disabled>←</button><b style="font-size:13px">11 a 17 nov</b><button class="btn btn-secondary btn-sm" type="button">→</button></div></div><div class="dgrid"><div class="hd"></div><div class="hd today"><small>Qua</small>11</div><div class="hd"><small>Qui</small>12</div><div class="hd"><small>Sex</small>13</div><div class="hd"><small>Sáb</small>14</div><div class="hd"><small>Seg</small>16</div><div class="hd"><small>Ter</small>17</div><div class="hr">06h</div><div class="today"><button class="dslot" type="button" aria-expanded="false"><b>2 aulas</b><span>2 de 16 vagas</span></button></div><div class=""><button class="dslot" type="button" aria-expanded="false"><b>1 aula</b><span>5 de 8</span></button></div><div class=""><button class="dslot" type="button" aria-expanded="false"><b>2 aulas</b><span>9 de 16</span></button></div><div class=""></div><div class=""><button class="dslot" type="button" aria-expanded="false"><b>2 aulas</b><span>7 de 16</span></button></div><div class=""><button class="dslot" type="button" aria-expanded="false"><b>1 aula</b><span>4 de 8</span></button></div><div class="hr">07h</div><div class="today"><button class="dslot" type="button" aria-expanded="false"><b>1 aula</b><span>3 de 8</span></button></div><div class=""><button class="dslot mine" type="button" aria-expanded="false"><b>1 aula</b><span>1 de 8</span></button></div><div class=""></div><div class=""><button class="dslot" type="button" aria-expanded="false"><b>1 aula</b><span>6 de 8</span></button></div><div class=""><button class="dslot" type="button" aria-expanded="false"><b>1 aula</b><span>3 de 8</span></button></div><div class=""></div><div class="hr">12h</div><div class="today"><button class="dslot full" type="button" aria-expanded="false"><b>2 aulas</b><span>Lotado</span></button></div><div class=""><button class="dslot" type="button" aria-expanded="false"><b>1 aula</b><span>2 de 8</span></button></div><div class=""><button class="dslot" type="button" aria-expanded="false"><b>2 aulas</b><span>10 de 16</span></button></div><div class=""></div><div class=""><button class="dslot" type="button" aria-expanded="false"><b>1 aula</b><span>4 de 8</span></button></div><div class=""><button class="dslot" type="button" aria-expanded="false"><b>2 aulas</b><span>8 de 16</span></button></div><div class="hr">18h</div><div class="today"><div class="dslot-open"><button class="dslot mine" type="button" aria-expanded="true"><b>3 aulas ▴</b><span>9 de 24</span></button><button class="dslot mine" type="button"><b>Funcional</b><span>Reservada</span></button><button class="dslot" type="button"><b>Musculação</b><span>4 vagas</span></button><button class="dslot" type="button"><b>Mobilidade</b><span>5 vagas</span></button></div></div><div class=""><button class="dslot" type="button" aria-expanded="false"><b>3 aulas</b><span>14 de 24</span></button></div><div class=""><button class="dslot" type="button" aria-expanded="false"><b>2 aulas</b><span>6 de 16</span></button></div><div class=""></div><div class=""><button class="dslot" type="button" aria-expanded="false"><b>3 aulas</b><span>12 de 24</span></button></div><div class=""><button class="dslot" type="button" aria-expanded="false"><b>3 aulas</b><span>10 de 24</span></button></div><div class="hr">19h</div><div class="today"><button class="dslot" type="button" aria-expanded="false"><b>2 aulas</b><span>11 de 16</span></button></div><div class=""><button class="dslot" type="button" aria-expanded="false"><b>2 aulas</b><span>9 de 16</span></button></div><div class=""></div><div class=""></div><div class=""><button class="dslot" type="button" aria-expanded="false"><b>2 aulas</b><span>13 de 16</span></button></div><div class=""><button class="dslot" type="button" aria-expanded="false"><b>1 aula</b><span>6 de 8</span></button></div></div><p class="note" style="font-size:12.5px;color:var(--faint);margin:0">Cada célula junta as aulas do horário com o total de vagas; clicar abre as aulas daquele horário.</p></div></div></div></section>
+</main>
+<footer><div class="wrap">Proposta para aprovação. Dados fictícios. Base: preview-todas-telas.html e design-system.md.</div></footer>
+
+<script>
+(function(){
+  var root=document.documentElement,btn=document.getElementById('themeBtn'),lbl=document.getElementById('themeLabel');
+  function current(){var t=root.getAttribute('data-theme');if(t)return t;return window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}
+  function paint(){lbl.textContent=current()==='dark'?'Escuro':'Claro'}
+  try{var s=localStorage.getItem('fb-theme');if(s)root.setAttribute('data-theme',s)}catch(e){}
+  paint();
+  btn.addEventListener('click',function(){var n=current()==='dark'?'light':'dark';root.setAttribute('data-theme',n);try{localStorage.setItem('fb-theme',n)}catch(e){}paint()});
+})();
+</script>
+
+</body>
+</html>

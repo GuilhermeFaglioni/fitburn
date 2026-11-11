@@ -21,3 +21,16 @@ Uma solicitação repetida para a mesma intenção de reserva não deve criar um
 ## Manifestação
 
 Manifestação registra uma ação de um usuário sobre um documento ou consentimento. Cada evento é imutável e informa usuário, tipo, versão aplicável, ação concedida ou revogada e data. Ciência da política de privacidade, aceite dos termos de uso e consentimento de ranking são tipos distintos; uma nova ação acrescenta outro evento, sem substituir o anterior.
+
+## Pedido
+
+Pedido é a reserva de produtos da loja feita pelo cliente, sem pagamento no app. Ao ser criado, separa as unidades no estoque e fica aguardando aprovação da equipe; pode ser aprovado, recusado, cancelado pelo cliente (só enquanto aguarda) ou entregue. Não confundir com **Reserva**, que é sempre de aula. Os itens do pedido guardam nome e preço do momento do pedido.
+
+## Produto, opção e variação
+
+Produto é um item à venda na loja, com até 5 fotos e uma categoria opcional. Opção é uma característica livre do produto (Cor, Tamanho, Modelo) com seus valores; variação é uma combinação de valores das opções, com estoque próprio e preço próprio opcional. Produto em **destaque no Início** aparece no atalho da loja (no máximo 3). Excluir produto é sempre lógico.
+
+## Avaliação de bioimpedância
+
+Avaliação de bioimpedância é o registro dos valores de um laudo InBody de um cliente numa data e hora. Cada valor é uma **medida**, com unidade e, quando houver, faixa de referência e classificação (Abaixo, Normal, Acima). O **gabarito do laudo** é o mapa das áreas de cada medida no layout do InBody120, usado para ler a foto do laudo. A imagem não é guardada. Registrar exige o **consentimento de bioimpedância** do cliente, uma manifestação própria.
+
