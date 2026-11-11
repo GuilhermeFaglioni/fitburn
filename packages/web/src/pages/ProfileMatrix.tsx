@@ -29,6 +29,7 @@ const MODULE_ORDER: ModuleName[] = [
   Module.PLANOS,
   Module.FICHAS_DE_TREINO,
   Module.GAMIFICACAO,
+  Module.LOJA,
   Module.USUARIOS,
   Module.PERFIS_DE_ACESSO,
 ];

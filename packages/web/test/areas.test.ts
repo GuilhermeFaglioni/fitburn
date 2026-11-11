@@ -11,6 +11,7 @@ import {
 import {
   ADMIN_MENU_ITEMS,
   adminRouteForClientPath,
+  canOpenAdminRoute,
   homeRouteFor,
   visibleAdminMenuItems,
 } from "../src/lib/auth/areas";
@@ -104,8 +105,58 @@ describe("ordem do menu administrativo (design)", () => {
       "Templates & modalidades",
       "Fichas de treino",
       "Metas",
+      "Loja",
       "Minhas aulas",
       "Atribuições",
     ]);
+  });
+});
+
+describe("Loja no menu administrativo (D-039)", () => {
+  it("o item Loja só aparece com Ver no módulo LOJA, depois de Metas e antes de Minhas aulas", () => {
+    const admin = userWith(
+      "Administrador",
+      ALL_MODULES.map((module) => ({
+        module,
+        actions: ALL_PERMISSION_ACTIONS,
+        scope: PermissionScope.ALL,
+      })),
+    );
+    const labels = visibleAdminMenuItems(admin).map((item) => item.label);
+    expect(labels.indexOf("Loja")).toBe(labels.indexOf("Metas") + 1);
+    expect(labels.indexOf("Loja")).toBe(labels.indexOf("Minhas aulas") - 1);
+
+    const onlyCreate = userWith("Estoquista", [
+      { module: Module.LOJA, actions: [PermissionAction.CREATE], scope: PermissionScope.ALL },
+    ]);
+    expect(visibleAdminMenuItems(onlyCreate).map((item) => item.label)).not.toContain("Loja");
+    const withView = userWith("Estoquista", view([Module.LOJA], PermissionScope.ALL));
+    expect(visibleAdminMenuItems(withView).map((item) => item.to)).toEqual(["/loja-admin"]);
+  });
+
+  it("quem só vê a Loja tem /loja-admin como tela inicial, depois de Metas na prioridade", () => {
+    expect(homeRouteFor(userWith("Estoquista", view([Module.LOJA], PermissionScope.ALL)))).toBe(
+      "/loja-admin",
+    );
+    expect(
+      homeRouteFor(userWith("Equipe", view([Module.LOJA, Module.GAMIFICACAO], PermissionScope.ALL))),
+    ).toBe("/metas");
+  });
+
+  it("a regra da Loja vale também nas subrotas (produtos, categorias, formulário)", () => {
+    const semLoja = userWith("Professor", view([Module.PRESENCA]));
+    const comLoja = userWith("Estoquista", view([Module.LOJA], PermissionScope.ALL));
+    for (const path of [
+      "/loja-admin",
+      "/loja-admin/produtos",
+      "/loja-admin/categorias",
+      "/loja-admin/produtos/novo",
+      "/loja-admin/produtos/p-1",
+    ]) {
+      expect(canOpenAdminRoute(semLoja, path), path).toBe(false);
+      expect(canOpenAdminRoute(comLoja, path), path).toBe(true);
+    }
+    // Prefixo de outro caminho não é subrota.
+    expect(canOpenAdminRoute(semLoja, "/loja-adminx")).toBe(true);
   });
 });

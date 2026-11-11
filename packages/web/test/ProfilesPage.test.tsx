@@ -130,6 +130,30 @@ describe("ProfilesPage", () => {
     ).toBeChecked();
   });
 
+  it("a matriz mostra o módulo Loja depois de Metas, com escopo Todos os registros", async () => {
+    server.use(
+      http.get("/api/profiles/catalog", () =>
+        HttpResponse.json({
+          ...CATALOG,
+          modules: ["USUARIOS", "LOJA", "GAMIFICACAO", "CLIENTES"],
+        }),
+      ),
+    );
+    renderProfilesPage();
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole("button", { name: "Recepção" }));
+    await screen.findByText("Matriz de permissões — Recepção");
+
+    const rows = screen.getAllByRole("row").map((row) => row.textContent ?? "");
+    const order = ["Clientes", "Metas", "Loja", "Usuários"].map((label) =>
+      rows.findIndex((text) => text.startsWith(label)),
+    );
+    expect(order.every((index) => index > 0)).toBe(true);
+    expect(order).toEqual([...order].sort((a, b) => a - b));
+    expect(screen.getByRole("checkbox", { name: "Ver em Loja" })).toBeInTheDocument();
+  });
+
   it("mostra o isolamento do Cliente como fixo, sem seletor de escopo editável", async () => {
     renderProfilesPage();
     const user = userEvent.setup();
