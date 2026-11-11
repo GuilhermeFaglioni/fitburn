@@ -2815,3 +2815,93 @@
   color: var(--muted);
   font-weight: var(--weight-bold);
 }
+
+/* ---- Interruptor (Switch) ---- */
+.fb-ui-switch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-4);
+  min-height: var(--s-11);
+}
+
+.fb-ui-switch__text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  min-width: 0;
+}
+
+.fb-ui-switch__label {
+  color: var(--ink);
+  font-size: var(--text-small);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-small);
+}
+
+.fb-ui-switch__description {
+  color: var(--muted);
+  font-size: var(--text-small);
+  line-height: var(--leading-small);
+}
+
+/* Trilho de 44x24 (--s-11 x --s-6) com folga de --s-1; a bolinha (--s-4) anda 20px (--s-5) ao ligar. */
+.fb-ui-switch__control {
+  box-sizing: border-box;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  width: var(--s-11);
+  height: var(--s-6);
+  padding: var(--s-1);
+  background: var(--faint);
+  border: 0;
+  border-radius: var(--r-pill);
+  cursor: pointer;
+  transition: background-color var(--duration-state) var(--ease-out);
+}
+
+.fb-ui-switch__control[aria-checked="true"] {
+  background: var(--brand);
+  color: var(--on-brand); /* sem texto no trilho; o par do design (branco sobre o laranja) vale para a bolinha */
+}
+
+.fb-ui-switch__control:focus-visible {
+  outline: none;
+  box-shadow: var(--sh-focus);
+}
+
+.fb-ui-switch__control:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.fb-ui-switch__thumb {
+  width: var(--s-4);
+  height: var(--s-4);
+  background: var(--surface);
+  border-radius: var(--r-pill);
+  transition: transform var(--duration-state) var(--ease-out);
+}
+
+.fb-ui-switch__control[aria-checked="true"] .fb-ui-switch__thumb {
+  transform: translateX(var(--s-5));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fb-ui-switch__thumb {
+    transition-property: none;
+  }
+}
+
+/* Cartão de formulário com várias regras: cada interruptor numa linha separada por filete. */
+.fb-ui-switch-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.fb-ui-switch-list > * + * {
+  margin-top: var(--s-3);
+  padding-top: var(--s-3);
+  border-top: 1px solid var(--line);
+}

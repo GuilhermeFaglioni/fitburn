@@ -16,6 +16,8 @@ export interface AdminMenuItem {
   action?: PermissionActionName;
   /** Exige acesso a todos os registros do módulo (telas que só a administração usa). */
   fullScope?: boolean;
+  /** A regra vale também para as subrotas (`/loja-admin/produtos/novo`), não só para a rota do item. */
+  nested?: boolean;
 }
 
 // Cada ticket futuro que adicionar uma tela real ganha sua própria entrada
@@ -44,6 +46,7 @@ export const ADMIN_MENU_ITEMS: AdminMenuItem[] = [
   },
   { modules: [Module.FICHAS_DE_TREINO], label: "Fichas de treino", to: "/fichas" },
   { modules: [Module.GAMIFICACAO], label: "Metas", to: "/metas" },
+  { modules: [Module.LOJA], label: "Loja", to: "/loja-admin", nested: true },
   { modules: [Module.PRESENCA], label: "Minhas aulas", to: "/minhas-aulas" },
   {
     modules: [Module.CLIENTES],
@@ -96,6 +99,7 @@ const HOME_PRIORITY = [
   "/planos",
   "/fichas",
   "/metas",
+  "/loja-admin",
   "/atribuicoes",
   "/templates-e-modalidades",
 ];
@@ -124,10 +128,13 @@ export function adminRouteForClientPath(user: CurrentUser, path: string): string
 
 /**
  * A rota administrativa pode ser aberta por este usuário? Só as telas do menu
- * têm regra própria (a permissão do item); as demais (ex.: a Presença de uma
- * aula) deixam a decisão para a API.
+ * têm regra própria (a permissão do item, também nas subrotas dos itens
+ * `nested`, como a Loja); as demais (ex.: a Presença de uma aula) deixam a
+ * decisão para a API.
  */
 export function canOpenAdminRoute(user: CurrentUser, path: string): boolean {
-  const item = ADMIN_MENU_ITEMS.find((candidate) => candidate.to === path);
+  const item = ADMIN_MENU_ITEMS.find(
+    (candidate) => candidate.to === path || (candidate.nested && path.startsWith(`${candidate.to}/`)),
+  );
   return !item || canAccess(user, item);
 }

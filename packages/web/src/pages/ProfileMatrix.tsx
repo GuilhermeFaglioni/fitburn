@@ -29,6 +29,7 @@ const MODULE_ORDER: ModuleName[] = [
   Module.PLANOS,
   Module.FICHAS_DE_TREINO,
   Module.GAMIFICACAO,
+  Module.LOJA,
   Module.USUARIOS,
   Module.PERFIS_DE_ACESSO,
 ];
@@ -39,6 +40,19 @@ function sortModules(modules: ModuleName[]): ModuleName[] {
     return index === -1 ? MODULE_ORDER.length : index;
   };
   return [...modules].sort((a, b) => rank(a) - rank(b));
+}
+
+/**
+ * Módulos cujas rotas exigem escopo ALL (a API recusa qualquer escopo restrito com 403 OUT_OF_SCOPE).
+ * Para perfis da equipe a matriz só oferece e só salva "Todos os registros" neles.
+ */
+const ALL_SCOPE_ONLY_MODULES: ModuleName[] = [Module.LOJA];
+
+/** O Administrador (acesso total) e o Cliente (isolamento OWN fixo) têm regra própria e vêm antes. */
+function isAllScopeOnly(profile: ProfileDetail, module: ModuleName): boolean {
+  const isAdmin = profile.isSystem && profile.name === SYSTEM_ADMIN_NAME;
+  const isClient = profile.isSystem && profile.name === SYSTEM_CLIENT_NAME;
+  return !isAdmin && !isClient && ALL_SCOPE_ONLY_MODULES.includes(module);
 }
 
 const NO_EDIT_REASON = "Você não tem permissão para alterar perfis.";
@@ -66,9 +80,12 @@ function ModuleRow({
 
   const isAdminLocked = profile.isSystem && profile.name === SYSTEM_ADMIN_NAME;
   const isClientScopeLocked = profile.isSystem && profile.name === SYSTEM_CLIENT_NAME;
+  const allScopeOnly = isAllScopeOnly(profile, module);
+  const scopeOptions = allScopeOnly ? [PermissionScope.ALL] : catalog.scopes;
 
   const mutation = useMutation({
-    mutationFn: () => setModuleAccess(profile.id, module, actions, scope),
+    mutationFn: () =>
+      setModuleAccess(profile.id, module, actions, allScopeOnly ? PermissionScope.ALL : scope),
     onSuccess: onSaved,
   });
 
@@ -109,11 +126,11 @@ function ModuleRow({
             <Select
               label={`Escopo de ${MODULE_LABELS[module]}`}
               hideLabel
-              value={scope}
+              value={allScopeOnly ? PermissionScope.ALL : scope}
               disabled={isAdminLocked}
               onChange={(event) => setScope(event.target.value as PermissionScopeName)}
             >
-              {catalog.scopes.map((s) => (
+              {scopeOptions.map((s) => (
                 <option key={s} value={s}>
                   {SCOPE_LABELS[s]}
                 </option>
@@ -221,7 +238,9 @@ export function ProfileMatrix({
                   // O Administrador tem acesso total implícito (a API não lista módulos para ele).
                   initialActions={isAdminLocked ? catalog.actions : (existing?.actions ?? [])}
                   initialScope={
-                    isAdminLocked ? PermissionScope.ALL : (existing?.scope ?? PermissionScope.OWN)
+                    isAdminLocked || isAllScopeOnly(profile, module)
+                      ? PermissionScope.ALL
+                      : (existing?.scope ?? PermissionScope.OWN)
                   }
                   onSaved={onChanged}
                 />

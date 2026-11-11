@@ -19,3 +19,4 @@ export * from "./clients.js";
 export * from "./dashboard.js";
 export * from "./admin-reservations.js";
 export * from "./exports.js";
+export * from "./shop.js";

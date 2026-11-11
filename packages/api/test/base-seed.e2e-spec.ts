@@ -2,7 +2,7 @@ import type { INestApplication } from "@nestjs/common";
 import request from "supertest";
 import { PrismaService } from "../src/prisma/prisma.service.js";
 import { seedBaseData } from "../src/seed/base-seed.js";
-import { cleanDatabase } from "./db-test-helper.js";
+import { cleanDatabase, testPrisma } from "./db-test-helper.js";
 import { loginAndGetAccessToken } from "./login-helper.js";
 import { createTestApp } from "./test-app.js";
 
@@ -154,5 +154,13 @@ describe("Seed base de perfis padrão (HTTP)", () => {
         (profile: { name: string }) => profile.name === "Funcionário administrativo",
       ),
     ).toHaveLength(1);
+  }, 30_000);
+
+  it("não concede a permissão LOJA a nenhum perfil padrão", async () => {
+    await seedBaseData(app.get(PrismaService), ENV);
+
+    const shopAccess = await testPrisma.profileModuleAccess.findMany({ where: { module: "LOJA" } });
+
+    expect(shopAccess).toEqual([]);
   }, 30_000);
 });

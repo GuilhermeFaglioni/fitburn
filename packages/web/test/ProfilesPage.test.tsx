@@ -130,6 +130,142 @@ describe("ProfilesPage", () => {
     ).toBeChecked();
   });
 
+  it("a matriz mostra o módulo Loja depois de Metas, com escopo Todos os registros", async () => {
+    server.use(
+      http.get("/api/profiles/catalog", () =>
+        HttpResponse.json({
+          ...CATALOG,
+          modules: ["USUARIOS", "LOJA", "GAMIFICACAO", "CLIENTES"],
+        }),
+      ),
+    );
+    renderProfilesPage();
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole("button", { name: "Recepção" }));
+    await screen.findByText("Matriz de permissões — Recepção");
+
+    const rows = screen.getAllByRole("row").map((row) => row.textContent ?? "");
+    const order = ["Clientes", "Metas", "Loja", "Usuários"].map((label) =>
+      rows.findIndex((text) => text.startsWith(label)),
+    );
+    expect(order.every((index) => index > 0)).toBe(true);
+    expect(order).toEqual([...order].sort((a, b) => a - b));
+    expect(screen.getByRole("checkbox", { name: "Ver em Loja" })).toBeInTheDocument();
+  });
+
+  describe("escopo da Loja (sempre Todos os registros)", () => {
+    const SHOP_CATALOG = { ...CATALOG, modules: ["LOJA", "CLIENTES"] };
+    const SCOPE_OPTIONS = ["Todos os registros", "Clientes atribuídos", "Aulas atribuídas", "Registros próprios"];
+
+    function useShopCatalog(profiles: ProfileDetail[] = [ADMIN_PROFILE, CLIENT_PROFILE, CUSTOM_PROFILE]) {
+      server.use(
+        http.get("/api/profiles/catalog", () => HttpResponse.json(SHOP_CATALOG)),
+        http.get("/api/profiles", () => HttpResponse.json(profiles)),
+      );
+    }
+
+    function captureSavedBodies() {
+      const saved: Record<string, { actions: string[]; scope: string }> = {};
+      server.use(
+        http.put("/api/profiles/:id/module-access/:module", async ({ request, params }) => {
+          const body = (await request.json()) as { actions: string[]; scope: string };
+          saved[params.module as string] = body;
+          return HttpResponse.json({ ...CUSTOM_PROFILE, moduleAccess: [{ module: params.module, ...body }] });
+        }),
+      );
+      return saved;
+    }
+
+    function optionLabels(select: HTMLElement) {
+      return within(select)
+        .getAllByRole("option")
+        .map((option) => option.textContent);
+    }
+
+    it("num perfil de equipe novo, a linha da Loja oferece só Todos os registros; os outros módulos mantêm todos os escopos", async () => {
+      useShopCatalog();
+      renderProfilesPage();
+      const user = userEvent.setup();
+
+      await user.click(await screen.findByRole("button", { name: "Recepção" }));
+      await screen.findByText("Matriz de permissões — Recepção");
+
+      const lojaRow = screen.getByRole("row", { name: /Loja/ });
+      const lojaScope = within(lojaRow).getByRole("combobox", { name: "Escopo de Loja" });
+      expect(optionLabels(lojaScope)).toEqual(["Todos os registros"]);
+      expect(lojaScope).toHaveValue("ALL");
+      for (const other of ["Registros próprios", "Clientes atribuídos", "Aulas atribuídas"]) {
+        expect(within(lojaRow).queryByText(other)).not.toBeInTheDocument();
+      }
+
+      const clientesRow = screen.getByRole("row", { name: /Clientes/ });
+      expect(
+        optionLabels(within(clientesRow).getByRole("combobox", { name: "Escopo de Clientes" })),
+      ).toEqual(SCOPE_OPTIONS);
+    });
+
+    it("marcar Ver e salvar a Loja sem mexer no escopo envia scope ALL", async () => {
+      useShopCatalog();
+      const saved = captureSavedBodies();
+      renderProfilesPage();
+      const user = userEvent.setup();
+
+      await user.click(await screen.findByRole("button", { name: "Recepção" }));
+      await screen.findByText("Matriz de permissões — Recepção");
+
+      const lojaRow = screen.getByRole("row", { name: /Loja/ });
+      await user.click(within(lojaRow).getByRole("checkbox", { name: "Ver em Loja" }));
+      await user.click(within(lojaRow).getByRole("button", { name: "Salvar permissões de Loja" }));
+
+      await waitFor(() => expect(saved.LOJA).toEqual({ actions: ["VIEW"], scope: "ALL" }));
+    });
+
+    it("perfil com a Loja salva em OWN mostra Todos os registros e salva ALL", async () => {
+      useShopCatalog([
+        ADMIN_PROFILE,
+        CLIENT_PROFILE,
+        {
+          ...CUSTOM_PROFILE,
+          moduleAccess: [
+            { module: "LOJA", actions: ["VIEW"], scope: "OWN" },
+            { module: "CLIENTES", actions: ["VIEW"], scope: "OWN" },
+          ],
+        },
+      ]);
+      const saved = captureSavedBodies();
+      renderProfilesPage();
+      const user = userEvent.setup();
+
+      await user.click(await screen.findByRole("button", { name: "Recepção" }));
+      await screen.findByText("Matriz de permissões — Recepção");
+
+      const lojaRow = screen.getByRole("row", { name: /Loja/ });
+      const lojaScope = within(lojaRow).getByRole("combobox", { name: "Escopo de Loja" });
+      expect(lojaScope).toHaveValue("ALL");
+      expect(optionLabels(lojaScope)).toEqual(["Todos os registros"]);
+      // Os outros módulos continuam refletindo o escopo salvo.
+      const clientesRow = screen.getByRole("row", { name: /Clientes/ });
+      expect(within(clientesRow).getByRole("combobox", { name: "Escopo de Clientes" })).toHaveValue("OWN");
+
+      await user.click(within(lojaRow).getByRole("button", { name: "Salvar permissões de Loja" }));
+      await waitFor(() => expect(saved.LOJA).toEqual({ actions: ["VIEW"], scope: "ALL" }));
+    });
+
+    it("no perfil Cliente a Loja segue com o isolamento fixo OWN, sem seletor", async () => {
+      useShopCatalog();
+      renderProfilesPage();
+      const user = userEvent.setup();
+
+      await user.click(await screen.findByRole("button", { name: "Cliente" }));
+      await screen.findByText("Matriz de permissões — Cliente");
+
+      const lojaRow = screen.getByRole("row", { name: /Loja/ });
+      expect(within(lojaRow).getByText(/registros próprios \(fixo\)/i)).toBeInTheDocument();
+      expect(within(lojaRow).queryByRole("combobox")).not.toBeInTheDocument();
+    });
+  });
+
   it("mostra o isolamento do Cliente como fixo, sem seletor de escopo editável", async () => {
     renderProfilesPage();
     const user = userEvent.setup();
