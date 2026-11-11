@@ -258,7 +258,8 @@ export function productToFormValues(product: ShopProductDetail): ProductFormValu
     promoPrice: product.promoPriceCents === null ? "" : centsToInput(product.promoPriceCents),
     description: product.description ?? "",
     // Com opções o estoque é por variação: se a equipe tirar todas as opções, ela informa o estoque único de novo.
-    stock: product.options.length > 0 ? "" : String(product.stock),
+    // Produto simples: o estoque é o da variação única (o agregado `product.stock` soma só as ativas e viraria 0 se ela estiver inativa).
+    stock: product.options.length > 0 ? "" : String(product.variants[0]?.stock ?? product.stock),
     permiteMaisDeUmaUnidade: product.permiteMaisDeUmaUnidade,
     limitePorPedido: product.limitePorPedido === null ? "" : String(product.limitePorPedido),
     visivel: product.visivel,

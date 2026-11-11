@@ -531,6 +531,23 @@ describe("Opções e variações do produto (L2)", () => {
       });
     });
 
+    it("produto simples com variação única inativa: editar só o nome mantém o estoque dela", async () => {
+      current = detail({
+        stock: 0,
+        variants: [variant(null, [], { stock: 7, ativa: false })],
+      });
+      const user = userEvent.setup();
+      renderAt("/loja-admin/produtos/p-camiseta");
+      await screen.findByLabelText("Nome");
+      expect(screen.getByLabelText("Estoque")).toHaveValue("7");
+
+      await user.type(screen.getByLabelText("Nome"), " Nova");
+      await user.click(screen.getByRole("button", { name: "Salvar produto" }));
+
+      await screen.findByRole("heading", { level: 1, name: "Produtos" });
+      expect(callsTo("PATCH")[0]!.body).toMatchObject({ name: "Camiseta Dry Fit Nova", stock: 7 });
+    });
+
     it("tirar todas as opções: PUT limpa as opções antes do PATCH mandar o estoque único", async () => {
       const user = userEvent.setup();
       renderAt("/loja-admin/produtos/p-camiseta");
