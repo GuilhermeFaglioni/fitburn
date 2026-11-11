@@ -41,7 +41,7 @@ export interface HourGroupProps {
 }
 
 /**
- * Horário da agenda "Todas" (#189, D-043): fechado resume o horário (aulas, modalidades, vagas somadas, ocupação);
+ * Horário da agenda "Todas" (issue 189, D-043): fechado resume o horário (aulas, modalidades, vagas somadas, ocupação);
  * aberto lista cada aula, que abre o detalhe. O grupo com reserva do cliente já nasce aberto; depois disso o
  * estado aberto/fechado é do usuário e não é sobrescrito pelos re-renders.
  */

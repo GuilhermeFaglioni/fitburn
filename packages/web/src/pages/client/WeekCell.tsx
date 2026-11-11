@@ -20,7 +20,7 @@ export interface WeekCellProps {
 }
 
 /**
- * Célula (dia × horário) da grade do desktop (#189, D-043): fechada resume o horário (aulas e vagas somadas);
+ * Célula (dia × horário) da grade do desktop (issue 189, D-043): fechada resume o horário (aulas e vagas somadas);
  * aberta lista as aulas dentro da própria célula. Célula com reserva do cliente nasce aberta; depois o estado é
  * do usuário. O estado vive na célula, então some junto com ela quando a semana ou o filtro a tira da grade.
  */

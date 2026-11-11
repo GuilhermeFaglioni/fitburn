@@ -120,7 +120,7 @@
   list-style: none;
 }
 
-/* Todas (celular): horários agrupados (#189, D-043). Fechado resume o horário; aberto lista as aulas. */
+/* Todas (celular): horários agrupados (issue 189, D-043). Fechado resume o horário; aberto lista as aulas. */
 .fb-hgroup {
   border: 1px solid var(--line);
   border-radius: var(--r-md);
@@ -577,7 +577,7 @@
   color: var(--muted);
 }
 
-/* Bloco da célula da grade (#189, D-043): fechado resume o horário; aberto lista as aulas na própria célula. */
+/* Bloco da célula da grade (issue 189, D-043): fechado resume o horário; aberto lista as aulas na própria célula. */
 .fb-wkcell {
   display: flex;
   flex-direction: column;
