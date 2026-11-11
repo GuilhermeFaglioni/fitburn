@@ -1,6 +1,6 @@
 /**
  * Agenda do cliente (D-038): cabeçalho com "Suas aulas | Todas", semana, dias (chips), modalidades (pílulas) e
- * lista de aulas; no desktop, a grade semana × horário. A aba Histórico reaproveita o item de aula. O detalhe da aula
+ * lista de aulas; no desktop, a grade semana × horário. O detalhe da aula
  * (folha, `Dialog` variant="sheet") fecha o arquivo. Só tokens: cor, raio, espaçamento e tipografia vêm do design system.
  */
 .fb-agenda {
