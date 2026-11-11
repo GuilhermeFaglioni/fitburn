@@ -184,9 +184,10 @@ describe("ClientAgendaPage › abas Suas aulas | Todas", () => {
     renderPage(undefined, "/agenda");
 
     await screen.findByRole("region", { name: "Suas reservas" });
-    expect(requests).toHaveLength(1);
-    expect(requests[0].get("when")).toBe("upcoming");
-    expect(requests[0].get("status")).toBe("CONFIRMED");
+    // A lista pede só as confirmadas e futuras; a contagem do link do Histórico pede as anteriores (sem filtro).
+    const listRequests = requests.filter((params) => params.get("when") === "upcoming");
+    expect(listRequests).toHaveLength(1);
+    expect(listRequests[0].get("status")).toBe("CONFIRMED");
   });
 
   it("agrupa por dia: Hoje, Amanhã e a data, com as aulas de cada dia em ordem de horário", async () => {
@@ -289,7 +290,9 @@ describe("ClientAgendaPage › abas Suas aulas | Todas", () => {
   it("falha ao carregar as reservas mostra o erro com nova tentativa", async () => {
     let calls = 0;
     server.use(
-      http.get("/api/reservations", () => {
+      http.get("/api/reservations", ({ request }) => {
+        // A contagem do Histórico (when=past) não entra na conta: só a lista falha na primeira vez.
+        if (new URL(request.url).searchParams.get("when") === "past") return HttpResponse.json([]);
         calls += 1;
         return calls === 1
           ? HttpResponse.json({ code: "X", message: "x" }, { status: 500 })
@@ -315,6 +318,206 @@ describe("ClientAgendaPage › abas Suas aulas | Todas", () => {
     expect(await screen.findByText(/Remarcando Treino Funcional/)).toBeInTheDocument();
     expect(viewButton("Todas")).toHaveAttribute("aria-pressed", "true");
     await waitFor(() => expect(screen.getByLabelText("query da rota")).toHaveTextContent("?aba=todas"));
+  });
+});
+
+describe("ClientAgendaPage › Histórico dentro de Suas aulas", () => {
+  const HISTORY_PATH = "/agenda?aba=suas&ver=historico";
+
+  beforeEach(() => {
+    mockSuccessfulLogin("Cliente");
+    server.use(http.get("/api/agenda", () => HttpResponse.json([item(TODAY, "07:00")])));
+  });
+
+  const past = (id: string, daysAgo: number, status: ReservationDetail["status"] = "COMPLETED") => ({
+    ...reservation(id, addDays(TODAY, -daysAgo), "07:00"),
+    status,
+  });
+
+  /** `upcoming` e `past` respondem pela query `when`; o `status` filtra as duas, como a API. */
+  function useReservations(
+    upcoming: ReservationDetail[],
+    previous: ReservationDetail[],
+    requests: URLSearchParams[] = [],
+  ) {
+    server.use(
+      http.get("/api/reservations", ({ request }) => {
+        const params = new URL(request.url).searchParams;
+        requests.push(params);
+        const list = params.get("when") === "past" ? previous : upcoming;
+        const status = params.get("status");
+        return HttpResponse.json(status ? list.filter((r) => r.status === status) : list);
+      }),
+    );
+  }
+
+  it("o fim de Suas aulas tem o link do Histórico com a contagem de aulas anteriores", async () => {
+    useReservations(
+      [reservation("res-1", TODAY, "18:00")],
+      [past("p-1", 1), past("p-2", 2, "CANCELLED"), past("p-3", 3, "NO_SHOW")],
+    );
+    renderPage(undefined, "/agenda");
+
+    const link = await screen.findByRole("link", { name: /^Histórico/ });
+    await waitFor(() => expect(link).toHaveTextContent("3 aulas anteriores"));
+    expect(link).toHaveAccessibleName("Histórico · 3 aulas anteriores");
+    expect(link).toHaveAttribute("href", "/agenda?aba=suas&ver=historico");
+  });
+
+  it("com uma só aula anterior, o texto fica no singular", async () => {
+    useReservations([reservation("res-1", TODAY, "18:00")], [past("p-1", 1)]);
+    renderPage(undefined, "/agenda");
+
+    expect(await screen.findByRole("link", { name: "Histórico · 1 aula anterior" })).toBeInTheDocument();
+  });
+
+  it("o link do Histórico também aparece no estado vazio, abaixo de Ver todas as aulas", async () => {
+    useReservations([], [past("p-1", 1), past("p-2", 2)]);
+    renderPage(undefined, "/agenda");
+
+    expect(await screen.findByText("Você não tem aulas reservadas daqui para frente.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Ver todas as aulas" })).toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: "Histórico · 2 aulas anteriores" })).toBeInTheDocument();
+  });
+
+  it("sem aulas anteriores o link diz 0 aulas anteriores", async () => {
+    useReservations([reservation("res-1", TODAY, "18:00")], []);
+    renderPage(undefined, "/agenda");
+
+    expect(await screen.findByRole("link", { name: "Histórico · 0 aulas anteriores" })).toBeInTheDocument();
+  });
+
+  it("se a consulta das anteriores falha, o link mostra só Histórico e a lista segue inteira", async () => {
+    server.use(
+      http.get("/api/reservations", ({ request }) =>
+        new URL(request.url).searchParams.get("when") === "past"
+          ? HttpResponse.json({ code: "X", message: "x" }, { status: 500 })
+          : HttpResponse.json([reservation("res-1", TODAY, "18:00")]),
+      ),
+    );
+    renderPage(undefined, "/agenda");
+
+    expect(await screen.findByRole("button", { name: /^Remarcar Treino Funcional/ })).toBeInTheDocument();
+    const link = screen.getByRole("link", { name: "Histórico" });
+    await waitFor(() => expect(link).toHaveAccessibleName("Histórico"));
+    expect(link).not.toHaveTextContent("aulas anteriores");
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("enquanto as anteriores carregam, o link mostra só Histórico", async () => {
+    server.use(
+      http.get("/api/reservations", async ({ request }) => {
+        if (new URL(request.url).searchParams.get("when") === "past") {
+          await new Promise((resolve) => setTimeout(resolve, 150));
+          return HttpResponse.json([past("p-1", 1)]);
+        }
+        return HttpResponse.json([reservation("res-1", TODAY, "18:00")]);
+      }),
+    );
+    renderPage(undefined, "/agenda");
+
+    const link = await screen.findByRole("link", { name: "Histórico" });
+    expect(link).toHaveAccessibleName("Histórico");
+    expect(await screen.findByRole("link", { name: "Histórico · 1 aula anterior" })).toBeInTheDocument();
+  });
+
+  it("o link abre o histórico dentro de Suas aulas, com a URL e o foco no título", async () => {
+    useReservations([reservation("res-1", TODAY, "18:00")], [past("p-1", 1)]);
+    renderPage(undefined, "/agenda");
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole("link", { name: /^Histórico/ }));
+
+    const heading = await screen.findByRole("heading", { name: "Histórico" });
+    expect(screen.getByLabelText("query da rota")).toHaveTextContent("?aba=suas&ver=historico");
+    expect(viewButton("Suas aulas")).toHaveAttribute("aria-pressed", "true");
+    expect(viewButton("Todas")).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("group", { name: "Filtrar por estado" })).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Suas reservas" })).not.toBeInTheDocument();
+    expect(await screen.findByRole("region", { name: "Anteriores" })).toBeInTheDocument();
+    expect(heading).toHaveFocus();
+  });
+
+  it("ver=historico na URL abre o histórico direto", async () => {
+    useReservations([], [past("p-1", 1)]);
+    renderPage(undefined, HISTORY_PATH);
+
+    expect(await screen.findByRole("heading", { name: "Histórico" })).toBeInTheDocument();
+    expect(viewButton("Suas aulas")).toHaveAttribute("aria-pressed", "true");
+    const anteriores = await screen.findByRole("region", { name: "Anteriores" });
+    expect(await within(anteriores).findByText("CONCLUÍDA")).toBeInTheDocument();
+  });
+
+  it("← Suas aulas volta para a lista, sem ver na URL, e devolve o foco ao link do Histórico", async () => {
+    useReservations([reservation("res-1", TODAY, "18:00")], [past("p-1", 1)]);
+    renderPage(undefined, HISTORY_PATH);
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole("link", { name: "Suas aulas" }));
+
+    expect(await screen.findByRole("region", { name: "Suas reservas" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Histórico" })).not.toBeInTheDocument();
+    expect(screen.getByLabelText("query da rota")).toBeEmptyDOMElement();
+    expect(viewButton("Suas aulas")).toHaveAttribute("aria-pressed", "true");
+    const link = await screen.findByRole("link", { name: /^Histórico/ });
+    expect(link).toHaveFocus();
+  });
+
+  it("o filtro por estado continua: Canceladas pede só as canceladas", async () => {
+    const requests: URLSearchParams[] = [];
+    useReservations([], [past("p-1", 1), past("p-2", 2, "CANCELLED")], requests);
+    renderPage(undefined, HISTORY_PATH);
+    const user = userEvent.setup();
+
+    const anteriores = await screen.findByRole("region", { name: "Anteriores" });
+    expect(await within(anteriores).findAllByRole("listitem")).toHaveLength(2);
+
+    await user.click(screen.getByRole("button", { name: "Canceladas" }));
+
+    await waitFor(() => expect(within(anteriores).getAllByRole("listitem")).toHaveLength(1));
+    expect(within(anteriores).getByText("CANCELADA")).toBeInTheDocument();
+    expect(
+      requests.some((params) => params.get("when") === "past" && params.get("status") === "CANCELLED"),
+    ).toBe(true);
+  });
+
+  it("Remarcar a partir do histórico leva para Todas, com o aviso no topo e sem ver na URL", async () => {
+    const original = item(addDays(TODAY, 1), "18:00", { id: "occ-res-1", myReservationId: "res-1" });
+    server.use(http.get("/api/agenda/:id", () => HttpResponse.json(original)));
+    useReservations([reservation("res-1", addDays(TODAY, 1), "18:00")], []);
+    renderPage(undefined, HISTORY_PATH);
+    const user = userEvent.setup();
+
+    const proximas = await screen.findByRole("region", { name: "Próximas reservas" });
+    await user.click(await within(proximas).findByRole("button", { name: /Treino Funcional/ }));
+    const sheet = await screen.findByRole("dialog", { name: "Treino Funcional" });
+    await user.click(within(sheet).getByRole("button", { name: "Remarcar" }));
+
+    expect(await screen.findByText(/Remarcando Treino Funcional/)).toBeInTheDocument();
+    expect(viewButton("Todas")).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByLabelText("query da rota")).toHaveTextContent(/^\?aba=todas$/);
+    expect(screen.queryByRole("heading", { name: "Histórico" })).not.toBeInTheDocument();
+  });
+
+  it("remarcação vinda da Home com ver=historico na URL abre em Todas, sem prender o histórico", async () => {
+    useReservations([], []);
+    renderPage(
+      { rescheduling: { reservationId: "res-1", from: item(TODAY, "18:00", { myReservationId: "res-1" }) } },
+      HISTORY_PATH,
+    );
+
+    expect(await screen.findByText(/Remarcando Treino Funcional/)).toBeInTheDocument();
+    expect(viewButton("Todas")).toHaveAttribute("aria-pressed", "true");
+    expect(screen.queryByRole("heading", { name: "Histórico" })).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.getByLabelText("query da rota")).toHaveTextContent(/^\?aba=todas$/));
+  });
+
+  it("ver=historico fora de Suas aulas é ignorado: aba=todas continua na grade", async () => {
+    useReservations([], []);
+    renderPage(undefined, "/agenda?aba=todas&ver=historico");
+
+    expect(await screen.findByRole("region", { name: "Aulas do dia" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Histórico" })).not.toBeInTheDocument();
   });
 });
 

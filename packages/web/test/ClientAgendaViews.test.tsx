@@ -137,9 +137,9 @@ describe("Agenda: Suas aulas | Todas", () => {
   });
 });
 
-// O Histórico deixa de ser uma aba e vira uma subvisão de Suas aulas na subtarefa 2 da #186
-// (`?aba=suas&ver=historico`); estes testes voltam lá, abrindo a visão pela URL.
-describe.skip("Agenda: Histórico (subvisão, subtarefa 2 da #186)", () => {
+const HISTORY_PATH = "/agenda?aba=suas&ver=historico";
+
+describe("Agenda: Histórico (subvisão de Suas aulas)", () => {
   it("no Histórico, cada situação aparece no texto do selo, inclusive a de presença", async () => {
     mockAgenda([]);
     mockReservations(
@@ -150,8 +150,7 @@ describe.skip("Agenda: Histórico (subvisão, subtarefa 2 da #186)", () => {
       ],
       [],
     );
-    renderPage();
-    await userEvent.setup().click(await screen.findByRole("button", { name: "Histórico" }));
+    renderPage(HISTORY_PATH);
 
     const past = await screen.findByRole("region", { name: "Anteriores" });
     expect(await within(past).findByText("CONCLUÍDA")).toBeInTheDocument();
@@ -162,9 +161,8 @@ describe.skip("Agenda: Histórico (subvisão, subtarefa 2 da #186)", () => {
   it("o filtro de situação do Histórico é um grupo rotulado de pílulas com aria-pressed", async () => {
     mockAgenda([]);
     mockReservations([], []);
-    renderPage();
+    renderPage(HISTORY_PATH);
     const user = userEvent.setup();
-    await user.click(await screen.findByRole("button", { name: "Histórico" }));
 
     const filter = await screen.findByRole("group", { name: "Filtrar por estado" });
     expect(within(filter).getByRole("button", { name: "Todas" })).toHaveAttribute("aria-pressed", "true");
@@ -332,17 +330,17 @@ describe("Agenda: estados", () => {
   });
 });
 
-describe.skip("Histórico: estados (subvisão, subtarefa 2 da #186)", () => {
+describe("Histórico: estados (subvisão de Suas aulas)", () => {
   async function openHistory() {
     const user = userEvent.setup();
-    await user.click(await screen.findByRole("button", { name: "Histórico" }));
+    await screen.findByRole("heading", { name: "Histórico" });
     return user;
   }
 
   it("vazio: cada seção diz que não há reservas", async () => {
     mockAgenda([]);
     mockReservations([], []);
-    renderPage();
+    renderPage(HISTORY_PATH);
     await openHistory();
 
     expect(await screen.findByText("Nenhuma reserva próxima.")).toBeInTheDocument();
@@ -357,7 +355,7 @@ describe.skip("Histórico: estados (subvisão, subtarefa 2 da #186)", () => {
         return HttpResponse.json([]);
       }),
     );
-    renderPage();
+    renderPage(HISTORY_PATH);
     await openHistory();
 
     expect(await screen.findAllByText("Carregando…")).toHaveLength(2);
@@ -373,7 +371,7 @@ describe.skip("Histórico: estados (subvisão, subtarefa 2 da #186)", () => {
           : HttpResponse.json([]),
       ),
     );
-    renderPage();
+    renderPage(HISTORY_PATH);
     await openHistory();
 
     const past = await screen.findByRole("region", { name: "Anteriores" });
@@ -386,7 +384,7 @@ describe.skip("Histórico: estados (subvisão, subtarefa 2 da #186)", () => {
   it("offline: sem rede as seções mostram o estado offline e carregam quando a rede volta", async () => {
     mockAgenda([]);
     mockReservations([reservation("r-1", addDays(TODAY, -1), "07:00", "COMPLETED")], []);
-    renderPage();
+    renderPage(HISTORY_PATH);
     const user = await openHistory();
     await screen.findByRole("region", { name: "Anteriores" });
     await user.click(screen.getByRole("button", { name: "Canceladas" }));

@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
   addDays,
@@ -25,6 +25,7 @@ import {
 import { ClassDetailSheet, type Rescheduling } from "./client/ClassDetailSheet";
 import { ClassItem } from "./client/ClassItem";
 import { MyReservationsList } from "./client/MyReservationsList";
+import { ReservationHistory } from "./client/ReservationHistory";
 import { QueryBlockState } from "../components/QueryBlockState";
 import { Badge, type BadgeTone } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
@@ -109,7 +110,23 @@ export function ClientAgendaPage() {
   // A aba vem da URL. A remarcação que chega da Home só acontece em Todas, então ela abre nessa aba.
   const [searchParams, setSearchParams] = useSearchParams();
   const tab: AgendaTab = searchParams.get("aba") === "todas" || hasRouteRescheduling ? "todas" : "suas";
+  // `?aba=suas&ver=historico` abre o histórico dentro de Suas aulas. Trocar de aba limpa o `ver`, então
+  // iniciar uma remarcação (que vai para Todas) nunca deixa o histórico preso na URL.
+  const view: "lista" | "historico" =
+    tab === "suas" && searchParams.get("ver") === "historico" ? "historico" : "lista";
   const setTab = (next: AgendaTab) => setSearchParams(next === "todas" ? { aba: "todas" } : {});
+
+  // O foco acompanha a troca de visão: o histórico recebe o foco no título; ao voltar, o link que o abriu.
+  // A troca é só de query string, então `useFocusOnNavigation` (por rota) não cobre.
+  const historyHeadingRef = useRef<HTMLHeadingElement>(null);
+  const historyLinkRef = useRef<HTMLAnchorElement>(null);
+  const previousView = useRef(view);
+  useEffect(() => {
+    if (previousView.current === view) return;
+    previousView.current = view;
+    if (view === "historico") historyHeadingRef.current?.focus({ preventScroll: true });
+    else historyLinkRef.current?.focus({ preventScroll: true });
+  }, [view]);
 
   useEffect(() => {
     if (hasRouteRescheduling) navigate({ pathname: location.pathname, search: "?aba=todas" }, { replace: true });
@@ -165,7 +182,11 @@ export function ClientAgendaPage() {
       <header className="fb-agenda__head">
         <div>
           <p className="fb-kicker fb-agenda__kicker">
-            {tab === "todas" ? `Semana de ${formatWeekRange(weekStart)}` : "Reservas"}
+            {tab === "todas"
+              ? `Semana de ${formatWeekRange(weekStart)}`
+              : view === "historico"
+                ? "Suas aulas"
+                : "Reservas"}
           </p>
           <h1 className="fb-agenda__title">Agenda</h1>
         </div>
@@ -178,8 +199,19 @@ export function ClientAgendaPage() {
         />
       </header>
 
-      {tab === "suas" ? (
+      {view === "historico" ? (
+        <>
+          <Link to={{ search: "" }} className="fb-agenda__back">
+            <span aria-hidden="true">←</span> Suas aulas
+          </Link>
+          <h2 ref={historyHeadingRef} tabIndex={-1} className="fb-agenda__subtitle">
+            Histórico
+          </h2>
+          <ReservationHistory onOpenClass={openClass} />
+        </>
+      ) : tab === "suas" ? (
         <MyReservationsList
+          historyLinkRef={historyLinkRef}
           onReschedule={(item) => {
             if (!item.myReservationId) return;
             setRescheduling({ reservationId: item.myReservationId, from: item });

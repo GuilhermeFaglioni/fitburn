@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, type Ref } from "react";
+import { Link } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   gymToday,
@@ -20,6 +21,9 @@ import { Button } from "../../components/ui/Button";
 import { EmptyState } from "../../components/ui/States";
 import { ClassItem } from "./ClassItem";
 
+/** Query string da subvisão de histórico; a aba entra explícita para a URL dizer onde o histórico mora. */
+export const HISTORY_SEARCH = "?aba=suas&ver=historico";
+
 /** As reservas agrupadas por dia da academia (a lista já vem em ordem de horário; aqui só se garante). */
 function groupByDay(reservations: ReservationDetail[]) {
   const sorted = [...reservations].sort((a, b) =>
@@ -36,16 +40,20 @@ function groupByDay(reservations: ReservationDetail[]) {
 /**
  * Aba "Suas aulas" da agenda: as reservas confirmadas e futuras do cliente, agrupadas por dia, cada uma com
  * Remarcar e Cancelar. As duas ações são as do detalhe da aula (`ClassDetailSheet`): a página recebe a aula da
- * agenda e abre a remarcação ou a confirmação de cancelamento. Sem reservas, o vazio leva para "Todas".
+ * agenda e abre a remarcação ou a confirmação de cancelamento. Sem reservas, o vazio leva para "Todas". No fim
+ * (também no vazio), o link "Histórico" abre as aulas anteriores (`?aba=suas&ver=historico`).
  */
 export function MyReservationsList({
   onReschedule,
   onCancel,
   onSeeAll,
+  historyLinkRef,
 }: {
   onReschedule: (item: ClientAgendaItem) => void;
   onCancel: (item: ClientAgendaItem) => void;
   onSeeAll: () => void;
+  /** Ref do link do histórico: a página devolve o foco a ele quando o histórico fecha. */
+  historyLinkRef?: Ref<HTMLAnchorElement>;
 }) {
   const queryClient = useQueryClient();
   const [pendingAction, setPendingAction] = useState<string | null>(null);
@@ -152,6 +160,39 @@ export function MyReservationsList({
             </ul>
           </div>
         ))}
+
+      <HistoryLink linkRef={historyLinkRef} />
     </section>
+  );
+}
+
+/** "1 aula anterior" / "N aulas anteriores". */
+function previousClassesText(count: number): string {
+  return count === 1 ? "1 aula anterior" : `${count} aulas anteriores`;
+}
+
+/**
+ * Link do histórico, com a contagem das aulas anteriores. A contagem vem da mesma consulta do histórico (mesma
+ * chave de cache, sem filtro de estado); enquanto ela carrega ou se falha, o link mostra só "Histórico".
+ */
+function HistoryLink({ linkRef }: { linkRef?: Ref<HTMLAnchorElement> }) {
+  const pastQuery = useQuery({
+    queryKey: ["my-reservations", "past", "all"],
+    queryFn: () => listMyReservations({ when: "past" }),
+  });
+  const count = pastQuery.data ? previousClassesText(pastQuery.data.length) : null;
+  return (
+    <Link
+      ref={linkRef}
+      to={{ search: HISTORY_SEARCH }}
+      className="fb-agenda__link-row"
+      aria-label={count ? `Histórico · ${count}` : undefined}
+    >
+      <span>
+        Histórico
+        {count && <small>{count}</small>}
+      </span>
+      <span aria-hidden="true">→</span>
+    </Link>
   );
 }
