@@ -17,6 +17,7 @@ import { GamificationModule } from "./gamification/gamification.module.js";
 import { AssignmentsModule } from "./assignments/assignments.module.js";
 import { GoalsModule } from "./goals/goals.module.js";
 import { PlansModule } from "./plans/plans.module.js";
+import { ShopModule } from "./shop/shop.module.js";
 import { DashboardModule } from "./dashboard/dashboard.module.js";
 import { WorkoutSheetsModule } from "./workout-sheets/workout-sheets.module.js";
 import { ClientsModule } from "./clients/clients.module.js";
@@ -41,6 +42,7 @@ import { ExportsModule } from "./exports/exports.module.js";
     AssignmentsModule,
     GoalsModule,
     PlansModule,
+    ShopModule,
     WorkoutSheetsModule,
     ClientsModule,
     DashboardModule,
