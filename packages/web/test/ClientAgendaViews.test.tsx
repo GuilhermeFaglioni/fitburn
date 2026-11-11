@@ -20,7 +20,7 @@ import { mockSuccessfulLogin } from "./auth-mocks";
 import { server } from "./msw-server";
 
 /**
- * Agenda do cliente na base de design (D-038): "Próximas | Histórico", dias (Chip), modalidades (Pill) e os
+ * Agenda do cliente na base de design (D-038): "Suas aulas | Todas", dias (Chip), modalidades (Pill) e os
  * estados vazio, erro, carregando e sem conexão, nas duas abas.
  */
 const TODAY = gymToday();
@@ -74,12 +74,12 @@ function LoggedInPage() {
   return ready ? <ClientAgendaPage /> : null;
 }
 
-function renderPage() {
+function renderPage(path = "/agenda?aba=todas") {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <MemoryRouter initialEntries={["/agenda"]}>
+        <MemoryRouter initialEntries={[path]}>
           <LoggedInPage />
         </MemoryRouter>
       </AuthProvider>
@@ -107,35 +107,39 @@ afterEach(() => {
   onlineManager.setOnline(true);
 });
 
-describe("Agenda: Próximas | Histórico", () => {
+describe("Agenda: Suas aulas | Todas", () => {
   it("o controle é um grupo rotulado de botões com aria-pressed; troca de aba muda o conteúdo e o kicker", async () => {
     mockAgenda([item(TODAY, "07:00", "Mobilidade")]);
-    mockReservations([reservation("r-past", addDays(TODAY, -2), "07:00", "COMPLETED")], []);
-    renderPage();
+    mockReservations([], [reservation("r-next", addDays(TODAY, 1), "07:00", "CONFIRMED")]);
+    renderPage("/agenda");
     const user = userEvent.setup();
 
     const view = await screen.findByRole("group", { name: "Visão" });
-    const upcoming = within(view).getByRole("button", { name: "Próximas" });
-    const history = within(view).getByRole("button", { name: "Histórico" });
-    expect(upcoming).toHaveAttribute("aria-pressed", "true");
-    expect(history).toHaveAttribute("aria-pressed", "false");
-    expect(await screen.findByRole("region", { name: "Aulas do dia" })).toBeInTheDocument();
-    expect(screen.queryByRole("region", { name: "Anteriores" })).not.toBeInTheDocument();
-
-    await user.click(history);
-
-    expect(history).toHaveAttribute("aria-pressed", "true");
-    expect(upcoming).toHaveAttribute("aria-pressed", "false");
-    const past = await screen.findByRole("region", { name: "Anteriores" });
-    expect(await within(past).findByText("CONCLUÍDA")).toBeInTheDocument();
+    const mine = within(view).getByRole("button", { name: "Suas aulas" });
+    const all = within(view).getByRole("button", { name: "Todas" });
+    expect(mine).toHaveAttribute("aria-pressed", "true");
+    expect(all).toHaveAttribute("aria-pressed", "false");
+    expect(await screen.findByRole("region", { name: "Suas reservas" })).toBeInTheDocument();
     expect(screen.queryByRole("region", { name: "Aulas do dia" })).not.toBeInTheDocument();
     expect(screen.getByText("Reservas")).toBeInTheDocument();
 
-    await user.click(upcoming);
-    expect(await screen.findByRole("region", { name: "Aulas do dia" })).toBeInTheDocument();
-    expect(screen.queryByRole("region", { name: "Anteriores" })).not.toBeInTheDocument();
-  });
+    await user.click(all);
 
+    expect(all).toHaveAttribute("aria-pressed", "true");
+    expect(mine).toHaveAttribute("aria-pressed", "false");
+    expect(await screen.findByRole("region", { name: "Aulas do dia" })).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Suas reservas" })).not.toBeInTheDocument();
+    expect(screen.getByText(/^Semana de /)).toBeInTheDocument();
+
+    await user.click(mine);
+    expect(await screen.findByRole("region", { name: "Suas reservas" })).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Aulas do dia" })).not.toBeInTheDocument();
+  });
+});
+
+// O Histórico deixa de ser uma aba e vira uma subvisão de Suas aulas na subtarefa 2 da #186
+// (`?aba=suas&ver=historico`); estes testes voltam lá, abrindo a visão pela URL.
+describe.skip("Agenda: Histórico (subvisão, subtarefa 2 da #186)", () => {
   it("no Histórico, cada situação aparece no texto do selo, inclusive a de presença", async () => {
     mockAgenda([]);
     mockReservations(
@@ -328,7 +332,7 @@ describe("Agenda: estados", () => {
   });
 });
 
-describe("Histórico: estados", () => {
+describe.skip("Histórico: estados (subvisão, subtarefa 2 da #186)", () => {
   async function openHistory() {
     const user = userEvent.setup();
     await user.click(await screen.findByRole("button", { name: "Histórico" }));

@@ -11,6 +11,7 @@ import {
   startOfWeek,
   weekdayOf,
   type ClientAgendaItem,
+  type ReservationDetail,
 } from "@fitburn/contracts";
 import { formatDayLabel } from "../src/lib/agenda/format";
 import { AuthProvider, useAuth } from "../src/lib/auth/AuthContext";
@@ -56,18 +57,24 @@ function LoggedInPage() {
   return <ClientAgendaPage />;
 }
 
-/** Expõe o state da rota atual, para checar que a remarcação não sobrevive no histórico. */
+/** Expõe o state e a query da rota atual: a remarcação não sobrevive no histórico, e a aba vive na URL. */
 function LocationState() {
-  const { state } = useLocation();
-  return <output aria-label="state da rota">{JSON.stringify(state ?? null)}</output>;
+  const { state, search } = useLocation();
+  return (
+    <>
+      <output aria-label="state da rota">{JSON.stringify(state ?? null)}</output>
+      <output aria-label="query da rota">{search}</output>
+    </>
+  );
 }
 
-function renderPage(state?: unknown) {
+/** Os testes da grade e da remarcação abrem a aba Todas; os de Suas aulas passam `/agenda`. */
+function renderPage(state?: unknown, path = "/agenda?aba=todas") {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <MemoryRouter initialEntries={[{ pathname: "/agenda", state }]}>
+        <MemoryRouter initialEntries={[{ pathname: path.split("?")[0], search: path.includes("?") ? `?${path.split("?")[1]}` : "", state }]}>
           <LoggedInPage />
           <LocationState />
         </MemoryRouter>
@@ -75,6 +82,241 @@ function renderPage(state?: unknown) {
     </QueryClientProvider>,
   );
 }
+
+function reservation(
+  id: string,
+  date: string,
+  time: string,
+  overrides: { name?: string; instructor?: string } = {},
+): ReservationDetail {
+  const startsAt = gymDateTimeToUtc(date, time);
+  const name = overrides.name ?? "Treino Funcional";
+  return {
+    id,
+    status: "CONFIRMED",
+    occurrence: {
+      id: `occ-${id}`,
+      name,
+      modality: { id: "mod-1", name },
+      instructor: { id: "user-rafael", fullName: overrides.instructor ?? "Rafael Andrade" },
+      startsAt: startsAt.toISOString(),
+      endsAt: new Date(startsAt.getTime() + 60 * 60_000).toISOString(),
+      durationMinutes: 60,
+      status: "SCHEDULED",
+    },
+    createdAt: new Date().toISOString(),
+    cancelledAt: null,
+  };
+}
+
+/** Botão do controle "Visão": "Todas" também é o nome da pílula de modalidade. */
+const viewButton = (name: string) =>
+  within(screen.getByRole("group", { name: "Visão" })).getByRole("button", { name });
+
+describe("ClientAgendaPage › abas Suas aulas | Todas", () => {
+  beforeEach(() => {
+    mockSuccessfulLogin("Cliente");
+    server.use(http.get("/api/agenda", () => HttpResponse.json([item(TODAY, "07:00")])));
+  });
+
+  function useReservations(reservations: ReservationDetail[], requests: URLSearchParams[] = []) {
+    server.use(
+      http.get("/api/reservations", ({ request }) => {
+        requests.push(new URL(request.url).searchParams);
+        return HttpResponse.json(reservations);
+      }),
+    );
+  }
+
+  it("abre em Suas aulas quando a URL não tem aba", async () => {
+    useReservations([reservation("res-1", TODAY, "18:00")]);
+    renderPage(undefined, "/agenda");
+
+    const view = await screen.findByRole("group", { name: "Visão" });
+    expect(within(view).getByRole("button", { name: "Suas aulas" })).toHaveAttribute("aria-pressed", "true");
+    expect(within(view).getByRole("button", { name: "Todas" })).toHaveAttribute("aria-pressed", "false");
+    expect(within(view).queryByRole("button", { name: "Próximas" })).not.toBeInTheDocument();
+    expect(within(view).queryByRole("button", { name: "Histórico" })).not.toBeInTheDocument();
+    expect(await screen.findByRole("region", { name: "Suas reservas" })).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Aulas do dia" })).not.toBeInTheDocument();
+    expect(screen.getByText("Reservas")).toBeInTheDocument();
+  });
+
+  it("aba=suas na URL também abre em Suas aulas", async () => {
+    useReservations([reservation("res-1", TODAY, "18:00")]);
+    renderPage(undefined, "/agenda?aba=suas");
+
+    expect(await screen.findByRole("region", { name: "Suas reservas" })).toBeInTheDocument();
+    expect(viewButton("Suas aulas")).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("aba=todas na URL abre em Todas, com a lista e a grade atuais", async () => {
+    renderPage(undefined, "/agenda?aba=todas");
+
+    const view = await screen.findByRole("group", { name: "Visão" });
+    expect(within(view).getByRole("button", { name: "Todas" })).toHaveAttribute("aria-pressed", "true");
+    expect(await screen.findByRole("region", { name: "Aulas do dia" })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Grade da semana" })).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Suas reservas" })).not.toBeInTheDocument();
+    expect(screen.getByText(/^Semana de /)).toBeInTheDocument();
+  });
+
+  it("trocar de aba atualiza a URL; Suas aulas volta para /agenda sem aba", async () => {
+    useReservations([reservation("res-1", TODAY, "18:00")]);
+    renderPage(undefined, "/agenda");
+    const user = userEvent.setup();
+
+    await screen.findByRole("region", { name: "Suas reservas" });
+    await user.click(viewButton("Todas"));
+
+    expect(await screen.findByRole("region", { name: "Aulas do dia" })).toBeInTheDocument();
+    expect(screen.getByLabelText("query da rota")).toHaveTextContent("?aba=todas");
+
+    await user.click(viewButton("Suas aulas"));
+
+    expect(await screen.findByRole("region", { name: "Suas reservas" })).toBeInTheDocument();
+    expect(screen.getByLabelText("query da rota")).toBeEmptyDOMElement();
+  });
+
+  it("lista só as reservas confirmadas e futuras", async () => {
+    const requests: URLSearchParams[] = [];
+    useReservations([reservation("res-1", TODAY, "18:00")], requests);
+    renderPage(undefined, "/agenda");
+
+    await screen.findByRole("region", { name: "Suas reservas" });
+    expect(requests).toHaveLength(1);
+    expect(requests[0].get("when")).toBe("upcoming");
+    expect(requests[0].get("status")).toBe("CONFIRMED");
+  });
+
+  it("agrupa por dia: Hoje, Amanhã e a data, com as aulas de cada dia em ordem de horário", async () => {
+    // Fora de ordem e em dois dias distantes: o agrupamento é por dia da academia, não pela ordem da resposta.
+    useReservations([
+      reservation("res-3", addDays(TODAY, 4), "06:00", { name: "Musculação guiada", instructor: "Ana Souza" }),
+      reservation("res-2", addDays(TODAY, 1), "07:00", { name: "Mobilidade" }),
+      reservation("res-1b", TODAY, "20:00", { name: "Yoga" }),
+      reservation("res-1", TODAY, "18:00"),
+    ]);
+    renderPage(undefined, "/agenda");
+
+    const section = await screen.findByRole("region", { name: "Suas reservas" });
+    const headings = await within(section).findAllByRole("heading", { level: 2 });
+    expect(headings.map((heading) => heading.textContent)).toEqual([
+      expect.stringMatching(/^Hoje · /),
+      expect.stringMatching(/^Amanhã · /),
+      expect.stringMatching(/^[A-Z][a-zç]{2}, \d{1,2}(\/\d{2})?$/),
+    ]);
+
+    const [today, tomorrow, later] = within(section).getAllByRole("list");
+    expect(within(today).getAllByRole("listitem").map((entry) => entry.textContent)).toEqual([
+      expect.stringContaining("18h00"),
+      expect.stringContaining("20h00"),
+    ]);
+    expect(within(today).getByText("Treino Funcional")).toBeInTheDocument();
+    expect(within(today).getAllByText("Prof. Rafael")).toHaveLength(2);
+    expect(within(tomorrow).getByText("Mobilidade")).toBeInTheDocument();
+    expect(within(later).getByText("Musculação guiada")).toBeInTheDocument();
+    expect(within(later).getByText("Prof. Ana")).toBeInTheDocument();
+  });
+
+  it("cada reserva tem Remarcar e Cancelar", async () => {
+    useReservations([reservation("res-1", TODAY, "18:00"), reservation("res-2", addDays(TODAY, 1), "07:00")]);
+    renderPage(undefined, "/agenda");
+
+    const section = await screen.findByRole("region", { name: "Suas reservas" });
+    expect(await within(section).findAllByRole("button", { name: /^Remarcar / })).toHaveLength(2);
+    expect(within(section).getAllByRole("button", { name: /^Cancelar / })).toHaveLength(2);
+  });
+
+  it("Remarcar leva para Todas já em remarcação, sem tela nova", async () => {
+    const original = item(TODAY, "18:00", { id: "occ-res-1", myReservationId: "res-1" });
+    server.use(
+      http.get("/api/agenda", () => HttpResponse.json([original])),
+      http.get("/api/agenda/:id", () => HttpResponse.json(original)),
+    );
+    useReservations([reservation("res-1", TODAY, "18:00")]);
+    renderPage(undefined, "/agenda");
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole("button", { name: /^Remarcar Treino Funcional/ }));
+
+    expect(await screen.findByText(/Remarcando Treino Funcional/)).toBeInTheDocument();
+    expect(viewButton("Todas")).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByLabelText("query da rota")).toHaveTextContent("?aba=todas");
+  });
+
+  it("Cancelar abre a confirmação do cancelamento e, confirmado, a reserva sai da lista", async () => {
+    const original = item(TODAY, "18:00", { id: "occ-res-1", myReservationId: "res-1" });
+    let cancelled = false;
+    server.use(
+      http.get("/api/agenda/:id", () => HttpResponse.json(original)),
+      http.get("/api/reservations", () =>
+        HttpResponse.json(cancelled ? [] : [reservation("res-1", TODAY, "18:00")]),
+      ),
+      http.post("/api/reservations/:id/cancel", ({ params }) => {
+        expect(params.id).toBe("res-1");
+        cancelled = true;
+        return HttpResponse.json({ ...reservation("res-1", TODAY, "18:00"), status: "CANCELLED" });
+      }),
+    );
+    renderPage(undefined, "/agenda");
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole("button", { name: /^Cancelar Treino Funcional/ }));
+
+    const sheet = await screen.findByRole("dialog", { name: "Treino Funcional" });
+    expect(within(sheet).getByText(/Cancelar sua reserva em Treino Funcional/)).toBeInTheDocument();
+    await user.click(within(sheet).getByRole("button", { name: "Confirmar cancelamento" }));
+    expect(await within(sheet).findByRole("status")).toHaveTextContent("Reserva cancelada.");
+    await user.click(within(sheet).getByRole("button", { name: "Fechar" }));
+
+    expect(await screen.findByText("Você não tem aulas reservadas daqui para frente.")).toBeInTheDocument();
+  });
+
+  it("sem reservas futuras mostra o vazio, e o botão leva para Todas", async () => {
+    useReservations([]);
+    renderPage(undefined, "/agenda");
+    const user = userEvent.setup();
+
+    expect(await screen.findByText("Você não tem aulas reservadas daqui para frente.")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Ver todas as aulas" }));
+
+    expect(await screen.findByRole("region", { name: "Aulas do dia" })).toBeInTheDocument();
+    expect(viewButton("Todas")).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByLabelText("query da rota")).toHaveTextContent("?aba=todas");
+  });
+
+  it("falha ao carregar as reservas mostra o erro com nova tentativa", async () => {
+    let calls = 0;
+    server.use(
+      http.get("/api/reservations", () => {
+        calls += 1;
+        return calls === 1
+          ? HttpResponse.json({ code: "X", message: "x" }, { status: 500 })
+          : HttpResponse.json([reservation("res-1", TODAY, "18:00")]);
+      }),
+    );
+    renderPage(undefined, "/agenda");
+    const user = userEvent.setup();
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("Não foi possível carregar suas reservas.");
+    await user.click(within(alert).getByRole("button", { name: "Tentar novamente" }));
+
+    expect(await screen.findByText("Treino Funcional", { selector: "b" })).toBeInTheDocument();
+  });
+
+  it("vindo da Home em remarcação, abre em Todas mesmo sem aba na URL", async () => {
+    renderPage(
+      { rescheduling: { reservationId: "res-1", from: item(TODAY, "18:00", { myReservationId: "res-1" }) } },
+      "/agenda",
+    );
+
+    expect(await screen.findByText(/Remarcando Treino Funcional/)).toBeInTheDocument();
+    expect(viewButton("Todas")).toHaveAttribute("aria-pressed", "true");
+    await waitFor(() => expect(screen.getByLabelText("query da rota")).toHaveTextContent("?aba=todas"));
+  });
+});
 
 describe("ClientAgendaPage", () => {
   beforeEach(() => {

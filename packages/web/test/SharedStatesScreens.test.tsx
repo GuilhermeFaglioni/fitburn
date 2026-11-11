@@ -28,13 +28,13 @@ function LoggedIn({ children }: { children: React.ReactNode }) {
   return ready ? <>{children}</> : null;
 }
 
-function renderScreen(page: ReactElement) {
+function renderScreen(page: ReactElement, path = "/") {
   return render(
     <QueryClientProvider
       client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
     >
       <AuthProvider>
-        <MemoryRouter>
+        <MemoryRouter initialEntries={[path]}>
           <LoggedIn>{page}</LoggedIn>
         </MemoryRouter>
       </AuthProvider>
@@ -45,6 +45,8 @@ function renderScreen(page: ReactElement) {
 interface Screen {
   name: string;
   page: ReactElement;
+  /** Rota de entrada, quando a tela escolhe o conteúdo pela URL (padrão: "/"). */
+  path?: string;
   url: string;
   errorMessage: string;
   /** Texto do carregando, quando a tela usa um específico (padrão: "Carregando…"). */
@@ -92,12 +94,21 @@ const SCREENS: Screen[] = [
     emptyMessage: "",
   },
   {
-    name: "Agenda do cliente",
+    name: "Agenda do cliente · Todas",
     page: <ClientAgendaPage />,
+    path: "/agenda?aba=todas",
     url: "/api/agenda",
     errorMessage: "Não foi possível carregar a agenda.",
     empty: [],
     emptyMessage: "",
+  },
+  {
+    name: "Agenda do cliente · Suas aulas",
+    page: <ClientAgendaPage />,
+    url: "/api/reservations",
+    errorMessage: "Não foi possível carregar suas reservas.",
+    empty: [],
+    emptyMessage: "Você não tem aulas reservadas daqui para frente.",
   },
   {
     name: "Plano",
@@ -143,10 +154,10 @@ describe("estados compartilhados nas telas principais", () => {
     server.use(http.get("/api/goals/mine", () => HttpResponse.json([])));
   });
 
-  describe.each(SCREENS)("$name", ({ page, url, errorMessage, loadingMessage, empty, emptyMessage }) => {
+  describe.each(SCREENS)("$name", ({ page, path, url, errorMessage, loadingMessage, empty, emptyMessage }) => {
     it("mostra o estado de carregando enquanto espera a API", async () => {
       server.use(http.get(url, () => new Promise(() => {})));
-      renderScreen(page);
+      renderScreen(page, path);
 
       const loading = await screen.findByText(loadingMessage ?? "Carregando…");
       expect(loading).toHaveAttribute("role", "status");
@@ -160,7 +171,7 @@ describe("estados compartilhados nas telas principais", () => {
           return HttpResponse.json({ code: "ERRO", message: "falhou" }, { status: 500 });
         }),
       );
-      renderScreen(page);
+      renderScreen(page, path);
       const user = userEvent.setup();
 
       const alert = await screen.findByText(errorMessage);
@@ -179,7 +190,7 @@ describe("estados compartilhados nas telas principais", () => {
     if (emptyMessage) {
       it("mostra o estado vazio pelo componente compartilhado", async () => {
         server.use(http.get(url, () => HttpResponse.json(empty)));
-        renderScreen(page);
+        renderScreen(page, path);
 
         const message = await screen.findByText(emptyMessage);
         expect(message.closest("[data-state=empty]")).not.toBeNull();

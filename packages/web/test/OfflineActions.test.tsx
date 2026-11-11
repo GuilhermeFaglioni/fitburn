@@ -84,7 +84,7 @@ describe("Sem conexão: ações que exigem rede ficam desabilitadas", () => {
     }
 
     it("com o navegador offline, mostra o banner e desabilita Reservar; ao voltar, reabilita", async () => {
-      renderLoggedIn(<ClientAgendaPage />, "/agenda");
+      renderLoggedIn(<ClientAgendaPage />, "/agenda?aba=todas", "/agenda");
       const { sheet } = await openDetail();
       expect(within(sheet).getByRole("button", { name: "Reservar aula" })).toBeEnabled();
 
@@ -100,7 +100,7 @@ describe("Sem conexão: ações que exigem rede ficam desabilitadas", () => {
     });
 
     it("uma falha de rede na agenda derruba a conexão: banner e Reservar desabilitado até a API responder", async () => {
-      renderLoggedIn(<ClientAgendaPage />, "/agenda");
+      renderLoggedIn(<ClientAgendaPage />, "/agenda?aba=todas", "/agenda");
       const { user, sheet } = await openDetail();
       // Rede fora do ar de verdade: nenhuma rota responde até a API voltar.
       let apiUp = false;
