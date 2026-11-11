@@ -41,7 +41,7 @@ export function VariantsTable({
   const collapsible = total > COLLAPSED_VARIANT_ROWS;
   const showAll = expanded || !collapsible;
   const visible = showAll ? rows : rows.slice(0, COLLAPSED_VARIANT_ROWS);
-  const draftOf = (key: string): VariantDraft => drafts[key] ?? DEFAULT_VARIANT_DRAFT;
+  const draftOf = (key: string): VariantDraft => ({ ...DEFAULT_VARIANT_DRAFT, ...drafts[key] });
 
   const columns: TableColumn<VariantRow>[] = [
     {

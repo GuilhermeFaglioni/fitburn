@@ -331,8 +331,8 @@ describe("Opções e variações do produto (L2)", () => {
           { name: "Tamanho", values: ["P"] },
         ],
         variants: [
-          { combination: ["Preta", "P"], stock: 6, priceCents: 7490, ativa: true },
-          { combination: ["Branca", "P"], stock: 0, priceCents: null, ativa: false },
+          { combination: ["Preta", "P"], stock: 6, priceCents: 7490 },
+          { combination: ["Branca", "P"], ativa: false },
         ],
       });
     });
@@ -441,12 +441,75 @@ describe("Opções e variações do produto (L2)", () => {
         { name: "Cor", values: ["Preta", "Branca"] },
         { name: "Tamanho", values: ["P", "M", "G"] },
       ]);
-      expect(put.variants).toHaveLength(6);
+      // A Branca · G nasceu agora e não foi editada: não vai sobreposição, a API cria com o padrão.
+      expect(put.variants).toHaveLength(4);
       expect(put.variants[0]).toEqual({ combination: ["Preta", "P"], stock: 9, priceCents: null, ativa: true });
       expect(put.variants[1]).toEqual({ combination: ["Preta", "M"], stock: 2, priceCents: 7490, ativa: true });
-      expect(put.variants[3]).toEqual({ combination: ["Branca", "P"], stock: 4, priceCents: null, ativa: true });
-      expect(put.variants[5]).toEqual({ combination: ["Branca", "G"], stock: 0, priceCents: null, ativa: true });
+      expect(put.variants[2]).toEqual({ combination: ["Branca", "P"], stock: 4, priceCents: null, ativa: true });
       expect(JSON.stringify(put)).not.toMatch(/o-cor|ov-1/);
+    });
+
+    it("reintroduzir uma combinação não manda sobreposição: a API recupera estoque e preço preservados", async () => {
+      const user = userEvent.setup();
+      renderAt("/loja-admin/produtos/p-camiseta");
+      await screen.findByRole("heading", { level: 2, name: /Variações e estoque/ });
+
+      // Tira o M e salva; depois o produto volta da API sem o M (descontinuada não aparece no detalhe).
+      await user.click(screen.getByRole("button", { name: "Remover M" }));
+      await user.click(screen.getByRole("button", { name: "Salvar produto" }));
+      await screen.findByRole("heading", { level: 1, name: "Produtos" });
+      const semM = (callsTo("PUT")[0]!.body as { variants: { combination: string[] }[] }).variants;
+      expect(semM.map((item) => item.combination)).toEqual([["Preta", "P"], ["Branca", "P"]]);
+
+      calls.length = 0;
+      current = detail({
+        variantCount: 2,
+        options: [
+          { id: "o-cor", name: "Cor", values: [{ id: "ov-1", value: "Preta" }, { id: "ov-2", value: "Branca" }] },
+          { id: "o-tam", name: "Tamanho", values: [{ id: "ov-3", value: "P" }] },
+        ],
+        variants: [variant("Preta · P", ["Preta", "P"], { stock: 6 }), variant("Branca · P", ["Branca", "P"], { stock: 4 })],
+      });
+      renderAt("/loja-admin/produtos/p-camiseta");
+      await screen.findAllByRole("heading", { level: 2, name: /Variações e estoque/ });
+      await user.type(screen.getByLabelText("Novo valor de Tamanho"), "M{Enter}");
+      await user.click(screen.getAllByRole("button", { name: "Salvar produto" })[0]!);
+
+      await waitFor(() => expect(callsTo("PUT")).toHaveLength(1));
+      const { variants } = callsTo("PUT")[0]!.body as { variants: { combination: string[] }[] };
+      expect(variants.map((item) => item.combination)).toEqual([["Preta", "P"], ["Branca", "P"]]);
+      expect(JSON.stringify(variants)).not.toMatch(/"M"/);
+    });
+
+    it("renomear a opção não transfere estoque e preço para a combinação nova", async () => {
+      const user = userEvent.setup();
+      renderAt("/loja-admin/produtos/p-camiseta");
+      await screen.findByRole("heading", { level: 2, name: /Variações e estoque/ });
+
+      const cor = screen.getAllByLabelText("Nome da opção")[0]!;
+      await user.clear(cor);
+      await user.type(cor, "Modelo");
+      expect(screen.getByLabelText("Estoque Preta · M")).toHaveValue("0");
+      expect(screen.getByLabelText("Preço Preta · M")).toHaveValue("");
+      await user.click(screen.getByRole("button", { name: "Salvar produto" }));
+
+      await screen.findByRole("heading", { level: 1, name: "Produtos" });
+      const { variants } = callsTo("PUT")[0]!.body as { variants: unknown[] };
+      // Todas as combinações são novas (outro nome de opção) e não foram editadas: nenhuma sobreposição.
+      expect(variants).toEqual([]);
+    });
+
+    it("renomear só a capitalização do nome da opção mantém a identidade das variações", async () => {
+      const user = userEvent.setup();
+      renderAt("/loja-admin/produtos/p-camiseta");
+      await screen.findByRole("heading", { level: 2, name: /Variações e estoque/ });
+
+      const cor = screen.getAllByLabelText("Nome da opção")[0]!;
+      await user.clear(cor);
+      await user.type(cor, "COR");
+
+      expect(screen.getByLabelText("Estoque Preta · P")).toHaveValue("6");
+      expect(screen.getByLabelText("Preço Preta · M")).toHaveValue("74,90");
     });
 
     it("produto simples ganha opções: PATCH sem stock e PUT com as variações", async () => {
@@ -464,7 +527,7 @@ describe("Opções e variações do produto (L2)", () => {
       expect(callsTo("PATCH")[0]!.body).not.toHaveProperty("stock");
       expect(callsTo("PUT")[0]!.body).toEqual({
         options: [{ name: "Cor", values: ["Preta"] }],
-        variants: [{ combination: ["Preta"], stock: 0, priceCents: null, ativa: true }],
+        variants: [],
       });
     });
 

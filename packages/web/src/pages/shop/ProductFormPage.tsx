@@ -22,7 +22,6 @@ import {
 import { OptionsBuilder } from "./OptionsBuilder";
 import {
   buildProductRequest,
-  DEFAULT_VARIANT_DRAFT,
   detailToVariations,
   EMPTY_PRODUCT_FORM,
   NO_VARIATION_ERRORS,
@@ -31,7 +30,7 @@ import {
   type OptionDraft,
   type ProductFormErrors,
   type ProductFormValues,
-  type VariantDraft,
+  type VariantDraftPatch,
   type VariantDrafts,
   type VariationErrors,
 } from "./productForm";
@@ -137,10 +136,10 @@ function ProductForm({ product }: { product?: ShopProductDetail }) {
       ? product.category
       : null;
 
-  function setVariant(key: string, patch: Partial<VariantDraft>) {
+  function setVariant(key: string, patch: VariantDraftPatch) {
     setVariants((current) => ({
       ...current,
-      [key]: { ...(current[key] ?? DEFAULT_VARIANT_DRAFT), ...patch },
+      [key]: { ...current[key], ...patch },
     }));
   }
 

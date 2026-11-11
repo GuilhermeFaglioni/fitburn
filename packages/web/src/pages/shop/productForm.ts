@@ -33,8 +33,11 @@ export interface VariantDraft {
   ativa: boolean;
 }
 
+/** Só os campos que a equipe editou (ou que vieram da API): o que falta não vai na sobreposição, a API mantém o que já existe. */
+export type VariantDraftPatch = Partial<VariantDraft>;
+
 /** Variações digitadas, por combinação (`variantKey`): sobrevivem a adicionar ou tirar valores das opções. */
-export type VariantDrafts = Record<string, VariantDraft>;
+export type VariantDrafts = Record<string, VariantDraftPatch>;
 
 export const DEFAULT_VARIANT_DRAFT: VariantDraft = { stock: "0", price: "", ativa: true };
 
@@ -45,9 +48,18 @@ export function newOption(name = "", values: string[] = []): OptionDraft {
   return { key: `option-${optionKeyCounter}`, name, values, draft: "", draftError: "" };
 }
 
-/** Identidade da combinação na tela: valores normalizados, na ordem das opções (igual à regra da API). */
-export function variantKey(values: string[]): string {
-  return JSON.stringify(values.map(normalizeOptionText));
+/**
+ * Identidade da combinação na tela, igual à da API (`combinationKey`): pares nome da opção e valor, normalizados e
+ * ordenados pelo nome da opção. Renomear a opção ou um valor (além da capitalização) muda a identidade.
+ */
+export function variantKey(optionNames: string[], values: string[]): string {
+  if (optionNames.length === 0) return "";
+  const pairs = optionNames.map(
+    (name, index) =>
+      [normalizeOptionText(name), normalizeOptionText(values[index] ?? "")] as [string, string],
+  );
+  pairs.sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
+  return JSON.stringify(pairs);
 }
 
 /** Opções que entram no produto cartesiano: as que já têm ao menos um valor. */
@@ -66,7 +78,10 @@ export function variantRows(options: OptionDraft[]): VariantRow[] {
   const filled = optionsWithValues(options);
   if (filled.length === 0) return [];
   return shopVariantCombinations(filled.map((option) => option.values)).map((values) => ({
-    key: variantKey(values),
+    key: variantKey(
+      filled.map((option) => option.name),
+      values,
+    ),
     values,
     label: shopVariantLabel(values) ?? "",
   }));
@@ -86,7 +101,12 @@ export function detailToVariations(product: ShopProductDetail): {
   const variants: VariantDrafts = {};
   if (options.length > 0) {
     for (const variant of product.variants) {
-      variants[variantKey(variant.values)] = {
+      variants[
+        variantKey(
+          options.map((option) => option.name),
+          variant.values,
+        )
+      ] = {
         stock: String(variant.stock),
         price: variant.priceCents === null ? "" : centsToInput(variant.priceCents),
         ativa: variant.ativa,
@@ -154,23 +174,33 @@ export function buildVariationsRequest(
   const rows = variantRows(cleaned.map((option) => ({ ...option, draft: "", draftError: "" })));
   const variantRequests: NonNullable<SetShopProductOptionsRequest["variants"]> = [];
   for (const row of rows) {
-    const draft = variants[row.key] ?? DEFAULT_VARIANT_DRAFT;
+    const draft = variants[row.key];
+    // Linha que a equipe não editou (e que a API não conhece) não vai: a API recupera a variação ou cria com o padrão.
+    if (!draft) continue;
     const rowErrors: { stock?: string; price?: string } = {};
+    const override: NonNullable<SetShopProductOptionsRequest["variants"]>[number] = {
+      combination: row.values,
+    };
 
-    let stock = 0;
-    if (!/^\d+$/.test(draft.stock.trim()))
-      rowErrors.stock = "O estoque deve ser um número inteiro.";
-    else stock = Number(draft.stock.trim());
-
-    let priceCents: number | null = null;
-    if (draft.price.trim() !== "") {
-      const parsed = parseMoneyToCents(draft.price);
-      if (parsed === null) rowErrors.price = "Preço inválido. Use o formato 89,90.";
-      else priceCents = parsed;
+    if (draft.stock !== undefined) {
+      if (!/^\d+$/.test(draft.stock.trim()))
+        rowErrors.stock = "O estoque deve ser um número inteiro.";
+      else override.stock = Number(draft.stock.trim());
     }
 
+    if (draft.price !== undefined) {
+      if (draft.price.trim() === "") override.priceCents = null;
+      else {
+        const parsed = parseMoneyToCents(draft.price);
+        if (parsed === null) rowErrors.price = "Preço inválido. Use o formato 89,90.";
+        else override.priceCents = parsed;
+      }
+    }
+
+    if (draft.ativa !== undefined) override.ativa = draft.ativa;
+
     if (rowErrors.stock || rowErrors.price) errors.variantRows[row.key] = rowErrors;
-    variantRequests.push({ combination: row.values, stock, priceCents, ativa: draft.ativa });
+    variantRequests.push(override);
   }
   if (Object.keys(errors.variantRows).length > 0) return { ok: false, errors };
 
