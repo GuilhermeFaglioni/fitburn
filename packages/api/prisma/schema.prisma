@@ -569,3 +569,58 @@ model RefreshToken {
   @@index([userId])
   @@map("refresh_tokens")
 }
+
+/// Categoria da loja (ordenável). Excluir é bloqueado enquanto houver produto não excluído nela.
+model ShopCategory {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  position  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  products Product[]
+
+  @@map("shop_categories")
+}
+
+/// Produto da loja. Preços em centavos. Exclusão lógica por `excluidoEm`. No máximo 3 produtos não
+/// excluídos com `destaque` (garantido na API, com lock consultivo). Produto simples = uma variação única.
+model Product {
+  id                      String    @id @default(uuid())
+  name                    String
+  description             String?
+  categoryId              String?
+  priceCents              Int
+  promoPriceCents         Int?
+  visivel                 Boolean   @default(true)
+  destaque                Boolean   @default(false)
+  permiteMaisDeUmaUnidade Boolean   @default(false)
+  limitePorPedido         Int?
+  excluidoEm              DateTime?
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+
+  category ShopCategory?    @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  variants ProductVariant[]
+
+  @@index([excluidoEm])
+  @@index([categoryId])
+  @@map("products")
+}
+
+/// Variação de um produto, com estoque próprio e preço próprio opcional. Produto sem opções tem uma só (label nulo).
+model ProductVariant {
+  id        String   @id @default(uuid())
+  productId String
+  label     String?
+  stock     Int      @default(0)
+  priceCents Int?
+  ativa     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@map("product_variants")
+}
