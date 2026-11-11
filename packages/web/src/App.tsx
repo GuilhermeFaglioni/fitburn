@@ -24,6 +24,8 @@ import { GamificationPage } from "./pages/GamificationPage";
 import { AssignmentsPage } from "./pages/AssignmentsPage";
 import { GoalsPage } from "./pages/GoalsPage";
 import { PlansPage } from "./pages/PlansPage";
+import { LojaAdminPage } from "./pages/LojaAdminPage";
+import { ProductFormPage } from "./pages/shop/ProductFormPage";
 import { WorkoutSheetsPage } from "./pages/WorkoutSheetsPage";
 import { ClientWorkoutSheetsPage } from "./pages/ClientWorkoutSheetsPage";
 import { ClientWorkoutSheetPage } from "./pages/ClientWorkoutSheetPage";
@@ -99,6 +101,11 @@ export function AppRoutes() {
         <Route path="/planos" element={<PlansPage />} />
         <Route path="/fichas" element={<WorkoutSheetsPage />} />
         <Route path="/metas" element={<GoalsPage />} />
+        <Route path="/loja-admin" element={<Navigate to="/loja-admin/produtos" replace />} />
+        <Route path="/loja-admin/produtos" element={<LojaAdminPage tab="produtos" />} />
+        <Route path="/loja-admin/categorias" element={<LojaAdminPage tab="categorias" />} />
+        <Route path="/loja-admin/produtos/novo" element={<ProductFormPage />} />
+        <Route path="/loja-admin/produtos/:id" element={<ProductFormPage />} />
       </Route>
       {/* Presença é uma tela cheia, sem a sidebar administrativa. */}
       <Route

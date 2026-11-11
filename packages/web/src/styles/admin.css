@@ -104,3 +104,39 @@
     min-width: var(--s-11);
   }
 }
+
+/* ---- Loja (#187): produtos e categorias ---- */
+.fb-shop-name {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.fb-shop-price__old {
+  color: var(--muted);
+}
+
+.fb-shop-stock--zero {
+  color: var(--danger);
+  font-weight: var(--weight-bold);
+}
+
+.fb-shop-soft {
+  color: var(--muted);
+}
+
+.fb-shop-order {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.fb-shop-order__number {
+  min-width: var(--s-5);
+  color: var(--muted);
+}
+
+.fb-shop-card-body {
+  margin-top: var(--s-4);
+}
