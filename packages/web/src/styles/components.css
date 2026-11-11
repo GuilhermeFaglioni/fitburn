@@ -2863,6 +2863,7 @@
 
 .fb-ui-switch__control[aria-checked="true"] {
   background: var(--brand);
+  color: var(--on-brand); /* sem texto no trilho; o par do design (branco sobre o laranja) vale para a bolinha */
 }
 
 .fb-ui-switch__control:focus-visible {
@@ -2879,7 +2880,7 @@
   width: var(--s-4);
   height: var(--s-4);
   background: var(--surface);
-  border-radius: 50%;
+  border-radius: var(--r-pill);
   transition: transform var(--duration-state) var(--ease-out);
 }
 
