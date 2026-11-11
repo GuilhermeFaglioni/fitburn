@@ -18,13 +18,6 @@ const MONTHS = [
 
 const WEEKDAYS = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
 
-/** "2026-11-15" → "15 de novembro" (com o ano só quando não é o ano corrente): o "Ativo até ..." da Home. */
-export function formatPlanEnd(date: string): string {
-  const [year, month, day] = date.split("-").map(Number);
-  const currentYear = Number(gymToday().slice(0, 4));
-  return `${day} de ${MONTHS[month - 1]}${year === currentYear ? "" : ` de ${year}`}`;
-}
-
 /**
  * Quando uma aula acontece, como nas "Próximas aulas" da Home:
  * "Hoje, 18h00", "Quinta, 07h00". Depois de uma semana o dia entra junto ("Quinta 08/10, 07h00"),

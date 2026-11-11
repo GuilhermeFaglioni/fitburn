@@ -147,6 +147,18 @@ function mockHome({
   );
 }
 
+/** Conta as chamadas a /api/plans/mine: o Início não pode mais pedir o plano (D-043). */
+function trackPlanRequests(): () => number {
+  let count = 0;
+  server.use(
+    http.get("/api/plans/mine", () => {
+      count += 1;
+      return HttpResponse.json(NO_PLAN);
+    }),
+  );
+  return () => count;
+}
+
 function AgendaProbe() {
   const location = useLocation();
   const state = location.state as { rescheduling?: { reservationId: string } } | null;
@@ -196,27 +208,32 @@ describe("Home do cliente", () => {
     mockSuccessfulLogin("Cliente");
   });
 
-  describe("saudação e plano ativo", () => {
+  describe("saudação", () => {
     it("cumprimenta o cliente pelo primeiro nome", async () => {
       mockHome();
       renderPage();
 
       expect(await screen.findByRole("heading", { name: "Olá, Usuário" })).toBeInTheDocument();
     });
+  });
 
-    it("destaca o plano ativo com o nome, o selo e a data de término", async () => {
+  describe("sem o cartão do plano (D-043)", () => {
+    it("com plano ativo não mostra cartão nem pede o plano à API", async () => {
+      const planRequests = trackPlanRequests();
       mockHome({ plan: ACTIVE_PLAN });
       renderPage();
 
-      const card = await screen.findByRole("region", { name: "Plano ativo" });
-      expect(within(card).getByText("Plano Performance")).toBeInTheDocument();
-      expect(within(card).getByText("ATIVO")).toBeInTheDocument();
-      // Como no design: um texto só, com o mês por extenso (o ano só entra quando não é o corrente).
-      expect(within(card).getByText(/^Ativo até 15 de novembro/)).toBeInTheDocument();
-      expect(within(card).queryByText(/15\/08\/2026/)).not.toBeInTheDocument();
+      await screen.findByRole("heading", { name: "Olá, Usuário" });
+      await screen.findByRole("region", { name: "FitPoints" });
+      expect(screen.queryByRole("region", { name: "Plano ativo" })).not.toBeInTheDocument();
+      expect(screen.queryByText("Plano Performance")).not.toBeInTheDocument();
+      expect(screen.queryByText("ATIVO")).not.toBeInTheDocument();
+      expect(screen.queryByText(/Ativo até/)).not.toBeInTheDocument();
+      expect(planRequests()).toBe(0);
     });
 
-    it("com início futuro mostra 'Começa em dd/mm' no lugar de 'Ativo até'", async () => {
+    it("com plano de início futuro também não mostra 'Próximo plano'", async () => {
+      const planRequests = trackPlanRequests();
       mockHome({
         plan: {
           active: { ...ACTIVE_PLAN.active!, startDate: "2099-01-10", endDate: "2099-06-10" },
@@ -225,22 +242,21 @@ describe("Home do cliente", () => {
       });
       renderPage();
 
-      const card = await screen.findByRole("region", { name: "Plano ativo" });
-      expect(within(card).getByText("Começa em 10/01")).toBeInTheDocument();
-      expect(within(card).queryByText(/Ativo até/)).not.toBeInTheDocument();
-      expect(within(card).queryByText("ATIVO")).not.toBeInTheDocument();
+      await screen.findByRole("region", { name: "FitPoints" });
+      expect(screen.queryByText("Próximo plano")).not.toBeInTheDocument();
+      expect(screen.queryByText(/Começa em/)).not.toBeInTheDocument();
+      expect(planRequests()).toBe(0);
     });
 
-    it("sem plano ativo mostra o estado vazio, sem oferta de venda", async () => {
+    it("sem plano não mostra o aviso de sem plano nem pede o plano à API", async () => {
+      const planRequests = trackPlanRequests();
       mockHome({ plan: NO_PLAN });
       renderPage();
 
-      expect(
-        await screen.findByText(
-          "Você ainda não tem um plano ativo. Fale com a recepção para começar.",
-        ),
-      ).toBeInTheDocument();
-      expect(screen.queryByRole("region", { name: "Plano ativo" })).not.toBeInTheDocument();
+      await screen.findByRole("region", { name: "FitPoints" });
+      expect(screen.queryByText(/Você ainda não tem um plano ativo/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Fale com a recepção/)).not.toBeInTheDocument();
+      expect(planRequests()).toBe(0);
     });
   });
 
@@ -535,7 +551,7 @@ describe("Home do cliente", () => {
   });
 
   it("mostra erro em cada bloco que não carrega, sem derrubar os outros", async () => {
-    mockHome({ plan: ACTIVE_PLAN });
+    mockHome();
     server.use(
       http.get("/api/reservations", () =>
         HttpResponse.json({ code: "X", message: "x" }, { status: 500 }),
@@ -548,7 +564,7 @@ describe("Home do cliente", () => {
 
     expect(await screen.findByText("Não foi possível carregar suas reservas.")).toBeInTheDocument();
     expect(await screen.findByText("Não foi possível carregar seus FitPoints.")).toBeInTheDocument();
-    expect(await screen.findByText("Plano Performance")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Olá, Usuário" })).toBeInTheDocument();
   });
 });
 
@@ -587,30 +603,6 @@ describe("Home do cliente: visual e estados (D-038)", () => {
     });
   });
 
-  describe("cartão do plano ativo", () => {
-    it("tem o rótulo 'Plano ativo' acima do nome e a data de término", async () => {
-      mockHome({ plan: ACTIVE_PLAN });
-      renderPage();
-
-      const card = await screen.findByRole("region", { name: "Plano ativo" });
-      expect(card.querySelector(".fb-home__plan-kicker")).toHaveTextContent("Plano ativo");
-      expect(card.querySelector(".fb-home__plan-name")).toHaveTextContent("Plano Performance");
-    });
-
-    it("com início futuro o rótulo vira 'Próximo plano'", async () => {
-      mockHome({
-        plan: {
-          active: { ...ACTIVE_PLAN.active!, startDate: "2099-01-10", endDate: "2099-06-10" },
-          history: [],
-        },
-      });
-      renderPage();
-
-      const card = await screen.findByRole("region", { name: "Plano ativo" });
-      expect(card.querySelector(".fb-home__plan-kicker")).toHaveTextContent("Próximo plano");
-    });
-  });
-
   describe("item de aula", () => {
     it("mostra modalidade, horário, professor e a situação da reserva", async () => {
       mockHome({ reservations: [reservation("r-1", addDays(TODAY, 1), "18:00")] });
@@ -627,16 +619,15 @@ describe("Home do cliente: visual e estados (D-038)", () => {
   describe("carregando", () => {
     it("cada bloco mostra o seu próprio carregando enquanto a resposta não chega", async () => {
       server.use(
-        http.get("/api/plans/mine", () => new Promise(() => {})),
         http.get("/api/reservations", () => new Promise(() => {})),
         http.get("/api/gamification/me", () => new Promise(() => {})),
         http.get("/api/gamification/ranking/consent", () => new Promise(() => {})),
       );
       renderPage();
 
-      expect(await screen.findByText("Carregando seu plano…")).toBeInTheDocument();
-      expect(screen.getByText("Carregando suas aulas…")).toBeInTheDocument();
+      expect(await screen.findByText("Carregando suas aulas…")).toBeInTheDocument();
       expect(screen.getByText("Carregando seus FitPoints…")).toBeInTheDocument();
+      expect(screen.queryByText(/Carregando seu plano/)).not.toBeInTheDocument();
       for (const status of screen.getAllByRole("status")) {
         expect(status).toHaveAttribute("aria-busy", "true");
       }
@@ -646,19 +637,18 @@ describe("Home do cliente: visual e estados (D-038)", () => {
   });
 
   describe("vazio", () => {
-    it("sem plano, sem aulas e sem pontos mostra os três vazios, sem zeros nem ofertas", async () => {
-      mockHome({ plan: NO_PLAN, reservations: [], gamification: EMPTY_GAMIFICATION });
+    it("sem aulas e sem pontos mostra os dois vazios, sem zeros nem ofertas", async () => {
+      mockHome({ reservations: [], gamification: EMPTY_GAMIFICATION });
       renderPage();
 
       const empties = await waitFor(() => {
         const found = document.querySelectorAll('[data-state="empty"]');
-        expect(found).toHaveLength(3);
+        expect(found).toHaveLength(2);
         return Array.from(found).map((node) => node.textContent);
       });
-      expect(empties[0]).toContain("Você ainda não tem um plano ativo.");
-      expect(empties[1]).toContain("Você não tem aulas reservadas.");
-      expect(empties[2]).toContain("Você ainda não tem pontos.");
-      expect(screen.queryByRole("region", { name: "Plano ativo" })).not.toBeInTheDocument();
+      expect(empties[0]).toContain("Você não tem aulas reservadas.");
+      expect(empties[1]).toContain("Você ainda não tem pontos.");
+      expect(screen.queryByText(/plano ativo/i)).not.toBeInTheDocument();
     });
   });
 
@@ -666,7 +656,7 @@ describe("Home do cliente: visual e estados (D-038)", () => {
     it("o erro é anunciado como alerta e 'Tentar novamente' busca de novo só aquele bloco", async () => {
       const user = userEvent.setup();
       let attempts = 0;
-      mockHome({ plan: ACTIVE_PLAN });
+      mockHome();
       server.use(
         http.get("/api/reservations", () => {
           attempts += 1;
@@ -680,25 +670,11 @@ describe("Home do cliente: visual e estados (D-038)", () => {
       const section = await screen.findByRole("region", { name: "Próximas aulas" });
       const alert = await within(section).findByRole("alert");
       expect(alert).toHaveTextContent("Não foi possível carregar suas reservas.");
-      expect(screen.getByText("Plano Performance")).toBeInTheDocument();
 
       await user.click(within(alert).getByRole("button", { name: "Tentar novamente" }));
 
       expect(await within(section).findByRole("listitem")).toHaveTextContent("Treino Funcional");
       expect(within(section).queryByRole("alert")).not.toBeInTheDocument();
-    });
-
-    it("o erro do plano aparece no lugar do cartão", async () => {
-      mockHome();
-      server.use(
-        http.get("/api/plans/mine", () =>
-          HttpResponse.json({ code: "X", message: "x" }, { status: 500 }),
-        ),
-      );
-      renderPage();
-
-      expect(await screen.findByText("Não foi possível carregar o seu plano.")).toBeInTheDocument();
-      expect(screen.queryByRole("region", { name: "Plano ativo" })).not.toBeInTheDocument();
     });
   });
 
@@ -710,7 +686,7 @@ describe("Home do cliente: visual e estados (D-038)", () => {
 
       const offline = await waitFor(() => {
         const found = document.querySelectorAll('[data-state="offline"]');
-        expect(found).toHaveLength(3);
+        expect(found).toHaveLength(2);
         return Array.from(found);
       });
       for (const node of offline) {
@@ -722,13 +698,13 @@ describe("Home do cliente: visual e estados (D-038)", () => {
 
     it("quando a rede volta, os blocos carregam sozinhos", async () => {
       onlineManager.setOnline(false);
-      mockHome({ plan: ACTIVE_PLAN });
+      mockHome();
       renderPage();
-      await waitFor(() => expect(document.querySelectorAll('[data-state="offline"]')).toHaveLength(3));
+      await waitFor(() => expect(document.querySelectorAll('[data-state="offline"]')).toHaveLength(2));
 
       onlineManager.setOnline(true);
 
-      expect(await screen.findByText("Plano Performance")).toBeInTheDocument();
+      expect(await screen.findByText("Você não tem aulas reservadas.")).toBeInTheDocument();
       expect(document.querySelectorAll('[data-state="offline"]')).toHaveLength(0);
     });
   });

@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { gymToday, RankingPeriod, type GamificationSummary } from "@fitburn/contracts";
-import { formatDayMonth } from "../lib/agenda/format";
+import { RankingPeriod, type GamificationSummary } from "@fitburn/contracts";
 import { useAuth } from "../lib/auth/AuthContext";
 import {
   getMyGamification,
@@ -10,10 +9,9 @@ import {
   getRankingConsent,
   rankingConsentQueryKey,
 } from "../lib/gamification/api";
-import { getMyPlan } from "../lib/plans/api";
 import { markTutorialSeen, shouldAutoOpenTutorial } from "../lib/pwa/install-tutorial";
 import { HomeReservations } from "./home/HomeReservations";
-import { formatGreetingDate, formatPlanEnd } from "./home/format";
+import { formatGreetingDate } from "./home/format";
 import { HomeEmpty } from "./home/HomeEmpty";
 import { InstallTutorial } from "../components/InstallTutorial";
 import { QueryBlockState } from "../components/QueryBlockState";
@@ -40,19 +38,16 @@ function CheckIcon() {
 }
 
 /**
- * Home do cliente (D-038): kicker da data e saudação, cartão do plano ativo, próximas aulas e o resumo de
- * FitPoints, nessa ordem no celular; no desktop, coluna de 400px (saudação, plano, FitPoints) ao lado das
- * aulas (grade em home.css). Cada bloco carrega, falha e fica sem conexão sozinho (QueryBlockState).
+ * Home do cliente (D-038, D-043): kicker da data e saudação, próximas aulas e o resumo de FitPoints, nessa ordem
+ * no celular; no desktop, coluna de 400px (saudação, FitPoints) ao lado das aulas (grade em home.css). Sem o
+ * cartão do plano: o plano e o histórico vivem no Perfil, e os atalhos entram em outra issue. Cada bloco carrega,
+ * falha e fica sem conexão sozinho (QueryBlockState).
  * No primeiro acesso neste aparelho abre o tutorial de instalação do PWA; fechar de qualquer jeito marca como visto.
  */
 export function ClientHomePage() {
   const { user } = useAuth();
   const firstName = user?.fullName.trim().split(/\s+/)[0] ?? "";
   const [tutorialOpen, setTutorialOpen] = useState(shouldAutoOpenTutorial);
-
-  const planQuery = useQuery({ queryKey: ["plans", "mine"], queryFn: getMyPlan });
-  const activePlan = planQuery.data?.active ?? null;
-  const startsLater = activePlan !== null && activePlan.startDate > gymToday();
 
   return (
     <div className="fb-home">
@@ -61,31 +56,6 @@ export function ClientHomePage() {
           <p className="fb-kicker fb-home__kicker">{formatGreetingDate()}</p>
           <h1 className="fb-home__greeting">{firstName ? `Olá, ${firstName}` : "Olá"}</h1>
         </div>
-
-        <QueryBlockState
-          className="fb-home__state"
-          query={planQuery}
-          loading="Carregando seu plano…"
-          error="Não foi possível carregar o seu plano."
-          hasData={planQuery.data !== undefined}
-        />
-        {activePlan && (
-          <section className="fb-home__plan" aria-label="Plano ativo">
-            <small className="fb-home__plan-kicker">
-              {startsLater ? "Próximo plano" : "Plano ativo"}
-            </small>
-            <strong className="fb-home__plan-name">{activePlan.plan.name}</strong>
-            <span className="fb-home__plan-until">
-              {startsLater
-                ? `Começa em ${formatDayMonth(activePlan.startDate)}`
-                : `Ativo até ${formatPlanEnd(activePlan.endDate)}`}
-            </span>
-            {!startsLater && <span className="fb-home__badge">ATIVO</span>}
-          </section>
-        )}
-        {planQuery.data && !activePlan && (
-          <HomeEmpty title="Você ainda não tem um plano ativo. Fale com a recepção para começar." />
-        )}
       </div>
 
       <HomeReservations />

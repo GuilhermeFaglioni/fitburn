@@ -1,6 +1,6 @@
 /**
- * Home do cliente (D-038). Celular: blocos empilhados (saudação e plano, próximas aulas, FitPoints); desktop
- * largo (≥1100px): coluna de 400px (saudação, plano, FitPoints) ao lado das próximas aulas. Só tokens: cor, raio,
+ * Home do cliente (D-038). Celular: blocos empilhados (saudação, próximas aulas, FitPoints); desktop
+ * largo (≥1100px): coluna de 400px (saudação, FitPoints) ao lado das próximas aulas. Só tokens: cor, raio,
  * espaçamento e tipografia vêm do design system.
  */
 .fb-home {
@@ -116,74 +116,6 @@
 
 .fb-home__state .fb-ui-state__action {
   margin-top: var(--s-1);
-}
-
-/* Plano ativo: cartão com o gradiente CTA. O branco sobre o laranja segue a exceção da base (texto em negrito);
-   as transparências saem de color-mix sobre o token de texto sobre o laranja, sem rgba literal. */
-.fb-home__plan {
-  position: relative;
-  overflow: hidden;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-1);
-  padding: var(--s-5) var(--s-5) var(--s-4);
-  border-radius: var(--r-lg);
-  background: var(--grad-cta);
-  box-shadow: var(--sh-cta);
-  color: var(--on-brand);
-}
-
-.fb-home__plan::after {
-  content: "";
-  position: absolute;
-  right: -30px;
-  top: -30px;
-  width: 130px;
-  height: 130px;
-  border-radius: 50%;
-  border: 1px solid color-mix(in srgb, var(--on-brand) 28%, transparent);
-  pointer-events: none;
-}
-
-.fb-home__plan-kicker {
-  font-size: 10px;
-  font-weight: var(--weight-bold);
-  letter-spacing: 0.24em;
-  text-transform: uppercase;
-}
-
-.fb-home__plan-name {
-  display: block;
-  padding-right: var(--s-16);
-  font-size: 20px;
-  font-weight: var(--weight-bold);
-  line-height: var(--leading-title);
-  letter-spacing: -0.03em;
-  overflow-wrap: anywhere;
-}
-
-.fb-home__plan-until {
-  font-size: 13px;
-  font-weight: var(--weight-bold);
-}
-
-.fb-home__badge {
-  position: absolute;
-  right: var(--s-4);
-  top: var(--s-4);
-  z-index: 1;
-  display: inline-flex;
-  align-items: center;
-  height: 24px;
-  padding: 0 10px;
-  border-radius: var(--r-pill);
-  border: 1px solid color-mix(in srgb, var(--on-brand) 40%, transparent);
-  background: color-mix(in srgb, var(--on-brand) 18%, transparent);
-  font-size: var(--text-kicker);
-  font-weight: var(--weight-bold);
-  letter-spacing: 0.04em;
-  color: var(--on-brand);
 }
 
 /* Próximas aulas. */
@@ -360,10 +292,6 @@
 @media (min-width: 768px) {
   .fb-home__title {
     font-size: var(--text-h3);
-  }
-
-  .fb-home__plan-name {
-    font-size: 22px;
   }
 
   /* Cada aula em uma linha: título e quando à esquerda, as ações à direita. */
