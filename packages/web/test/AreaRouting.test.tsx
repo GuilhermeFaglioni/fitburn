@@ -184,7 +184,8 @@ describe("Área de cada perfil", () => {
     renderAt("/agenda");
 
     await expectLocation("/agenda");
-    expect(await screen.findByRole("region", { name: "Aulas do dia" })).toBeInTheDocument();
+    // A agenda do cliente abre em Suas aulas (as reservas), não na grade de Todas.
+    expect(await screen.findByRole("region", { name: "Suas reservas" })).toBeInTheDocument();
   });
   it("o cliente abre a ficha de treino pelo item Treino da navegação", async () => {
     mockSession("Cliente", []);
