@@ -244,13 +244,16 @@ function assertSaleRules(state: SaleState): void {
   }
 }
 
-/** Produto simples tem uma variação só: atualiza o estoque dela (cria, se por algum motivo não existir). */
+/**
+ * Produto simples guarda o estoque na primeira variação ativa. Sem nenhuma ativa,
+ * cria uma nova ativa com o estoque; as inativas ficam como estão.
+ */
 async function setSingleVariantStock(
   tx: Prisma.TransactionClient,
   product: ProductRow,
   stock: number,
 ): Promise<void> {
-  const [variant] = product.variants;
+  const variant = product.variants.find((candidate) => candidate.ativa);
   if (variant) {
     await tx.productVariant.update({ where: { id: variant.id }, data: { stock } });
   } else {

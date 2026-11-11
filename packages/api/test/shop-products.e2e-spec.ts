@@ -345,6 +345,61 @@ describe("Loja: produtos no admin (HTTP)", () => {
       expect(restocked.body).toMatchObject({ stock: 4, soldOutVariantCount: 0 });
     });
 
+    it("estoque vai para a primeira variação ativa, mesmo que uma inativa venha antes na ordem", async () => {
+      const admin = await signIn("admin", adminProfileId);
+      const product = await newProduct(admin, { stock: 10 });
+      const inactive = await testPrisma.productVariant.findFirstOrThrow({
+        where: { productId: product.id },
+        orderBy: { createdAt: "asc" },
+      });
+      await testPrisma.productVariant.update({
+        where: { id: inactive.id },
+        data: { ativa: false },
+      });
+      const active = await testPrisma.productVariant.create({
+        data: { productId: product.id, label: "Reserva", stock: 3, ativa: true },
+      });
+
+      const response = await api(admin).update(product.id, { stock: 5 });
+
+      expect(response.status).toBe(200);
+      expect(response.body).toMatchObject({ stock: 5, soldOutVariantCount: 0 });
+      expect(await testPrisma.productVariant.findUnique({ where: { id: active.id } })).toMatchObject({
+        stock: 5,
+      });
+      expect(await testPrisma.productVariant.findUnique({ where: { id: inactive.id } })).toMatchObject({
+        stock: 10,
+        ativa: false,
+      });
+    });
+
+    it("sem variação ativa, o estoque cria uma variação ativa nova e deixa a inativa como está", async () => {
+      const admin = await signIn("admin", adminProfileId);
+      const product = await newProduct(admin, { stock: 10 });
+      const inactive = await testPrisma.productVariant.findFirstOrThrow({
+        where: { productId: product.id },
+        orderBy: { createdAt: "asc" },
+      });
+      await testPrisma.productVariant.update({
+        where: { id: inactive.id },
+        data: { ativa: false },
+      });
+
+      const response = await api(admin).update(product.id, { stock: 4 });
+
+      expect(response.status).toBe(200);
+      expect(response.body).toMatchObject({ stock: 4, variantCount: 2, soldOutVariantCount: 0 });
+      const variants = await variantsOf(product.id);
+      expect(variants).toHaveLength(2);
+      expect(variants.filter((variant) => variant.ativa)).toEqual([
+        expect.objectContaining({ label: null, stock: 4, ativa: true }),
+      ]);
+      expect(await testPrisma.productVariant.findUnique({ where: { id: inactive.id } })).toMatchObject({
+        stock: 10,
+        ativa: false,
+      });
+    });
+
     it("oculta e mostra o produto", async () => {
       const admin = await signIn("admin", adminProfileId);
       const product = await newProduct(admin);
