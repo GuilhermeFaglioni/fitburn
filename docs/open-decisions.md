@@ -31,7 +31,8 @@ Este arquivo evita que itens ainda não discutidos sejam tratados como decisões
 - modelagem de dados;
 - índices e constraints de agenda;
 - contratos da API;
-- testes de concorrência da reserva.
+- testes de concorrência da reserva;
+- retenção das avaliações de bioimpedância após o fim do vínculo com a academia.
 
 ## Decisões conscientemente adiadas
 
@@ -43,6 +44,8 @@ Não foram escolhidos agora:
 - NAT Gateway;
 - Cognito ou provedor externo de autenticação;
 - app próprio para Apple Watch;
-- vendas e pagamentos dentro do app;
+- pagamentos dentro do app (a loja existe sem pagamento, D-039);
+- notificação push (pedidos da loja e outros avisos);
+- storage externo (S3 compatível) para fotos de produto ao ir para produção (D-040);
 - microserviços;
 - acesso direto dos clientes ao banco.
