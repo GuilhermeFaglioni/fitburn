@@ -2,10 +2,13 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 import { z } from "zod";
 import {
   shopCategorySchema,
+  shopProductDetailSchema,
   shopProductSchema,
   type CreateShopProductRequest,
+  type SetShopProductOptionsRequest,
   type ShopCategory,
   type ShopProduct,
+  type ShopProductDetail,
   type UpdateShopProductRequest,
 } from "@fitburn/contracts";
 import { authFetch } from "../auth/authFetch";
@@ -80,9 +83,26 @@ export async function listShopProducts(filters: ShopProductFilters): Promise<Sho
   return z.array(shopProductSchema).parse(await parseOrThrow(response));
 }
 
-export async function getShopProduct(id: string): Promise<ShopProduct> {
+/** Detalhe para a tela de edição: o produto com suas opções e variações (sem as descontinuadas). */
+export async function getShopProduct(id: string): Promise<ShopProductDetail> {
   const response = await authFetch(`/api/shop/admin/products/${id}`);
-  return shopProductSchema.parse(await parseOrThrow(response));
+  return shopProductDetailSchema.parse(await parseOrThrow(response));
+}
+
+/**
+ * Grava as opções e as sobreposições de variação numa chamada. A API recria as opções: os IDs de opção e de valor
+ * mudam a cada gravação, então a tela trabalha com o estado devolvido, nunca com IDs guardados.
+ */
+export async function setShopProductOptions(
+  id: string,
+  input: SetShopProductOptionsRequest,
+): Promise<ShopProductDetail> {
+  const response = await authFetch(`/api/shop/admin/products/${id}/options`, {
+    method: "PUT",
+    headers: JSON_HEADERS,
+    body: JSON.stringify(input),
+  });
+  return shopProductDetailSchema.parse(await parseOrThrow(response));
 }
 
 export async function createShopProduct(input: CreateShopProductRequest): Promise<ShopProduct> {
@@ -153,6 +173,15 @@ export function useUpdateShopProduct() {
   return useMutation({
     mutationFn: ({ id, input }: { id: string; input: UpdateShopProductRequest }) =>
       updateShopProduct(id, input),
+    onSuccess: invalidate,
+  });
+}
+
+export function useSetShopProductOptions() {
+  const invalidate = useInvalidateShop();
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: SetShopProductOptionsRequest }) =>
+      setShopProductOptions(id, input),
     onSuccess: invalidate,
   });
 }
