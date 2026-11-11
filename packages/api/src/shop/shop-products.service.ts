@@ -103,7 +103,12 @@ export class ShopProductsService {
     return toShopProduct(created);
   }
 
-  /** Atualização parcial. As regras de venda valem para o estado final (salvo mesclado com o corpo). */
+  /**
+   * Atualização parcial. A linha do produto é travada antes da leitura: leitura,
+   * regras de venda, destaque e escrita ficam serializadas por produto. Ordem de
+   * travamento (sempre a mesma, evita deadlock): linha do produto → categoria →
+   * destaque. Só grava o que o corpo trouxe (e o limite, quando a regra o muda).
+   */
   async update(
     id: string,
     input: UpdateShopProductRequest,
@@ -111,6 +116,7 @@ export class ShopProductsService {
   ): Promise<ShopProduct> {
     assertFullScope(requester, SHOP_FULL_SCOPE_MESSAGE);
     const updated = await this.prisma.$transaction(async (tx) => {
+      await lockProductRow(tx, id);
       const current = await findActiveOrThrow(tx, id);
       if (input.categoryId) await lockAndAssertCategory(tx, input.categoryId);
 
@@ -118,18 +124,20 @@ export class ShopProductsService {
       assertSaleRules(next);
       if (input.destaque === true && !current.destaque) await assertFeaturedSlot(tx);
 
+      const limitChanges =
+        input.limitePorPedido !== undefined || input.permiteMaisDeUmaUnidade === false;
       await tx.product.update({
         where: { id },
         data: {
           name: input.name,
           description: input.description === undefined ? undefined : input.description || null,
           categoryId: input.categoryId,
-          priceCents: next.priceCents,
-          promoPriceCents: next.promoPriceCents,
+          priceCents: input.priceCents,
+          promoPriceCents: input.promoPriceCents,
           visivel: input.visivel,
           destaque: input.destaque,
-          permiteMaisDeUmaUnidade: next.permiteMaisDeUmaUnidade,
-          limitePorPedido: next.limitePorPedido,
+          permiteMaisDeUmaUnidade: input.permiteMaisDeUmaUnidade,
+          limitePorPedido: limitChanges ? next.limitePorPedido : undefined,
         },
       });
       if (input.stock !== undefined) await setSingleVariantStock(tx, current, input.stock);
@@ -154,6 +162,15 @@ function visibilityFilter(visibility: ListShopProductsQuery["visibility"]): bool
   if (visibility === "visible") return true;
   if (visibility === "hidden") return false;
   return undefined;
+}
+
+/**
+ * Trava a linha do produto até o fim da transação (FOR UPDATE). Chamada antes de
+ * ler o estado, para que outra atualização ou exclusão do mesmo produto espere.
+ * Se a linha não existir, a leitura seguinte devolve 404.
+ */
+async function lockProductRow(tx: Prisma.TransactionClient, id: string): Promise<void> {
+  await tx.$queryRaw`SELECT id FROM products WHERE id = ${id} FOR UPDATE`;
 }
 
 async function findActiveOrThrow(db: Db, id: string): Promise<ProductRow> {

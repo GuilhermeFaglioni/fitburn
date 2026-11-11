@@ -1,4 +1,5 @@
 import type { INestApplication } from "@nestjs/common";
+import type { Prisma } from "@prisma/client";
 import request from "supertest";
 import { cleanDatabase, testPrisma } from "./db-test-helper.js";
 import { createAccessProfile, createUser, grantModuleAccess } from "./factories.js";
@@ -546,6 +547,202 @@ describe("Loja: produtos no admin (HTTP)", () => {
       const admin = await signIn("admin", adminProfileId);
 
       expect((await api(admin).remove("nao-existe")).status).toBe(404);
+    });
+  });
+
+  describe("Concorrência por produto", () => {
+    /**
+     * Abre uma transação do teste que faz `write` (segurando a linha afetada),
+     * dispara a requisição com `start` e só confirma depois que ela já está
+     * presa no lock. Assim a intercalação é a mesma em toda execução.
+     */
+    async function commitWhileRequestWaits(
+      write: (tx: Prisma.TransactionClient) => Promise<unknown>,
+      start: () => PromiseLike<request.Response>,
+    ): Promise<request.Response> {
+      let pending: Promise<request.Response> | undefined;
+      await testPrisma.$transaction(
+        async (tx) => {
+          await write(tx);
+          pending = Promise.resolve(start());
+          await waitForLockWaiter();
+        },
+        { timeout: 15_000 },
+      );
+      if (!pending) throw new Error("A requisição não foi disparada.");
+      return pending;
+    }
+
+    /** Espera até alguma sessão do banco estar bloqueada num lock: a requisição chegou ao travamento. */
+    async function waitForLockWaiter(): Promise<void> {
+      for (let attempt = 0; attempt < 500; attempt += 1) {
+        const [row] = await testPrisma.$queryRaw<Array<{ waiting: bigint }>>`
+          SELECT count(*) AS waiting FROM pg_stat_activity
+          WHERE datname = current_database() AND wait_event_type = 'Lock' AND pid <> pg_backend_pid()`;
+        if (Number(row.waiting) > 0) return;
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      }
+      throw new Error("Nenhuma requisição ficou esperando o lock da linha.");
+    }
+
+    function featuredCount() {
+      return testPrisma.product.count({ where: { destaque: true, excluidoEm: null } });
+    }
+
+    it("PATCH de destaque que chega durante outra mudança de destaque não passa de 3", async () => {
+      const admin = await signIn("admin", adminProfileId);
+      const a = await newProduct(admin, { name: "A", destaque: true });
+      await newProduct(admin, { name: "B", destaque: true });
+      await newProduct(admin, { name: "C", destaque: true });
+      const d = await newProduct(admin, { name: "D" });
+
+      // Outra requisição desmarca A e destaca D antes de o PATCH de A gravar.
+      const response = await commitWhileRequestWaits(
+        async (tx) => {
+          await tx.product.update({ where: { id: a.id }, data: { destaque: false } });
+          await tx.product.update({ where: { id: d.id }, data: { destaque: true } });
+        },
+        () => api(admin).update(a.id, { destaque: true, name: "A editado" }),
+      );
+
+      expect(response.status).toBe(409);
+      expect(response.body.code).toBe("FEATURED_LIMIT_REACHED");
+      expect(await featuredCount()).toBe(3);
+      expect(await testPrisma.product.findUnique({ where: { id: a.id } })).toMatchObject({
+        destaque: false,
+        name: "A",
+      });
+    });
+
+    it("PATCHs simultâneos de destaque nunca deixam mais de 3 produtos destacados (20 rodadas)", async () => {
+      const admin = await signIn("admin", adminProfileId);
+      const a = await newProduct(admin, { name: "A", destaque: true });
+      const b = await newProduct(admin, { name: "B", destaque: true });
+      const c = await newProduct(admin, { name: "C", destaque: true });
+      const d = await newProduct(admin, { name: "D" });
+
+      for (let round = 0; round < 20; round += 1) {
+        await testPrisma.product.updateMany({
+          where: { id: { in: [a.id, b.id, c.id] } },
+          data: { destaque: true },
+        });
+        await testPrisma.product.update({ where: { id: d.id }, data: { destaque: false } });
+
+        const responses = await Promise.all([
+          api(admin).update(a.id, { destaque: true, name: `A ${round}` }),
+          api(admin).update(a.id, { destaque: false }),
+          api(admin).update(d.id, { destaque: true }),
+        ]);
+
+        for (const response of responses) expect([200, 409]).toContain(response.status);
+        expect(await featuredCount()).toBeLessThanOrEqual(3);
+      }
+    });
+
+    it("PATCH que oculta não regrava o preço antigo quando outro PATCH mudou o preço", async () => {
+      const admin = await signIn("admin", adminProfileId);
+      const product = await newProduct(admin, { priceCents: 15_000 });
+
+      const response = await commitWhileRequestWaits(
+        (tx) => tx.product.update({ where: { id: product.id }, data: { priceCents: 18_000 } }),
+        () => api(admin).update(product.id, { visivel: false }),
+      );
+
+      expect(response.status).toBe(200);
+      expect(await testPrisma.product.findUnique({ where: { id: product.id } })).toMatchObject({
+        priceCents: 18_000,
+        visivel: false,
+      });
+    });
+
+    it("PATCH de estoque não regrava a promoção antiga quando outro PATCH a mudou", async () => {
+      const admin = await signIn("admin", adminProfileId);
+      const product = await newProduct(admin, { priceCents: 15_000, stock: 10 });
+
+      const response = await commitWhileRequestWaits(
+        (tx) => tx.product.update({ where: { id: product.id }, data: { promoPriceCents: 12_000 } }),
+        () => api(admin).update(product.id, { stock: 4 }),
+      );
+
+      expect(response.status).toBe(200);
+      expect(response.body).toMatchObject({ stock: 4, promoPriceCents: 12_000 });
+      expect(await testPrisma.product.findUnique({ where: { id: product.id } })).toMatchObject({
+        promoPriceCents: 12_000,
+      });
+    });
+
+    it("PATCHs simultâneos em campos distintos preservam os dois (repetido em paralelo)", async () => {
+      const admin = await signIn("admin", adminProfileId);
+      const product = await newProduct(admin, { priceCents: 15_000, stock: 10 });
+
+      for (let round = 0; round < 8; round += 1) {
+        await testPrisma.product.update({
+          where: { id: product.id },
+          data: { priceCents: 15_000, visivel: true, promoPriceCents: null },
+        });
+        const [price, hide] = await Promise.all([
+          api(admin).update(product.id, { priceCents: 18_000 }),
+          api(admin).update(product.id, { visivel: false }),
+        ]);
+        expect([price.status, hide.status]).toEqual([200, 200]);
+        expect(await testPrisma.product.findUnique({ where: { id: product.id } })).toMatchObject({
+          priceCents: 18_000,
+          visivel: false,
+        });
+
+        await testPrisma.product.update({
+          where: { id: product.id },
+          data: { priceCents: 15_000, promoPriceCents: null },
+        });
+        const [stock, promo] = await Promise.all([
+          api(admin).update(product.id, { stock: round + 1 }),
+          api(admin).update(product.id, { promoPriceCents: 12_000 }),
+        ]);
+        expect([stock.status, promo.status]).toEqual([200, 200]);
+        expect(await testPrisma.product.findUnique({ where: { id: product.id } })).toMatchObject({
+          priceCents: 15_000,
+          promoPriceCents: 12_000,
+        });
+        const variants = await variantsOf(product.id);
+        expect(variants.filter((variant) => variant.ativa)[0]?.stock).toBe(round + 1);
+      }
+    });
+
+    it("PATCH de produto que está sendo excluído não o ressuscita", async () => {
+      const admin = await signIn("admin", adminProfileId);
+      const product = await newProduct(admin, { name: "Antigo" });
+
+      // A exclusão (mesma escrita do DELETE) fica em andamento; o PATCH espera e depois vê o produto excluído.
+      const response = await commitWhileRequestWaits(
+        (tx) =>
+          tx.product.update({
+            where: { id: product.id },
+            data: { excluidoEm: new Date(), destaque: false },
+          }),
+        () => api(admin).update(product.id, { name: "Ressuscitado" }),
+      );
+
+      expect(response.status).toBe(404);
+      const stored = await testPrisma.product.findUnique({ where: { id: product.id } });
+      expect(stored?.excluidoEm).not.toBeNull();
+      expect(stored?.name).toBe("Antigo");
+    });
+
+    it("DELETE e PATCH simultâneos terminam com o produto excluído, em 404 ou em gravação anterior", async () => {
+      const admin = await signIn("admin", adminProfileId);
+
+      for (let round = 0; round < 10; round += 1) {
+        const product = await newProduct(admin, { name: `Corrida ${round}` });
+        const [removed, patched] = await Promise.all([
+          api(admin).remove(product.id),
+          api(admin).update(product.id, { name: `Editado ${round}` }),
+        ]);
+
+        expect(removed.status).toBe(204);
+        expect([200, 404]).toContain(patched.status);
+        const stored = await testPrisma.product.findUnique({ where: { id: product.id } });
+        expect(stored?.excluidoEm).not.toBeNull();
+      }
     });
   });
 });
