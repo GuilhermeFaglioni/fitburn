@@ -77,16 +77,19 @@ export function ClassDetailSheet({
   onStartRescheduling,
   onRescheduled,
   onClose,
+  startCancelling = false,
 }: {
   item: ClientAgendaItem;
   rescheduling: Rescheduling | null;
   onStartRescheduling: (rescheduling: Rescheduling) => void;
   onRescheduled: () => void;
   onClose: () => void;
+  /** Abre já na confirmação de cancelamento (o "Cancelar" de Suas aulas); o cancelamento segue exigindo confirmar. */
+  startCancelling?: boolean;
 }) {
   const queryClient = useQueryClient();
   const [outcome, setOutcome] = useState<Outcome | null>(null);
-  const [confirmingCancel, setConfirmingCancel] = useState(false);
+  const [confirmingCancel, setConfirmingCancel] = useState(startCancelling);
   // Uma chave por intenção (reservar ou remarcar para esta aula): gerada ao
   // abrir o detalhe e reenviada em toda nova tentativa, para uma repetição
   // nunca agir duas vezes.

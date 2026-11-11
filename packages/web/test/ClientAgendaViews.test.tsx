@@ -20,7 +20,7 @@ import { mockSuccessfulLogin } from "./auth-mocks";
 import { server } from "./msw-server";
 
 /**
- * Agenda do cliente na base de design (D-038): "Próximas | Histórico", dias (Chip), modalidades (Pill) e os
+ * Agenda do cliente na base de design (D-038): "Suas aulas | Todas", dias (Chip), modalidades (Pill) e os
  * estados vazio, erro, carregando e sem conexão, nas duas abas.
  */
 const TODAY = gymToday();
@@ -74,12 +74,12 @@ function LoggedInPage() {
   return ready ? <ClientAgendaPage /> : null;
 }
 
-function renderPage() {
+function renderPage(path = "/agenda?aba=todas") {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <MemoryRouter initialEntries={["/agenda"]}>
+        <MemoryRouter initialEntries={[path]}>
           <LoggedInPage />
         </MemoryRouter>
       </AuthProvider>
@@ -107,35 +107,39 @@ afterEach(() => {
   onlineManager.setOnline(true);
 });
 
-describe("Agenda: Próximas | Histórico", () => {
+describe("Agenda: Suas aulas | Todas", () => {
   it("o controle é um grupo rotulado de botões com aria-pressed; troca de aba muda o conteúdo e o kicker", async () => {
     mockAgenda([item(TODAY, "07:00", "Mobilidade")]);
-    mockReservations([reservation("r-past", addDays(TODAY, -2), "07:00", "COMPLETED")], []);
-    renderPage();
+    mockReservations([], [reservation("r-next", addDays(TODAY, 1), "07:00", "CONFIRMED")]);
+    renderPage("/agenda");
     const user = userEvent.setup();
 
     const view = await screen.findByRole("group", { name: "Visão" });
-    const upcoming = within(view).getByRole("button", { name: "Próximas" });
-    const history = within(view).getByRole("button", { name: "Histórico" });
-    expect(upcoming).toHaveAttribute("aria-pressed", "true");
-    expect(history).toHaveAttribute("aria-pressed", "false");
-    expect(await screen.findByRole("region", { name: "Aulas do dia" })).toBeInTheDocument();
-    expect(screen.queryByRole("region", { name: "Anteriores" })).not.toBeInTheDocument();
-
-    await user.click(history);
-
-    expect(history).toHaveAttribute("aria-pressed", "true");
-    expect(upcoming).toHaveAttribute("aria-pressed", "false");
-    const past = await screen.findByRole("region", { name: "Anteriores" });
-    expect(await within(past).findByText("CONCLUÍDA")).toBeInTheDocument();
+    const mine = within(view).getByRole("button", { name: "Suas aulas" });
+    const all = within(view).getByRole("button", { name: "Todas" });
+    expect(mine).toHaveAttribute("aria-pressed", "true");
+    expect(all).toHaveAttribute("aria-pressed", "false");
+    expect(await screen.findByRole("region", { name: "Suas reservas" })).toBeInTheDocument();
     expect(screen.queryByRole("region", { name: "Aulas do dia" })).not.toBeInTheDocument();
     expect(screen.getByText("Reservas")).toBeInTheDocument();
 
-    await user.click(upcoming);
-    expect(await screen.findByRole("region", { name: "Aulas do dia" })).toBeInTheDocument();
-    expect(screen.queryByRole("region", { name: "Anteriores" })).not.toBeInTheDocument();
-  });
+    await user.click(all);
 
+    expect(all).toHaveAttribute("aria-pressed", "true");
+    expect(mine).toHaveAttribute("aria-pressed", "false");
+    expect(await screen.findByRole("region", { name: "Aulas do dia" })).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Suas reservas" })).not.toBeInTheDocument();
+    expect(screen.getByText(/^Semana de /)).toBeInTheDocument();
+
+    await user.click(mine);
+    expect(await screen.findByRole("region", { name: "Suas reservas" })).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Aulas do dia" })).not.toBeInTheDocument();
+  });
+});
+
+const HISTORY_PATH = "/agenda?aba=suas&ver=historico";
+
+describe("Agenda: Histórico (subvisão de Suas aulas)", () => {
   it("no Histórico, cada situação aparece no texto do selo, inclusive a de presença", async () => {
     mockAgenda([]);
     mockReservations(
@@ -146,8 +150,7 @@ describe("Agenda: Próximas | Histórico", () => {
       ],
       [],
     );
-    renderPage();
-    await userEvent.setup().click(await screen.findByRole("button", { name: "Histórico" }));
+    renderPage(HISTORY_PATH);
 
     const past = await screen.findByRole("region", { name: "Anteriores" });
     expect(await within(past).findByText("CONCLUÍDA")).toBeInTheDocument();
@@ -158,9 +161,8 @@ describe("Agenda: Próximas | Histórico", () => {
   it("o filtro de situação do Histórico é um grupo rotulado de pílulas com aria-pressed", async () => {
     mockAgenda([]);
     mockReservations([], []);
-    renderPage();
+    renderPage(HISTORY_PATH);
     const user = userEvent.setup();
-    await user.click(await screen.findByRole("button", { name: "Histórico" }));
 
     const filter = await screen.findByRole("group", { name: "Filtrar por estado" });
     expect(within(filter).getByRole("button", { name: "Todas" })).toHaveAttribute("aria-pressed", "true");
@@ -328,17 +330,17 @@ describe("Agenda: estados", () => {
   });
 });
 
-describe("Histórico: estados", () => {
+describe("Histórico: estados (subvisão de Suas aulas)", () => {
   async function openHistory() {
     const user = userEvent.setup();
-    await user.click(await screen.findByRole("button", { name: "Histórico" }));
+    await screen.findByRole("heading", { name: "Histórico" });
     return user;
   }
 
   it("vazio: cada seção diz que não há reservas", async () => {
     mockAgenda([]);
     mockReservations([], []);
-    renderPage();
+    renderPage(HISTORY_PATH);
     await openHistory();
 
     expect(await screen.findByText("Nenhuma reserva próxima.")).toBeInTheDocument();
@@ -353,7 +355,7 @@ describe("Histórico: estados", () => {
         return HttpResponse.json([]);
       }),
     );
-    renderPage();
+    renderPage(HISTORY_PATH);
     await openHistory();
 
     expect(await screen.findAllByText("Carregando…")).toHaveLength(2);
@@ -369,7 +371,7 @@ describe("Histórico: estados", () => {
           : HttpResponse.json([]),
       ),
     );
-    renderPage();
+    renderPage(HISTORY_PATH);
     await openHistory();
 
     const past = await screen.findByRole("region", { name: "Anteriores" });
@@ -382,7 +384,7 @@ describe("Histórico: estados", () => {
   it("offline: sem rede as seções mostram o estado offline e carregam quando a rede volta", async () => {
     mockAgenda([]);
     mockReservations([reservation("r-1", addDays(TODAY, -1), "07:00", "COMPLETED")], []);
-    renderPage();
+    renderPage(HISTORY_PATH);
     const user = await openHistory();
     await screen.findByRole("region", { name: "Anteriores" });
     await user.click(screen.getByRole("button", { name: "Canceladas" }));

@@ -1,6 +1,6 @@
 /**
- * Agenda do cliente (D-038): cabeçalho com "Próximas | Histórico", semana, dias (chips), modalidades (pílulas) e
- * lista de aulas; no desktop, a grade semana × horário. A aba Histórico reaproveita o item de aula. O detalhe da aula
+ * Agenda do cliente (D-038): cabeçalho com "Suas aulas | Todas", semana, dias (chips), modalidades (pílulas) e
+ * lista de aulas; no desktop, a grade semana × horário. O detalhe da aula
  * (folha, `Dialog` variant="sheet") fecha o arquivo. Só tokens: cor, raio, espaçamento e tipografia vêm do design system.
  */
 .fb-agenda {
@@ -118,6 +118,96 @@
   margin: 0;
   padding: 0;
   list-style: none;
+}
+
+/* Suas aulas: o item de aula e as ações Remarcar/Cancelar formam um só cartão. */
+.fb-agenda__resv {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding: var(--s-1) var(--s-3) var(--s-3);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  box-shadow: var(--sh-1);
+}
+
+.fb-agenda__resv .fb-class-item {
+  padding-inline: 0;
+  background: none;
+  border: 0;
+  box-shadow: none;
+}
+
+.fb-agenda__resv-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+}
+
+/* Histórico: link no fim de Suas aulas, "← Suas aulas" no topo da subvisão e o título dela. */
+.fb-agenda__link-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  padding: var(--s-3) var(--s-4);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  color: var(--ink);
+  font-size: var(--text-small);
+  font-weight: var(--weight-bold);
+  text-decoration: none;
+}
+
+.fb-agenda__link-row small {
+  display: block;
+  font-size: var(--text-small);
+  font-weight: var(--weight-regular);
+  color: var(--muted);
+}
+
+.fb-agenda__link-row:focus-visible,
+.fb-agenda__back:focus-visible,
+.fb-agenda__subtitle:focus-visible {
+  outline: none;
+  box-shadow: var(--sh-focus);
+}
+
+/* Voltar: o alvo tem 44px de altura mesmo sem ponteiro "coarse". */
+.fb-agenda__back {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: var(--s-1);
+  min-height: var(--s-11);
+  font-size: var(--text-small);
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.fb-agenda__back:focus-visible,
+.fb-agenda__subtitle:focus-visible {
+  border-radius: var(--r-xs);
+}
+
+.fb-agenda__subtitle {
+  margin: 0;
+  font-size: var(--text-h2);
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.01em;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .fb-agenda__link-row:hover {
+    background: var(--surface-2);
+  }
+
+  .fb-agenda__back:hover {
+    color: var(--ink);
+    text-decoration: underline;
+  }
 }
 
 /* Histórico */

@@ -75,6 +75,22 @@ export function formatDayHeading(date: string, weekday: number, today: string): 
   return date === today ? `Hoje, ${label}` : label.charAt(0).toUpperCase() + label.slice(1);
 }
 
+/**
+ * Título do dia em Suas aulas: "Hoje · qua, 11", "Amanhã · qui, 12" ou "Seg, 16". A data de outro mês leva o mês
+ * ("Seg, 02/12"), para não ficar ambígua.
+ */
+export function formatReservationDayHeading(date: string, today: string): string {
+  const { day, month } = parts(date);
+  const weekday = WEEKDAYS_SHORT[weekdayOf(date)].toLowerCase();
+  const short = `${weekday}, ${day}`;
+  if (date === today) return `Hoje · ${short}`;
+  if (date === addDays(today, 1)) return `Amanhã · ${short}`;
+  const capitalized = short.charAt(0).toUpperCase() + short.slice(1);
+  return month === parts(today).month
+    ? capitalized
+    : `${capitalized}/${String(month).padStart(2, "0")}`;
+}
+
 /** "Hoje" ou "seg 05/10" — o dia de uma aula (instante ISO) no fuso da academia. */
 export function formatClassDay(startsAt: string): string {
   const { date } = utcToGymDateTime(startsAt);

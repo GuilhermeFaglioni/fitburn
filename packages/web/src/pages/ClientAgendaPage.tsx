@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
   addDays,
@@ -24,6 +24,7 @@ import {
 } from "../lib/agenda/format";
 import { ClassDetailSheet, type Rescheduling } from "./client/ClassDetailSheet";
 import { ClassItem } from "./client/ClassItem";
+import { MyReservationsList } from "./client/MyReservationsList";
 import { ReservationHistory } from "./client/ReservationHistory";
 import { QueryBlockState } from "../components/QueryBlockState";
 import { Badge, type BadgeTone } from "../components/ui/Badge";
@@ -34,12 +35,12 @@ import { Segmented } from "../components/ui/Segmented";
 import { EmptyState } from "../components/ui/States";
 import { firstName } from "../lib/names";
 
-type AgendaTab = "upcoming" | "history";
+type AgendaTab = "suas" | "todas";
 
-/** Controle "Próximas | Histórico". */
+/** Controle "Suas aulas | Todas"; a aba vive na URL (`?aba=todas`), e sem `aba` abre em Suas aulas. */
 const AGENDA_TABS: Array<{ value: AgendaTab; label: string }> = [
-  { value: "upcoming", label: "Próximas" },
-  { value: "history", label: "Histórico" },
+  { value: "suas", label: "Suas aulas" },
+  { value: "todas", label: "Todas" },
 ];
 
 /** Selo de vagas: o texto diz o nível (lotada, quase lotada), então a cor é só reforço. */
@@ -95,7 +96,7 @@ export function ClientAgendaPage() {
   const [selectedDay, setSelectedDay] = useState(today);
   const [modalityId, setModalityId] = useState<string | null>(null);
   const [openItem, setOpenItem] = useState<ClientAgendaItem | null>(null);
-  const [tab, setTab] = useState<AgendaTab>("upcoming");
+  const [cancelling, setCancelling] = useState(false);
   // A Home leva à agenda já em remarcação (state.rescheduling).
   // O state é consumido uma vez e limpo, para não reabrir a remarcação em back/reload.
   const location = useLocation();
@@ -106,14 +107,43 @@ export function ClientAgendaPage() {
   const hasRouteRescheduling =
     (location.state as { rescheduling?: Rescheduling } | null)?.rescheduling !== undefined;
 
+  // A aba vem da URL. A remarcação que chega da Home só acontece em Todas, então ela abre nessa aba.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tab: AgendaTab = searchParams.get("aba") === "todas" || hasRouteRescheduling ? "todas" : "suas";
+  // `?aba=suas&ver=historico` abre o histórico dentro de Suas aulas. Trocar de aba limpa o `ver`, então
+  // iniciar uma remarcação (que vai para Todas) nunca deixa o histórico preso na URL.
+  const view: "lista" | "historico" =
+    tab === "suas" && searchParams.get("ver") === "historico" ? "historico" : "lista";
+  const setTab = (next: AgendaTab) => setSearchParams(next === "todas" ? { aba: "todas" } : {});
+
+  // O foco acompanha a troca de visão: o histórico recebe o foco no título; ao voltar, o link que o abriu.
+  // A troca é só de query string, então `useFocusOnNavigation` (por rota) não cobre.
+  const historyHeadingRef = useRef<HTMLHeadingElement>(null);
+  const historyLinkRef = useRef<HTMLAnchorElement>(null);
+  const previousView = useRef(view);
   useEffect(() => {
-    if (hasRouteRescheduling) navigate(location.pathname + location.search, { replace: true });
-  }, [hasRouteRescheduling, navigate, location.pathname, location.search]);
+    if (previousView.current === view) return;
+    previousView.current = view;
+    if (view === "historico") historyHeadingRef.current?.focus({ preventScroll: true });
+    else historyLinkRef.current?.focus({ preventScroll: true });
+  }, [view]);
+
+  useEffect(() => {
+    if (hasRouteRescheduling) navigate({ pathname: location.pathname, search: "?aba=todas" }, { replace: true });
+  }, [hasRouteRescheduling, navigate, location.pathname]);
+
+  /** Abre o detalhe da aula; `startCancelling` o abre direto na confirmação de cancelamento. */
+  function openClass(item: ClientAgendaItem, startCancelling = false) {
+    setCancelling(startCancelling);
+    setOpenItem(item);
+  }
 
   const weekEnd = addDays(weekStart, 6);
   const agendaQuery = useQuery({
     queryKey: ["client-agenda", weekStart],
     queryFn: () => listClientAgenda(weekStart, weekEnd),
+    // Suas aulas não usa a agenda da semana: só busca quando a aba Todas está aberta.
+    enabled: tab === "todas",
   });
 
   const days = Array.from({ length: 7 }, (_, index) => addDays(weekStart, index));
@@ -152,7 +182,11 @@ export function ClientAgendaPage() {
       <header className="fb-agenda__head">
         <div>
           <p className="fb-kicker fb-agenda__kicker">
-            {tab === "upcoming" ? `Semana de ${formatWeekRange(weekStart)}` : "Reservas"}
+            {tab === "todas"
+              ? `Semana de ${formatWeekRange(weekStart)}`
+              : view === "historico"
+                ? "Suas aulas"
+                : "Reservas"}
           </p>
           <h1 className="fb-agenda__title">Agenda</h1>
         </div>
@@ -165,8 +199,27 @@ export function ClientAgendaPage() {
         />
       </header>
 
-      {tab === "history" ? (
-        <ReservationHistory onOpenClass={setOpenItem} />
+      {view === "historico" ? (
+        <>
+          <Link to={{ search: "" }} className="fb-agenda__back">
+            <span aria-hidden="true">←</span> Suas aulas
+          </Link>
+          <h2 ref={historyHeadingRef} tabIndex={-1} className="fb-agenda__subtitle">
+            Histórico
+          </h2>
+          <ReservationHistory onOpenClass={openClass} />
+        </>
+      ) : tab === "suas" ? (
+        <MyReservationsList
+          historyLinkRef={historyLinkRef}
+          onReschedule={(item) => {
+            if (!item.myReservationId) return;
+            setRescheduling({ reservationId: item.myReservationId, from: item });
+            setTab("todas");
+          }}
+          onCancel={(item) => openClass(item, true)}
+          onSeeAll={() => setTab("todas")}
+        />
       ) : (
         <>
           {rescheduling && (
@@ -251,7 +304,7 @@ export function ClientAgendaPage() {
                               <Badge tone={badge.tone}>{badge.text}</Badge>
                             )
                           }
-                          onClick={() => setOpenItem(item)}
+                          onClick={() => openClass(item)}
                         />
                       </li>
                     );
@@ -293,7 +346,7 @@ export function ClientAgendaPage() {
                               key={item.id}
                               type="button"
                               className={`fb-agenda__slot${item.myReservationId ? " fb-agenda__slot--booked" : ""}`}
-                              onClick={() => setOpenItem(item)}
+                              onClick={() => openClass(item)}
                             >
                               <span className="fb-agenda__slot-title">{item.modality.name}</span>
                               <span
@@ -323,13 +376,17 @@ export function ClientAgendaPage() {
           key={openItem.id}
           item={openItem}
           rescheduling={rescheduling}
+          startCancelling={cancelling}
           onStartRescheduling={(next) => {
             setRescheduling(next);
             setOpenItem(null);
-            setTab("upcoming");
+            setTab("todas");
           }}
           onRescheduled={() => setRescheduling(null)}
-          onClose={() => setOpenItem(null)}
+          onClose={() => {
+            setOpenItem(null);
+            setCancelling(false);
+          }}
         />
       )}
     </div>

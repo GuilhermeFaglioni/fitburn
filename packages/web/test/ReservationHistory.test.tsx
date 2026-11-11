@@ -51,12 +51,13 @@ function LoggedInPage() {
   return <ClientAgendaPage />;
 }
 
-function renderPage() {
+/** O Histórico é uma subvisão de Suas aulas: `?aba=suas&ver=historico` abre direto nela. */
+function renderPage(path = "/agenda?aba=suas&ver=historico") {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <MemoryRouter initialEntries={["/agenda"]}>
+        <MemoryRouter initialEntries={[path]}>
           <LoggedInPage />
         </MemoryRouter>
       </AuthProvider>
@@ -97,20 +98,19 @@ describe("Agenda › Histórico (minhas reservas)", () => {
     );
   });
 
+  /** O histórico abre pela URL; Suas aulas segue como a aba ativa do controle. */
   async function openHistory() {
     const user = userEvent.setup();
-    await user.click(await screen.findByRole("button", { name: "Histórico" }));
+    await screen.findByRole("heading", { name: "Histórico" });
     return user;
   }
 
-  it("a aba Histórico lista as próximas reservas e as anteriores, com o estado de cada uma", async () => {
+  it("o Histórico lista as próximas reservas e as anteriores, com o estado de cada uma", async () => {
     renderPage();
-    expect(await screen.findByRole("button", { name: "Próximas" })).toHaveAttribute(
+    expect(await screen.findByRole("button", { name: "Suas aulas" })).toHaveAttribute(
       "aria-pressed",
       "true",
     );
-
-    await openHistory();
 
     const upcoming = await screen.findByRole("region", { name: "Próximas reservas" });
     const items = await within(upcoming).findAllByRole("listitem");
