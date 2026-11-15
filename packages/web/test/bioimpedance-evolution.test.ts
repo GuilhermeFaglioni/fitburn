@@ -1,5 +1,5 @@
 import type { BioimpedanceAssessment } from "@fitburn/contracts";
-import { labeledIndexes } from "../src/components/LineChart";
+import { labeledIndexes, withoutOverlap } from "../src/components/LineChart";
 import {
   evolutionPoints,
   measureFullLabel,
@@ -78,5 +78,12 @@ describe("evolução: funções puras (#198)", () => {
     expect([...labeledIndexes([1, 2, 3])]).toEqual([0, 1, 2]);
     const many = [5, 9, 3, 6, 7, 8, 4, 5];
     expect([...labeledIndexes(many)].sort((a, b) => a - b)).toEqual([0, 1, 2, 7]);
+  });
+  it("withoutOverlap mantém rótulos afastados e, entre vizinhos próximos, dá prioridade ao último e depois ao primeiro", () => {
+    expect([...withoutOverlap(new Set([0, 1, 2]), [0, 100, 200])]).toEqual([2, 0, 1]);
+    expect([...withoutOverlap(new Set([0, 1, 2]), [0, 10, 200])].sort()).toEqual([0, 2]);
+    expect([...withoutOverlap(new Set([0, 1, 2]), [0, 190, 200])].sort()).toEqual([0, 2]);
+    expect([...withoutOverlap(new Set([0, 1]), [50, 60])]).toEqual([1]);
+    expect(withoutOverlap(new Set(), []).size).toBe(0);
   });
 });
