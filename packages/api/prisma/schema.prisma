@@ -601,6 +601,7 @@ model Product {
   updatedAt               DateTime  @updatedAt
 
   category ShopCategory?    @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  options  ProductOption[]
   variants ProductVariant[]
 
   @@index([excluidoEm])
@@ -608,19 +609,55 @@ model Product {
   @@map("products")
 }
 
-/// Variação de um produto, com estoque próprio e preço próprio opcional. Produto sem opções tem uma só (label nulo).
-model ProductVariant {
+/// Opção do produto (Cor, Tamanho, Modelo), com até 3 por produto. Ordem por `position`.
+model ProductOption {
   id        String   @id @default(uuid())
   productId String
-  label     String?
-  stock     Int      @default(0)
-  priceCents Int?
-  ativa     Boolean  @default(true)
+  name      String
+  position  Int
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+
+  product Product              @relation(fields: [productId], references: [id], onDelete: Cascade)
+  values  ProductOptionValue[]
+
+  @@index([productId])
+  @@map("product_options")
+}
+
+/// Valor de uma opção (ex.: Preta, M). Ordem por `position`.
+model ProductOptionValue {
+  id        String   @id @default(uuid())
+  optionId  String
+  value     String
+  position  Int
+  createdAt DateTime @default(now())
+
+  option ProductOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+
+  @@index([optionId])
+  @@map("product_option_values")
+}
+
+/// Variação de um produto, com estoque próprio e preço próprio opcional. Produto sem opções tem uma só
+/// (label nulo, `combinationKey` vazio). `combinationKey` identifica a combinação de valores, única por
+/// produto, e é o que permite reaproveitar a variação ao editar as opções. Variação que sai de uma
+/// combinação é `descontinuada` (nunca apagada): pedidos futuros a referenciam.
+model ProductVariant {
+  id              String   @id @default(uuid())
+  productId       String
+  label           String?
+  combinationKey  String   @default("")
+  position        Int      @default(0)
+  stock           Int      @default(0)
+  priceCents      Int?
+  ativa           Boolean  @default(true)
+  descontinuada   Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
+  @@unique([productId, combinationKey])
   @@index([productId])
   @@map("product_variants")
 }

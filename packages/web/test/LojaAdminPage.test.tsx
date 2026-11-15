@@ -146,8 +146,23 @@ describe("Loja no admin", () => {
       }),
       http.get("/api/shop/admin/products/:id", ({ params }) => {
         const found = products.find((item) => item.id === params.id);
+        // Detalhe (L2): produto simples = sem opções e uma variação única.
         return found
-          ? HttpResponse.json(found)
+          ? HttpResponse.json({
+              ...found,
+              options: [],
+              variants: [
+                {
+                  id: `v-${found.id}`,
+                  label: null,
+                  values: [],
+                  stock: found.stock,
+                  priceCents: null,
+                  effectivePriceCents: found.promoPriceCents ?? found.priceCents,
+                  ativa: true,
+                },
+              ],
+            })
           : HttpResponse.json({ code: "NOT_FOUND", message: "Produto não encontrado." }, { status: 404 });
       }),
       http.post("/api/shop/admin/products", async ({ request }) => {
@@ -442,7 +457,7 @@ describe("Loja no admin", () => {
   });
 
   describe("Formulário de produto", () => {
-    it("tem trilha, cartões e botões do cabeçalho, e sem Fotos nem Opções", async () => {
+    it("tem trilha, cartões e botões do cabeçalho, com Opções e sem Fotos nem tabela de variações", async () => {
       renderAt("/loja-admin/produtos/novo");
 
       expect(await screen.findByRole("heading", { level: 1, name: "Novo produto" })).toBeInTheDocument();
@@ -452,7 +467,11 @@ describe("Loja no admin", () => {
       expect(screen.getByRole("heading", { level: 2, name: "Regras de venda" })).toBeInTheDocument();
       expect(screen.getByRole("button", { name: "Cancelar" })).toBeInTheDocument();
       expect(screen.getByRole("button", { name: "Salvar produto" })).toBeInTheDocument();
-      expect(screen.queryByRole("heading", { name: /Fotos|Opções|Variações/ })).not.toBeInTheDocument();
+      expect(screen.getByRole("heading", { level: 2, name: "Opções" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "+ Adicionar opção" })).toBeInTheDocument();
+      // Sem opções, a tela é a da L1: estoque único e nenhuma tabela de variações.
+      expect(screen.getByLabelText("Estoque")).toBeInTheDocument();
+      expect(screen.queryByRole("heading", { name: /Fotos|Variações/ })).not.toBeInTheDocument();
       // Visível já vem ligado; destaque desligado.
       expect(screen.getByRole("switch", { name: "Visível na loja" })).toHaveAttribute("aria-checked", "true");
       expect(screen.getByRole("switch", { name: "Destaque no Início" })).toHaveAttribute("aria-checked", "false");
@@ -822,7 +841,7 @@ describe("Loja no admin", () => {
       }
     });
 
-    it("o formulário não salva sem Criar", async () => {
+    it("o formulário não salva sem Criar: fica bloqueado, com o motivo na tela", async () => {
       mockSuccessfulLogin("Professor", lojaPermissions([PermissionAction.VIEW, PermissionAction.EDIT]));
       renderAt("/loja-admin/produtos/novo");
       await screen.findByRole("heading", { level: 1, name: "Novo produto" });
@@ -830,6 +849,9 @@ describe("Loja no admin", () => {
       const save = screen.getByRole("button", { name: "Salvar produto" });
       expect(save).toBeDisabled();
       expect(save).toHaveAttribute("title", reasonFor("criar produtos"));
+      expect(screen.getByText("Você não tem permissão para criar produtos.")).toBeInTheDocument();
+      expect(screen.getByLabelText("Nome")).toBeDisabled();
+      expect(screen.getByRole("button", { name: "+ Adicionar opção" })).toBeDisabled();
     });
 
     it("com Editar mas sem Excluir: só Excluir fica bloqueado", async () => {

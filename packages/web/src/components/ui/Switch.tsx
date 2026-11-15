@@ -7,6 +7,8 @@ export interface SwitchProps
   label: ReactNode;
   /** Explicação curta abaixo do rótulo; vira a descrição acessível. */
   description?: ReactNode;
+  /** Rótulo só para leitores de tela (switch numa linha de tabela, em que a linha já diz do que se trata). */
+  hideLabel?: boolean;
   checked: boolean;
   onChange: (checked: boolean) => void;
 }
@@ -16,14 +18,14 @@ export interface SwitchProps
  * `<button role="switch">` com `aria-checked`, rótulo e descrição ligados por `aria-labelledby`/`aria-describedby`,
  * alvo de toque de 44px. Estilo em `styles/components.css` (`.fb-ui-switch`); só tokens.
  */
-export function Switch({ label, description, checked, onChange, className, id, disabled, ...rest }: SwitchProps) {
+export function Switch({ label, description, hideLabel, checked, onChange, className, id, disabled, ...rest }: SwitchProps) {
   const generated = useId();
   const switchId = id ?? generated;
   const labelId = `${switchId}-label`;
   const descriptionId = `${switchId}-desc`;
   return (
     <div className={join("fb-ui-switch", className)}>
-      <div className="fb-ui-switch__text">
+      <div className={join("fb-ui-switch__text", hideLabel && "fb-ui-sr-only")}>
         <span id={labelId} className="fb-ui-switch__label">
           {label}
         </span>

@@ -8,6 +8,7 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   Query,
   Req,
   UseGuards,
@@ -17,10 +18,13 @@ import {
   listShopProductsQuerySchema,
   Module,
   PermissionAction,
+  setShopProductOptionsRequestSchema,
   updateShopProductRequestSchema,
   type CreateShopProductRequest,
   type ListShopProductsQuery,
+  type SetShopProductOptionsRequest,
   type ShopProduct,
+  type ShopProductDetail,
   type UpdateShopProductRequest,
 } from "@fitburn/contracts";
 import { JwtAuthGuard, type AuthenticatedRequest } from "../auth/jwt-auth.guard.js";
@@ -47,7 +51,7 @@ export class ShopProductsController {
 
   @RequirePermission(Module.LOJA, PermissionAction.VIEW)
   @Get(":id")
-  get(@Param("id") id: string, @Req() req: AuthenticatedRequest): Promise<ShopProduct> {
+  get(@Param("id") id: string, @Req() req: AuthenticatedRequest): Promise<ShopProductDetail> {
     return this.productsService.get(id, requesterOf(req));
   }
 
@@ -68,6 +72,17 @@ export class ShopProductsController {
     @Req() req: AuthenticatedRequest,
   ): Promise<ShopProduct> {
     return this.productsService.update(id, body, requesterOf(req));
+  }
+
+  @RequirePermission(Module.LOJA, PermissionAction.EDIT)
+  @Put(":id/options")
+  setOptions(
+    @Param("id") id: string,
+    @Body(new ZodValidationPipe(setShopProductOptionsRequestSchema))
+    body: SetShopProductOptionsRequest,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<ShopProductDetail> {
+    return this.productsService.setOptions(id, body, requesterOf(req));
   }
 
   @HttpCode(HttpStatus.NO_CONTENT)
