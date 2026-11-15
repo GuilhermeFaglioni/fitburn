@@ -23,6 +23,7 @@ enum AdminAuditAction {
   USER_PROFILE_CHANGED
   USER_PASSWORD_RESET
   PROFILE_PERMISSIONS_CHANGED
+  BIOIMPEDANCE_ASSESSMENT_DELETED
 }
 
 enum UserManifestationType {
@@ -50,6 +51,12 @@ enum Module {
   FICHAS_DE_TREINO
   GAMIFICACAO
   LOJA
+  BIOIMPEDANCIA
+}
+
+enum BioimpedanceSource {
+  FOTO_DO_LAUDO
+  MANUAL
 }
 
 enum PermissionAction {
@@ -148,6 +155,10 @@ model User {
   /// Fichas de treino que este usuário, da equipe, montou.
   authoredWorkoutSheets WorkoutSheet[]          @relation("AuthoredWorkoutSheets")
   manifestations       UserManifestation[]
+  /// Avaliações de bioimpedância deste usuário, cliente.
+  bioimpedanceAssessments BioimpedanceAssessment[] @relation("ClientBioimpedanceAssessments")
+  /// Avaliações de bioimpedância que este usuário, da equipe, registrou.
+  authoredBioimpedanceAssessments BioimpedanceAssessment[] @relation("AuthoredBioimpedanceAssessments")
 
   @@map("users")
 }
@@ -168,6 +179,31 @@ model UserManifestation {
   @@index([userId, type, createdAt])
   @@index([type, userId, sequence])
   @@map("user_manifestations")
+}
+
+/// Avaliação de bioimpedância: os valores de um laudo InBody de um cliente numa data e hora (D-041).
+/// A imagem do laudo nunca é guardada. As medidas ficam em `measures` (jsonb), validadas pelo
+/// schema do catálogo de `@fitburn/contracts`; `schemaVersion` acompanha esse schema.
+model BioimpedanceAssessment {
+  id            String             @id @default(uuid())
+  measuredAt    DateTime           @db.Timestamptz(3)
+  heightCm      Float?
+  age           Int?
+  source        BioimpedanceSource
+  schemaVersion Int
+  measures      Json
+  createdAt     DateTime           @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime           @updatedAt @db.Timestamptz(3)
+
+  clientId String
+  client   User   @relation("ClientBioimpedanceAssessments", fields: [clientId], references: [id], onDelete: Restrict)
+
+  authorId String
+  author   User   @relation("AuthoredBioimpedanceAssessments", fields: [authorId], references: [id], onDelete: Restrict)
+
+  @@unique([clientId, measuredAt])
+  @@index([measuredAt])
+  @@map("bioimpedance_assessments")
 }
 
 /// Registro técnico das ações administrativas. Não armazena valores dos campos.

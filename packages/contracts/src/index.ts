@@ -21,3 +21,6 @@ export * from "./admin-reservations.js";
 export * from "./exports.js";
 export * from "./shop.js";
 export * from "./bioimpedance.js";
+export * from "./bioimpedance-catalog.js";
+export * from "./bioimpedance-assessments.js";
+export * from "./bioimpedance-checks.js";

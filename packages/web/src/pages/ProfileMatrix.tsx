@@ -28,6 +28,7 @@ const MODULE_ORDER: ModuleName[] = [
   Module.RESERVAS,
   Module.PLANOS,
   Module.FICHAS_DE_TREINO,
+  Module.BIOIMPEDANCIA,
   Module.GAMIFICACAO,
   Module.LOJA,
   Module.USUARIOS,
