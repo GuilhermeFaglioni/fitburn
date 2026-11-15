@@ -34,6 +34,19 @@ export function labeledIndexes(values: readonly number[]): Set<number> {
   return new Set([0, values.length - 1, lowest, highest]);
 }
 
+const MIN_LABEL_GAP = 46;
+
+/** Remove rótulos que se sobreporiam (x a menos de MIN_LABEL_GAP): o último ponto tem prioridade, depois o primeiro. */
+export function withoutOverlap(wanted: Set<number>, xs: readonly number[]): Set<number> {
+  const order = [...wanted].sort((a, b) => a - b);
+  const priority = [xs.length - 1, 0, ...order].filter((i) => wanted.has(i));
+  const kept: number[] = [];
+  for (const index of priority) {
+    if (kept.every((other) => Math.abs(xs[other] - xs[index]) >= MIN_LABEL_GAP)) kept.push(index);
+  }
+  return new Set(kept);
+}
+
 /**
  * Gráfico de linha em SVG próprio (#198): linha, faixa normal ao fundo e pontos rotulados. A tabela abaixo traz os
  * mesmos valores e é a alternativa acessível; o SVG é descrito por `label`. A linha se desenha com animação só quando
@@ -74,7 +87,7 @@ export function LineChart({
   const path = coords
     .map(({ cx, cy }, index) => `${index === 0 ? "M" : "L"}${cx.toFixed(1)} ${cy.toFixed(1)}`)
     .join(" ");
-  const labeled = labeledIndexes(values);
+  const labeled = withoutOverlap(labeledIndexes(values), coords.map(({ cx }) => cx));
   const lastIndex = coords.length - 1;
 
   return (
