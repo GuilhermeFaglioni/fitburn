@@ -29,6 +29,7 @@ enum UserManifestationType {
   PRIVACY_ACKNOWLEDGED
   TERMS_ACCEPTED
   CONSENT_RANKING
+  CONSENT_BIOIMPEDANCE
 }
 
 enum UserManifestationAction {

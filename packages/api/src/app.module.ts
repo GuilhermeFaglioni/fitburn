@@ -21,6 +21,7 @@ import { ShopModule } from "./shop/shop.module.js";
 import { DashboardModule } from "./dashboard/dashboard.module.js";
 import { WorkoutSheetsModule } from "./workout-sheets/workout-sheets.module.js";
 import { ClientsModule } from "./clients/clients.module.js";
+import { BioimpedanceModule } from "./bioimpedance/bioimpedance.module.js";
 import { ExportsModule } from "./exports/exports.module.js";
 
 @Module({
@@ -47,6 +48,7 @@ import { ExportsModule } from "./exports/exports.module.js";
     ClientsModule,
     DashboardModule,
     ExportsModule,
+    BioimpedanceModule,
     AuthModule,
   ],
 })

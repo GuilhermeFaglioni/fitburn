@@ -19,6 +19,7 @@ import { Card } from "../components/ui/Card";
 import { Field } from "../components/ui/Field";
 import { MyPlanSection } from "./plans/MyPlanSection";
 import { RankingConsentControl } from "./gamification/RankingConsentControl";
+import { BioimpedanceConsentSwitch } from "./bioimpedance/BioimpedanceConsentSwitch";
 
 interface FormState {
   fullName: string;
@@ -415,6 +416,8 @@ export function ProfilePage({
       {!requiredPasswordChange && isClient && profile && (
         <RankingConsentControl surface="profile" />
       )}
+
+      {!requiredPasswordChange && isClient && profile && <BioimpedanceConsentSwitch />}
 
       {!requiredPasswordChange && isClient && (
         <Card as="section" flat className="fb-profile__card" aria-labelledby="fb-profile-install">
