@@ -357,6 +357,155 @@
   font-size: var(--text-small);
 }
 
+/* Bioimpedância: Evolução e Segmentar (issue 198). Gráfico em SVG próprio; cores só por tokens. */
+.fb-linechart {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  margin: 0;
+}
+
+.fb-linechart__svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.fb-linechart__band {
+  fill: var(--success-bg);
+}
+
+.fb-linechart__axis {
+  stroke: var(--line-2);
+  stroke-width: 1;
+}
+
+.fb-linechart__line {
+  stroke: var(--brand);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.fb-linechart__point {
+  fill: var(--surface);
+  stroke: var(--brand);
+  stroke-width: 2.5;
+}
+
+.fb-linechart__tick,
+.fb-linechart__value {
+  fill: var(--muted);
+  font-family: var(--font-sans);
+  font-size: var(--text-caption);
+}
+
+.fb-linechart__value {
+  fill: var(--ink);
+  font-weight: var(--weight-bold);
+}
+
+.fb-linechart__legend {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  color: var(--muted);
+  font-size: var(--text-small);
+}
+
+.fb-linechart__swatch {
+  width: var(--s-4);
+  height: var(--s-2);
+  background: var(--success-bg);
+  border: 1px solid var(--success-line);
+  border-radius: var(--r-xs);
+}
+
+.fb-linechart__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-small);
+}
+
+.fb-linechart__table th,
+.fb-linechart__table td {
+  padding: var(--s-2) 0;
+  border-top: 1px solid var(--line);
+  text-align: left;
+}
+
+.fb-linechart__table td:last-child,
+.fb-linechart__table th:last-child {
+  text-align: right;
+  font-weight: var(--weight-bold);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .fb-linechart__line {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation: fb-linechart-draw 700ms ease-out forwards;
+  }
+}
+
+@keyframes fb-linechart-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.fb-bio-first-last {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s-3);
+  margin: 0;
+}
+
+.fb-bio-first-last > div {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  padding: var(--s-3);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+}
+
+.fb-bio-first-last dt {
+  color: var(--muted);
+  font-size: var(--text-small);
+}
+
+.fb-bio-first-last dd {
+  margin: 0;
+  font-weight: var(--weight-bold);
+}
+
+.fb-bio-body {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fb-bio-seg {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-1);
+  padding: var(--s-3);
+  text-align: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+}
+
+.fb-bio-seg--Trunk {
+  grid-column: 1 / -1;
+}
+
 /* ---------- Onboarding, Política de privacidade e Termos: coluna de leitura sem casca ---------- */
 .fb-flow {
   box-sizing: border-box;
@@ -514,4 +663,15 @@
   .fb-flow .fb-legal__doc {
     padding: var(--s-6);
   }
+}
+
+/* Abas da composição corporal: as 4 cabem a 360px sem rolar (o controle padrão rola e esconde "Valores"). */
+.fb-bio-tabs {
+  display: flex;
+  width: 100%;
+}
+
+.fb-bio-tabs button {
+  flex: 1 1 auto;
+  padding: 0 var(--s-2);
 }
