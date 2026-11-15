@@ -31,7 +31,7 @@ export default tseslint.config(
   },
   {
     // Scripts ESM da raiz (deploy-check.mjs).
-    files: ["scripts/**/*.mjs"],
+    files: ["scripts/**/*.mjs", "packages/web/scripts/**/*.mjs"],
     languageOptions: { globals: globals.node },
   },
 );
