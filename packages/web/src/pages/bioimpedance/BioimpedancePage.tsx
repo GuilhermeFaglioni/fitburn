@@ -311,6 +311,7 @@ export function BioimpedancePage() {
           )}
           <Segmented
             label="Seção"
+            className="fb-bio-tabs"
             options={TABS}
             value={tab}
             onChange={(value) => update({ aba: value })}

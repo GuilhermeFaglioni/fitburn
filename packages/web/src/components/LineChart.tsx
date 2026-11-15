@@ -25,6 +25,8 @@ export interface LineChartProps {
 const WIDTH = 320;
 const HEIGHT = 190;
 const PAD = { left: 40, right: 20, top: 26, bottom: 30 };
+/** Recuo do eixo do tempo: o primeiro e o último ponto não encostam nos rótulos do eixo Y nem na borda. */
+const INSET_X = 22;
 
 /** Quais pontos levam rótulo: todos até 6; acima disso, só o primeiro, o último e os extremos. */
 export function labeledIndexes(values: readonly number[]): Set<number> {
@@ -80,7 +82,7 @@ export function LineChart({
   const x = (time: number) =>
     last === first
       ? PAD.left + innerWidth / 2
-      : PAD.left + ((time - first) / (last - first)) * innerWidth;
+      : PAD.left + INSET_X + ((time - first) / (last - first)) * (innerWidth - 2 * INSET_X);
   const y = (value: number) => PAD.top + (1 - (value - min) / (max - min)) * innerHeight;
 
   const coords = points.map((point, index) => ({ point, cx: x(times[index]), cy: y(point.value) }));
