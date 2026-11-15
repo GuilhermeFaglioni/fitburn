@@ -6,7 +6,6 @@ import { http, HttpResponse } from "msw";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import {
   gymDateTimeToUtc,
-  gymToday,
   Module,
   PermissionAction,
   PermissionScope,
@@ -53,7 +52,9 @@ function renderLoggedIn(page: ReactNode, path: string, routePath = path) {
 
 describe("Sem conexão: ações que exigem rede ficam desabilitadas", () => {
   describe("Reservar aula (cliente)", () => {
-    const startsAt = gymDateTimeToUtc(gymToday(), "18:00");
+    // Relógio fixo (12:00 na academia): sem isso, rodar depois das 18:00 esconde a aula já passada.
+    const NOW = new Date("2026-11-10T15:00:00Z");
+    const startsAt = gymDateTimeToUtc("2026-11-10", "18:00");
     const occurrence: ClientAgendaItem = {
       id: "occ-1",
       name: "Treino Funcional",
@@ -69,11 +70,17 @@ describe("Sem conexão: ações que exigem rede ficam desabilitadas", () => {
     };
 
     beforeEach(() => {
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(NOW);
       mockSuccessfulLogin("Cliente");
       server.use(
         http.get("/api/agenda", () => HttpResponse.json([occurrence])),
         http.get("/api/agenda/:id", () => HttpResponse.json(occurrence)),
       );
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
     });
 
     async function openDetail() {
