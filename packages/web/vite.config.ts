@@ -17,6 +17,8 @@ export default defineConfig({
       // por decisão do MVP.
       workbox: {
         navigateFallbackDenylist: [/^\/api\//],
+        // O OCR do laudo (~10 MB) só é baixado quando alguém lê um laudo; fora do precache.
+        globIgnores: ["ocr/**"],
       },
       manifest: {
         name: "Fitburn",

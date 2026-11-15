@@ -27,3 +27,5 @@ allowBuilds:
   msw: true
   # Baixa o binário pré-compilado do compilador SWC (usado pelo unplugin-swc nos testes da API).
   "@swc/core": true
+  # Só postinstall de funding (opencollective); não precisa rodar.
+  tesseract.js: false

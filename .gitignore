@@ -11,6 +11,9 @@ build/
 coverage/
 *.tsbuildinfo
 
+# OCR do laudo: copiado de node_modules + packages/web/ocr por scripts/copiar-ocr.mjs
+packages/web/public/ocr/
+
 # Agentes
 .scratch/
 .maestri/

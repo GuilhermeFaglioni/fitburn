@@ -123,13 +123,16 @@ export async function gerarLaudo({ layout = "novo", valores = VALORES_SINTETICOS
       svg.push(texto(fmt(`impedance${freq}${seg}`, num[`impedance${freq}${seg}`]), Math.round((f.rect[0] + f.rect[2]) / 2), Math.round((f.rect[1] + f.rect[3]) / 2), 20, { anchor: "middle" }));
     }
   }
-  // dígito ilegível: um retângulo cinza com ruído cobre o último dígito do campo
+  const doc = `<svg xmlns="http://www.w3.org/2000/svg" width="${gabarito.width}" height="${gabarito.height}">${svg.join("")}</svg>`;
+  let img = await sharp(BASE).composite([{ input: Buffer.from(doc) }]).png().toBuffer();
+  // dígito borrado (foto fora de foco): o último dígito do campo passa por um desfoque forte
   for (const chave of borrar) {
     const [, y0, x1, y1] = campo(chave).rect;
-    svg.push(`<rect x="${x1 - 24}" y="${y0 + 4}" width="14" height="${y1 - y0 - 8}" fill="#9a9a9a" opacity="0.85" filter="url(#b)"/>`);
+    const area = { left: x1 - 21, top: y0, width: 16, height: y1 - y0 };
+    const turvo = await sharp(img).extract(area).blur(4).png().toBuffer();
+    img = await sharp(img).composite([{ input: turvo, left: area.left, top: area.top }]).png().toBuffer();
   }
-  const doc = `<svg xmlns="http://www.w3.org/2000/svg" width="${gabarito.width}" height="${gabarito.height}"><defs><filter id="b"><feGaussianBlur stdDeviation="3"/></filter></defs>${svg.join("")}</svg>`;
-  return sharp(BASE).composite([{ input: Buffer.from(doc) }]).png().toBuffer();
+  return img;
 }
 
 /** Imagem que não é um laudo: degradê com blocos de texto qualquer. */
