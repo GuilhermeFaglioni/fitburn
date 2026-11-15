@@ -78,6 +78,8 @@ describe("Perfil / Minha conta", () => {
   let refreshCalls: number;
   let rankingConsented: boolean;
   let rankingConsentChanges: boolean[];
+  let bioimpedanceConsented: boolean;
+  let bioimpedanceChanges: boolean[];
 
   function mockSession(detail: UserDetail, permissions: EffectivePermission[] = []) {
     me = { ...detail };
@@ -88,6 +90,20 @@ describe("Perfil / Minha conta", () => {
     refreshCalls = 0;
     rankingConsented = false;
     rankingConsentChanges = [];
+    bioimpedanceConsented = true;
+    bioimpedanceChanges = [];
+    const bioConsent = () => ({
+      consented: bioimpedanceConsented,
+      currentVersion: "1",
+      manifestation: {
+        id: "bio-1",
+        userId: detail.id,
+        type: "CONSENT_BIOIMPEDANCE",
+        version: "1",
+        action: bioimpedanceConsented ? "GRANTED" : "REVOKED",
+        createdAt: "2026-11-15T00:00:00.000Z",
+      },
+    });
     const current: CurrentUser = {
       id: detail.id,
       email: detail.email,
@@ -139,6 +155,13 @@ describe("Perfil / Minha conta", () => {
             createdAt: "2026-10-19T00:00:00.000Z",
           },
         });
+      }),
+      http.get("/api/bioimpedance/consent", () => HttpResponse.json(bioConsent())),
+      http.patch("/api/bioimpedance/consent", async ({ request }) => {
+        const body = (await request.json()) as { consented: boolean };
+        bioimpedanceChanges.push(body.consented);
+        bioimpedanceConsented = body.consented;
+        return HttpResponse.json(bioConsent());
       }),
       http.get("/api/plans/mine", () => HttpResponse.json({ active: null, history: [] })),
       http.patch("/api/me", async ({ request }) => {
@@ -196,6 +219,37 @@ describe("Perfil / Minha conta", () => {
       await user.click(consent);
       await waitFor(() => expect(consent).not.toBeChecked());
       expect(rankingConsentChanges).toEqual([true, false]);
+    });
+
+    it("desliga a bioimpedância só depois de confirmar e liga de volta sem confirmação", async () => {
+      const user = userEvent.setup();
+      renderAt("/perfil");
+
+      const toggle = await screen.findByRole("switch", { name: "Registrar minha bioimpedância" });
+      expect(toggle).toHaveAttribute("aria-checked", "true");
+
+      await user.click(toggle);
+      const dialog = await screen.findByRole("dialog", {
+        name: "Desligar o registro da bioimpedância?",
+      });
+      expect(bioimpedanceChanges).toEqual([]);
+
+      // "Voltar" cancela: nada é gravado.
+      await user.click(within(dialog).getByRole("button", { name: "Voltar" }));
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+      expect(bioimpedanceChanges).toEqual([]);
+
+      await user.click(toggle);
+      await user.click(
+        within(await screen.findByRole("dialog")).getByRole("button", { name: "Desligar" }),
+      );
+      await waitFor(() => expect(toggle).toHaveAttribute("aria-checked", "false"));
+      expect(bioimpedanceChanges).toEqual([false]);
+
+      await user.click(toggle);
+      await waitFor(() => expect(toggle).toHaveAttribute("aria-checked", "true"));
+      expect(bioimpedanceChanges).toEqual([false, true]);
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     });
 
     it("edita os dados, salva e volta ao modo de visualização com os novos valores", async () => {
@@ -456,6 +510,7 @@ describe("Perfil / Minha conta", () => {
           [3, "Histórico de planos"],
           [2, "Senha"],
           [2, "Participação no ranking"],
+          [2, "Privacidade"],
           [2, "Instalar o app"],
         ]);
       });

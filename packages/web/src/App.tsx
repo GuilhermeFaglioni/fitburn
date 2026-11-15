@@ -21,6 +21,7 @@ import { MyClassesPage } from "./pages/MyClassesPage";
 import { AttendancePage } from "./pages/AttendancePage";
 import { ClassStudentSheetPage } from "./pages/ClassStudentSheetPage";
 import { GamificationPage } from "./pages/GamificationPage";
+import { BioimpedancePage } from "./pages/bioimpedance/BioimpedancePage";
 import { AssignmentsPage } from "./pages/AssignmentsPage";
 import { GoalsPage } from "./pages/GoalsPage";
 import { PlansPage } from "./pages/PlansPage";
@@ -77,6 +78,7 @@ export function AppRoutes() {
         <Route path="/ficha-treino" element={<ClientWorkoutSheetsPage />} />
         <Route path="/ficha-treino/:id" element={<ClientWorkoutSheetPage />} />
         <Route path="/fitpoints" element={<GamificationPage />} />
+        <Route path="/bioimpedancia" element={<BioimpedancePage />} />
         <Route path="/gamificacao" element={<Navigate to="/fitpoints" replace />} />
       </Route>
       <Route

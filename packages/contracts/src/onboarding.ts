@@ -25,6 +25,7 @@ export const userManifestationTypeSchema = z.enum([
   "PRIVACY_ACKNOWLEDGED",
   "TERMS_ACCEPTED",
   "CONSENT_RANKING",
+  "CONSENT_BIOIMPEDANCE",
 ]);
 export type UserManifestationType = z.infer<typeof userManifestationTypeSchema>;
 

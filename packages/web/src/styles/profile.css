@@ -193,6 +193,61 @@
   width: fit-content;
 }
 
+/* ---------- Bioimpedância: autorização (/bioimpedancia) ---------- */
+.fb-bio {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  max-width: 560px;
+}
+
+.fb-bio__title {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-weight: var(--weight-bold);
+  font-size: var(--text-h1);
+  line-height: var(--leading-title);
+  letter-spacing: var(--tracking-title);
+}
+
+.fb-bio__card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+.fb-bio__subtitle {
+  margin: 0;
+  font-size: var(--text-h2, var(--text-h1));
+  font-weight: var(--weight-bold);
+}
+
+.fb-bio__copy,
+.fb-bio__list {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--text-small);
+  line-height: var(--leading-body);
+}
+
+.fb-bio__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding-left: var(--s-4);
+}
+
+.fb-bio__link {
+  font-size: var(--text-small);
+}
+
+.fb-bio__actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--s-2);
+}
+
 /* ---------- Onboarding, Política de privacidade e Termos: coluna de leitura sem casca ---------- */
 .fb-flow {
   box-sizing: border-box;
