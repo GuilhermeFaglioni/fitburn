@@ -14,6 +14,8 @@ export interface TemplateField {
   rect: Rect;
   type: FieldType;
   unit?: string;
+  /** Folga ao redor da área no recorte (padrão 3 px); menor onde há linha pontilhada colada. */
+  pad?: number;
   /** Só `anchor`: texto do rótulo e faixa onde ele é procurado. */
   label?: string;
   labelRect?: Rect;

@@ -1,3 +1,4 @@
+import { applyCrossChecks } from "./cross-check";
 import { parseDateTime, parseNumber, parseRating, normalizeText } from "./parse";
 import { REPORT_HEIGHT, REPORT_TEMPLATE, REPORT_WIDTH, type Rect, type TemplateField } from "./template";
 import type { OcrEngine, OcrResult, ReadField, ReadResult, ReportImage } from "./types";
@@ -28,12 +29,19 @@ const ANCHOR_KEYWORDS: Record<string, string> = {
 /** Campos que o laudo imprime sem casa decimal. */
 const INTEGER_KEYS = new Set(["height", "age", "inbodyScore", "basalMetabolicRate", "visceralFatLevel", "obesityDegree"]);
 
-const pad = (r: Rect): Rect => [
-  Math.max(0, r[0] - PAD),
-  Math.max(0, r[1] - PAD),
-  Math.min(REPORT_WIDTH, r[2] + PAD),
-  Math.min(REPORT_HEIGHT, r[3] + PAD),
+const pad = (r: Rect, p = PAD): Rect => [
+  Math.max(0, r[0] - p),
+  Math.max(0, r[1] - p),
+  Math.min(REPORT_WIDTH, r[2] + p),
+  Math.min(REPORT_HEIGHT, r[3] + p),
 ];
+
+/** Faixa das barras de IMC e PGC: janelas deslizantes, porque o número fica logo após o fim da barra. */
+const BAND_WINDOW = 100;
+const BAND_STEP = 10;
+/** O fim da barra nunca fica nas primeiras casas da escala: as janelas começam depois dele. */
+const BAND_START = 70;
+const BAND_END_MARGIN = 120;
 
 /** Menor confiança entre as palavras com dígito (as demais, como "kg", não pesam). */
 function digitConfidence(res: OcrResult): number {
@@ -65,7 +73,7 @@ function toField(f: TemplateField, text: string, confidence: number): ReadField 
 }
 
 async function readOnce(image: ReportImage, ocr: OcrEngine, f: TemplateField, rect: Rect, escala: number): Promise<ReadField> {
-  const res = await ocr.recognize(await image.crop(pad(rect), escala), f.type === "classification" ? "text" : "number");
+  const res = await ocr.recognize(await image.crop(pad(rect, f.pad), escala), f.type === "classification" ? "text" : "number");
   if (f.type === "classification") return toField(f, res.text, res.confidence);
   if (f.type === "datetime") return toField(f, res.text, digitConfidence(res));
   // na faixa, a barra vem antes e o número no fim dela: vale o último
@@ -77,6 +85,7 @@ async function readOnce(image: ReportImage, ocr: OcrEngine, f: TemplateField, re
  * um OCR que acerta num zoom e erra no outro não merece confiança (ex.: 7 lido como 1).
  */
 async function readNumberLike(image: ReportImage, ocr: OcrEngine, f: TemplateField, rect: Rect): Promise<ReadField> {
+  if (f.mode === "band") return readBand(image, ocr, f, rect);
   const h = rect[3] - rect[1];
   const [a, b] = h <= 32 ? [3, 2] : h >= 45 ? [1, 1.5] : [SCALE, 3];
   const first = await readOnce(image, ocr, f, rect, a);
@@ -86,6 +95,28 @@ async function readNumberLike(image: ReportImage, ocr: OcrEngine, f: TemplateFie
     return { ...best, status: "check", confidence: Math.min(first.confidence, second.confidence) };
   }
   return best;
+}
+
+/**
+ * Barras de IMC e PGC: o valor vem logo depois do fim da barra, que muda de posição. Lê janelas
+ * deslizantes e só aceita um valor que ao menos duas janelas leram igual (com a casa decimal) e
+ * que vença as demais leituras; senão fica "conferir". A conferência com peso e altura
+ * (`cross-check.ts`) ainda se aplica depois.
+ */
+async function readBand(image: ReportImage, ocr: OcrEngine, f: TemplateField, rect: Rect): Promise<ReadField> {
+  const leituras: ReadField[] = [];
+  for (let x = rect[0] + BAND_START; x + BAND_WINDOW <= rect[2] - BAND_END_MARGIN; x += BAND_STEP) {
+    const r = await readOnce(image, ocr, f, [x, rect[1], x + BAND_WINDOW, rect[3]], 3);
+    if (r.status === "ok") leituras.push(r);
+  }
+  const grupos = new Map<number | string | null, ReadField[]>();
+  for (const l of leituras) grupos.set(l.value, [...(grupos.get(l.value) ?? []), l]);
+  const ordenados = [...grupos.values()].sort((a, b) => b.length - a.length);
+  const [melhor, segundo] = ordenados;
+  if (!melhor || melhor.length < 2 || (segundo && segundo.length >= melhor.length)) {
+    return { key: f.key, value: melhor?.[0].value ?? null, confidence: 0, raw: melhor?.[0].raw ?? "", status: "check" };
+  }
+  return { ...melhor[0], confidence: Math.min(...melhor.map((l) => l.confidence)) };
 }
 
 /** O aviso de "não parece um laudo": proporção da imagem e rótulos impressos da composição corporal. */
@@ -133,5 +164,5 @@ export async function readReport(image: ReportImage, ocr: OcrEngine): Promise<Re
     }
   }
 
-  return { templateVersion: REPORT_TEMPLATE.version, looksLikeReport: true, warning: null, fields };
+  return { templateVersion: REPORT_TEMPLATE.version, looksLikeReport: true, warning: null, fields: applyCrossChecks(fields) };
 }
