@@ -58,6 +58,46 @@ export class BioimpedanceConsentService {
     return (await this.latest(prisma, clientId))?.action === UserManifestationAction.GRANTED;
   }
 
+  /**
+   * Última manifestação de consentimento de cada cliente informado (quem nunca decidiu não aparece).
+   * Base para a equipe ver só quem autorizou (D-042).
+   */
+  async latestByClient(
+    clientIds: string[],
+    prisma: PrismaService | Prisma.TransactionClient = this.prisma,
+  ): Promise<Map<string, PrismaUserManifestation>> {
+    if (clientIds.length === 0) return new Map();
+    const rows = await prisma.userManifestation.findMany({
+      where: { type: UserManifestationType.CONSENT_BIOIMPEDANCE, userId: { in: clientIds } },
+      orderBy: [{ userId: "asc" }, { sequence: "desc" }],
+      distinct: ["userId"],
+    });
+    return new Map(rows.map((row) => [row.userId, row]));
+  }
+
+  /** Ids de todos os clientes com consentimento vigente. */
+  async consentingClientIds(
+    prisma: PrismaService | Prisma.TransactionClient = this.prisma,
+  ): Promise<string[]> {
+    const rows = await prisma.userManifestation.findMany({
+      where: { type: UserManifestationType.CONSENT_BIOIMPEDANCE },
+      orderBy: [{ userId: "asc" }, { sequence: "desc" }],
+      distinct: ["userId"],
+      select: { userId: true, action: true },
+    });
+    return rows.filter((row) => row.action === UserManifestationAction.GRANTED).map((r) => r.userId);
+  }
+
+  /** Por que o consentimento não está vigente: nunca decidiu ou revogou. */
+  async missingReason(
+    clientId: string,
+    prisma: PrismaService | Prisma.TransactionClient = this.prisma,
+  ): Promise<"CONSENT_MISSING" | "CONSENT_REVOKED" | null> {
+    const latest = await this.latest(prisma, clientId);
+    if (!latest) return "CONSENT_MISSING";
+    return latest.action === UserManifestationAction.GRANTED ? null : "CONSENT_REVOKED";
+  }
+
   private async assertClient(userId: string): Promise<void> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },

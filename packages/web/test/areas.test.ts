@@ -104,6 +104,7 @@ describe("ordem do menu administrativo (design)", () => {
       "Planos",
       "Templates & modalidades",
       "Fichas de treino",
+      "Bioimpedância",
       "Metas",
       "Loja",
       "Minhas aulas",

@@ -21,6 +21,8 @@ import { MyClassesPage } from "./pages/MyClassesPage";
 import { AttendancePage } from "./pages/AttendancePage";
 import { ClassStudentSheetPage } from "./pages/ClassStudentSheetPage";
 import { GamificationPage } from "./pages/GamificationPage";
+import { AssessmentFormPage } from "./pages/bioimpedance/AssessmentFormPage";
+import { BioimpedanceAdminPage } from "./pages/bioimpedance/BioimpedanceAdminPage";
 import { BioimpedancePage } from "./pages/bioimpedance/BioimpedancePage";
 import { AssignmentsPage } from "./pages/AssignmentsPage";
 import { GoalsPage } from "./pages/GoalsPage";
@@ -102,6 +104,9 @@ export function AppRoutes() {
         <Route path="/atribuicoes" element={<AssignmentsPage />} />
         <Route path="/planos" element={<PlansPage />} />
         <Route path="/fichas" element={<WorkoutSheetsPage />} />
+        <Route path="/bioimpedancia-admin" element={<BioimpedanceAdminPage />} />
+        <Route path="/bioimpedancia-admin/nova" element={<AssessmentFormPage />} />
+        <Route path="/bioimpedancia-admin/:id/editar" element={<AssessmentFormPage />} />
         <Route path="/metas" element={<GoalsPage />} />
         <Route path="/loja-admin" element={<Navigate to="/loja-admin/produtos" replace />} />
         <Route path="/loja-admin/produtos" element={<LojaAdminPage tab="produtos" />} />

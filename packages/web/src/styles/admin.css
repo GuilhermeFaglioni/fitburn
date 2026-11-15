@@ -241,6 +241,62 @@
   max-width: 120px;
 }
 
+/* ---- Bioimpedância (B2): passos, medidas do formulário e campos marcados "conferir" ---- */
+.fb-bio-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2) var(--s-5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--muted);
+  font-size: var(--text-small);
+}
+
+.fb-bio-steps [aria-current="step"] {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.fb-bio-client {
+  margin: 0;
+}
+
+.fb-bio-checks {
+  padding: var(--s-3) var(--s-4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--warn-bg);
+  color: var(--warn);
+  font-size: var(--text-small);
+}
+
+.fb-bio-checks p,
+.fb-bio-checks ul {
+  margin: 0;
+}
+
+.fb-bio-checks ul {
+  padding-left: var(--s-5);
+}
+
+.fb-bio-measure {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--s-3) var(--s-4);
+  padding-bottom: var(--s-3);
+  border-bottom: 1px solid var(--line);
+}
+
+.fb-bio-measure--flag .fb-ui-help {
+  color: var(--warn);
+  font-weight: 700;
+}
+
+.fb-bio-measure--flag .fb-ui-input:first-of-type {
+  border-color: var(--warn);
+}
+
 @media (max-width: 767px) {
   .fb-shop-builder__row {
     grid-template-columns: minmax(0, 1fr);
