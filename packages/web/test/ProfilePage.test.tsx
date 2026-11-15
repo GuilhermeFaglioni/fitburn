@@ -206,6 +206,15 @@ describe("Perfil / Minha conta", () => {
       expect(within(tabbar).getByRole("link", { name: "Perfil" })).toBeInTheDocument();
     });
 
+    it("tem o link Composição corporal para a tela de bioimpedância", async () => {
+      renderAt("/perfil");
+
+      expect(await screen.findByRole("link", { name: "Composição corporal" })).toHaveAttribute(
+        "href",
+        "/bioimpedancia",
+      );
+    });
+
     it("permite aderir e sair do ranking pelo Perfil", async () => {
       const user = userEvent.setup();
       renderAt("/perfil");

@@ -248,6 +248,115 @@
   gap: var(--s-2);
 }
 
+/* Bioimpedância: Resumo e Valores (/bioimpedancia). */
+.fb-bio-score {
+  margin: 0;
+  color: var(--muted);
+}
+
+.fb-bio-score strong {
+  color: var(--ink);
+  font-size: var(--text-h1);
+  font-weight: var(--weight-bold);
+}
+
+.fb-bio-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fb-bio-metric {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  padding: var(--s-3);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+}
+
+.fb-bio-metric__label,
+.fb-bio-metric__delta {
+  color: var(--muted);
+  font-size: var(--text-small);
+}
+
+.fb-bio-metric__value {
+  font-size: var(--text-h2, var(--text-h1));
+  font-weight: var(--weight-bold);
+}
+
+.fb-bio-control {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  margin: 0;
+}
+
+.fb-bio-control > div,
+.fb-bio-value__head {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s-3);
+}
+
+.fb-bio-control dd {
+  margin: 0;
+  font-weight: var(--weight-bold);
+}
+
+.fb-bio-control dt {
+  color: var(--muted);
+}
+
+.fb-bio-values {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fb-bio-value {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+}
+
+.fb-bio-bar {
+  position: relative;
+  height: var(--s-2);
+  background: linear-gradient(
+    to right,
+    var(--warn-bg) 33.3%,
+    var(--success-bg) 33.3% 66.6%,
+    var(--warn-bg) 66.6%
+  );
+  border-radius: var(--r-xs);
+}
+
+.fb-bio-bar__marker {
+  position: absolute;
+  top: calc(var(--s-1) * -1);
+  bottom: calc(var(--s-1) * -1);
+  width: var(--s-1);
+  background: var(--ink);
+  border-radius: var(--r-xs);
+  transform: translateX(-50%);
+}
+
+.fb-bio-bar__labels {
+  display: flex;
+  justify-content: space-between;
+  color: var(--muted);
+  font-size: var(--text-small);
+}
+
 /* ---------- Onboarding, Política de privacidade e Termos: coluna de leitura sem casca ---------- */
 .fb-flow {
   box-sizing: border-box;

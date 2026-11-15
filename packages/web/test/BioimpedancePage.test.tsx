@@ -66,6 +66,7 @@ describe("Bioimpedância: autorização (/bioimpedancia, D-042)", () => {
       http.post("/api/auth/refresh", () =>
         HttpResponse.json({ accessToken: "token", user: CLIENT }),
       ),
+      http.get("/api/bioimpedance/assessments/mine", () => HttpResponse.json([])),
       http.get("/api/bioimpedance/consent", () => HttpResponse.json(consentBody())),
       http.patch("/api/bioimpedance/consent", async ({ request }) => {
         if (failNext) {
