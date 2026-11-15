@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   changeOwnPasswordRequestSchema,
@@ -415,6 +416,12 @@ export function ProfilePage({
 
       {!requiredPasswordChange && isClient && profile && (
         <RankingConsentControl surface="profile" />
+      )}
+
+      {!requiredPasswordChange && isClient && profile && (
+        <Card as="nav" flat className="fb-profile__card" aria-label="Composição corporal">
+          <Link to="/bioimpedancia">Composição corporal</Link>
+        </Card>
       )}
 
       {!requiredPasswordChange && isClient && profile && <BioimpedanceConsentSwitch />}

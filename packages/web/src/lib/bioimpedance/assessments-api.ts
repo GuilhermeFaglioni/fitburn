@@ -108,6 +108,30 @@ export function useUpdateAssessment() {
   });
 }
 
+/** Avaliações do próprio cliente. Seguem visíveis e excluíveis depois de revogar a autorização (D-042). */
+export const myAssessmentKeys = {
+  list: ["bioimpedance", "assessments", "mine"] as const,
+};
+
+export async function listMyAssessments(): Promise<BioimpedanceAssessment[]> {
+  const response = await authFetch(`${BASE}/mine`);
+  return (await parseOrThrow(response)) as BioimpedanceAssessment[];
+}
+
+export async function deleteMyAssessment(id: string): Promise<void> {
+  const response = await authFetch(`${BASE}/mine/${encodeURIComponent(id)}`, { method: "DELETE" });
+  await parseOrThrow(response);
+}
+
+export function useMyAssessments() {
+  return useQuery({ queryKey: myAssessmentKeys.list, queryFn: listMyAssessments });
+}
+
+export function useDeleteMyAssessment() {
+  const invalidate = useInvalidateAssessments();
+  return useMutation({ mutationFn: deleteMyAssessment, onSuccess: invalidate });
+}
+
 export function useDeleteAssessment() {
   const invalidate = useInvalidateAssessments();
   return useMutation({ mutationFn: deleteAssessment, onSuccess: invalidate });
