@@ -165,6 +165,7 @@ function measureErrors(values: AssessmentFormValues): AssessmentFormErrors {
 export function buildCreateRequest(
   values: AssessmentFormValues,
   clientId: string,
+  source: "MANUAL" | "FOTO_DO_LAUDO" = "MANUAL",
 ): BuildResult<CreateAssessmentRequest> {
   const header = parseHeader(values);
   const errors = { ...header.errors, ...measureErrors(values) };
@@ -174,7 +175,7 @@ export function buildCreateRequest(
     measuredAt: header.measuredAt,
     heightCm: header.heightCm,
     age: header.age,
-    source: "MANUAL",
+    source,
     measures: draftsToMeasures(values.measures),
   });
   if (!parsed.success) return { ok: false, errors: collectErrors(parsed.error.issues, values) };

@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type DragEvent, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   BIOIMPEDANCE_GROUP_LABELS,
@@ -19,6 +19,8 @@ import { Field } from "../../components/ui/Field";
 import { PageHeader } from "../../components/ui/PageHeader";
 import { Select } from "../../components/ui/Select";
 import { errorMessage } from "../../lib/auth/api";
+import { readReportFile, REPORT_TEMPLATE, type ReadResult } from "../../lib/bioimpedance/reader";
+import { readResultToForm, type HeaderKey, type PhotoFill } from "../../lib/bioimpedance/reader/to-form";
 import { useAuth } from "../../lib/auth/AuthContext";
 import {
   useAssessment,
@@ -67,9 +69,30 @@ function formatConsentDate(iso: string): string {
 }
 
 /** Passo 1: escolher o cliente. Sem consentimento vigente (D-042), o avanço fica bloqueado, com o motivo e a orientação. */
-function ClientStep({ onContinue }: { onContinue: (client: AssessmentClient) => void }) {
+function ClientStep({ onContinue }: { onContinue: (client: AssessmentClient, file: File | null) => void }) {
   const clientsQuery = useAssessmentClients();
   const [clientId, setClientId] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const [fileError, setFileError] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  function pick(candidate: File | undefined) {
+    if (!candidate) return;
+    if (!/^image\/(jpeg|png)$/.test(candidate.type)) {
+      setFile(null);
+      setFileError("Escolha uma imagem JPG ou PNG do laudo.");
+      return;
+    }
+    setFileError(null);
+    setFile(candidate);
+  }
+
+  function onDrop(event: DragEvent) {
+    event.preventDefault();
+    setDragging(false);
+    pick(event.dataTransfer.files[0]);
+  }
   const clients = clientsQuery.data ?? [];
   const selected = clients.find((client) => client.id === clientId);
 
@@ -102,15 +125,46 @@ function ClientStep({ onContinue }: { onContinue: (client: AssessmentClient) => 
             Privacidade no app.
           </Alert>
         )}
-        <p className="fb-ui-note">
-          Nesta etapa a avaliação é digitada à mão, no mesmo formulário que receberá a leitura da foto do laudo.
-        </p>
-        <div>
+        <div
+          className={dragging ? "fb-bio-drop fb-bio-drop--active" : "fb-bio-drop"}
+          onDragOver={(event) => {
+            event.preventDefault();
+            setDragging(true);
+          }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={onDrop}
+        >
+          <p className="fb-bio-drop__title">Foto do laudo InBody</p>
+          <p className="fb-ui-note">
+            Arraste o JPG até aqui ou escolha o arquivo. A imagem é lida neste aparelho e não é enviada nem guardada.
+          </p>
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/jpeg,image/png"
+            className="fb-bio-drop__input"
+            aria-label="Arquivo do laudo"
+            onChange={(event) => pick(event.target.files?.[0])}
+          />
+          <Button size="sm" onClick={() => inputRef.current?.click()}>
+            {file ? "Trocar arquivo" : "Escolher arquivo"}
+          </Button>
+          {file && <p className="fb-bio-drop__file">Arquivo: {file.name}</p>}
+          {fileError && <p role="alert" className="fb-ui-help fb-ui-help--error">{fileError}</p>}
+        </div>
+        <div className="fb-bio-actions">
           <Button
             variant="primary"
+            disabled={!selected?.consented || !file}
+            title={selected && !selected.consented ? "O cliente ainda não autorizou o registro." : undefined}
+            onClick={() => selected && file && onContinue(selected, file)}
+          >
+            Ler o laudo
+          </Button>
+          <Button
             disabled={!selected?.consented}
             title={selected && !selected.consented ? "O cliente ainda não autorizou o registro." : undefined}
-            onClick={() => selected && onContinue(selected)}
+            onClick={() => selected && onContinue(selected, null)}
           >
             Preencher manualmente
           </Button>
@@ -191,6 +245,67 @@ function MeasureRow({
   );
 }
 
+type PhotoState =
+  | { phase: "reading" }
+  | { phase: "error" }
+  | { phase: "done"; result: ReadResult; fill: PhotoFill };
+
+/** Imagem do laudo (só neste navegador) com as áreas lidas: verde = lido, âmbar = conferir. */
+function PhotoPanel({ url, state }: { url: string; state: PhotoState }) {
+  const { width, height } = REPORT_TEMPLATE;
+  return (
+    <Card as="section" aria-labelledby="assessment-photo" className="fb-ui-card--form">
+      <h2 id="assessment-photo" className="fb-ui-section-title">
+        Laudo lido
+      </h2>
+      <div className="fb-ui-stack fb-shop-card-body">
+        {state.phase === "reading" && (
+          <p role="status" className="fb-ui-note">
+            Lendo o laudo neste aparelho… na primeira vez, o leitor é baixado e pode demorar um pouco.
+          </p>
+        )}
+        {state.phase === "error" && (
+          <Alert>Não foi possível ler o laudo. Preencha os valores à mão ou volte e escolha outra foto.</Alert>
+        )}
+        {state.phase === "done" && !state.result.looksLikeReport && (
+          <Alert>{state.result.warning ?? "Esta imagem não parece um laudo InBody."}</Alert>
+        )}
+        {state.phase === "done" && state.result.looksLikeReport && (
+          <p role="status" className="fb-bio-summary">
+            {state.fill.readCount} {state.fill.readCount === 1 ? "valor lido" : "valores lidos"}, {state.fill.checkCount}{" "}
+            para conferir
+          </p>
+        )}
+        <div className="fb-bio-photo">
+          <img src={url} alt="Foto do laudo escolhida, usada só neste navegador" />
+          {state.phase === "done" &&
+            state.result.looksLikeReport &&
+            state.result.fields
+              .filter((field) => field.status !== "missing")
+              .map((field) => {
+                const area = REPORT_TEMPLATE.fields.find((candidate) => candidate.key === field.key);
+                if (!area) return null;
+                const [x0, y0, x1, y1] = area.rect;
+                return (
+                  <span
+                    key={field.key}
+                    aria-hidden="true"
+                    className={field.status === "ok" ? "fb-bio-area fb-bio-area--ok" : "fb-bio-area fb-bio-area--check"}
+                    style={{
+                      left: `${(x0 / width) * 100}%`,
+                      top: `${(y0 / height) * 100}%`,
+                      width: `${((x1 - x0) / width) * 100}%`,
+                      height: `${((y1 - y0) / height) * 100}%`,
+                    }}
+                  />
+                );
+              })}
+        </div>
+      </div>
+    </Card>
+  );
+}
+
 /**
  * Nova avaliação (2 passos) e correção de uma avaliação salva: cliente (com bloqueio sem consentimento), depois o
  * formulário completo, agrupado como no laudo. As checagens (soma, PGC, IMC, MLG, limites) marcam "conferir"
@@ -218,8 +333,56 @@ export function AssessmentFormPage() {
     setDraftValues(assessmentToForm(loaded));
   }
 
+  const [photo, setPhoto] = useState<PhotoState | null>(null);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [readerMeasures, setReaderMeasures] = useState<Set<string>>(new Set());
+  const [readerHeader, setReaderHeader] = useState<Set<HeaderKey>>(new Set());
+  const urlRef = useRef<string | null>(null);
+
+  // A imagem só existe na memória deste navegador: o endereço temporário é revogado ao trocar ou sair.
+  useEffect(() => () => {
+    if (urlRef.current) URL.revokeObjectURL(urlRef.current);
+  }, []);
+
+  async function startReading(chosen: AssessmentClient, file: File) {
+    if (urlRef.current) URL.revokeObjectURL(urlRef.current);
+    urlRef.current = URL.createObjectURL(file);
+    setPhotoUrl(urlRef.current);
+    setClient(chosen);
+    setPhoto({ phase: "reading" });
+    try {
+      const result = await readReportFile(file);
+      const fill = readResultToForm(result);
+      if (result.looksLikeReport) {
+        setDraftValues(fill.values);
+        setReaderMeasures(fill.checkMeasures);
+        setReaderHeader(fill.checkHeader);
+      }
+      setPhoto({ phase: "done", result, fill });
+    } catch {
+      setPhoto({ phase: "error" });
+    }
+  }
+
+  function leavePhoto() {
+    if (urlRef.current) URL.revokeObjectURL(urlRef.current);
+    urlRef.current = null;
+    setPhotoUrl(null);
+    setPhoto(null);
+    setReaderMeasures(new Set());
+    setReaderHeader(new Set());
+    setDraftValues(emptyAssessmentForm());
+    setClient(null);
+  }
+
   const issues = useMemo(() => checksFor(draftValues), [draftValues]);
-  const flagged = useMemo(() => flaggedMeasureKeys(issues), [issues]);
+  const flagged = useMemo(() => {
+    const keys = flaggedMeasureKeys(issues);
+    for (const key of readerMeasures) keys.add(key);
+    return keys;
+  }, [issues, readerMeasures]);
+  const fromPhoto = photo?.phase === "done" && photo.result.looksLikeReport;
+  const headerFlag = (key: HeaderKey) => (readerHeader.has(key) ? "Conferir" : undefined);
 
   const canSave = can(Module.BIOIMPEDANCIA, editing ? PermissionAction.EDIT : PermissionAction.CREATE);
   const saving = createMutation.isPending || updateMutation.isPending;
@@ -228,9 +391,20 @@ export function AssessmentFormPage() {
 
   function setHeader(key: "date" | "time" | "heightCm" | "age", value: string) {
     setDraftValues((current) => ({ ...current, [key]: value }));
+    // Conferido pelo usuário: sai da lista "para conferir" (data e hora andam juntas).
+    setReaderHeader((current) => {
+      const next = new Set(current);
+      next.delete(key);
+      return next;
+    });
   }
 
   function setMeasure(key: string, patch: Partial<MeasureDraft>) {
+    setReaderMeasures((current) => {
+      const next = new Set(current);
+      next.delete(key);
+      return next;
+    });
     setDraftValues((current) => ({
       ...current,
       measures: { ...current.measures, [key]: { ...current.measures[key]!, ...patch } },
@@ -251,7 +425,7 @@ export function AssessmentFormPage() {
       setErrors({});
       updateMutation.mutate({ id: loaded.id, input: result.data }, { onSuccess: goBack, onError });
     } else if (client) {
-      const result = buildCreateRequest(draftValues, client.id);
+      const result = buildCreateRequest(draftValues, client.id, fromPhoto ? "FOTO_DO_LAUDO" : "MANUAL");
       if (!result.ok) return setErrors(result.errors);
       setErrors({});
       createMutation.mutate(result.data, { onSuccess: goBack, onError });
@@ -263,7 +437,12 @@ export function AssessmentFormPage() {
       <div className="fb-ui-page">
         <PageHeader crumb={<Crumb current={title} />} kicker="Bioimpedância" title={title} />
         <Steps step={1} />
-        <ClientStep onContinue={setClient} />
+        <ClientStep
+          onContinue={(chosen, file) => {
+            if (file) void startReading(chosen, file);
+            else setClient(chosen);
+          }}
+        />
       </div>
     );
   }
@@ -283,12 +462,12 @@ export function AssessmentFormPage() {
                 Cancelar
               </Button>
             ) : (
-              <Button size="sm" disabled={saving} onClick={() => setClient(null)}>
+              <Button size="sm" disabled={saving} onClick={leavePhoto}>
                 Voltar
               </Button>
             )}
             <AssessmentAction allowed={canSave} reason={blockedReason}>
-              <Button type="submit" form={FORM_ID} variant="primary" size="sm" busy={saving}>
+              <Button type="submit" form={FORM_ID} variant="primary" size="sm" busy={saving || photo?.phase === "reading"}>
                 Salvar avaliação
               </Button>
             </AssessmentAction>
@@ -305,6 +484,8 @@ export function AssessmentFormPage() {
           error="Não foi possível carregar a avaliação."
         />
       )}
+
+      {!editing && photo && photoUrl && <PhotoPanel url={photoUrl} state={photo} />}
 
       {apiError && <Alert>{apiError}</Alert>}
       {!canSave && <p className="fb-ui-note">{blockedReason}</p>}
@@ -340,6 +521,7 @@ export function AssessmentFormPage() {
                   type="date"
                   value={draftValues.date}
                   error={errors.date}
+                  help={headerFlag("date")}
                   onChange={(event) => setHeader("date", event.target.value)}
                 />
                 <Field
@@ -347,6 +529,7 @@ export function AssessmentFormPage() {
                   type="time"
                   value={draftValues.time}
                   error={errors.time}
+                  help={headerFlag("time")}
                   onChange={(event) => setHeader("time", event.target.value)}
                 />
                 <Field
@@ -354,6 +537,7 @@ export function AssessmentFormPage() {
                   inputMode="decimal"
                   value={draftValues.heightCm}
                   error={errors.heightCm}
+                  help={headerFlag("heightCm")}
                   onChange={(event) => setHeader("heightCm", event.target.value)}
                 />
                 <Field
@@ -361,6 +545,7 @@ export function AssessmentFormPage() {
                   inputMode="numeric"
                   value={draftValues.age}
                   error={errors.age}
+                  help={headerFlag("age")}
                   onChange={(event) => setHeader("age", event.target.value)}
                 />
               </div>
