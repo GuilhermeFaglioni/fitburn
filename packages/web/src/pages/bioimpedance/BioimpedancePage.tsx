@@ -1,8 +1,19 @@
 import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { MEASURE_RATING_LABELS, measureDefinition, type BioimpedanceAssessment } from "@fitburn/contracts";
+import {
+  MEASURE_RATING_LABELS,
+  measureDefinition,
+  type BioimpedanceAssessment,
+} from "@fitburn/contracts";
 import { errorMessage } from "../../lib/auth/api";
 import { useMyAssessments, useDeleteMyAssessment } from "../../lib/bioimpedance/assessments-api";
+import {
+  resolveMeasure,
+  resolvePeriod,
+  resolveSegmentKind,
+  type EvolutionPeriod,
+  type SegmentKind,
+} from "../../lib/bioimpedance/evolution";
 import {
   SUMMARY_METRIC_KEYS,
   WEIGHT_CONTROL_KEYS,
@@ -15,7 +26,6 @@ import {
   sortAssessments,
   valueGroups,
   variation,
-  type Variation,
 } from "../../lib/bioimpedance/summary";
 import { useBioimpedanceConsent } from "../../lib/bioimpedance/useBioimpedanceConsent";
 import { useOnline } from "../../lib/connectivity/useOnline";
@@ -29,36 +39,17 @@ import { Segmented } from "../../components/ui/Segmented";
 import { Select } from "../../components/ui/Select";
 import { ConfirmDeleteDialog } from "../shop/ConfirmDeleteDialog";
 import { formatMeasuredAt } from "./BioimpedanceAdminPage";
+import { Evolution } from "./BioimpedanceEvolution";
+import { Segmental } from "./BioimpedanceSegmental";
+import { VariationText, formatDate } from "./bioimpedanceParts";
 
-type Tab = "resumo" | "valores";
+type Tab = "resumo" | "evolucao" | "segmentar" | "valores";
 const TABS = [
   { value: "resumo", label: "Resumo" },
+  { value: "evolucao", label: "Evolução" },
+  { value: "segmentar", label: "Segmentar" },
   { value: "valores", label: "Valores" },
 ] as const;
-
-function formatDate(iso: string): string {
-  return formatMeasuredAt(iso).split(" · ")[0];
-}
-
-/** "▼ 0,6 kg", com o sentido por extenso para leitores de tela. */
-function VariationText({ metricKey, change }: { metricKey: string; change: Variation | null }) {
-  if (!change) return <span className="fb-bio-metric__delta">—</span>;
-  const unit = measureDefinition(metricKey)?.unit;
-  const suffix = unit === "%" ? " pp" : unit === "kg" ? " kg" : "";
-  if (change.trend === "same") {
-    return <span className="fb-bio-metric__delta">igual</span>;
-  }
-  const arrow = change.trend === "up" ? "▲" : "▼";
-  const words = change.trend === "up" ? "subiu" : "caiu";
-  return (
-    <span className="fb-bio-metric__delta">
-      <span aria-hidden="true">{arrow} </span>
-      <span className="fb-ui-sr-only">{words} </span>
-      {formatNumber(change.amount)}
-      {suffix}
-    </span>
-  );
-}
 
 function Summary({
   assessment,
@@ -99,8 +90,12 @@ function Summary({
         {SUMMARY_METRIC_KEYS.filter((key) => assessment.measures[key]).map((key) => (
           <li key={key} className="fb-bio-metric">
             <span className="fb-bio-metric__label">{measureDefinition(key)?.label}</span>
-            <strong className="fb-bio-metric__value">{formatMeasure(key, assessment.measures[key])}</strong>
-            {!single && <VariationText metricKey={key} change={variation(key, assessment, previous)} />}
+            <strong className="fb-bio-metric__value">
+              {formatMeasure(key, assessment.measures[key])}
+            </strong>
+            {!single && (
+              <VariationText metricKey={key} change={variation(key, assessment, previous)} />
+            )}
           </li>
         ))}
       </ul>
@@ -200,15 +195,35 @@ export function BioimpedancePage() {
   const consent = consentQuery.data;
   const sorted = sortAssessments(mine.data ?? []);
   const selected = sorted.find((item) => item.id === params.get("avaliacao")) ?? sorted[0];
-  const tab: Tab = params.get("aba") === "valores" ? "valores" : "resumo";
+  const abaParam = params.get("aba");
+  const tab: Tab = TABS.some((item) => item.value === abaParam) ? (abaParam as Tab) : "resumo";
+  const measure = resolveMeasure(params.get("medida"));
+  const period = resolvePeriod(params.get("periodo"));
+  const segmentKind = resolveSegmentKind(params.get("tipo"));
+  const [now] = useState(() => new Date());
 
-  function update(next: { aba?: Tab; avaliacao?: string }) {
+  function update(next: {
+    aba?: Tab;
+    avaliacao?: string;
+    medida?: string;
+    periodo?: EvolutionPeriod;
+    tipo?: SegmentKind;
+  }) {
     const copy = new URLSearchParams(params);
     if (next.aba) {
       if (next.aba === "resumo") copy.delete("aba");
       else copy.set("aba", next.aba);
     }
     if (next.avaliacao) copy.set("avaliacao", next.avaliacao);
+    if (next.medida) copy.set("medida", next.medida);
+    if (next.periodo) {
+      if (next.periodo === "all") copy.delete("periodo");
+      else copy.set("periodo", next.periodo);
+    }
+    if (next.tipo) {
+      if (next.tipo === "lean") copy.delete("tipo");
+      else copy.set("tipo", "gordura");
+    }
     setParams(copy, { replace: true });
   }
 
@@ -239,8 +254,8 @@ export function BioimpedancePage() {
                 Acompanhe sua evolução
               </h2>
               <p className="fb-bio__copy">
-                Quando você faz a bioimpedância na Fitburn, a equipe pode registrar os resultados aqui:
-                peso, massa muscular, gordura, água e a análise por segmento do corpo.
+                Quando você faz a bioimpedância na Fitburn, a equipe pode registrar os resultados
+                aqui: peso, massa muscular, gordura, água e a análise por segmento do corpo.
               </p>
               <ul className="fb-bio__list">
                 <li>Guardamos só os valores, não a imagem do laudo.</li>
@@ -273,8 +288,8 @@ export function BioimpedancePage() {
           {consent?.consented && (
             <Card as="section" flat className="fb-bio__card">
               <p className="fb-bio__copy">
-                Você ainda não tem avaliações registradas. Faça a bioimpedância na recepção da Fitburn e
-                a equipe registra os resultados aqui.
+                Você ainda não tem avaliações registradas. Faça a bioimpedância na recepção da
+                Fitburn e a equipe registra os resultados aqui.
               </p>
             </Card>
           )}
@@ -290,7 +305,8 @@ export function BioimpedancePage() {
           )}
           {consent && !consent.consented && (
             <p className="fb-bio__copy">
-              O registro está desligado. Você continua vendo e pode excluir as avaliações que já tem.
+              O registro está desligado. Você continua vendo e pode excluir as avaliações que já
+              tem.
             </p>
           )}
           <Segmented
@@ -299,37 +315,60 @@ export function BioimpedancePage() {
             value={tab}
             onChange={(value) => update({ aba: value })}
           />
-          <Select
-            label="Avaliação"
-            value={selected.id}
-            onChange={(event) => update({ avaliacao: event.target.value })}
-          >
-            {sorted.map((item, index) => (
-              <option key={item.id} value={item.id}>
-                {formatMeasuredAt(item.measuredAt)}
-                {index === 0 ? " (mais recente)" : ""}
-              </option>
-            ))}
-          </Select>
+          {tab !== "evolucao" && (
+            <Select
+              label="Avaliação"
+              value={selected.id}
+              onChange={(event) => update({ avaliacao: event.target.value })}
+            >
+              {sorted.map((item, index) => (
+                <option key={item.id} value={item.id}>
+                  {formatMeasuredAt(item.measuredAt)}
+                  {index === 0 ? " (mais recente)" : ""}
+                </option>
+              ))}
+            </Select>
+          )}
 
-          {tab === "resumo" ? (
+          {tab === "resumo" && (
             <Summary
               assessment={selected}
               previous={previousOf(sorted, selected)}
               single={sorted.length === 1}
             />
-          ) : (
-            <Values assessment={selected} />
           )}
+          {tab === "evolucao" && (
+            <Evolution
+              items={sorted}
+              definition={measure}
+              period={period}
+              now={now}
+              onMeasure={(key) => update({ medida: key })}
+              onPeriod={(value) => update({ periodo: value })}
+            />
+          )}
+          {tab === "segmentar" && (
+            <Segmental
+              assessment={selected}
+              previous={previousOf(sorted, selected)}
+              kind={segmentKind}
+              onKind={(value) => update({ tipo: value })}
+            />
+          )}
+          {tab === "valores" && <Values assessment={selected} />}
 
           {deleteMutation.isError && !deleting && (
-            <Alert>{errorMessage(deleteMutation.error, "Não foi possível excluir a avaliação.")}</Alert>
+            <Alert>
+              {errorMessage(deleteMutation.error, "Não foi possível excluir a avaliação.")}
+            </Alert>
           )}
-          <RequiresNetwork>
-            <Button variant="ghost" onClick={() => setDeleting(selected)}>
-              Excluir esta avaliação
-            </Button>
-          </RequiresNetwork>
+          {tab !== "evolucao" && (
+            <RequiresNetwork>
+              <Button variant="ghost" onClick={() => setDeleting(selected)}>
+                Excluir esta avaliação
+              </Button>
+            </RequiresNetwork>
+          )}
         </>
       )}
 

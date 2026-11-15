@@ -21,10 +21,17 @@ export const SUMMARY_METRIC_KEYS = [
   "visceralFatLevel",
 ] as const;
 
-export const WEIGHT_CONTROL_KEYS = ["targetWeight", "weightControl", "fatControl", "muscleControl"] as const;
+export const WEIGHT_CONTROL_KEYS = [
+  "targetWeight",
+  "weightControl",
+  "fatControl",
+  "muscleControl",
+] as const;
 
 /** Mais recente primeiro. */
-export function sortAssessments(items: readonly BioimpedanceAssessment[]): BioimpedanceAssessment[] {
+export function sortAssessments(
+  items: readonly BioimpedanceAssessment[],
+): BioimpedanceAssessment[] {
   return [...items].sort((a, b) => b.measuredAt.localeCompare(a.measuredAt));
 }
 
@@ -46,7 +53,22 @@ export interface Variation {
 }
 
 function decimalsOf(definition: MeasureDefinition): number {
+  if (definition.group === "SEGMENTAL_LEAN" || definition.group === "SEGMENTAL_FAT") return 2;
   return definition.unit === "" && definition.key === "visceralFatLevel" ? 0 : 1;
+}
+
+/** Diferença entre dois valores de uma medida; `null` quando falta algum. */
+export function variationBetween(
+  key: string,
+  now: number | undefined,
+  before: number | undefined,
+): Variation | null {
+  const definition = measureDefinition(key);
+  if (!definition || now === undefined || before === undefined) return null;
+  const factor = 10 ** decimalsOf(definition);
+  const diff = Math.round((now - before) * factor) / factor;
+  if (diff === 0) return { trend: "same", amount: 0 };
+  return { trend: diff > 0 ? "up" : "down", amount: Math.abs(diff) };
 }
 
 /** Diferença entre duas avaliações para uma medida; `null` quando falta o valor em uma das duas. */
@@ -55,14 +77,7 @@ export function variation(
   current: BioimpedanceAssessment,
   previous: BioimpedanceAssessment | undefined,
 ): Variation | null {
-  const definition = measureDefinition(key);
-  const now = current.measures[key]?.value;
-  const before = previous?.measures[key]?.value;
-  if (!definition || now === undefined || before === undefined) return null;
-  const factor = 10 ** decimalsOf(definition);
-  const diff = Math.round((now - before) * factor) / factor;
-  if (diff === 0) return { trend: "same", amount: 0 };
-  return { trend: diff > 0 ? "up" : "down", amount: Math.abs(diff) };
+  return variationBetween(key, current.measures[key]?.value, previous?.measures[key]?.value);
 }
 
 /** Número no padrão brasileiro: vírgula decimal, sem zeros sobrando. */
