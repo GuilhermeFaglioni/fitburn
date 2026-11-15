@@ -17,7 +17,8 @@ beforeEach(() => {
 afterEach(() => {
   server.resetHandlers();
   // O estado de conexão é global: um teste que simula rede fora do ar não pode vazar para o próximo.
-  Object.defineProperty(window.navigator, "onLine", { configurable: true, value: true });
+  // (suítes com `@vitest-environment node`, como a do OCR do laudo, não têm `window`)
+  if (typeof window !== "undefined") Object.defineProperty(window.navigator, "onLine", { configurable: true, value: true });
   resetConnectivity();
 });
 afterAll(() => server.close());
