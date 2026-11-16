@@ -1,0 +1,42 @@
+name: Landing Lighthouse
+
+# Lighthouse mobile (emulação padrão) contra a imagem nginx real, construída indexável:
+# 3 medições da home e 1 de /creditos. Relatórios HTML/JSON ficam como artefato do run.
+on:
+  pull_request:
+    paths:
+      - "packages/landing/**"
+      - "docker/landing/**"
+      - ".github/workflows/landing-lighthouse.yml"
+  workflow_dispatch:
+
+jobs:
+  lighthouse:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Build e subida da imagem (indexável)
+        run: |
+          docker build -f docker/landing/Dockerfile --build-arg PUBLIC_INDEXABLE=true -t fitburn-landing:lh .
+          docker run -d --name lp -p 8080:80 fitburn-landing:lh
+          for i in $(seq 1 30); do curl -fs http://localhost:8080/healthz && break; sleep 1; done
+      - name: Lighthouse mobile
+        run: |
+          mkdir -p lh
+          run() { npx --yes lighthouse@12 "$1" --form-factor=mobile --screenEmulation.mobile \
+            --chrome-flags="--headless=new --no-sandbox" --output=json --output=html \
+            --output-path="lh/$2" --quiet; }
+          run http://localhost:8080/ home-1
+          run http://localhost:8080/ home-2
+          run http://localhost:8080/ home-3
+          run http://localhost:8080/creditos creditos-1
+      - name: Resumo e metas
+        run: node scripts/lighthouse-summary.cjs lh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lighthouse-reports
+          path: lh/
