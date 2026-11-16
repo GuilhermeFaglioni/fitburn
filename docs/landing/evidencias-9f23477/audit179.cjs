@@ -32,7 +32,7 @@ const log = (s) => { console.log(s); lines.push(s); };
       let sec = "-"; let n = a.parentNode;
       while (n) { const id = n.getAttribute && (n.getAttribute("id") || (n.rawTagName && ["header", "footer"].includes(n.rawTagName) ? n.rawTagName : "")); if (id) { sec = id; break; } n = n.parentNode; }
       let msg = "";
-      try { const u = new URL(href); if (u.searchParams.get("text")) msg = u.searchParams.get("text"); } catch {}
+      try { const u = new URL(href); if (u.searchParams.get("text")) msg = u.searchParams.get("text"); } catch { /* href sem URL válida: mantém msg */ }
       const dest = href.startsWith("#") ? "âncora interna" : href.startsWith("tel:") ? "telefone" : href.startsWith("mailto:") ? "e-mail" : href.startsWith("/") ? "página interna" : new URL(href).host;
       log(`| ${i + 1} | ${sec} | ${txt} | ${href} | ${msg} | ${dest}${a.getAttribute("target") ? " (target=" + a.getAttribute("target") + ", rel=" + a.getAttribute("rel") + ")" : ""} |`);
     });
