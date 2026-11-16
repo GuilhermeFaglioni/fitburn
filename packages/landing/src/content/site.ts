@@ -39,7 +39,7 @@ export const site = {
   },
   paymentAccepted: "Cartão de crédito, cartão de débito, Pix e dinheiro",
   meta: {
-    title: "Estúdio de Musculação no Silveira, BH | Aula Grátis | Fitburn",
+    title: "Estúdio de Musculação no Silveira | Aula Grátis | Fitburn",
     description:
       "Musculação no Silveira, BH: 1 professor para cada 4 alunos, avaliação completa e aula experimental grátis. Agende pelo WhatsApp.",
     ogTitle: "Chega de treinar sozinho. | Fitburn Brasil",

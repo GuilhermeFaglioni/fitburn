@@ -10,9 +10,9 @@ const head = page();
 describe("SEO", () => {
   it("title e description seguem a 7.1", () => {
     const title = head.querySelector("title")!.text;
-    expect(title).toBe("Estúdio de Musculação no Silveira, BH | Aula Grátis | Fitburn");
-    // A spec diz 58 caracteres, mas o texto fixo tem 61 (contagem da spec errada); o texto manda.
-    expect(title.length).toBeLessThanOrEqual(61);
+    // Encurtado de 61 para 57 (removido ", BH"), decisão delegada pelo Guilherme: limite de 60.
+    expect(title).toBe("Estúdio de Musculação no Silveira | Aula Grátis | Fitburn");
+    expect(title.length).toBeLessThanOrEqual(60);
     const d = head.querySelectorAll('meta[name="description"]');
     expect(d).toHaveLength(1);
     expect(d[0]!.getAttribute("content")).toBe(site.meta.description);
