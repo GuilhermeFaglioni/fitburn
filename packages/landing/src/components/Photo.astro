@@ -17,7 +17,8 @@ const images = import.meta.glob<{ default: ImageMetadata }>("../assets/photos/*.
 const image = images[`../assets/photos/${slot}.jpg`]?.default;
 if (!image) throw new Error(`Foto do slot "${slot}" não encontrada em src/assets/photos`);
 
-const widths = variant === "hero" ? [480, 720, 960] : variant === "wide" ? [480, 720, 960] : [240, 360, 480];
+// Larguras da spec canônica (GH #179, seção 6). O Astro só gera as que cabem no original.
+const widths = [480, 768, 1080, 1600];
 const sizes =
   variant === "hero"
     ? "(min-width: 1024px) 480px, 100vw"
@@ -30,9 +31,9 @@ const sizes =
   <Picture
     src={image}
     alt={alt}
-    formats={["avif"]}
+    formats={["avif", "webp"]}
     fallbackFormat="webp"
-    width={widths[widths.length - 1]}
+    width={1600}
     widths={widths}
     sizes={sizes}
     quality={38}
