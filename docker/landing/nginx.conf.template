@@ -45,8 +45,17 @@ server {
         try_files $uri =404;
     }
 
-    # HTML, robots.txt e sitemap: sempre revalidados.
+    # Home: try_files com "/" casaria o diretório raiz (sem index), então aponta o arquivo.
+    location = / {
+        include /etc/nginx/conf.d/snippets/security-headers.conf;
+        add_header Cache-Control "no-cache";
+        try_files /index.html =404;
+    }
+
+    # HTML, robots.txt e sitemap: sempre revalidados. "/creditos/" vira "/creditos"
+    # (o build gera creditos.html, sem diretório).
     location / {
+        rewrite ^/(.+)/$ /$1 last;
         include /etc/nginx/conf.d/snippets/security-headers.conf;
         add_header Cache-Control "no-cache";
         try_files $uri $uri.html =404;
