@@ -21,8 +21,9 @@ describe("acessibilidade estática", () => {
 
   it("os slots de foto têm descrição que não cita Fitburn", () => {
     for (const p of root.querySelectorAll(".photo")) {
-      expect(p.getAttribute("aria-label")).toBeTruthy();
-      expect(p.getAttribute("aria-label")).not.toMatch(/fitburn/i);
+      const alt = p.querySelector("img")?.getAttribute("alt") ?? "";
+      expect(alt).toBeTruthy();
+      expect(alt).not.toMatch(/fitburn/i);
     }
   });
 

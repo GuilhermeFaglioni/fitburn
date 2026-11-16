@@ -10,5 +10,5 @@ Lista para o dono do produto, fora do escopo da #179. A landing está pronta com
 6. Depoimentos com autorização por escrito, e o link e a nota do Google Meu Negócio, se houver. Reabre a seção de prova social.
 7. E-mail de contato, se houver, e prazo de resposta do WhatsApp.
 8. Meta numérica de conversão.
-9. Trocar `LANDING_SITE_URL` e `LANDING_INDEXABLE`, tirar `ROBOTS_TAG`, enviar o sitemap no Search Console e alinhar o nome, o endereço e o telefone no Instagram, Facebook e Google Meu Negócio.
+9. Trocar `PUBLIC_SITE_URL` e `PUBLIC_INDEXABLE=true` (variáveis de build da landing) e remover o `X-Robots-Tag: noindex` do nginx, enviar o sitemap no Search Console e alinhar o nome, o endereço e o telefone no Instagram, Facebook e Google Meu Negócio.
 10. Plano para o blog atual: redirecionamentos 301, para não perder o tráfego orgânico.
