@@ -52,3 +52,13 @@ jobs:
         with:
           name: landing-shots
           path: shots/
+      - if: always()
+        name: Responsividade (320/768/1024/1280) e JSON-LD
+        run: |
+          [ -d /tmp/pw/node_modules ] || npm i --no-save --prefix /tmp/pw playwright-core@1.56.1
+          CHROME_PATH="$(command -v google-chrome || command -v chromium || command -v chrome)" NODE_PATH=/tmp/pw/node_modules node scripts/landing-responsive.cjs http://localhost:8080 responsive
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: landing-responsive
+          path: responsive/
