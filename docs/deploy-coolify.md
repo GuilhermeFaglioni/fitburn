@@ -125,7 +125,7 @@ A identidade privada age (`identity.txt`) fica fora da VPS, num gerenciador de s
 
 O Compose usa `TRUST_PROXY_HOPS=2` para a cadeia Traefik do Coolify → Nginx do `web` → API. Essa configuração só é segura se o Traefik não confiar no `X-Forwarded-For` enviado pelo cliente externo e substituir o header pelo IP real de origem. O comportamento esperado é o padrão do Traefik sem `forwardedHeaders.insecure` e sem `forwardedHeaders.trustedIPs` configurados. **A configuração do Traefik deste VPS não foi confirmada**; confirme no passo manual abaixo antes de confiar nela.
 
-Não publique portas dos serviços `web` ou `api` fora do Traefik: só `web` deve receber domínio no Coolify, `api` não deve receber domínio, e nenhum dos dois deve declarar `ports` no Compose.
+Não publique portas dos serviços `web` ou `api` fora do Traefik: só `web` (o app) e `landing` (o site, seção 9) recebem domínio no Coolify, `api` não recebe domínio, e nenhum deles declara `ports` no Compose.
 
 ## 5. Deploy e verificação
 
@@ -231,3 +231,50 @@ Rodar de novo (a cada deploy) é seguro: nada é duplicado, e em outro dia a age
 | App abre, mas login falha / "sessão expirada" | O domínio precisa ser HTTPS (cookie `Secure`) e o Domains do `web` deve ter a porta `:80`. |
 | 502/504 no domínio | `web` espera o `api` ficar saudável; aguarde o `start_period` (~90s) ou veja os logs do `api`. |
 | `DEMO_USER_PASSWORD é obrigatória` | Defina com 12+ caracteres, ou ponha `DEMO_SEED=false`. |
+
+## 9. Landing (site estático)
+
+O serviço `landing` é um Nginx servindo o build do Astro (`packages/landing`, D-044). Não tem `depends_on`, não fala com a API e não publica `ports`. O app em `fitburn.seudominio.com.br` não muda.
+
+### Variáveis (aba Environment Variables)
+
+| Variável | Padrão | Quando |
+|---|---|---|
+| `LANDING_SITE_URL` | `https://site.fitburn.faglionidev.com` | build: canonical, `og:url`, sitemap e JSON-LD |
+| `LANDING_INDEXABLE` | `false` | build: `true` tira o `noindex` da página e põe `Sitemap:` no `robots.txt` |
+| `LANDING_UMAMI_SRC` e `LANDING_UMAMI_WEBSITE_ID` | vazias | build: as duas juntas ligam o analytics (Umami); vazias = sem script |
+| `LANDING_ANALYTICS_ORIGIN` | vazia | runtime: origem do Umami (ex.: `https://umami.faglionidev.com`), liberada na CSP |
+| `LANDING_ROBOTS_TAG` | `noindex, nofollow` | runtime: valor do header `X-Robots-Tag`; vazia = sem o header |
+
+As variáveis de build exigem novo build (redeploy com rebuild). As de runtime só reiniciam o contêiner.
+
+### Passo a passo
+
+1. Crie o DNS `A` de `site.fitburn.faglionidev.com` para o IP da VPS.
+2. No Coolify, serviço `landing` → Domains: `https://site.fitburn.faglionidev.com:80`.
+3. Cadastre as variáveis `LANDING_*`. O Umami é opcional: crie o site no Umami e copie a URL do `script.js` e o website ID.
+4. Faça o redeploy e confira:
+   ```bash
+   BASE_URL=https://site.fitburn.faglionidev.com
+   curl -sI "$BASE_URL/" | grep -Ei '^(HTTP/|content-security-policy:|x-frame-options:|referrer-policy:|x-content-type-options:|permissions-policy:|x-robots-tag:|cache-control:)'
+   curl -s "$BASE_URL/robots.txt"            # sem Sitemap: enquanto não indexável
+   curl -s "$BASE_URL/healthz"               # ok
+   curl -sI "$BASE_URL/creditos" | head -1   # 200
+   curl -sI "$BASE_URL/nao-existe" | head -1 # 404, com os mesmos headers
+   ```
+   Cache esperado: `/_astro/*` com `public, max-age=31536000, immutable`; `/og.png`, `/flame.svg` e `/apple-touch-icon.png` com `max-age=86400`; HTML, `robots.txt` e `sitemap*` com `no-cache`. Confira também que `https://fitburn.seudominio.com.br` segue igual.
+5. O HSTS é do Traefik, como no `web` (seção 5). O Nginx da landing não o envia.
+
+### Ir ao ar no domínio da Fitburn (futuro)
+
+Só depois de cumprir `docs/landing/antes-de-publicar.md`:
+
+1. `LANDING_SITE_URL=https://www.fitburnbrasil.com.br`, `LANDING_INDEXABLE=true` e `LANDING_ROBOTS_TAG=` (vazia).
+2. No Coolify, troque o domínio do serviço `landing` e aponte o DNS.
+3. Redeploy com rebuild. Confira que a página não tem `noindex`, que não há `X-Robots-Tag` e que o `robots.txt` traz `Sitemap:`.
+
+### Problemas comuns da landing
+
+- **Mudei `LANDING_INDEXABLE` e nada mudou:** é variável de build; faça rebuild, não só restart.
+- **Analytics bloqueado:** `LANDING_ANALYTICS_ORIGIN` precisa ser a origem exata do `script.js` do Umami (CSP `script-src` e `connect-src`).
+- **Mapa em branco:** a CSP só libera `frame-src` para `www.google.com` e `maps.google.com`.

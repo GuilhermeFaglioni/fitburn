@@ -1,0 +1,54 @@
+# Landing estática atrás do proxy do Coolify (Traefik, que termina o TLS).
+# Template: o envsubst da imagem só troca ANALYTICS_ORIGIN e ROBOTS_TAG
+# (NGINX_ENVSUBST_FILTER), aqui e em snippets/security-headers.conf.
+server_tokens off;
+
+gzip on;
+gzip_comp_level 5;
+gzip_min_length 256;
+gzip_vary on;
+gzip_types text/html text/css text/plain text/xml application/xml application/javascript image/svg+xml application/json;
+
+server {
+    listen 80 default_server;
+    server_name _;
+    root /usr/share/nginx/html;
+    index index.html;
+    client_max_body_size 1k;
+
+    error_page 404 /404.html;
+
+    location = /healthz {
+        access_log off;
+        default_type text/plain;
+        include /etc/nginx/conf.d/snippets/security-headers.conf;
+        return 200 "ok\n";
+    }
+
+    location = /404.html {
+        internal;
+        include /etc/nginx/conf.d/snippets/security-headers.conf;
+        add_header Cache-Control "no-cache" always;
+    }
+
+    # Arquivos com hash no nome (CSS, fontes, imagens otimizadas): cache longo.
+    location ^~ /_astro/ {
+        include /etc/nginx/conf.d/snippets/security-headers.conf;
+        add_header Cache-Control "public, max-age=31536000, immutable";
+        try_files $uri =404;
+    }
+
+    # Sem hash no nome: cache de um dia.
+    location ~* ^/(og\.png|flame\.svg|apple-touch-icon\.png)$ {
+        include /etc/nginx/conf.d/snippets/security-headers.conf;
+        add_header Cache-Control "public, max-age=86400";
+        try_files $uri =404;
+    }
+
+    # HTML, robots.txt e sitemap: sempre revalidados.
+    location / {
+        include /etc/nginx/conf.d/snippets/security-headers.conf;
+        add_header Cache-Control "no-cache";
+        try_files $uri $uri.html =404;
+    }
+}
