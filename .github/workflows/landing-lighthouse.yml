@@ -46,8 +46,7 @@ jobs:
         name: Prints 375 e 1440 (imagens carregadas, topo legível)
         run: |
           npm i --no-save --prefix /tmp/pw playwright-core@1.56.1
-          npx --prefix /tmp/pw playwright-core install --with-deps chromium
-          NODE_PATH=/tmp/pw/node_modules node scripts/landing-shots.cjs http://localhost:8080 shots
+          CHROME_PATH="$(command -v google-chrome || command -v chromium || command -v chrome)" NODE_PATH=/tmp/pw/node_modules node scripts/landing-shots.cjs http://localhost:8080 shots
       - uses: actions/upload-artifact@v4
         if: always()
         with:

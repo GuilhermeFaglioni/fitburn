@@ -9,7 +9,7 @@ const out = process.argv[3] || "shots";
 fs.mkdirSync(out, { recursive: true });
 
 (async () => {
-  const browser = await chromium.launch({ args: ["--no-sandbox"] });
+  const browser = await chromium.launch({ executablePath: process.env.CHROME_PATH || undefined, args: ["--no-sandbox"] });
   let bad = 0;
   for (const [w, h] of [[375, 812], [1440, 900]]) {
     for (const [path, name] of [["/", "home"], ["/creditos", "creditos"]]) {
