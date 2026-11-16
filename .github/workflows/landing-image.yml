@@ -1,0 +1,19 @@
+name: Landing image
+
+on:
+  pull_request:
+    paths:
+      - "docker/landing/**"
+      - "packages/landing/**"
+      - "scripts/verify-landing-image.sh"
+      - ".github/workflows/landing-image.yml"
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build da imagem (indexável, para checar o HTML gerado)
+        run: docker build -f docker/landing/Dockerfile --build-arg PUBLIC_INDEXABLE=true -t fitburn-landing:ci .
+      - name: Verificar nginx, healthz, 404, headers, cache e envsubst
+        run: bash scripts/verify-landing-image.sh fitburn-landing:ci
