@@ -4,10 +4,11 @@ H1 (1): Chega de treinar sozinho. Musculação com 1 professor para cada 4 aluno
 H2: ["Não é promessa. É estrutura.","Três passos até o seu primeiro treino.","Do treino completo ao treino expresso.","O seu treino não fica sozinho.","Treinar bem começa no ambiente.","Seu plano é montado na conversa.","Perguntas frequentes.","Sua primeira aula é por nossa conta."]
 textos proibidos presentes: o melhor
 blocos de texto renderizados sem correspondência na spec (6):
-  <title> Estúdio de Musculação no Silveira, BH | Aula Grátis | Fitburn
+  <title> Estúdio de Musculação no Silveira | Aula Grátis | Fitburn
   <span> FITBURN
   <span> 01
   <span> 01
   <span> FITBURN
   <p> Créditos das fotos
-title: Estúdio de Musculação no Silveira, BH | Aula Grátis | Fitburn (61 chars)
+title: Estúdio de Musculação no Silveira | Aula Grátis | Fitburn (57 chars)
+[atualizado no head 267aaff: título e index.html regenerados do build; as linhas 1-6 vêm da execução original em 9f23477 (sem Chromium nesta máquina para repetir spec179.cjs); "o melhor" segue no FAQ 1 (grep no dist de 267aaff: 1 ocorrência no HTML), aguardando decisão humana]
