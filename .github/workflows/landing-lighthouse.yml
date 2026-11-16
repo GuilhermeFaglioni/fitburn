@@ -21,7 +21,7 @@ jobs:
       - name: Build e subida da imagem (indexável)
         run: |
           docker build -f docker/landing/Dockerfile --build-arg PUBLIC_INDEXABLE=true -t fitburn-landing:lh .
-          docker run -d --name lp -p 8080:80 fitburn-landing:lh
+          docker run -d --name lp -p 8080:80 -e ROBOTS_TAG="" fitburn-landing:lh
           for i in $(seq 1 30); do curl -fs http://localhost:8080/healthz && break; sleep 1; done
       - name: Lighthouse mobile
         run: |
