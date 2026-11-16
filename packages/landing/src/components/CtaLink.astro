@@ -1,0 +1,33 @@
+---
+import { site, type UmamiLocal } from "../content/site";
+import { whatsappUrl } from "../lib/whatsapp";
+
+interface Props {
+  variant?: "primary" | "secondary" | "ghost";
+  type: "whatsapp" | "tel" | "plain";
+  label: string;
+  local?: UmamiLocal;
+  message?: string;
+  href?: string;
+  small?: boolean;
+}
+const { variant = "primary", type, label, local, message = site.messages.trial, href, small = false } = Astro.props;
+
+const isWa = type === "whatsapp";
+const isTel = type === "tel";
+const url = isWa ? whatsappUrl(message) : isTel ? `tel:${site.phone.tel}` : href;
+const event = isWa ? "cta-whatsapp" : isTel ? "cta-telefone" : undefined;
+const external = isWa;
+const classes = ["cta", `cta--${variant}`, small ? "cta--sm" : ""].filter(Boolean).join(" ");
+---
+
+<a
+  class={classes}
+  href={url}
+  target={external ? "_blank" : undefined}
+  rel={external ? "noopener" : undefined}
+  data-umami-event={event}
+  data-umami-event-local={event ? local : undefined}
+>
+  {label}{external && <span class="sr-only"> (abre em nova aba)</span>}
+</a>

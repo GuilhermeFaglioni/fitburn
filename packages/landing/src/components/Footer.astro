@@ -1,0 +1,39 @@
+---
+import { copy } from "../content/copy";
+import { site } from "../content/site";
+import Icon from "./Icon.astro";
+import Logo from "./Logo.astro";
+const networks = [
+  { name: "Instagram", icon: "instagram", href: site.social.instagram },
+  { name: "Facebook", icon: "facebook", href: site.social.facebook },
+  { name: "YouTube", icon: "youtube", href: site.social.youtube },
+] as const;
+---
+
+<footer class="footer">
+  <div class="container footer__grid">
+    <div>
+      <Logo />
+      <p>{site.addressDisplay}</p>
+    </div>
+    <div>
+      <p>
+        <a href={`tel:${site.phone.tel}`}>{site.phone.display}</a><br />
+        <span>{site.whatsapp.display}</span>
+      </p>
+      <p>{site.hoursShort}</p>
+    </div>
+    <div>
+      <div class="footer__social">
+        {
+          networks.map((n) => (
+            <a href={n.href} target="_blank" rel="noopener" aria-label={`Fitburn Brasil no ${n.name} (abre em nova aba)`}>
+              <Icon name={n.icon} />
+            </a>
+          ))
+        }
+      </div>
+      <p>{copy.footer.copyright}</p>
+    </div>
+  </div>
+</footer>

@@ -1,0 +1,27 @@
+---
+import { copy } from "../content/copy";
+import CtaLink from "./CtaLink.astro";
+import SectionHeading from "./SectionHeading.astro";
+const d = copy.differentials;
+---
+
+<section class="section">
+  <div class="container">
+    <SectionHeading kicker={d.kicker} title={d.title} />
+    <ol class="steps steps--2x2">
+      {
+        d.items.map((item, i) => (
+          <li class="card reveal">
+            <span class="step__num" aria-hidden="true">{String(i + 1).padStart(2, "0")}</span>
+            <h3>{item.title}</h3>
+            <p>{item.text}</p>
+          </li>
+        ))
+      }
+    </ol>
+    <p class="closing">{d.closing}</p>
+    <div class="cta-row">
+      <CtaLink type="whatsapp" label={copy.cta.trial} local="diferenciais" />
+    </div>
+  </div>
+</section>

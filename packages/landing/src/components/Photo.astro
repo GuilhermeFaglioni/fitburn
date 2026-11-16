@@ -1,0 +1,16 @@
+---
+// Foto provisória (L15). Enquanto não há foto de banco em src/assets/photos, mostra o placeholder do slot
+// com a proporção fixa; com a foto, trocar por <Picture> de astro:assets (avif/webp, P&B).
+interface Props {
+  slot: string;
+  variant?: "hero" | "wide" | "square";
+  /** Descrição da cena, nunca "Fitburn" (L15). Só usada quando houver imagem real. */
+  alt: string;
+  eager?: boolean;
+}
+const { slot, variant = "square" } = Astro.props;
+---
+
+<div class={`photo photo--${variant}`} data-slot={slot} role="img" aria-label={Astro.props.alt}>
+  <span class="photo__ph" aria-hidden="true">Foto</span>
+</div>

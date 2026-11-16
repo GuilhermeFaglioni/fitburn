@@ -76,6 +76,15 @@ Registro das decisões tomadas durante a conversa. O documento separa decisões 
 - **Decisão:** permitir sobreposição entre aulas de professores diferentes e impedir duas aulas simultâneas do mesmo professor.
 - **Consequências:** a exclusion constraint do banco é escopada por `instructorId`, com pré-validação equivalente na API. A agenda retorna `OCCURRENCE_OVERLAP` para conflito do mesmo professor e a mensagem já identifica essa regra; `SCHEDULE_CONFLICT` continua sendo o conflito entre reservas simultâneas do mesmo cliente.
 
+## Landing (Fitburn Brasil)
+
+A spec da #179 pedia D-039 e D-040, mas esses IDs já estavam em uso (Loja e fotos de produto). Os IDs livres seguintes foram usados, sem alterar nenhuma decisão existente.
+
+| ID | Decisão | Status | Motivo principal |
+|---|---|---|---|
+| D-044 | Landing page em `packages/landing` (Astro estático): pacote separado, sem JS próprio, tokens importados do app, em `site.fitburn.faglionidev.com` com `noindex` enquanto for proposta comercial | Aprovado | Desempenho e SEO de página de marketing, e o PWA do app fica intocado. O domínio de produção (`fitburnbrasil.com.br`) entra por variável de ambiente. O D-031 continua pendente para o domínio de produção do app. Aprovado em 2026-11-10 (issue #179). |
+| D-045 | Landing só no tema escuro | Aprovado | Exceção ao D-038, que vale para cliente e admin. A landing segue o registro noturno da marca (site e Instagram) e não tem alternância. Aprovado em 2026-11-10 (issue #179). |
+
 ## Interface e tema
 
 | ID | Decisão | Status | Motivo principal |

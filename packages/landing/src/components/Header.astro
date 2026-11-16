@@ -1,0 +1,15 @@
+---
+import { copy } from "../content/copy";
+import CtaLink from "./CtaLink.astro";
+import Logo from "./Logo.astro";
+---
+
+<header class="header">
+  <div class="container header__inner">
+    <Logo />
+    <nav class="nav" aria-label="Principal">
+      {copy.nav.map((i) => <a href={i.href}>{i.label}</a>)}
+    </nav>
+    <CtaLink type="whatsapp" label={copy.cta.headerTrial} local="header" small />
+  </div>
+</header>

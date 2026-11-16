@@ -1,0 +1,16 @@
+---
+import CtaLink from "../components/CtaLink.astro";
+import { copy } from "../content/copy";
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout forceNoindex jsonLd={false} title={`${copy.notFound.title} | Fitburn Brasil`}>
+  <main id="conteudo" class="section">
+    <div class="container">
+      <h1 class="h2">{copy.notFound.title}</h1>
+      <div class="cta-row">
+        <CtaLink type="plain" href="/" label={copy.notFound.back} />
+      </div>
+    </div>
+  </main>
+</BaseLayout>

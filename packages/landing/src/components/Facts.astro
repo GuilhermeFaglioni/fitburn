@@ -1,0 +1,18 @@
+---
+import { copy } from "../content/copy";
+---
+
+<section class="facts reveal" aria-label={undefined}>
+  <div class="container">
+    <ul aria-label={copy.facts.label}>
+      {
+        copy.facts.items.map((f) => (
+          <li aria-label={"aria" in f ? f.aria : undefined}>
+            <span class="num" aria-hidden={"aria" in f ? "true" : undefined}>{f.value}</span>
+            <p aria-hidden={"aria" in f ? "true" : undefined}>{f.caption}</p>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</section>

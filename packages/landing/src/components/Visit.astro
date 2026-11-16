@@ -1,0 +1,64 @@
+---
+import { copy } from "../content/copy";
+import { site } from "../content/site";
+import { emphasis } from "../lib/emphasis";
+import { whatsappUrl } from "../lib/whatsapp";
+import CtaLink from "./CtaLink.astro";
+const v = copy.visit;
+const a = site.address;
+---
+
+<section class="section section--alt" id="contato">
+  <div class="container visit">
+    <div>
+      <p class="kicker">{v.kicker}</p>
+      <h2 class="h2" set:html={emphasis(v.title)} />
+      <p class="lead">{v.lead}</p>
+      <div class="cta-row">
+        <CtaLink type="whatsapp" label={copy.cta.trial} local="contato" />
+        <CtaLink type="tel" variant="secondary" label={copy.cta.call} local="contato" />
+      </div>
+      <address>
+        <span>{a.street}</span><br />
+        <span>{a.district}, {a.city}, {a.region}</span><br />
+        <span>CEP {a.postalCode}</span>
+      </address>
+      <ul class="phones">
+        <li>
+          <strong>WhatsApp</strong>{" "}
+          <a href={whatsappUrl(site.messages.trial)} target="_blank" rel="noopener">
+            {site.whatsapp.display}<span class="sr-only"> (abre em nova aba)</span>
+          </a>
+        </li>
+        <li>
+          <strong>Telefone</strong>{" "}
+          <a href={`tel:${site.phone.tel}`}>{site.phone.display}</a>
+        </li>
+      </ul>
+      <dl>
+        {
+          site.hours.map((h) => (
+            <>
+              <dt>{h.days}</dt>
+              <dd>{h.opens} às {h.closes}</dd>
+            </>
+          ))
+        }
+      </dl>
+    </div>
+    <div>
+      <div class="map">
+        <iframe
+          src={site.maps.embed}
+          title={v.mapTitle}
+          loading="lazy"
+          referrerpolicy="no-referrer-when-downgrade"
+          width="600"
+          height="450"></iframe>
+      </div>
+      <a class="map-link" href={site.maps.link} target="_blank" rel="noopener">
+        {v.mapLink}<span class="sr-only"> (abre em nova aba)</span>
+      </a>
+    </div>
+  </div>
+</section>

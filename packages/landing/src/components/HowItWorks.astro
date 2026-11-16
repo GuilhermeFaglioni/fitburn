@@ -1,0 +1,22 @@
+---
+import { copy } from "../content/copy";
+import SectionHeading from "./SectionHeading.astro";
+const h = copy.how;
+---
+
+<section class="section section--alt" id="como-funciona">
+  <div class="container">
+    <SectionHeading kicker={h.kicker} title={h.title} />
+    <ol class="steps steps--3">
+      {
+        h.steps.map((s, i) => (
+          <li class="card reveal">
+            <span class="step__num" aria-hidden="true">{String(i + 1).padStart(2, "0")}</span>
+            <h3>{s.title}</h3>
+            <p>{s.text}</p>
+          </li>
+        ))
+      }
+    </ol>
+  </div>
+</section>

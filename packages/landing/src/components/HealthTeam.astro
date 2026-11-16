@@ -1,0 +1,21 @@
+---
+import { copy } from "../content/copy";
+import SectionHeading from "./SectionHeading.astro";
+const h = copy.health;
+---
+
+<section class="section section--alt">
+  <div class="container">
+    <SectionHeading kicker={h.kicker} title={h.title} lead={h.lead} />
+    <div class="grid grid--3">
+      {
+        h.items.map((i) => (
+          <article class="card reveal">
+            <h3>{i.title}</h3>
+            <p>{i.text}</p>
+          </article>
+        ))
+      }
+    </div>
+  </div>
+</section>

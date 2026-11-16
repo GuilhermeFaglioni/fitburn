@@ -1,0 +1,29 @@
+---
+import { copy } from "../content/copy";
+import { site } from "../content/site";
+import CtaLink from "./CtaLink.astro";
+import Icon from "./Icon.astro";
+import SectionHeading from "./SectionHeading.astro";
+const p = copy.plans;
+---
+
+<section class="section">
+  <div class="container">
+    <SectionHeading kicker={p.kicker} title={p.title} />
+    <div class="plan reveal">
+      <p class="plan__text">{p.text}</p>
+      <h3>{p.subtitle}</h3>
+      <ul>
+        {
+          p.items.map((i) => (
+            <li>
+              <Icon name="check" />
+              <span>{i}</span>
+            </li>
+          ))
+        }
+      </ul>
+      <CtaLink type="whatsapp" variant="secondary" label={p.cta} local="planos" message={site.messages.plans} />
+    </div>
+  </div>
+</section>

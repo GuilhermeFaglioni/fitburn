@@ -1,0 +1,27 @@
+---
+import { copy } from "../content/copy";
+import { site } from "../content/site";
+import { emphasis } from "../lib/emphasis";
+import CtaLink from "./CtaLink.astro";
+import Photo from "./Photo.astro";
+const h = copy.hero;
+---
+
+<section class="hero" id="inicio">
+  <div class="container hero__grid">
+    <div>
+      <p class="kicker">{h.kicker}</p>
+      <h1>
+        <span class="hero__l1">{h.line1}</span>{" "}
+        <span class="hero__l2" set:html={emphasis(h.line2)} />
+      </h1>
+      <p class="hero__lead">{h.lead}</p>
+      <div class="cta-row">
+        <CtaLink type="whatsapp" label={copy.cta.trial} local="hero" />
+        <CtaLink type="tel" variant="secondary" label={copy.cta.call} local="hero" />
+      </div>
+      <p class="hero__hours">{site.hoursShort}</p>
+    </div>
+    <Photo slot="hero" variant="hero" alt="Professor acompanha aluna durante agachamento com barra" eager />
+  </div>
+</section>

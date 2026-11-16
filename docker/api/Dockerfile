@@ -29,6 +29,7 @@ COPY pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 COPY packages/api/package.json packages/api/
 COPY packages/contracts/package.json packages/contracts/
 COPY packages/web/package.json packages/web/
+COPY packages/landing/package.json packages/landing/
 RUN pnpm install --frozen-lockfile --filter "@fitburn/api..."
 
 COPY tsconfig.base.json ./

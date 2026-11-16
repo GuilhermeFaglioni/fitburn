@@ -22,6 +22,7 @@ pnpm prisma:migrate:test            # aplica migrations no banco de teste
 
 pnpm dev:api                        # API em http://localhost:3333/api
 pnpm dev:web                        # Web em http://localhost:5173 (proxy /api -> :3333)
+pnpm dev:landing                    # Landing em http://localhost:4321 (Astro estático, sem API)
 ```
 
 Outros comandos úteis:
@@ -35,7 +36,7 @@ pnpm build       # build de produção de todos os pacotes
 pnpm db:down     # derruba o PostgreSQL local
 ```
 
-O monorepo (`packages/contracts`, `packages/api`, `packages/web`) é gerenciado com pnpm workspaces — ver `pnpm-workspace.yaml`.
+O monorepo (`packages/contracts`, `packages/api`, `packages/web`, `packages/landing`) é gerenciado com pnpm workspaces — ver `pnpm-workspace.yaml`.
 
 ## Documentos
 

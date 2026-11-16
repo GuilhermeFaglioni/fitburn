@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../../web/src/styles/tokens.css" />
+    <link rel="stylesheet" href="../node_modules/@fontsource/dm-sans/latin-400.css" />
+    <link rel="stylesheet" href="../node_modules/@fontsource/dm-sans/latin-700.css" />
+    <link rel="stylesheet" href="../node_modules/@fontsource/cormorant/latin-700-italic.css" />
+    <style>
+      html,
+      body {
+        margin: 0;
+      }
+      body {
+        width: 1200px;
+        height: 630px;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: var(--font-sans);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 64px;
+        box-sizing: border-box;
+      }
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        font-weight: 700;
+        letter-spacing: 0.22em;
+        font-size: 28px;
+      }
+      .logo img {
+        width: 56px;
+        height: 56px;
+      }
+      h1 {
+        margin: 0;
+        font-size: 84px;
+        line-height: 1.04;
+        letter-spacing: -0.045em;
+      }
+      h1 span {
+        display: block;
+        margin-top: 16px;
+        font-size: 40px;
+        font-weight: 500;
+        letter-spacing: -0.035em;
+        color: var(--ink-2);
+      }
+      em {
+        font-family: var(--font-serif);
+        font-style: italic;
+        font-weight: 700;
+        color: var(--brand-strong);
+      }
+      .foot {
+        font-size: 26px;
+        color: var(--brand-strong);
+        font-weight: 700;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="logo"><img src="../public/flame.svg" alt="" />FITBURN</div>
+    <h1>
+      Chega de treinar sozinho.
+      <span>Musculação com 1 professor para cada <em>4 alunos</em>, no Silveira.</span>
+    </h1>
+    <div class="foot">Aula experimental grátis · Silveira, BH</div>
+  </body>
+</html>

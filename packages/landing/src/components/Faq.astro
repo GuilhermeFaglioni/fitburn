@@ -1,0 +1,29 @@
+---
+import { copy } from "../content/copy";
+import { faq } from "../content/faq";
+import CtaLink from "./CtaLink.astro";
+import SectionHeading from "./SectionHeading.astro";
+const f = copy.faq;
+---
+
+<section class="section section--alt" id="duvidas">
+  <div class="container">
+    <SectionHeading kicker={f.kicker} title={f.title} />
+    <div class="faq">
+      {
+        faq.map((item) => (
+          <details>
+            <summary>
+              <h3>{item.q}</h3>
+            </summary>
+            <p>{item.a}</p>
+          </details>
+        ))
+      }
+    </div>
+    <div class="faq__more">
+      <p>{f.more}</p>
+      <CtaLink type="whatsapp" variant="ghost" label={f.cta} local="duvidas" />
+    </div>
+  </div>
+</section>

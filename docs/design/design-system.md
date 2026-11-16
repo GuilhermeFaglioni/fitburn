@@ -125,6 +125,27 @@ Tokens que o preview de todas as telas (`preview-todas-telas.html`) precisou e q
 
 Token novo que o preview trouxer e ainda não estiver aprovado fica fora desta seção, numa seção "Tokens novos (aguardando aprovação)", e só vira código depois da aprovação.
 
+## Landing (aprovados em 2026-11-10)
+
+A landing (`packages/landing`, D-044 e D-045) usa os tokens do app, importados de `tokens.css` sem cópia, só no tema escuro (`data-theme="dark"`). Estes são os únicos valores literais permitidos fora de `tokens.css`, em `packages/landing/src/styles/landing-tokens.css` (o teste `tokens.test.ts` confere a lista).
+
+| Token | Valor | Motivo |
+|---|---|---|
+| `--text-h2-marketing` | `clamp(28px, 4.6vw, 52px)` | H2 de seção de marketing (proposta: 52px, fluido, mínimo 28px). Não existe no app. |
+| `--leading-h2-marketing` | 1.06 | Entrelinha do H2 de marketing. |
+| `--text-hero-sub` | `clamp(22px, 3.2vw, 36px)` | Segunda frase do H1 do herói. |
+| `--text-lead` | `clamp(17px, 1.6vw, 20px)` | Subtítulo do herói e intros de seção. |
+| `--text-cta` | 17px | Rótulo do botão da landing, como no site atual (o app usa `--text-action`, 15px). |
+| `--cta-min-h` | 52px | Alvo de toque mínimo do botão. |
+| `--cta-ink` | #0A0A0A | Texto sobre o laranja de marca. |
+| `--landing-max` | 1240px | Container da proposta (o app usa `--container-max`, 1200px). |
+| `--landing-gutter` / `--landing-gutter-lg` | `--s-4` / `--s-12` | Gutter do container; o maior vale a partir de 1024px. |
+| `--section-y` / `--section-y-lg` | `--s-16` / `--s-24` | Respiro vertical entre seções. |
+| `--reveal-shift` | 20px (0px com movimento reduzido) | Deslocamento do fade-up de entrada. |
+| `--action-bar-h` | 72px | Altura da barra fixa de ações no celular; o `body` reserva esse espaço. |
+
+**Botão primário da landing (L6):** fundo `--brand` (#ED6E34) com texto `--cta-ink` (#0A0A0A), 6,49:1 (8,15:1 sobre `--brand-hover`). O botão do app (texto branco sobre o gradiente, 3,05:1 e 2,43:1) não é reaproveitado. Outros contrastes conferidos no teste: `--muted` sobre `--surface` (6,7:1) e sobre `--bg`, `--brand-strong` sobre `--bg` (8,0:1) e `--brand` sobre `--surface` (6,06:1, números grandes).
+
 ## Como adicionar um token
 
 1. Confirme que o valor não existe aqui.

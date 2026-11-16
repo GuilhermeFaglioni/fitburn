@@ -1,0 +1,26 @@
+---
+import { copy } from "../content/copy";
+import Photo from "./Photo.astro";
+import SectionHeading from "./SectionHeading.astro";
+const m = copy.modalities;
+---
+
+<section class="section" id="modalidades">
+  <div class="container">
+    <SectionHeading kicker={m.kicker} title={m.title} />
+    <div class="split">
+      <div class="grid grid--2">
+        {
+          m.items.map((i) => (
+            <article class="card reveal">
+              <span class="chip">{i.tag}</span>
+              <h3>{i.name}</h3>
+              <p>{i.text}</p>
+            </article>
+          ))
+        }
+      </div>
+      <Photo slot="modalidade" variant="wide" alt="Professor orienta pequeno grupo em exercício com halteres" />
+    </div>
+  </div>
+</section>

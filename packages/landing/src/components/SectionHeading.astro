@@ -1,0 +1,16 @@
+---
+import { emphasis } from "../lib/emphasis";
+
+interface Props {
+  kicker: string;
+  title: string;
+  lead?: string;
+}
+const { kicker, title, lead } = Astro.props;
+---
+
+<div class="section-head">
+  <p class="kicker">{kicker}</p>
+  <h2 class="h2" set:html={emphasis(title)} />
+  {lead && <p class="lead">{lead}</p>}
+</div>

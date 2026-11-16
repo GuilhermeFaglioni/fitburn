@@ -1,0 +1,33 @@
+---
+import { copy } from "../content/copy";
+import Icon from "./Icon.astro";
+import Photo from "./Photo.astro";
+import SectionHeading from "./SectionHeading.astro";
+const a = copy.amenities;
+const icons = ["climate", "coffee", "towel", "chair", "boot"] as const;
+const alts = [
+  "Sala de treino ampla com equipamentos de musculação",
+  "Toalha dobrada ao lado de garrafa de água na academia",
+  "Rack de barras e anilhas em sala de musculação",
+  "Cadeira de massagem em ambiente de descanso",
+];
+---
+
+<section class="section section--alt" id="estrutura">
+  <div class="container">
+    <SectionHeading kicker={a.kicker} title={a.title} />
+    <ul class="amenities">
+      {
+        a.items.map((item, i) => (
+          <li class="reveal">
+            <Icon name={icons[i]!} />
+            <span>{item}</span>
+          </li>
+        ))
+      }
+    </ul>
+    <div class="photos">
+      {alts.map((alt, i) => <Photo slot={`estrutura-${i + 1}`} alt={alt} />)}
+    </div>
+  </div>
+</section>

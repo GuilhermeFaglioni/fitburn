@@ -5,7 +5,7 @@ import globals from "globals";
 
 export default tseslint.config(
   {
-    ignores: ["**/dist/**", "**/node_modules/**", "**/coverage/**", "**/.pnpm-store/**", "tmp/**", ".claude/worktrees/**", ".agents/**", ".claude/skills/**", "packages/web/public/ocr/**"],
+    ignores: ["**/dist/**", "**/node_modules/**", "**/coverage/**", "**/.pnpm-store/**", "tmp/**", ".claude/worktrees/**", ".agents/**", ".claude/skills/**", "packages/web/public/ocr/**", "**/.astro/**", "**/.build-*/**"],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
@@ -31,7 +31,7 @@ export default tseslint.config(
   },
   {
     // Scripts ESM da raiz (deploy-check.mjs).
-    files: ["scripts/**/*.mjs", "packages/web/scripts/**/*.mjs"],
+    files: ["scripts/**/*.mjs", "packages/web/scripts/**/*.mjs", "packages/landing/*.mjs", "packages/landing/scripts/**/*.mjs"],
     languageOptions: { globals: globals.node },
   },
 );

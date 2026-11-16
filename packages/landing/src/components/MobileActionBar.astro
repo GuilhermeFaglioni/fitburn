@@ -1,0 +1,9 @@
+---
+import { copy } from "../content/copy";
+import CtaLink from "./CtaLink.astro";
+---
+
+<nav class="action-bar" aria-label={copy.bar.label}>
+  <CtaLink type="whatsapp" label={copy.bar.whatsapp} local="barra" small />
+  <CtaLink type="tel" variant="secondary" label={copy.bar.call} local="barra" small />
+</nav>
