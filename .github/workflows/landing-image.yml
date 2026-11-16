@@ -1,10 +1,23 @@
 name: Landing image
 
+# Dispara quando muda algo que entra em qualquer uma das três imagens (landing, API, web):
+# código e tokens da landing, manifests e lockfile do workspace, .npmrc, .dockerignore,
+# Dockerfiles e nginx. A API e a web copiam o manifest da landing, então também são construídas aqui.
 on:
   pull_request:
     paths:
+      - "docker/api/**"
+      - "docker/web/**"
       - "docker/landing/**"
       - "packages/landing/**"
+      - "packages/web/src/styles/tokens.css"
+      - "packages/*/package.json"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - ".npmrc"
+      - ".dockerignore"
+      - "tsconfig.base.json"
       - "scripts/verify-landing-image.sh"
       - ".github/workflows/landing-image.yml"
 
@@ -17,3 +30,12 @@ jobs:
         run: docker build -f docker/landing/Dockerfile --build-arg PUBLIC_INDEXABLE=true -t fitburn-landing:ci .
       - name: Verificar nginx, healthz, 404, headers, cache e envsubst
         run: bash scripts/verify-landing-image.sh fitburn-landing:ci
+
+  build-api-web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build da imagem da API (com o manifest da landing no workspace)
+        run: docker build -f docker/api/Dockerfile -t fitburn-api:ci .
+      - name: Build da imagem do web (com o manifest da landing no workspace)
+        run: docker build -f docker/web/Dockerfile -t fitburn-web:ci .
