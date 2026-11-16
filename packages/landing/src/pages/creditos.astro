@@ -1,0 +1,52 @@
+---
+import CtaLink from "../components/CtaLink.astro";
+import Footer from "../components/Footer.astro";
+import Header from "../components/Header.astro";
+import { copy } from "../content/copy";
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+const photos = [
+  { slot: "Início", page: "File:Attractive_sporty_woman_doing_overhead_press_in_gym_with_barbell.jpg", author: "Nenad Stojkovic", license: "CC BY 2.0" },
+  { slot: "Modalidades", page: "File:Woman_doing_squat_workout_in_gym_with_barbell.jpg", author: "Nenad Stojkovic", license: "CC BY 2.0" },
+  { slot: "Estrutura 1", page: "File:New_Drawsko_Pomorskie_Training_Area_Gym_(7411444).jpg", author: "Cap. Lena Witham, Guarda Nacional do Exército dos EUA", license: "Domínio público" },
+  { slot: "Estrutura 2", page: "File:Fitness_dumbbell_marked_with_a_green_logo_resting_on_a_gym_rack.jpg", author: "Shixart1985", license: "CC BY 2.0" },
+  { slot: "Estrutura 3", page: "File:Marines%27_voices_echo,_prompt_new_gym_hours_150927-M-AI083-067.jpg", author: "Cpl. Jason Jimenez, Corpo de Fuzileiros Navais dos EUA", license: "Domínio público" },
+  { slot: "Estrutura 4", page: "File:A_close-up_view_of_a_set_of_heavy_dumbbells.jpg", author: "Shixart1985", license: "CC BY 2.0" },
+];
+---
+
+<BaseLayout title={`${copy.credits.title} | Fitburn Brasil`} jsonLd={false}>
+  <Header />
+  <main id="conteudo" tabindex="-1" class="section">
+    <div class="container">
+      <h1 class="h2">{copy.credits.title}</h1>
+      <p>{copy.credits.intro}</p>
+      <ul class="credits-list">
+        {
+          photos.map((p) => (
+            <li>
+              <strong>{p.slot}</strong>:{" "}
+              <a href={`https://commons.wikimedia.org/wiki/${p.page}`} target="_blank" rel="noopener">
+                página do arquivo (abre em nova aba)
+              </a>
+              . {copy.credits.author}: {p.author}. {copy.credits.license}:{" "}
+              {p.license === "CC BY 2.0" ? (
+                <a href="https://creativecommons.org/licenses/by/2.0/" target="_blank" rel="noopener">
+                  CC BY 2.0
+                </a>
+              ) : (
+                p.license
+              )}
+              .
+            </li>
+          ))
+        }
+      </ul>
+      <p>As imagens foram recortadas, redimensionadas e convertidas para preto e branco.</p>
+      <div class="cta-row">
+        <CtaLink type="plain" href="/" label={copy.credits.back} />
+      </div>
+    </div>
+  </main>
+  <Footer />
+</BaseLayout>

@@ -137,7 +137,14 @@ export const copy = {
     mapTitle: "Mapa: Fitburn Brasil, Rua Ilacir Pereira Lima, 166, Silveira, Belo Horizonte",
     mapLink: "Abrir no Google Maps",
   },
-  footer: { copyright: "© 2026 Fitburn Brasil" },
+  footer: { copyright: "© 2026 Fitburn Brasil", credits: "Créditos das fotos" },
+  credits: {
+    title: "Créditos das fotos",
+    intro: "As fotos deste site são ilustrativas e não mostram a academia. Elas vêm do Wikimedia Commons, com licença livre.",
+    back: "Voltar ao início",
+    license: "Licença",
+    author: "Autor",
+  },
   bar: { whatsapp: "WhatsApp", call: "Ligar", label: "Ações rápidas" },
   notFound: { title: "Página não encontrada", back: "Voltar ao início" },
 } as const;

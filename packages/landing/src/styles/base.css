@@ -638,6 +638,19 @@ em {
   border-color: var(--brand-line);
   color: var(--brand-strong);
 }
+.footer__credits a {
+  display: inline-block;
+  padding-block: var(--s-3);
+  font-size: 0.8125rem;
+  color: var(--ink-2, inherit);
+  text-decoration: underline;
+}
+.credits-list {
+  display: grid;
+  gap: var(--s-4);
+  padding: 0;
+  list-style: none;
+}
 
 /* Barra fixa no celular */
 .action-bar {
