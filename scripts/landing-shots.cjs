@@ -1,3 +1,4 @@
+/* global document, window */
 // Prints de página inteira da landing (375 e 1440) com todas as imagens carregadas e o topo legível.
 // Uso: node scripts/landing-shots.cjs <baseUrl> <outDir>
 const { chromium } = require("playwright-core");

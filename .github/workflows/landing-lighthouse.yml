@@ -29,6 +29,8 @@ jobs:
           run() { npx --yes lighthouse@12 "$1" --form-factor=mobile --screenEmulation.mobile \
             --chrome-flags="--headless=new --no-sandbox" --output=json --output=html \
             --output-path="lh/$2" --quiet; }
+          run http://localhost:8080/ aquecimento
+          rm -f lh/aquecimento.*
           run http://localhost:8080/ home-1
           run http://localhost:8080/ home-2
           run http://localhost:8080/ home-3
@@ -40,7 +42,8 @@ jobs:
         with:
           name: lighthouse-reports
           path: lh/
-      - name: Prints 375 e 1440 (imagens carregadas, topo legível)
+      - if: always()
+        name: Prints 375 e 1440 (imagens carregadas, topo legível)
         run: |
           npm i --no-save --prefix /tmp/pw playwright-core@1.56.1
           npx --prefix /tmp/pw playwright-core install --with-deps chromium
