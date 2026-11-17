@@ -8,6 +8,7 @@ import {
   type SetShopProductOptionsRequest,
   type ShopProduct,
   type ShopProductDetail,
+  type ShopProductImage,
   type UpdateShopProductRequest,
 } from "@fitburn/contracts";
 import { PrismaService } from "../prisma/prisma.service.js";
@@ -33,6 +34,10 @@ const PRODUCT_INCLUDE = {
   },
   variants: {
     orderBy: [{ position: "asc" }, { createdAt: "asc" }],
+  },
+  images: {
+    orderBy: { position: "asc" },
+    select: { id: true, mimeType: true, sizeBytes: true, position: true, isCover: true },
   },
 } satisfies Prisma.ProductInclude;
 
@@ -408,6 +413,14 @@ function toShopProduct(row: ProductRow): ShopProduct {
     stock: active.reduce((total, variant) => total + variant.stock, 0),
     soldOutVariantCount: active.filter((variant) => variant.stock === 0).length,
     createdAt: row.createdAt.toISOString(),
+    images: row.images.map((image) => ({
+      id: image.id,
+      mimeType: image.mimeType as ShopProductImage["mimeType"],
+      sizeBytes: image.sizeBytes,
+      position: image.position,
+      isCover: image.isCover,
+      url: `/api/shop/product-images/${image.id}`,
+    })),
   };
 }
 
