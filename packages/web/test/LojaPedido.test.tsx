@@ -2,6 +2,7 @@ import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import type { ShopOrder } from "@fitburn/contracts";
+import { setBrowserOnline } from "./connectivity-helpers";
 import { CLIENT_ID, camisetaComOpcoes, detail, mockLoja, renderLoja, variant } from "./loja-helpers";
 import { server } from "./msw-server";
 
@@ -64,7 +65,7 @@ interface SentOrder {
 }
 
 /** Responde ao POST de pedidos com `reply` e guarda o que foi enviado (chave e corpo). */
-function mockOrders(reply: (sent: SentOrder, attempt: number) => Response) {
+function mockOrders(reply: (sent: SentOrder, attempt: number) => Response | Promise<Response>) {
   const sent: SentOrder[] = [];
   server.use(
     http.post("/api/shop/orders", async ({ request }) => {
@@ -146,5 +147,198 @@ describe("fazer pedido", () => {
     release();
     await screen.findByRole("heading", { level: 1, name: "Pedido #0001 feito" });
     expect(sent).toHaveLength(1);
+  });
+});
+
+describe("repetição e rede instável", () => {
+  afterEach(() => setBrowserOnline(true));
+
+  it("a rede cai no envio: o carrinho fica, e a nova tentativa reenvia a mesma chave", async () => {
+    const user = userEvent.setup();
+    seedCart();
+    const sent = mockOrders((_, attempt) =>
+      attempt === 1 ? HttpResponse.error() : HttpResponse.json(order({ number: 7 }), { status: 201 }),
+    );
+    open();
+
+    await user.click(await placeOrder());
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/Não foi possível enviar o pedido/);
+    expect(screen.getByRole("listitem", { name: "Camiseta Dry Fit" })).toBeInTheDocument();
+    expect(savedCart().items).toHaveLength(2);
+    // A falha de rede põe o app em "sem conexão"; ao voltar a rede, a pessoa tenta de novo.
+    expect(screen.getByRole("button", { name: "Fazer pedido" })).toBeDisabled();
+    setBrowserOnline(true);
+    await waitFor(() => expect(screen.getByRole("button", { name: "Fazer pedido" })).toBeEnabled());
+
+    await user.click(screen.getByRole("button", { name: "Fazer pedido" }));
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Pedido #0007 feito" })).toBeInTheDocument();
+    expect(sent).toHaveLength(2);
+    expect(sent[1]!.key).toBe(sent[0]!.key);
+  });
+
+  it("mudar o carrinho entre as tentativas é outro pedido: usa uma chave nova", async () => {
+    const user = userEvent.setup();
+    seedCart();
+    const sent = mockOrders((_, attempt) =>
+      attempt === 1 ? HttpResponse.error() : HttpResponse.json(order(), { status: 201 }),
+    );
+    open();
+    await user.click(await placeOrder());
+    await screen.findByRole("alert");
+    setBrowserOnline(true);
+
+    await user.click(screen.getByRole("button", { name: "Remover Garrafa térmica 750 ml" }));
+    await user.click(screen.getByRole("button", { name: "Fazer pedido" }));
+
+    await screen.findByRole("heading", { level: 1, name: "Pedido #0001 feito" });
+    expect(sent[1]!.key).not.toBe(sent[0]!.key);
+    expect(sent[1]!.body.items).toEqual([{ variantId: "v-preta-m", quantity: 2 }]);
+  });
+
+  it("recusa da API (não é conflito): mostra a mensagem, mantém o carrinho e a próxima tentativa usa chave nova", async () => {
+    const user = userEvent.setup();
+    seedCart();
+    const sent = mockOrders((_, attempt) =>
+      attempt === 1
+        ? HttpResponse.json(
+            { code: "PRODUCT_NOT_AVAILABLE", message: "Um ou mais produtos não estão mais disponíveis." },
+            { status: 409 },
+          )
+        : HttpResponse.json(order(), { status: 201 }),
+    );
+    open();
+
+    await user.click(await placeOrder());
+    expect(await screen.findByRole("alert")).toHaveTextContent("Um ou mais produtos não estão mais disponíveis.");
+    expect(screen.getByRole("listitem", { name: "Camiseta Dry Fit" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Fazer pedido" }));
+    await screen.findByRole("heading", { level: 1, name: "Pedido #0001 feito" });
+    expect(sent[1]!.key).not.toBe(sent[0]!.key);
+  });
+});
+
+describe("estoque mudou (409 SHOP_STOCK_CONFLICT)", () => {
+  const conflict = (items: Array<{ variantId: string; requestedQuantity: number; availableQuantity: number }>) =>
+    HttpResponse.json(
+      { code: "SHOP_STOCK_CONFLICT", message: "O estoque mudou. Ajuste as quantidades do carrinho.", details: { items } },
+      { status: 409 },
+    );
+
+  it("não limpa o carrinho: ajusta a quantidade para o disponível, avisa quais itens mudaram e guarda o ajuste", async () => {
+    const user = userEvent.setup();
+    seedCart();
+    mockOrders(() =>
+      conflict([
+        { variantId: "v-preta-m", requestedQuantity: 2, availableQuantity: 1 },
+        { variantId: "v-edicao", requestedQuantity: 1, availableQuantity: 1 },
+      ]),
+    );
+    open();
+
+    await user.click(await placeOrder());
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("Restou só 1 unidade de Camiseta Dry Fit · Preta · M.");
+    expect(alert).toHaveTextContent("Ajustamos o carrinho; confira e faça o pedido de novo.");
+    expect(alert).not.toHaveTextContent("Garrafa");
+    const camiseta = screen.getByRole("listitem", { name: "Camiseta Dry Fit" });
+    expect(within(camiseta).getByRole("status")).toHaveTextContent("1");
+    expect(within(camiseta).getByText("R$ 69,90")).toBeInTheDocument();
+    expect(camiseta).toHaveAttribute("data-adjusted");
+    expect(screen.getByRole("listitem", { name: "Garrafa térmica 750 ml" })).not.toHaveAttribute("data-adjusted");
+    expect(within(screen.getByText("Total").parentElement as HTMLElement).getByText("R$ 149,80")).toBeInTheDocument();
+    await waitFor(() => expect(savedCart().items.map((item: { quantity: number }) => item.quantity)).toEqual([1, 1]));
+    expect(screen.getByRole("button", { name: "Fazer pedido" })).toBeEnabled();
+  });
+
+  it("item esgotado (disponível 0) sai do carrinho com aviso; os demais ficam", async () => {
+    const user = userEvent.setup();
+    seedCart();
+    mockOrders(() => conflict([{ variantId: "v-edicao", requestedQuantity: 1, availableQuantity: 0 }]));
+    open();
+
+    await user.click(await placeOrder());
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Garrafa térmica 750 ml · Edição Fitburn esgotou e saiu do carrinho.",
+    );
+    expect(screen.queryByRole("listitem", { name: "Garrafa térmica 750 ml" })).not.toBeInTheDocument();
+    expect(screen.getByRole("listitem", { name: "Camiseta Dry Fit" })).toBeInTheDocument();
+    await waitFor(() => expect(savedCart().items).toHaveLength(1));
+  });
+
+  it("confirmar de novo envia as quantidades ajustadas com uma chave nova e conclui o pedido", async () => {
+    const user = userEvent.setup();
+    seedCart();
+    const sent = mockOrders((_, attempt) =>
+      attempt === 1
+        ? conflict([{ variantId: "v-preta-m", requestedQuantity: 2, availableQuantity: 1 }])
+        : HttpResponse.json(order({ number: 3 }), { status: 201 }),
+    );
+    open();
+    await user.click(await placeOrder());
+    await screen.findByRole("alert");
+
+    await user.click(screen.getByRole("button", { name: "Fazer pedido" }));
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Pedido #0003 feito" })).toBeInTheDocument();
+    expect(sent[1]!.body.items).toEqual([
+      { variantId: "v-preta-m", quantity: 1 },
+      { variantId: "v-edicao", quantity: 1 },
+    ]);
+    expect(sent[1]!.key).not.toBe(sent[0]!.key);
+    await waitFor(() => expect(savedCart().items).toEqual([]));
+  });
+
+  it("todos os itens esgotados: o carrinho fica vazio, mas o aviso continua na tela", async () => {
+    const user = userEvent.setup();
+    seedCart([GARRAFA]);
+    mockOrders(() => conflict([{ variantId: "v-edicao", requestedQuantity: 1, availableQuantity: 0 }]));
+    open();
+
+    await user.click(await placeOrder());
+
+    expect(await screen.findByText("Seu carrinho está vazio.")).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent("esgotou e saiu do carrinho");
+  });
+});
+
+describe("sem conexão", () => {
+  afterEach(() => setBrowserOnline(true));
+
+  it("Fazer pedido fica desabilitado, com o motivo, e não some; o carrinho segue utilizável", async () => {
+    const user = userEvent.setup();
+    seedCart();
+    const sent = mockOrders(() => HttpResponse.json(order(), { status: 201 }));
+    setBrowserOnline(false);
+    open();
+
+    const button = await placeOrder();
+    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute("title", expect.stringMatching(/sem conexão/));
+    expect(screen.getByText("Conecte-se para fazer o pedido.")).toBeInTheDocument();
+    await user.click(button);
+    expect(sent).toHaveLength(0);
+
+    const camiseta = screen.getByRole("listitem", { name: "Camiseta Dry Fit" });
+    await user.click(within(camiseta).getByRole("button", { name: "Aumentar quantidade de Camiseta Dry Fit" }));
+    expect(within(camiseta).getByRole("status")).toHaveTextContent("3");
+    await user.click(screen.getByRole("button", { name: "Remover Garrafa térmica 750 ml" }));
+    expect(screen.queryByRole("listitem", { name: "Garrafa térmica 750 ml" })).not.toBeInTheDocument();
+  });
+
+  it("volta a conexão: o botão reabilita", async () => {
+    seedCart();
+    setBrowserOnline(false);
+    open();
+    expect(await placeOrder()).toBeDisabled();
+
+    setBrowserOnline(true);
+
+    await waitFor(() => expect(screen.getByRole("button", { name: "Fazer pedido" })).toBeEnabled());
+    expect(screen.queryByText("Conecte-se para fazer o pedido.")).not.toBeInTheDocument();
   });
 });
