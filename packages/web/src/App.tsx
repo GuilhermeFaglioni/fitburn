@@ -121,7 +121,7 @@ export function AppRoutes() {
         <Route path="/bioimpedancia-admin/nova" element={<AssessmentFormPage />} />
         <Route path="/bioimpedancia-admin/:id/editar" element={<AssessmentFormPage />} />
         <Route path="/metas" element={<GoalsPage />} />
-        <Route path="/loja-admin" element={<Navigate to="/loja-admin/produtos" replace />} />
+        <Route path="/loja-admin" element={<LojaAdminPage tab="pedidos" />} />
         <Route path="/loja-admin/produtos" element={<LojaAdminPage tab="produtos" />} />
         <Route path="/loja-admin/categorias" element={<LojaAdminPage tab="categorias" />} />
         <Route path="/loja-admin/produtos/novo" element={<ProductFormPage />} />

@@ -2208,6 +2208,39 @@
   line-height: var(--leading-title);
 }
 
+/* Cartão de KPI que leva a outra tela (#200): tingido na cor de marca; o link cobre o cartão inteiro. */
+.fb-ui-kpi--link {
+  position: relative;
+  border-color: var(--brand-line);
+  background: var(--brand-tint);
+}
+
+.fb-ui-kpi__link {
+  margin: 0;
+  font-size: var(--text-caption);
+  font-weight: var(--weight-bold);
+}
+
+.fb-ui-kpi__anchor {
+  color: var(--brand-strong);
+  text-decoration: none;
+}
+
+.fb-ui-kpi__anchor::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--r-lg);
+}
+
+.fb-ui-kpi__anchor:focus-visible {
+  outline: none;
+}
+
+.fb-ui-kpi--link:has(.fb-ui-kpi__anchor:focus-visible) {
+  box-shadow: var(--sh-focus);
+}
+
 /* Painéis lado a lado (empilham no celular). */
 .fb-ui-dash-panels {
   display: grid;
