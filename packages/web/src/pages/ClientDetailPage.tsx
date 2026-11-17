@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   Module,
   PermissionAction,
@@ -27,9 +27,10 @@ import { formatHistoryWhen } from "../lib/gamification/format";
 import { invalidateAfterDeletion } from "../lib/invalidate-after-deletion";
 import { PlanHistoryList } from "./plans/PlanHistoryList";
 import { statusBadge } from "./workout-sheets/status";
+import { ClientBioimpedanceTab } from "./clients/ClientBioimpedanceTab";
 import { ClientEditForm } from "./clients/ClientEditForm";
 
-type Tab = "dados" | "plano" | "reservas" | "gamificacao" | "fichas";
+type Tab = "dados" | "plano" | "reservas" | "gamificacao" | "fichas" | "bioimpedancia";
 
 const TABS: Array<{ id: Tab; label: string }> = [
   { id: "dados", label: "Dados pessoais" },
@@ -37,9 +38,16 @@ const TABS: Array<{ id: Tab; label: string }> = [
   { id: "reservas", label: "Reservas" },
   { id: "gamificacao", label: "FitPoints" },
   { id: "fichas", label: "Fichas" },
+  { id: "bioimpedancia", label: "Bioimpedância" },
 ];
 
-const TABS_OPTIONS = TABS.map((item) => ({ value: item.id, label: item.label }));
+/** A aba Bioimpedância só existe para quem tem Ver no módulo (D-042). */
+function tabOptions(canViewBioimpedance: boolean) {
+  return TABS.filter((item) => item.id !== "bioimpedancia" || canViewBioimpedance).map((item) => ({
+    value: item.id,
+    label: item.label,
+  }));
+}
 
 const STATUS_BADGE: Record<UserDetail["status"], { label: string; tone: BadgeTone }> = {
   ACTIVE: { label: "ATIVO", tone: "ok" },
@@ -189,6 +197,8 @@ function TabContent({
           )}
         </Card>
       );
+    case "bioimpedancia":
+      return <ClientBioimpedanceTab clientId={client.id} />;
     case "fichas":
       return overview.workoutSheets.length === 0 ? (
         <Card>
@@ -218,7 +228,15 @@ export function ClientDetailPage() {
   const { can } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<Tab>("dados");
+  const canViewBioimpedance = can(Module.BIOIMPEDANCIA, PermissionAction.VIEW);
+  const tabs = tabOptions(canViewBioimpedance);
+  const [params] = useSearchParams();
+  // `?aba=` reabre a aba depois de editar uma avaliação; sem permissão a aba não existe e cai nos dados pessoais.
+  const [chosenTab, setTab] = useState<Tab>(() => {
+    const wanted = params.get("aba");
+    return tabs.some((item) => item.value === wanted) ? (wanted as Tab) : "dados";
+  });
+  const tab = tabs.some((item) => item.value === chosenTab) ? chosenTab : "dados";
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   const overviewQuery = useQuery({
@@ -321,7 +339,7 @@ export function ClientDetailPage() {
 
           <Segmented
             label="Seções do cliente"
-            options={TABS_OPTIONS}
+            options={tabs}
             value={tab}
             onChange={setTab}
           />
