@@ -232,7 +232,7 @@ function PhotosGrid({ productId, images }: { productId: string; images: ShopProd
                   type="button"
                   className="fb-shop-photo__add"
                   aria-label={`Adicionar foto no espaço ${number}`}
-                  disabled={sending}
+                  disabled={busy}
                   onClick={() => inputRef.current?.click()}
                 >
                   + Adicionar foto

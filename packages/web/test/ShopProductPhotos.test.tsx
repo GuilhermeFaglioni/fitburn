@@ -701,6 +701,38 @@ describe("Fotos do produto (L3)", () => {
       ).toEqual(["Tornar capa", "Mover para antes", "Mover para depois"]);
     });
 
+    it("só com Criar, o envio segue liberado mesmo sem Editar no formulário", async () => {
+      mockSuccessfulLogin(
+        "Professor",
+        lojaPermissions([PermissionAction.VIEW, PermissionAction.CREATE]),
+      );
+      renderAt("/loja-admin/produtos/p-camiseta");
+      const section = await photosSection();
+      await waitFor(() => expect(within(section).getAllByRole("img")).toHaveLength(3));
+
+      for (const add of within(section).getAllByRole("button", { name: /Adicionar foto/ })) {
+        expect(add).toBeEnabled();
+      }
+    });
+
+    it("só com Excluir, a ação Remover segue disponível mesmo sem Editar no formulário", async () => {
+      mockSuccessfulLogin(
+        "Professor",
+        lojaPermissions([PermissionAction.VIEW, PermissionAction.DELETE]),
+      );
+      const user = userEvent.setup();
+      renderAt("/loja-admin/produtos/p-camiseta");
+      const section = await photosSection();
+      await waitFor(() => expect(within(section).getAllByRole("img")).toHaveLength(3));
+
+      await user.click(within(section).getByRole("button", { name: "Ações da foto 2" }));
+      expect(
+        within(screen.getByRole("menu"))
+          .getAllByRole("menuitem")
+          .map((item) => item.textContent),
+      ).toEqual(["Remover"]);
+    });
+
     it("sem Editar nem Excluir, as fotos aparecem sem nenhuma ação", async () => {
       mockSuccessfulLogin("Professor", lojaPermissions([PermissionAction.VIEW]));
       renderAt("/loja-admin/produtos/p-camiseta");

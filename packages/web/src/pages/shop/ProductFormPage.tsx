@@ -297,8 +297,6 @@ function ProductForm({ product }: { product?: ShopProductDetail }) {
             </div>
           </Card>
 
-          <ProductPhotos product={product} />
-
           <OptionsBuilder
             options={options}
             errors={variationErrors}
@@ -354,6 +352,8 @@ function ProductForm({ product }: { product?: ShopProductDetail }) {
             </div>
           </Card>
         </fieldset>
+        {/* Fora do fieldset: fotos têm permissão própria (Criar, Editar, Excluir), não a de Editar do formulário. */}
+        <ProductPhotos product={product} />
       </form>
     </div>
   );
