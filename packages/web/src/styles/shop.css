@@ -1,0 +1,560 @@
+/**
+ * Loja do cliente (L4, #193, docs/design/proposta-loja.html): catálogo, produto, carrinho e a sacola do cabeçalho.
+ * Só tokens: cor, raio, espaçamento, fonte, sombra e movimento vêm de tokens.css.
+ */
+
+/* ---- Sacola no cabeçalho do cliente ---- */
+.fb-loja-bag {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: var(--s-11);
+  height: var(--s-11);
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  color: var(--ink);
+  text-decoration: none;
+  transition: background-color var(--duration-state) var(--ease-out);
+}
+
+.fb-loja-bag svg {
+  width: var(--s-5);
+  height: var(--s-5);
+}
+
+.fb-loja-bag:focus-visible {
+  outline: none;
+  box-shadow: var(--sh-focus);
+}
+
+.fb-loja-bag__count {
+  position: absolute;
+  top: calc(var(--s-1) * -1);
+  right: calc(var(--s-1) * -1);
+  min-width: var(--s-5);
+  justify-content: center;
+  padding: 0 var(--s-1);
+  font-size: var(--text-kicker);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .fb-loja-bag:hover {
+    background: var(--surface-2);
+  }
+}
+
+/* ---- Estrutura das telas ---- */
+.fb-loja {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-5);
+  max-width: 960px;
+}
+
+.fb-loja-top {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+}
+
+.fb-loja-top__title {
+  margin: 0;
+  font-size: var(--text-h1);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-title);
+  line-height: var(--leading-title);
+  color: var(--ink);
+}
+
+.fb-loja-back {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: var(--s-11);
+  height: var(--s-11);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.fb-loja-back:focus-visible {
+  outline: none;
+  box-shadow: var(--sh-focus);
+}
+
+/* Sem foto (ou enquanto ela chega): a sacola da marca no fundo suave. */
+.fb-loja-photo-empty {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  color: var(--brand-strong);
+}
+
+.fb-loja-photo-empty svg {
+  width: 46%;
+  height: 46%;
+  opacity: 0.85;
+}
+
+/* ---- Catálogo ---- */
+.fb-loja-chips {
+  display: flex;
+  gap: var(--s-2);
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: var(--s-1);
+}
+
+.fb-loja-chips::-webkit-scrollbar {
+  display: none;
+}
+
+.fb-loja-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s-4) var(--s-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 768px) {
+  .fb-loja-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: var(--s-6) var(--s-4);
+  }
+}
+
+.fb-loja-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.fb-loja-card:focus-visible {
+  outline: none;
+  box-shadow: var(--sh-focus);
+  border-radius: var(--r-md);
+}
+
+.fb-loja-card__photo {
+  position: relative;
+  display: block;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: linear-gradient(160deg, var(--surface-2), var(--brand-tint));
+}
+
+.fb-loja-card__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.fb-loja-card__tag {
+  position: absolute;
+  top: var(--s-2);
+  left: var(--s-2);
+}
+
+.fb-loja-card__name {
+  font-size: var(--text-small);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-small);
+}
+
+.fb-loja-card[data-soldout] .fb-loja-card__photo {
+  opacity: 0.55;
+}
+
+.fb-loja-card[data-soldout] .fb-loja-price {
+  color: var(--muted);
+}
+
+.fb-loja-price {
+  font-size: var(--text-action);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-title);
+  color: var(--ink);
+}
+
+.fb-loja-price__was {
+  margin-right: var(--s-2);
+  font-size: var(--text-caption);
+  font-weight: var(--weight-regular);
+  color: var(--muted);
+}
+
+.fb-loja-price--big {
+  font-size: var(--text-h1);
+}
+
+.fb-loja-price--big .fb-loja-price__was {
+  font-size: var(--text-small);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .fb-loja-card:hover .fb-loja-card__name {
+    color: var(--brand-strong);
+  }
+}
+
+/* ---- Produto ---- */
+.fb-loja-product {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-6);
+}
+
+@media (min-width: 768px) {
+  .fb-loja-product {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+    gap: var(--s-8);
+  }
+}
+
+.fb-loja-gallery {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  min-width: 0;
+}
+
+.fb-loja-gallery__track {
+  display: flex;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: linear-gradient(160deg, var(--surface-2), var(--brand-tint));
+}
+
+.fb-loja-gallery__track::-webkit-scrollbar {
+  display: none;
+}
+
+.fb-loja-gallery__track:focus-visible {
+  outline: none;
+  box-shadow: var(--sh-focus);
+}
+
+.fb-loja-gallery__slide {
+  flex: 0 0 100%;
+  aspect-ratio: 1;
+  scroll-snap-align: start;
+}
+
+.fb-loja-gallery__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.fb-loja-gallery__tag {
+  position: absolute;
+  top: var(--s-3);
+  left: var(--s-3);
+}
+
+.fb-loja-gallery__frame {
+  position: relative;
+}
+
+.fb-loja-dots {
+  display: flex;
+  justify-content: center;
+  gap: var(--s-1);
+}
+
+/* O ponto é pequeno; o alvo de toque é o botão, com a área de 44px. */
+.fb-loja-dot {
+  display: inline-grid;
+  place-items: center;
+  width: var(--s-6);
+  height: var(--s-6);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.fb-loja-dot::before {
+  content: "";
+  width: var(--s-2);
+  height: var(--s-2);
+  border-radius: var(--r-pill);
+  background: var(--line-2);
+  transition:
+    width var(--duration-state) var(--ease-out),
+    background-color var(--duration-state) var(--ease-out);
+}
+
+.fb-loja-dot[aria-current="true"]::before {
+  width: var(--s-4);
+  background: var(--brand-strong);
+}
+
+.fb-loja-dot:focus-visible {
+  outline: none;
+  box-shadow: var(--sh-focus);
+  border-radius: var(--r-pill);
+}
+
+.fb-loja-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-5);
+  min-width: 0;
+}
+
+.fb-loja-info__head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.fb-loja-kicker {
+  margin: 0;
+  font-size: var(--text-kicker);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-kicker);
+  text-transform: uppercase;
+  color: var(--brand-strong);
+}
+
+.fb-loja-info__name {
+  margin: 0;
+  font-size: var(--text-h1);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-title);
+  line-height: var(--leading-title);
+  color: var(--ink);
+}
+
+.fb-loja-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.fb-loja-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.fb-loja-group__label {
+  padding: 0;
+  font-size: var(--text-small);
+  font-weight: var(--weight-bold);
+  color: var(--ink-2);
+}
+
+.fb-loja-group__label small {
+  margin-left: var(--s-2);
+  font-size: var(--text-small);
+  font-weight: var(--weight-regular);
+  color: var(--muted);
+}
+
+.fb-loja-values {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+}
+
+/* Combinação sem estoque: riscada e desabilitada (o texto "esgotado" vai no nome acessível). */
+.fb-loja-value:disabled {
+  text-decoration: line-through;
+}
+
+.fb-loja-warn {
+  margin: 0;
+  font-size: var(--text-small);
+  line-height: var(--leading-small);
+  color: var(--warn);
+}
+
+.fb-loja-desc {
+  margin: 0;
+  font-size: var(--text-small);
+  line-height: var(--leading-body);
+  color: var(--ink-2);
+  white-space: pre-line;
+}
+
+.fb-loja-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+/* ---- Quantidade ---- */
+.fb-loja-stepper {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  overflow: hidden;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-pill);
+  background: var(--surface);
+}
+
+.fb-loja-stepper button {
+  width: var(--s-11);
+  height: var(--s-11);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: var(--text-h3);
+  cursor: pointer;
+}
+
+.fb-loja-stepper button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.fb-loja-stepper button:focus-visible {
+  outline: none;
+  box-shadow: inset var(--sh-focus);
+}
+
+.fb-loja-stepper output {
+  min-width: var(--s-8);
+  text-align: center;
+  font-weight: var(--weight-bold);
+}
+
+/* ---- Carrinho ---- */
+.fb-loja-cart {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  max-width: 640px;
+}
+
+.fb-loja-lines {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fb-loja-line {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: var(--s-3);
+  padding: var(--s-3);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  box-shadow: var(--sh-1);
+}
+
+.fb-loja-line__photo {
+  display: block;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: linear-gradient(160deg, var(--surface-2), var(--brand-tint));
+}
+
+.fb-loja-line__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.fb-loja-line__meta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  min-width: 0;
+}
+
+.fb-loja-line__name {
+  font-size: var(--text-small);
+  font-weight: var(--weight-bold);
+}
+
+.fb-loja-line__variant {
+  font-size: var(--text-caption);
+  color: var(--muted);
+}
+
+.fb-loja-line__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2);
+  margin-top: var(--s-1);
+}
+
+.fb-loja-line__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.fb-loja-summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding: var(--s-4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+
+.fb-loja-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-3);
+  font-size: var(--text-small);
+  color: var(--muted);
+}
+
+.fb-loja-total strong {
+  font-size: var(--text-h2);
+  letter-spacing: var(--tracking-title);
+  color: var(--ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fb-loja-gallery__track {
+    scroll-behavior: auto;
+  }
+}
