@@ -6,7 +6,8 @@ import { DomainError } from "../common/errors/domain-error.js";
 /** A intenção identificada pela chave: a operação e o corpo que a definem. */
 export type IdempotentIntent =
   | { operation: "create"; occurrenceId: string }
-  | { operation: "reschedule"; reservationId: string; occurrenceId: string };
+  | { operation: "reschedule"; reservationId: string; occurrenceId: string }
+  | { operation: "shop-order-create"; items: { variantId: string; quantity: number }[]; observation?: string | null };
 
 /** Resultado memorizado: o corpo de sucesso ou a recusa de negócio. */
 export type MemorizedOutcome<T> =

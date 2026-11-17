@@ -20,6 +20,7 @@ export * from "./dashboard.js";
 export * from "./admin-reservations.js";
 export * from "./exports.js";
 export * from "./shop.js";
+export * from "./shop-orders.js";
 export * from "./bioimpedance.js";
 export * from "./bioimpedance-catalog.js";
 export * from "./bioimpedance-assessments.js";
