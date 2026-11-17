@@ -8,4 +8,8 @@ export const handlers: HttpHandler[] = [
   http.post("/api/auth/refresh", () =>
     HttpResponse.json({ code: "SESSION_EXPIRED", message: "Sessão expirada." }, { status: 401 }),
   ),
+  // O Início do cliente pergunta por pedido aprovado a retirar (L6, #199); o padrão é "nenhum".
+  http.get("/api/shop/orders/approval-notice", () => HttpResponse.json({ number: null })),
+  // O bloco Compras do Perfil lista os pedidos do cliente; o padrão é "nenhum pedido".
+  http.get("/api/shop/orders", () => HttpResponse.json([])),
 ];

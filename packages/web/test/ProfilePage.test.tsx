@@ -215,6 +215,37 @@ describe("Perfil / Minha conta", () => {
       );
     });
 
+    it("tem o bloco Compras com o link para Meus pedidos", async () => {
+      renderAt("/perfil");
+
+      const block = await screen.findByRole("region", { name: "Compras" });
+      expect(within(block).getByRole("link", { name: "Meus pedidos" })).toHaveAttribute("href", "/pedidos");
+    });
+
+    it("mostra no bloco Compras o status do pedido mais recente", async () => {
+      server.use(
+        http.get("/api/shop/orders", () =>
+          HttpResponse.json([
+            {
+              id: "order-43",
+              number: 43,
+              status: "APROVADO",
+              observation: null,
+              totalCents: 6990,
+              createdAt: "2026-11-17T15:00:00.000Z",
+              items: [],
+              events: [],
+            },
+          ]),
+        ),
+      );
+      renderAt("/perfil");
+
+      const block = await screen.findByRole("region", { name: "Compras" });
+      expect(await within(block).findByText("Aprovado")).toBeInTheDocument();
+      expect(within(block).getByText(/#0043/)).toBeInTheDocument();
+    });
+
     it("permite aderir e sair do ranking pelo Perfil", async () => {
       const user = userEvent.setup();
       renderAt("/perfil");
@@ -520,6 +551,7 @@ describe("Perfil / Minha conta", () => {
           [2, "Senha"],
           [2, "Participação no ranking"],
           [2, "Privacidade"],
+          [2, "Compras"],
           [2, "Instalar o app"],
         ]);
       });

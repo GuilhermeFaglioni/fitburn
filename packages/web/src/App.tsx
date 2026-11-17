@@ -31,6 +31,8 @@ import { LojaAdminPage } from "./pages/LojaAdminPage";
 import { LojaPage } from "./pages/loja/LojaPage";
 import { LojaProdutoPage } from "./pages/loja/LojaProdutoPage";
 import { LojaCarrinhoPage } from "./pages/loja/LojaCarrinhoPage";
+import { PedidosPage } from "./pages/loja/PedidosPage";
+import { PedidoDetalhePage } from "./pages/loja/PedidoDetalhePage";
 import { CartProvider } from "./lib/shop/cart";
 import { ProductFormPage } from "./pages/shop/ProductFormPage";
 import { WorkoutSheetsPage } from "./pages/WorkoutSheetsPage";
@@ -90,6 +92,8 @@ export function AppRoutes() {
         <Route path="/loja" element={<LojaPage />} />
         <Route path="/loja/carrinho" element={<LojaCarrinhoPage />} />
         <Route path="/loja/:id" element={<LojaProdutoPage />} />
+        <Route path="/pedidos" element={<PedidosPage />} />
+        <Route path="/pedidos/:id" element={<PedidoDetalhePage />} />
         <Route path="/gamificacao" element={<Navigate to="/fitpoints" replace />} />
       </Route>
       <Route

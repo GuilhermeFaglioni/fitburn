@@ -13,7 +13,7 @@ import { useNetworkRequired } from "../../lib/connectivity/useNetworkRequired";
 import { useCart, type CartLine } from "../../lib/shop/cart";
 import { clientShopKeys, getClientProduct } from "../../lib/shop/client-api";
 import { formatCents } from "../../lib/shop/money";
-import { createShopOrder, stockConflictOf } from "../../lib/shop/orders-api";
+import { createShopOrder, formatOrderNumber, stockConflictOf } from "../../lib/shop/orders-api";
 import { ProductImage } from "./ProductImage";
 import { ShopTopBar } from "./ShopTopBar";
 
@@ -34,11 +34,6 @@ function useCurrentPrices(lines: CartLine[]): Map<string, number> {
     for (const variant of data?.variants ?? []) prices.set(variant.id, variant.effectivePriceCents);
   }
   return prices;
-}
-
-/** "#0043": o número do pedido como a academia o chama. */
-export function formatOrderNumber(number: number): string {
-  return `#${String(number).padStart(4, "0")}`;
 }
 
 function lineLabel(line: CartLine): string {
