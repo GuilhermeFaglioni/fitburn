@@ -44,7 +44,7 @@ function ProductCard({ product }: { product: ClientShopProduct }) {
         data-soldout={soldOut || undefined}
       >
         <span className="fb-loja-card__photo">
-          <ProductImage image={product.coverImage} alt={product.name} className="fb-loja-card__img" />
+          <ProductImage url={product.coverImage?.url} alt={product.name} className="fb-loja-card__img" />
           {soldOut ? (
             <Badge className="fb-loja-card__tag">ESGOTADO</Badge>
           ) : (

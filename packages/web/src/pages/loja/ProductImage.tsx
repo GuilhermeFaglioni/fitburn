@@ -1,4 +1,3 @@
-import type { ShopProductImage } from "@fitburn/contracts";
 import { BagIcon } from "../../components/icons/BagIcon";
 import { useShopProductImageSrc } from "../../lib/shop/api";
 
@@ -7,29 +6,30 @@ import { useShopProductImageSrc } from "../../lib/shop/api";
  * não chega (carregando, sem conexão, erro), o espaço mostra a sacola da marca e a tela segue legível.
  */
 export function ProductImage({
-  image,
+  url,
   alt,
   className,
 }: {
-  image: ShopProductImage | null | undefined;
+  /** Rota da foto na API (versionada pelo id); sem ela, o espaço da marca. */
+  url: string | null | undefined;
   /** Texto alternativo; vazio quando o nome do produto já está ao lado. */
   alt: string;
   className?: string;
 }) {
-  if (!image) return <Placeholder className={className} />;
-  return <LoadedImage image={image} alt={alt} className={className} />;
+  if (!url) return <Placeholder className={className} />;
+  return <LoadedImage url={url} alt={alt} className={className} />;
 }
 
 function LoadedImage({
-  image,
+  url,
   alt,
   className,
 }: {
-  image: ShopProductImage;
+  url: string;
   alt: string;
   className?: string;
 }) {
-  const { src, query } = useShopProductImageSrc(image.url);
+  const { src, query } = useShopProductImageSrc(url);
   if (!src) return <Placeholder className={className} busy={query.isPending && query.fetchStatus === "fetching"} />;
   return <img className={className} src={src} alt={alt} />;
 }

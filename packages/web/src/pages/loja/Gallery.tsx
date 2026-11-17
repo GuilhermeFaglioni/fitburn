@@ -16,7 +16,7 @@ export function Gallery({ images, promo }: { images: ShopProductImage[]; promo: 
     return (
       <div className="fb-loja-gallery">
         <div className="fb-loja-gallery__empty">
-          <ProductImage image={null} alt="" />
+          <ProductImage url={null} alt="" />
         </div>
       </div>
     );
@@ -41,7 +41,7 @@ export function Gallery({ images, promo }: { images: ShopProductImage[]; promo: 
           {sorted.map((image, index) => (
             <li key={image.id} className="fb-loja-gallery__slide">
               <ProductImage
-                image={image}
+                url={image.url}
                 alt={`Foto ${index + 1} de ${sorted.length}`}
                 className="fb-loja-gallery__img"
               />

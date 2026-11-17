@@ -30,6 +30,7 @@ import { PlansPage } from "./pages/PlansPage";
 import { LojaAdminPage } from "./pages/LojaAdminPage";
 import { LojaPage } from "./pages/loja/LojaPage";
 import { LojaProdutoPage } from "./pages/loja/LojaProdutoPage";
+import { LojaCarrinhoPage } from "./pages/loja/LojaCarrinhoPage";
 import { CartProvider } from "./lib/shop/cart";
 import { ProductFormPage } from "./pages/shop/ProductFormPage";
 import { WorkoutSheetsPage } from "./pages/WorkoutSheetsPage";
@@ -87,6 +88,7 @@ export function AppRoutes() {
         <Route path="/fitpoints" element={<GamificationPage />} />
         <Route path="/bioimpedancia" element={<BioimpedancePage />} />
         <Route path="/loja" element={<LojaPage />} />
+        <Route path="/loja/carrinho" element={<LojaCarrinhoPage />} />
         <Route path="/loja/:id" element={<LojaProdutoPage />} />
         <Route path="/gamificacao" element={<Navigate to="/fitpoints" replace />} />
       </Route>

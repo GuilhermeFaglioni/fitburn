@@ -5,6 +5,7 @@ import { ThemeToggle } from "./ThemeToggle";
 import { useHostThemeToggle } from "./themeToggleHost";
 import { useFocusOnNavigation } from "./useFocusOnNavigation";
 import { FlameMark } from "./icons/FlameMark";
+import { CartLink } from "../pages/loja/CartLink";
 import {
   AgendaNavIcon,
   FitPointsNavIcon,
@@ -96,6 +97,7 @@ export function ClientLayout() {
         <header className="fb-client__top">
           {/* No desktop a marca fica na lateral; o cabeçalho a mostra só no celular (client.css). */}
           <Brand className="fb-client__brand--top" />
+          <CartLink />
           <ThemeToggle inline />
         </header>
 
