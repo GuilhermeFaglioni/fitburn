@@ -325,6 +325,13 @@
   opacity: 0.6;
 }
 
+.fb-shop-photo__sending {
+  flex-direction: column;
+  padding: var(--s-2);
+  font-size: var(--text-caption);
+  text-align: center;
+}
+
 .fb-shop-photo__hint {
   color: var(--faint);
 }

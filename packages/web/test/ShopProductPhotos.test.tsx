@@ -1,3 +1,4 @@
+import { Blob as NodeBlob, File as NodeFile } from "node:buffer";
 import { useEffect, useState } from "react";
 import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -212,10 +213,150 @@ describe("Fotos do produto (L3)", () => {
     });
   });
 
-  // As demais fatias (envio, ordem, capa, remoção, offline e permissão) entram nos blocos abaixo.
-  it.todo("envio, ordem, capa, remoção, offline e permissão");
+  describe("envio", () => {
+    /** Simula, na borda, o que o navegador faz com a foto escolhida: decodifica 3000×2000 e entrega um WebP de 80 KB. */
+    function stubBrowserImage(encodedSize = 80_000) {
+      const bitmap = { width: 3000, height: 2000, close: vi.fn() };
+      vi.stubGlobal("createImageBitmap", vi.fn().mockResolvedValue(bitmap));
+      const context = { fillStyle: "", fillRect: vi.fn(), drawImage: vi.fn() };
+      vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(
+        context as unknown as CanvasRenderingContext2D,
+      );
+      vi.spyOn(HTMLCanvasElement.prototype, "toBlob").mockImplementation(function (callback, type) {
+        callback(new Blob([new Uint8Array(encodedSize)], { type: type ?? "image/webp" }));
+      });
+      return { context, bitmap };
+    }
 
-  void act;
-  void userEvent;
+    const pick = (name = "camiseta.png", type = "image/png") =>
+      new File([new Uint8Array(2_000_000)], name, { type });
+
+    let uploads: { file: File; mimeType: unknown; sizeBytes: unknown }[];
+    const gate: { release: (() => void) | null } = { release: null };
+
+    beforeEach(async () => {
+      // jsdom 30 + vitest 5.0.1: o `fetch` simulado não sabe ler `Blob`/`File`/`FormData` do jsdom no corpo da
+      // requisição (a compatibilidade do vitest procura um símbolo interno que o jsdom 30 não tem mais). O envio usa
+      // as classes nativas do Node, as mesmas que o `fetch` do navegador espera.
+      const NodeFormData = (await new Response(new URLSearchParams()).formData()).constructor;
+      vi.stubGlobal("FormData", NodeFormData);
+      vi.stubGlobal("Blob", NodeBlob);
+      vi.stubGlobal("File", NodeFile);
+      uploads = [];
+      gate.release = null;
+      server.use(
+        http.post("/api/shop/admin/products/:id/images", async ({ request }) => {
+          const form = await request.formData();
+          const file = form.get("file") as File;
+          uploads.push({ file, mimeType: form.get("mimeType"), sizeBytes: form.get("sizeBytes") });
+          if (gate.release === null) {
+            // Segura a resposta até o teste liberar, para ver o estado "enviando".
+            await new Promise<void>((resolve) => {
+              gate.release = resolve;
+            });
+          }
+          const created = image("img-novo", current.images?.length ?? 0, { sizeBytes: file.size });
+          current = detail([...(current.images ?? []), created]);
+          return HttpResponse.json(created, { status: 201 });
+        }),
+      );
+    });
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+      vi.unstubAllGlobals();
+    });
+
+    it("reduz a foto, envia o arquivo com mime e tamanho e passa a mostrá-la na grade", async () => {
+      const { context, bitmap } = stubBrowserImage();
+      const user = userEvent.setup();
+      renderAt("/loja-admin/produtos/p-camiseta");
+      const section = await photosSection();
+
+      await user.upload(within(section).getByLabelText("Arquivo da foto"), pick());
+
+      // enquanto envia: o espaço mostra o carregamento e o envio fica indisponível
+      expect(await within(section).findByText("Enviando foto…")).toBeInTheDocument();
+      expect(within(section).getAllByRole("button", { name: /Adicionar foto/ })).toSatisfy(
+        (buttons: HTMLElement[]) => buttons.every((button) => (button as HTMLButtonElement).disabled),
+      );
+      await waitFor(() => expect(uploads).toHaveLength(1));
+      act(() => gate.release?.());
+
+      await waitFor(() => expect(within(section).getAllByRole("img")).toHaveLength(4));
+      expect(within(section).getByRole("heading", { level: 2, name: /Fotos/ })).toHaveTextContent("4 de 5");
+      expect(within(section).queryByText("Enviando foto…")).not.toBeInTheDocument();
+      expect(context.drawImage).toHaveBeenCalledWith(bitmap, 0, 0, 1200, 800);
+      const [upload] = uploads;
+      expect(upload?.file.type).toBe("image/webp");
+      expect(upload?.file.name).toBe("camiseta.webp");
+      expect(upload?.file.size).toBe(80_000);
+      expect(upload?.mimeType).toBe("image/webp");
+      expect(upload?.sizeBytes).toBe("80000");
+    });
+
+    it("mostra o motivo da recusa da API e não muda a grade", async () => {
+      stubBrowserImage();
+      server.use(
+        http.post("/api/shop/admin/products/:id/images", () =>
+          HttpResponse.json(
+            { code: "CONFLICT", message: "O produto já tem 5 fotos." },
+            { status: 409 },
+          ),
+        ),
+      );
+      const user = userEvent.setup();
+      renderAt("/loja-admin/produtos/p-camiseta");
+      const section = await photosSection();
+
+      await user.upload(within(section).getByLabelText("Arquivo da foto"), pick());
+
+      expect(await within(section).findByRole("alert")).toHaveTextContent("O produto já tem 5 fotos.");
+      expect(within(section).queryByText("Enviando foto…")).not.toBeInTheDocument();
+      expect(within(section).getByRole("heading", { level: 2, name: /Fotos/ })).toHaveTextContent("3 de 5");
+    });
+
+    it("recusa formato fora de JPG, PNG e WebP sem chamar a API", async () => {
+      stubBrowserImage();
+      const user = userEvent.setup({ applyAccept: false });
+      renderAt("/loja-admin/produtos/p-camiseta");
+      const section = await photosSection();
+
+      await user.upload(within(section).getByLabelText("Arquivo da foto"), pick("animacao.gif", "image/gif"));
+
+      expect(await within(section).findByRole("alert")).toHaveTextContent("Use uma foto JPG, PNG ou WebP.");
+      expect(uploads).toHaveLength(0);
+    });
+
+    it("avisa quando a foto não cabe em 1,5 MB nem depois de reduzida", async () => {
+      stubBrowserImage(1_500_001);
+      const user = userEvent.setup();
+      renderAt("/loja-admin/produtos/p-camiseta");
+      const section = await photosSection();
+
+      await user.upload(within(section).getByLabelText("Arquivo da foto"), pick());
+
+      expect(await within(section).findByRole("alert")).toHaveTextContent(/acima de 1,5 MB/);
+      expect(uploads).toHaveLength(0);
+    });
+
+    it("o erro some quando a próxima foto é enviada com sucesso", async () => {
+      stubBrowserImage();
+      gate.release = () => undefined;
+      const user = userEvent.setup({ applyAccept: false });
+      renderAt("/loja-admin/produtos/p-camiseta");
+      const section = await photosSection();
+      const input = within(section).getByLabelText("Arquivo da foto");
+
+      await user.upload(input, pick("animacao.gif", "image/gif"));
+      expect(await within(section).findByRole("alert")).toBeInTheDocument();
+      await user.upload(input, pick());
+
+      await waitFor(() => expect(within(section).getAllByRole("img")).toHaveLength(4));
+      expect(within(section).queryByRole("alert")).not.toBeInTheDocument();
+    });
+  });
+
+  // Ordem, capa, remoção, offline e permissão entram nos blocos seguintes.
   void setBrowserOnline;
 });
