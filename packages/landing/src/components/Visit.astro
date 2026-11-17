@@ -1,0 +1,152 @@
+---
+import { visit } from "../content/copy";
+import { site } from "../content/site";
+import { whatsappUrl } from "../lib/whatsapp";
+import CtaLink from "./CtaLink.astro";
+import SectionHeading from "./SectionHeading.astro";
+
+const whatsappHref = whatsappUrl(site.messages.trial);
+---
+
+<section class="section section--alt" id="contato">
+  <div class="container grid">
+    <div class="info">
+      <SectionHeading kicker={visit.kicker} title={visit.title} />
+      <p class="lead">{visit.lead}</p>
+      <div class="actions">
+        <CtaLink kind="whatsapp" message={site.messages.trial} local="contato">{visit.primary}</CtaLink>
+        <CtaLink kind="tel" variant="secondary" local="contato">{visit.secondary}</CtaLink>
+      </div>
+      <address class="address">
+        <span>{site.address.street}</span>
+        <span>{site.address.district}, {site.address.city}, {site.address.region}</span>
+        <span>CEP {site.address.postalCode}</span>
+      </address>
+      <ul class="phones">
+        <li>
+          <strong>{visit.whatsappLabel}</strong>{" "}
+          <a
+            href={whatsappHref}
+            target="_blank"
+            rel="noopener"
+            data-umami-event="cta-whatsapp"
+            data-umami-event-local="contato"
+          >
+            {site.whatsapp.display}<span class="sr-only"> (abre em nova aba)</span>
+          </a>
+        </li>
+        <li>
+          <strong>{visit.phoneLabel}</strong>{" "}
+          <a href={`tel:${site.phone.tel}`} data-umami-event="cta-telefone" data-umami-event-local="contato">
+            {site.phone.display}
+          </a>
+        </li>
+      </ul>
+      <dl class="hours">
+        {
+          site.hours.map((h) => (
+            <div>
+              <dt>{h.days}</dt>
+              <dd>{h.range}</dd>
+            </div>
+          ))
+        }
+      </dl>
+    </div>
+    <div class="map-col">
+      <div class="map">
+        <iframe
+          class="frame"
+          src={site.maps.embed}
+          title={visit.mapTitle}
+          loading="lazy"
+          referrerpolicy="no-referrer-when-downgrade"
+          width="600"
+          height="450"></iframe>
+      </div>
+      <a class="map-link" href={site.maps.link} target="_blank" rel="noopener">
+        {visit.mapLink}<span class="sr-only"> (abre em nova aba)</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<style>
+  .grid {
+    display: grid;
+    gap: var(--s-10);
+  }
+  .info {
+    display: grid;
+    gap: var(--s-6);
+    justify-items: start;
+    align-content: start;
+  }
+  .info :global(.kicker) {
+    margin-bottom: var(--s-4);
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-3);
+  }
+  .address {
+    display: grid;
+    color: var(--ink-2);
+  }
+  .phones {
+    display: grid;
+    gap: var(--s-2);
+  }
+  .phones a,
+  .map-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--s-12);
+    color: var(--brand-strong);
+    font-weight: var(--weight-bold);
+    text-underline-offset: var(--s-1);
+  }
+  .phones strong {
+    color: var(--muted);
+    font-weight: var(--weight-medium);
+  }
+  .hours {
+    display: grid;
+    gap: var(--s-2);
+  }
+  .hours div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-2) var(--s-4);
+  }
+  .hours dt {
+    color: var(--muted);
+  }
+  .hours dd {
+    margin: 0;
+    font-variant-numeric: tabular-nums;
+  }
+  .map {
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    background: var(--surface-2);
+  }
+  .frame {
+    width: 100%;
+    height: 100%;
+    border: 0;
+  }
+  .map-link {
+    margin-top: var(--s-2);
+  }
+  @media (min-width: 1024px) {
+    .grid {
+      grid-template-columns: 1fr 1fr;
+      gap: var(--s-16);
+      align-items: start;
+    }
+  }
+</style>

@@ -105,6 +105,13 @@ Registro das decisões tomadas durante a conversa. O documento separa decisões 
 - **Decisão:** manifestação imutável `CONSENT_BIOIMPEDANCE`, com versão do texto. Revogar impede novos registros e esconde as avaliações da equipe; o cliente continua vendo e pode excluir as suas.
 - **Consequências:** a API recusa criar avaliação sem consentimento vigente. Telas: `docs/design/proposta-bioimpedancia.html`.
 
+### D-044 e D-045: landing
+
+| ID | Decisão | Status | Motivo principal |
+|---|---|---|---|
+| D-044 | Landing page em `packages/landing` (Astro estático): pacote separado, sem JS próprio, tokens importados do app, em `site.fitburn.faglionidev.com` com `noindex` enquanto for proposta comercial. Domínio de produção (`fitburnbrasil.com.br`) por variável de ambiente | Aprovado (2026-11-10) | Desempenho e SEO de página de marketing, e o PWA do app fica intocado. O D-031 continua pendente para o domínio de produção do app. |
+| D-045 | Landing só no tema escuro | Aprovado (2026-11-10) | Exceção ao D-038, que vale para cliente e admin. A landing segue o registro noturno da marca (site e Instagram) e não tem alternância. |
+
 ## Regra de mudança
 
 Decisões marcadas como “No desenho” não devem ser tratadas como definitivas até serem ratificadas. Decisões aprovadas podem ganhar detalhamento posterior sem alterar sua direção, salvo nova decisão explícita.

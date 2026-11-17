@@ -1,0 +1,72 @@
+---
+import { plans } from "../content/copy";
+import { site } from "../content/site";
+import CtaLink from "./CtaLink.astro";
+import Icon from "./Icon.astro";
+import SectionHeading from "./SectionHeading.astro";
+---
+
+<section class="section section--alt" id="planos">
+  <div class="container">
+    <div class="reveal">
+      <SectionHeading kicker={plans.kicker} title={plans.title} />
+    </div>
+    <div class="plan reveal">
+      <p class="lead text">{plans.text}</p>
+      <h3>{plans.subtitle}</h3>
+      <ul class="benefits">
+        {
+          plans.benefits.map((benefit) => (
+            <li>
+              <Icon name="check" />
+              <span>{benefit}</span>
+            </li>
+          ))
+        }
+      </ul>
+      <CtaLink kind="whatsapp" variant="secondary" message={site.messages.plans} local="planos">
+        {plans.cta}
+      </CtaLink>
+    </div>
+  </div>
+</section>
+
+<style>
+  .plan {
+    display: grid;
+    gap: var(--s-6);
+    justify-items: start;
+    margin-top: var(--s-10);
+    padding: var(--s-6);
+    background: var(--surface-2);
+    border: 1px solid var(--brand-line);
+    border-radius: var(--r-xl);
+  }
+  .text {
+    max-width: 56ch;
+    color: var(--ink-2);
+  }
+  h3 {
+    font-size: var(--text-h1);
+    font-weight: var(--weight-bold);
+    line-height: var(--leading-title);
+    letter-spacing: var(--tracking-title);
+  }
+  .benefits {
+    display: grid;
+    gap: var(--s-3);
+  }
+  .benefits li {
+    display: flex;
+    align-items: center;
+    gap: var(--s-3);
+  }
+  .benefits :global(.icon) {
+    color: var(--brand);
+  }
+  @media (min-width: 900px) {
+    .plan {
+      padding: var(--s-12);
+    }
+  }
+</style>

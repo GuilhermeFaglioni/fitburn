@@ -1,0 +1,54 @@
+---
+import { healthTeam } from "../content/copy";
+import SectionHeading from "./SectionHeading.astro";
+---
+
+<section class="section section--alt" id="saude">
+  <div class="container">
+    <div class="reveal">
+      <SectionHeading kicker={healthTeam.kicker} title={healthTeam.title} />
+      <p class="lead intro">{healthTeam.lead}</p>
+    </div>
+    <ul class="items">
+      {
+        healthTeam.items.map((item) => (
+          <li class="card reveal">
+            <h3>{item.title}</h3>
+            <p>{item.text}</p>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</section>
+
+<style>
+  .intro {
+    margin-top: var(--s-4);
+    max-width: 56ch;
+  }
+  .items {
+    display: grid;
+    gap: var(--s-4);
+    margin-top: var(--s-10);
+  }
+  .card {
+    display: grid;
+    gap: var(--s-3);
+    align-content: start;
+  }
+  h3 {
+    font-size: var(--text-h1);
+    font-weight: var(--weight-bold);
+    line-height: var(--leading-title);
+    letter-spacing: var(--tracking-title);
+  }
+  .card p {
+    color: var(--muted);
+  }
+  @media (min-width: 900px) {
+    .items {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+</style>

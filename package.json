@@ -8,10 +8,12 @@
   "scripts": {
     "dev:api": "pnpm --filter @fitburn/api dev",
     "dev:web": "pnpm --filter @fitburn/web dev",
+    "dev:landing": "pnpm --filter @fitburn/landing dev",
     "build": "pnpm -r build",
-    "test": "pnpm --filter @fitburn/api test && pnpm --filter @fitburn/web test",
+    "test": "pnpm --filter @fitburn/api test && pnpm --filter @fitburn/web test && pnpm --filter @fitburn/landing test",
     "test:api": "pnpm --filter @fitburn/api test",
     "test:web": "pnpm --filter @fitburn/web test",
+    "test:landing": "pnpm --filter @fitburn/landing test",
     "typecheck": "pnpm -r typecheck",
     "lint": "eslint .",
     "format": "prettier --write .",

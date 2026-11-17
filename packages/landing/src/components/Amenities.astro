@@ -1,0 +1,74 @@
+---
+import { amenities } from "../content/copy";
+import Icon from "./Icon.astro";
+import Photo from "./Photo.astro";
+import SectionHeading from "./SectionHeading.astro";
+---
+
+<section class="section" id="estrutura">
+  <div class="container">
+    <div class="reveal">
+      <SectionHeading kicker={amenities.kicker} title={amenities.title} />
+    </div>
+    <ul class="list">
+      {
+        amenities.items.map((item) => (
+          <li class="item reveal">
+            <Icon name={item.icon} />
+            <span>{item.label}</span>
+          </li>
+        ))
+      }
+    </ul>
+    <ul class="photos">
+      {
+        amenities.photos.map((photo) => (
+          <li class="reveal">
+            <Photo slot={photo.slot} alt={photo.alt} sizes="(min-width: 900px) 280px, 50vw" />
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</section>
+
+<style>
+  .list {
+    display: grid;
+    gap: var(--s-3);
+    margin-top: var(--s-10);
+  }
+  .item {
+    display: flex;
+    align-items: center;
+    gap: var(--s-3);
+    padding: var(--s-4);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    font-weight: var(--weight-medium);
+  }
+  .item :global(.icon) {
+    color: var(--brand);
+  }
+  .photos {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--s-3);
+    margin-top: var(--s-8);
+  }
+  @media (min-width: 640px) {
+    .list {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+  @media (min-width: 900px) {
+    .list {
+      grid-template-columns: repeat(3, 1fr);
+    }
+    .photos {
+      grid-template-columns: repeat(4, 1fr);
+      gap: var(--s-4);
+    }
+  }
+</style>
