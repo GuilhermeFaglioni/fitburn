@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import { PermissionsModule } from "../permissions/permissions.module.js";
 import { ShopCategoriesController } from "./shop-categories.controller.js";
 import { ShopCategoriesService } from "./shop-categories.service.js";
+import { ShopClientController } from "./shop-client.controller.js";
 import { ShopProductsController } from "./shop-products.controller.js";
 import { ShopProductsService } from "./shop-products.service.js";
 import {
@@ -15,6 +16,7 @@ import { ShopProductImagesService } from "./shop-product-images.service.js";
   imports: [PermissionsModule],
   controllers: [
     ShopCategoriesController,
+    ShopClientController,
     ShopProductsController,
     ShopProductImagesController,
     ShopProductImageContentController,

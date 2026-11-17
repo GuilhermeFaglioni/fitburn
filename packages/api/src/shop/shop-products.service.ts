@@ -4,11 +4,16 @@ import {
   ErrorCode,
   ErrorStatus,
   type CreateShopProductRequest,
+  type ClientShopCatalogQuery,
+  type ClientShopCategory,
+  type ClientShopProduct,
+  type ClientShopProductDetail,
   type ListShopProductsQuery,
   type SetShopProductOptionsRequest,
   type ShopProduct,
   type ShopProductDetail,
   type ShopProductImage,
+  type ShopAvailability,
   type UpdateShopProductRequest,
 } from "@fitburn/contracts";
 import { PrismaService } from "../prisma/prisma.service.js";
@@ -25,6 +30,14 @@ import { planVariants, valuesOfVariant } from "./shop-variants.js";
 
 /** Quantos produtos podem estar em destaque no Início ao mesmo tempo (não excluídos). */
 const FEATURED_LIMIT = 3;
+/** Até três unidades são apresentadas como poucas unidades; o número exato não sai da API. */
+const LOW_STOCK_LIMIT = 3;
+
+const CLIENT_PRODUCT_WHERE = {
+  visivel: true,
+  excluidoEm: null,
+  variants: { some: { ativa: true, descontinuada: false } },
+} satisfies Prisma.ProductWhereInput;
 
 const PRODUCT_INCLUDE = {
   category: { select: { id: true, name: true } },
@@ -62,6 +75,51 @@ interface SaleState {
 @Injectable()
 export class ShopProductsService {
   constructor(private readonly prisma: PrismaService) {}
+
+  async listForClient(query: ClientShopCatalogQuery): Promise<ClientShopProduct[]> {
+    const rows = await this.prisma.product.findMany({
+      where: { ...CLIENT_PRODUCT_WHERE, categoryId: query.categoryId },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      include: PRODUCT_INCLUDE,
+    });
+    return rows.map(toClientShopProduct);
+  }
+
+  async getForClient(id: string): Promise<ClientShopProductDetail> {
+    const product = await this.prisma.product.findFirst({
+      where: { id, ...CLIENT_PRODUCT_WHERE },
+      include: PRODUCT_INCLUDE,
+    });
+    if (!product) throw notFoundProduct();
+    return toClientShopProductDetail(product);
+  }
+
+  async featuredForClient(): Promise<ClientShopProduct[]> {
+    const featured = await this.prisma.product.findMany({
+      where: { ...CLIENT_PRODUCT_WHERE, destaque: true },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take: FEATURED_LIMIT,
+      include: PRODUCT_INCLUDE,
+    });
+    if (featured.length > 0) return featured.map(toClientShopProduct);
+
+    const recent = await this.prisma.product.findMany({
+      where: CLIENT_PRODUCT_WHERE,
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take: FEATURED_LIMIT,
+      include: PRODUCT_INCLUDE,
+    });
+    return recent.map(toClientShopProduct);
+  }
+
+  async categoriesForClient(): Promise<ClientShopCategory[]> {
+    const rows = await this.prisma.shopCategory.findMany({
+      where: { products: { some: CLIENT_PRODUCT_WHERE } },
+      orderBy: [{ position: "asc" }, { name: "asc" }],
+      select: { id: true, name: true, position: true },
+    });
+    return rows;
+  }
 
   async list(query: ListShopProductsQuery, requester: ScopedRequester): Promise<ShopProduct[]> {
     assertFullScope(requester, SHOP_FULL_SCOPE_MESSAGE);
@@ -448,4 +506,77 @@ function toShopProductDetail(row: ProductRow): ShopProductDetail {
         ativa: variant.ativa,
       })),
   };
+}
+
+function toClientShopProduct(row: ProductRow): ClientShopProduct {
+  const active = row.variants.filter((variant) => variant.ativa && !variant.descontinuada);
+  const prices = active.map((variant) =>
+    effectivePriceCents({
+      priceCents: row.priceCents,
+      promoPriceCents: row.promoPriceCents,
+      variantPriceCents: variant.priceCents,
+    }),
+  );
+  const startingPriceCents = Math.min(...prices);
+  const originalPriceCents = Math.min(
+    ...active.map((variant) => variant.priceCents ?? row.priceCents),
+  );
+  const totalStock = active.reduce((total, variant) => total + variant.stock, 0);
+  const cover = row.images.find((image) => image.isCover) ?? null;
+  return {
+    id: row.id,
+    name: row.name,
+    description: row.description,
+    category: row.category,
+    startingPriceCents,
+    originalPriceCents: originalPriceCents > startingPriceCents ? originalPriceCents : null,
+    hasPriceVariation: new Set(prices).size > 1,
+    availability: availabilityFor(totalStock),
+    destaque: row.destaque,
+    coverImage: cover ? toClientImage(cover) : null,
+  };
+}
+
+function toClientShopProductDetail(row: ProductRow): ClientShopProductDetail {
+  return {
+    ...toClientShopProduct(row),
+    images: row.images.map(toClientImage),
+    options: row.options.map((option) => ({
+      id: option.id,
+      name: option.name,
+      values: option.values.map((value) => ({ id: value.id, value: value.value })),
+    })),
+    variants: row.variants
+      .filter((variant) => !variant.descontinuada)
+      .map((variant) => ({
+        id: variant.id,
+        label: variant.label,
+        values: valuesOfVariant(variant.combinationKey, row.options),
+        effectivePriceCents: effectivePriceCents({
+          priceCents: row.priceCents,
+          promoPriceCents: row.promoPriceCents,
+          variantPriceCents: variant.priceCents,
+        }),
+        availability: variant.ativa ? availabilityFor(variant.stock) : "ESGOTADO",
+      })),
+    permiteMaisDeUmaUnidade: row.permiteMaisDeUmaUnidade,
+    limitePorPedido: row.limitePorPedido,
+  };
+}
+
+function toClientImage(image: ProductRow["images"][number]): ShopProductImage {
+  return {
+    id: image.id,
+    mimeType: image.mimeType as ShopProductImage["mimeType"],
+    sizeBytes: image.sizeBytes,
+    position: image.position,
+    isCover: image.isCover,
+    url: `/api/shop/product-images/${image.id}`,
+  };
+}
+
+function availabilityFor(stock: number): ShopAvailability {
+  if (stock === 0) return "ESGOTADO";
+  if (stock <= LOW_STOCK_LIMIT) return "POUCAS_UNIDADES";
+  return "DISPONIVEL";
 }

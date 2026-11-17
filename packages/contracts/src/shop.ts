@@ -375,6 +375,56 @@ export const shopProductDetailSchema = shopProductSchema.extend({
 });
 export type ShopProductDetail = z.infer<typeof shopProductDetailSchema>;
 
+/** Disponibilidade pública: o estoque exato nunca é enviado ao cliente. */
+export const shopAvailabilitySchema = z.enum(["DISPONIVEL", "POUCAS_UNIDADES", "ESGOTADO"]);
+export type ShopAvailability = z.infer<typeof shopAvailabilitySchema>;
+
+/** Resumo de produto vendável para as telas do cliente. */
+export const clientShopProductSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string().nullable(),
+  category: z.object({ id: z.string(), name: z.string() }).nullable(),
+  /** Menor preço efetivo entre as variações ativas. */
+  startingPriceCents: z.number().int(),
+  /** Menor preço sem a promoção, preenchido quando a menor oferta é promocional. */
+  originalPriceCents: z.number().int().nullable(),
+  hasPriceVariation: z.boolean(),
+  availability: shopAvailabilitySchema,
+  destaque: z.boolean(),
+  coverImage: shopProductImageSchema.nullable(),
+});
+export type ClientShopProduct = z.infer<typeof clientShopProductSchema>;
+
+export const clientShopVariantSchema = z.object({
+  id: z.string(),
+  label: z.string().nullable(),
+  values: z.array(z.string()),
+  effectivePriceCents: z.number().int(),
+  availability: shopAvailabilitySchema,
+});
+export type ClientShopVariant = z.infer<typeof clientShopVariantSchema>;
+
+/** Produto vendável com dados necessários para escolher uma combinação. */
+export const clientShopProductDetailSchema = clientShopProductSchema.extend({
+  images: z.array(shopProductImageSchema),
+  options: z.array(shopProductOptionSchema),
+  variants: z.array(clientShopVariantSchema),
+  permiteMaisDeUmaUnidade: z.boolean(),
+  limitePorPedido: z.number().int().nullable(),
+});
+export type ClientShopProductDetail = z.infer<typeof clientShopProductDetailSchema>;
+
+export const clientShopCategorySchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  position: z.number().int(),
+});
+export type ClientShopCategory = z.infer<typeof clientShopCategorySchema>;
+
+export const clientShopCatalogQuerySchema = z.object({ categoryId: z.string().min(1).optional() });
+export type ClientShopCatalogQuery = z.infer<typeof clientShopCatalogQuerySchema>;
+
 export const ShopProductVisibility = { ALL: "all", VISIBLE: "visible", HIDDEN: "hidden" } as const;
 
 export const listShopProductsQuerySchema = z.object({
