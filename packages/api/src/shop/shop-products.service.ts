@@ -413,6 +413,12 @@ function toShopProduct(row: ProductRow): ShopProduct {
     stock: active.reduce((total, variant) => total + variant.stock, 0),
     soldOutVariantCount: active.filter((variant) => variant.stock === 0).length,
     createdAt: row.createdAt.toISOString(),
+  };
+}
+
+function toShopProductDetail(row: ProductRow): ShopProductDetail {
+  return {
+    ...toShopProduct(row),
     images: row.images.map((image) => ({
       id: image.id,
       mimeType: image.mimeType as ShopProductImage["mimeType"],
@@ -421,12 +427,6 @@ function toShopProduct(row: ProductRow): ShopProduct {
       isCover: image.isCover,
       url: `/api/shop/product-images/${image.id}`,
     })),
-  };
-}
-
-function toShopProductDetail(row: ProductRow): ShopProductDetail {
-  return {
-    ...toShopProduct(row),
     options: row.options.map((option) => ({
       id: option.id,
       name: option.name,

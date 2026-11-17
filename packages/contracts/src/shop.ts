@@ -340,8 +340,6 @@ export const shopProductSchema = z.object({
   stock: z.number().int(),
   soldOutVariantCount: z.number().int(),
   createdAt: z.string(),
-  /** Respostas administrativas recentes incluem fotos; opcional para consumidores ainda não atualizados. */
-  images: z.array(shopProductImageSchema).optional(),
 });
 export type ShopProduct = z.infer<typeof shopProductSchema>;
 
@@ -370,6 +368,8 @@ export type ShopProductVariant = z.infer<typeof shopProductVariantSchema>;
 
 /** Produto com opções e variações (sem as descontinuadas), para a tela de edição. */
 export const shopProductDetailSchema = shopProductSchema.extend({
+  /** Metadados das fotos disponíveis no detalhe administrativo do produto. */
+  images: z.array(shopProductImageSchema).optional(),
   options: z.array(shopProductOptionSchema),
   variants: z.array(shopProductVariantSchema),
 });
