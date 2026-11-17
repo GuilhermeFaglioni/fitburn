@@ -6,8 +6,8 @@ import { server } from "./msw-server";
 
 /**
  * Carrinho e sacola do cabeçalho (L4, #193): contador em qualquer tela do cliente, quantidades, remover, observação
- * e total; o carrinho vive no aparelho (por usuário) e segue funcionando se o armazenamento falhar. O botão "Fazer
- * pedido" fica para a L5.
+ * e total; o carrinho vive no aparelho (por usuário) e segue funcionando se o armazenamento falhar. O pedido em si é
+ * testado em `LojaPedido.test.tsx` (L5).
  */
 const CART_KEY = `fitburn:cart:${CLIENT_ID}`;
 
@@ -121,14 +121,6 @@ describe("tela do carrinho", () => {
     expect(within(garrafa).queryByRole("button", { name: /quantidade/ })).not.toBeInTheDocument();
     expect(within(total()).getByText("R$ 219,70")).toBeInTheDocument();
     expect(screen.getByText(/Pagamento e retirada são feitos na recepção/)).toBeInTheDocument();
-  });
-
-  it("não tem o botão Fazer pedido (entra na L5)", async () => {
-    seedCart();
-    open();
-
-    await screen.findByText("Total");
-    expect(screen.queryByRole("button", { name: /Fazer pedido/ })).not.toBeInTheDocument();
   });
 
   it("muda a quantidade dentro do limite, atualiza preço e total e guarda no aparelho", async () => {

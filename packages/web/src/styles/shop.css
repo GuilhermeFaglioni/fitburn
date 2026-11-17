@@ -562,6 +562,38 @@
   color: var(--ink);
 }
 
+.fb-loja-line[data-adjusted] {
+  border-color: var(--danger-line);
+}
+
+/* ---- Pedido feito ---- */
+.fb-loja-placed {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-4);
+  max-width: 640px;
+  text-align: center;
+}
+
+.fb-loja-placed__title {
+  margin: 0;
+  font-size: var(--text-h2);
+  letter-spacing: var(--tracking-title);
+}
+
+.fb-loja-placed__title:focus-visible {
+  outline: none;
+  box-shadow: var(--sh-focus);
+}
+
+.fb-loja-placed__text {
+  margin: 0;
+  max-width: 270px;
+  font-size: var(--text-small);
+  color: var(--muted);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .fb-loja-gallery__track {
     scroll-behavior: auto;

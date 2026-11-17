@@ -14,6 +14,14 @@ enum UserStatus {
   DELETED
 }
 
+enum ShopOrderStatus {
+  AGUARDANDO_APROVACAO
+  APROVADO
+  RECUSADO
+  ENTREGUE
+  CANCELADO
+}
+
 enum AdminAuditAction {
   USER_CREATED
   USER_UPDATED
@@ -138,6 +146,8 @@ model User {
   /// Reservas que este usuário cancelou.
   cancelledReservations Reservation[]           @relation("ReservationCancelledBy")
   idempotencyRecords  IdempotencyRecord[]
+  shopOrders          ShopOrder[] @relation("ShopOrderClient")
+  authoredShopOrderEvents ShopOrderEvent[] @relation("ShopOrderEventActor")
   pointsEntries       PointsEntry[]
   streakBadges        StreakBadge[]
   /// Clientes atribuídos a este usuário como professor (atribuição manual).
@@ -712,8 +722,73 @@ model ProductVariant {
   updatedAt       DateTime @updatedAt
 
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  orderItems ShopOrderItem[]
 
   @@unique([productId, combinationKey])
   @@index([productId])
   @@map("product_variants")
+}
+
+/// Pedido de produtos aguardando decisão da equipe; o número é curto e sequencial.
+model ShopOrder {
+  id          String          @id @default(uuid())
+  number      Int             @unique
+  status      ShopOrderStatus @default(AGUARDANDO_APROVACAO)
+  observation String?
+  totalCents  Int
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  clientId String
+  client   User @relation("ShopOrderClient", fields: [clientId], references: [id], onDelete: Restrict)
+  items    ShopOrderItem[]
+  events   ShopOrderEvent[]
+
+  @@index([clientId, createdAt])
+  @@index([status, createdAt])
+  @@map("shop_orders")
+}
+
+/// Retrato imutável do item no momento do pedido.
+model ShopOrderItem {
+  id              String @id @default(uuid())
+  orderId         String
+  variantId       String
+  productName     String
+  variantLabel    String?
+  optionsSnapshot Json
+  unitPriceCents  Int
+  quantity        Int
+  subtotalCents   Int
+
+  order   ShopOrder     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  variant ProductVariant @relation(fields: [variantId], references: [id], onDelete: Restrict)
+
+  @@index([orderId])
+  @@map("shop_order_items")
+}
+
+/// Linha imutável da linha do tempo do pedido.
+model ShopOrderEvent {
+  id         String          @id @default(uuid())
+  orderId    String
+  fromStatus ShopOrderStatus?
+  toStatus   ShopOrderStatus
+  actorId    String
+  note       String?
+  createdAt  DateTime        @default(now())
+
+  order ShopOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  actor User      @relation("ShopOrderEventActor", fields: [actorId], references: [id], onDelete: Restrict)
+
+  @@index([orderId, createdAt])
+  @@map("shop_order_events")
+}
+
+/// Contador transacional, bloqueado ao alocar o próximo número para evitar lacunas.
+model ShopOrderCounter {
+  id          Int @id @default(1)
+  lastNumber  Int @default(0)
+
+  @@map("shop_order_counters")
 }
