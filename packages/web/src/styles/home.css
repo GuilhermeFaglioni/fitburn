@@ -271,20 +271,26 @@
     row-gap: var(--s-6);
   }
 
+  /* O aviso de pedido aprovado fica no topo, em largura total; os demais blocos descem uma linha. */
+  .fb-home__order-notice {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+
   .fb-home__intro {
     grid-column: 1;
-    grid-row: 1;
+    grid-row: 2;
   }
 
   .fb-home > [aria-label="Próximas aulas"] {
     grid-column: 2;
-    grid-row: 1 / span 2;
+    grid-row: 2 / span 2;
     align-self: start;
   }
 
   .fb-home > [aria-label="FitPoints"] {
     grid-column: 1;
-    grid-row: 2;
+    grid-row: 3;
     align-self: start;
   }
 }
