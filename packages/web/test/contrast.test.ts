@@ -147,6 +147,7 @@ const NO_TEXT_ORANGE_SELECTORS = new Set([
   ".fb-ui-meter__fill",
   ".fb-ui-accordion__icon::before, .fb-ui-accordion__icon::after",
   ".fb-ui-accordion__item[open] .fb-ui-accordion__icon",
+  ".fb-ui-carousel__dots i[data-active]",
   "::selection",
 ]);
 
