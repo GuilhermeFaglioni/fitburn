@@ -105,7 +105,7 @@ describe("Exportar pedidos (CSV) na aba Pedidos", () => {
     return screen.getByRole("dialog", { name: BUTTON_NAME });
   }
 
-  it("o botão aparece com Ver da Loja e some sem a permissão", async () => {
+  it("com Ver da Loja, o botão aparece no cabeçalho da aba", async () => {
     renderPage();
     expect(await screen.findByRole("button", { name: BUTTON_NAME })).toBeInTheDocument();
   });
