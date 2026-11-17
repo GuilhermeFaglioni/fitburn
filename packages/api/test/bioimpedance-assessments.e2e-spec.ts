@@ -271,6 +271,40 @@ describe("Avaliações de bioimpedância (HTTP)", () => {
   });
 
   describe("editar e excluir", () => {
+    it("exige Editar e Excluir independentemente das outras permissões do módulo", async () => {
+      const admin = await createAdmin();
+      const client = await consentedClient();
+      const created = await api(admin.token).create(body(client.user.id));
+
+      const editOnlyProfile = (await createAccessProfile({ name: "Só edição" })).id;
+      await grantModuleAccess({
+        profileId: editOnlyProfile,
+        module: "BIOIMPEDANCIA",
+        actions: ["EDIT"],
+        scope: "ALL",
+      });
+      const editor = await signIn("editor", editOnlyProfile);
+
+      const deleteOnlyProfile = (await createAccessProfile({ name: "Só exclusão" })).id;
+      await grantModuleAccess({
+        profileId: deleteOnlyProfile,
+        module: "BIOIMPEDANCIA",
+        actions: ["DELETE"],
+        scope: "ALL",
+      });
+      const deleter = await signIn("exclusor", deleteOnlyProfile);
+
+      const editDenied = await api(deleter.token).update(created.body.id, { age: 31 });
+      expect(editDenied.status).toBe(403);
+      expect((await api(editor.token).update(created.body.id, { age: 31 })).status).toBe(200);
+
+      const deleteDenied = await api(editor.token).remove(created.body.id);
+      expect(deleteDenied.status).toBe(403);
+      expect(await testPrisma.bioimpedanceAssessment.count()).toBe(1);
+      expect((await api(deleter.token).remove(created.body.id)).status).toBe(204);
+      expect(await testPrisma.bioimpedanceAssessment.count()).toBe(0);
+    });
+
     it("corrige medidas e data, mantém a origem e recusa duplicar uma data existente", async () => {
       const admin = await createAdmin();
       const client = await consentedClient();
@@ -280,12 +314,15 @@ describe("Avaliações de bioimpedância (HTTP)", () => {
       );
 
       const edited = await api(admin.token).update(first.body.id, {
+        measuredAt: "2026-11-11T09:11:00.000Z",
+        heightCm: 173,
         measures: { weight: { value: 70.1 } },
         age: 31,
       });
       expect(edited.status).toBe(200);
       expect(edited.body.measures).toEqual({ weight: { value: 70.1 } });
       expect(edited.body.age).toBe(31);
+      expect(edited.body.heightCm).toBe(173);
       expect(edited.body.source).toBe("FOTO_DO_LAUDO");
 
       const clash = await api(admin.token).update(second.body.id, {
@@ -308,6 +345,7 @@ describe("Avaliações de bioimpedância (HTTP)", () => {
       });
       expect(events).toHaveLength(1);
       expect(events[0]).toMatchObject({ actorId: admin.user.id, targetId: client.user.id, changedFields: [] });
+      expect(JSON.stringify(events)).not.toContain("69.2");
       expect((await api(admin.token).remove(created.body.id)).status).toBe(404);
     });
   });

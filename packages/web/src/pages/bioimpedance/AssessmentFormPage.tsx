@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type DragEvent, type FormEvent } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import {
   BIOIMPEDANCE_GROUP_LABELS,
   BIOIMPEDANCE_GROUP_ORDER,
@@ -43,6 +43,15 @@ import {
 
 const FORM_ID = "assessment-form";
 const LIST_PATH = "/bioimpedancia-admin";
+
+/**
+ * Para onde voltar depois de salvar ou cancelar: a tela que abriu o formulário (`state.from`, como a aba do cliente) ou a
+ * lista de avaliações. Só caminhos internos valem.
+ */
+function returnPathOf(state: unknown): string {
+  const from = (state as { from?: unknown } | null)?.from;
+  return typeof from === "string" && from.startsWith("/") && !from.startsWith("//") ? from : LIST_PATH;
+}
 
 function Crumb({ current }: { current: string }) {
   return (
@@ -316,6 +325,7 @@ export function AssessmentFormPage() {
   const editing = id !== undefined;
   const { can } = useAuth();
   const navigate = useNavigate();
+  const returnPath = returnPathOf(useLocation().state);
   const assessmentQuery = useAssessment(id);
   const createMutation = useCreateAssessment();
   const updateMutation = useUpdateAssessment();
@@ -412,7 +422,7 @@ export function AssessmentFormPage() {
   }
 
   function goBack() {
-    void navigate(LIST_PATH);
+    void navigate(returnPath);
   }
 
   function submit(event: FormEvent) {
