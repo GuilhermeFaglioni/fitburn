@@ -640,10 +640,29 @@ model Product {
   category ShopCategory?    @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   options  ProductOption[]
   variants ProductVariant[]
+  images   ProductImage[]
 
   @@index([excluidoEm])
   @@index([categoryId])
   @@map("products")
+}
+
+/// Foto do produto armazenada no PostgreSQL conforme D-040. O conteúdo nunca é
+/// retornado nas respostas de catálogo; a API o serve pela rota versionada por id.
+model ProductImage {
+  id        String   @id @default(uuid())
+  productId String
+  mimeType  String
+  sizeBytes Int
+  content   Bytes    @db.ByteA
+  position  Int
+  isCover   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, position])
+  @@map("product_images")
 }
 
 /// Opção do produto (Cor, Tamanho, Modelo), com até 3 por produto. Ordem por `position`.
