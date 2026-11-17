@@ -16,6 +16,7 @@ export const assessmentKeys = {
   all: ["bioimpedance", "assessments"] as const,
   list: (range: AssessmentRange) => ["bioimpedance", "assessments", "list", range] as const,
   one: (id: string) => ["bioimpedance", "assessments", "one", id] as const,
+  byClient: (clientId: string) => ["bioimpedance", "assessments", "client", clientId] as const,
   clients: ["bioimpedance", "assessments", "clients"] as const,
 };
 
@@ -33,6 +34,13 @@ export async function listAssessments(range: AssessmentRange): Promise<Assessmen
   const params = new URLSearchParams({ limit: "100" });
   const from = rangeStart(range);
   if (from) params.set("from", from);
+  const response = await authFetch(`${BASE}?${params.toString()}`);
+  return (await parseOrThrow(response)) as AssessmentsList;
+}
+
+/** Todas as avaliações de um cliente do escopo (a API limita a 200; a evolução precisa do histórico inteiro). */
+export async function listClientAssessments(clientId: string): Promise<AssessmentsList> {
+  const params = new URLSearchParams({ clientId, limit: "200" });
   const response = await authFetch(`${BASE}?${params.toString()}`);
   return (await parseOrThrow(response)) as AssessmentsList;
 }
@@ -75,6 +83,15 @@ export async function deleteAssessment(id: string): Promise<void> {
 
 export function useAssessments(range: AssessmentRange) {
   return useQuery({ queryKey: assessmentKeys.list(range), queryFn: () => listAssessments(range) });
+}
+
+/** Avaliações de um cliente (aba do detalhe). `enabled` evita consultar sem a permissão ou fora da aba. */
+export function useClientAssessments(clientId: string, enabled: boolean) {
+  return useQuery({
+    queryKey: assessmentKeys.byClient(clientId),
+    queryFn: () => listClientAssessments(clientId),
+    enabled,
+  });
 }
 
 export function useAssessmentClients() {
