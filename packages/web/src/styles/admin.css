@@ -241,6 +241,119 @@
   max-width: 120px;
 }
 
+/* ---- Loja (#191): fotos do produto ---- */
+.fb-shop-photos {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--s-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fb-shop-photo {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  min-width: 0;
+}
+
+.fb-shop-photo__frame {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: linear-gradient(160deg, var(--surface-2), var(--brand-tint));
+  color: var(--muted);
+}
+
+.fb-shop-photo__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.fb-shop-photo__status {
+  padding: var(--s-2);
+  font-size: var(--text-caption);
+  line-height: var(--leading-small);
+  text-align: center;
+}
+
+.fb-shop-photo__badge {
+  position: absolute;
+  left: var(--s-2);
+  bottom: var(--s-2);
+}
+
+.fb-shop-photo__add {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-1);
+  box-sizing: border-box;
+  width: 100%;
+  aspect-ratio: 1;
+  padding: var(--s-2);
+  border: 2px dashed var(--line-2);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--muted);
+  font: inherit;
+  font-size: var(--text-caption);
+  text-align: center;
+  cursor: pointer;
+}
+
+.fb-shop-photo__add:hover:not(:disabled) {
+  border-color: var(--brand);
+  color: var(--brand-strong);
+}
+
+.fb-shop-photo__add:focus-visible {
+  outline: none;
+  box-shadow: var(--sh-focus);
+}
+
+.fb-shop-photo__add:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.fb-shop-photo[draggable="true"] {
+  cursor: grab;
+}
+
+.fb-shop-photo__menu {
+  width: 100%;
+}
+
+.fb-shop-photo__menu .fb-ui-menu__trigger {
+  width: 100%;
+}
+
+/* O menu tem 200px e o espaço da foto é menor: nas primeiras colunas ele abre para a direita, para não sair da tela. */
+.fb-shop-photo:nth-child(-n + 2) .fb-ui-menu__popover {
+  right: auto;
+  left: 0;
+}
+
+.fb-shop-photo__sending {
+  flex-direction: column;
+  padding: var(--s-2);
+  font-size: var(--text-caption);
+  text-align: center;
+}
+
+.fb-shop-photo__hint {
+  color: var(--faint);
+}
+
 /* ---- Bioimpedância (B2): passos, medidas do formulário e campos marcados "conferir" ---- */
 .fb-bio-steps {
   display: flex;
@@ -356,6 +469,22 @@
 .fb-bio-area--check {
   border-color: var(--warn);
   border-style: dashed;
+}
+
+@media (max-width: 900px) {
+  .fb-shop-photos {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .fb-shop-photo:nth-child(2) .fb-ui-menu__popover {
+    right: 0;
+    left: auto;
+  }
+
+  .fb-shop-photo:nth-child(3n + 1) .fb-ui-menu__popover {
+    right: auto;
+    left: 0;
+  }
 }
 
 @media (max-width: 767px) {

@@ -457,7 +457,7 @@ describe("Loja no admin", () => {
   });
 
   describe("Formulário de produto", () => {
-    it("tem trilha, cartões e botões do cabeçalho, com Opções e sem Fotos nem tabela de variações", async () => {
+    it("tem trilha, cartões e botões do cabeçalho, com Opções, a dica de Fotos e sem tabela de variações", async () => {
       renderAt("/loja-admin/produtos/novo");
 
       expect(await screen.findByRole("heading", { level: 1, name: "Novo produto" })).toBeInTheDocument();
@@ -471,7 +471,11 @@ describe("Loja no admin", () => {
       expect(screen.getByRole("button", { name: "+ Adicionar opção" })).toBeInTheDocument();
       // Sem opções, a tela é a da L1: estoque único e nenhuma tabela de variações.
       expect(screen.getByLabelText("Estoque")).toBeInTheDocument();
-      expect(screen.queryByRole("heading", { name: /Fotos|Variações/ })).not.toBeInTheDocument();
+      expect(screen.queryByRole("heading", { name: /Variações/ })).not.toBeInTheDocument();
+      // As fotos só existem na edição (L3): o cadastro novo só avisa.
+      expect(screen.getByRole("heading", { level: 2, name: "Fotos" })).toBeInTheDocument();
+      expect(screen.getByText(/As fotos ficam disponíveis depois de salvar o produto/)).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /Adicionar foto/ })).not.toBeInTheDocument();
       // Visível já vem ligado; destaque desligado.
       expect(screen.getByRole("switch", { name: "Visível na loja" })).toHaveAttribute("aria-checked", "true");
       expect(screen.getByRole("switch", { name: "Destaque no Início" })).toHaveAttribute("aria-checked", "false");

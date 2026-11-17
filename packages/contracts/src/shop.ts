@@ -1,5 +1,52 @@
 import { z } from "zod";
 
+/** Regras de D-040 para imagens da loja. O limite usa bytes decimais (1,5 MB). */
+export const MAX_PRODUCT_IMAGES = 5;
+export const MAX_PRODUCT_IMAGE_SIZE_BYTES = 1_500_000;
+export const PRODUCT_IMAGE_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
+
+export const productImageMimeTypeSchema = z.enum(PRODUCT_IMAGE_MIME_TYPES);
+export type ProductImageMimeType = z.infer<typeof productImageMimeTypeSchema>;
+
+/** Metadados enviados junto ao multipart; o servidor compara o tamanho com os bytes recebidos. */
+export const productImageUploadMetadataSchema = z.object({
+  mimeType: productImageMimeTypeSchema,
+  sizeBytes: z.coerce.number().int().positive().max(MAX_PRODUCT_IMAGE_SIZE_BYTES),
+});
+export type ProductImageUploadMetadata = z.infer<typeof productImageUploadMetadataSchema>;
+
+/** Metadados sem o conteúdo binário, incluídos no detalhe administrativo do produto. */
+export const shopProductImageSchema = z.object({
+  id: z.string(),
+  mimeType: productImageMimeTypeSchema,
+  sizeBytes: z.number().int().positive().max(MAX_PRODUCT_IMAGE_SIZE_BYTES),
+  position: z.number().int().nonnegative(),
+  isCover: z.boolean(),
+  /** Rota versionada pela identidade imutável da imagem. */
+  url: z.string(),
+});
+export type ShopProductImage = z.infer<typeof shopProductImageSchema>;
+
+/** Reordena todas as imagens existentes com seus ids, sem repetição. */
+export const reorderShopProductImagesRequestSchema = z
+  .object({ imageIds: z.array(z.string().min(1)).min(1).max(MAX_PRODUCT_IMAGES) })
+  .superRefine(({ imageIds }, ctx) => {
+    if (new Set(imageIds).size !== imageIds.length) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Uma foto não pode aparecer mais de uma vez.",
+        path: ["imageIds"],
+      });
+    }
+  });
+export type ReorderShopProductImagesRequest = z.infer<typeof reorderShopProductImagesRequestSchema>;
+
+export const setShopProductCoverRequestSchema = z.object({ imageId: z.string().min(1) });
+export type SetShopProductCoverRequest = z.infer<typeof setShopProductCoverRequestSchema>;
+
+export const removeShopProductImageRequestSchema = z.object({ imageId: z.string().min(1) });
+export type RemoveShopProductImageRequest = z.infer<typeof removeShopProductImageRequestSchema>;
+
 const categoryNameSchema = z
   .string()
   .trim()
@@ -321,6 +368,8 @@ export type ShopProductVariant = z.infer<typeof shopProductVariantSchema>;
 
 /** Produto com opções e variações (sem as descontinuadas), para a tela de edição. */
 export const shopProductDetailSchema = shopProductSchema.extend({
+  /** Metadados das fotos disponíveis no detalhe administrativo do produto. */
+  images: z.array(shopProductImageSchema).optional(),
   options: z.array(shopProductOptionSchema),
   variants: z.array(shopProductVariantSchema),
 });
