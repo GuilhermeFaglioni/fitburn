@@ -4,11 +4,13 @@ import {
   ErrorCode,
   ErrorStatus,
   type CreateShopOrderRequest,
+  type ShopOrderApprovalNotice,
   type ShopOrder,
 } from "@fitburn/contracts";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { lockAdvisory } from "../prisma/advisory-lock.js";
 import { DomainError } from "../common/errors/domain-error.js";
+import { assertIsActiveClient } from "../permissions/client-scope.js";
 import { replay, runIdempotent } from "../reservations/idempotency.js";
 import { effectivePriceCents } from "./shop-pricing.js";
 import { valuesOfVariant } from "./shop-variants.js";
@@ -24,6 +26,7 @@ export class ShopOrdersService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(clientId: string, input: CreateShopOrderRequest, key: string): Promise<ShopOrder> {
+    await assertIsActiveClient(this.prisma, clientId);
     const outcome = await this.prisma.$transaction(async (tx) => {
       const variantIds = input.items.map((item) => item.variantId).sort();
       await this.lockVariants(tx, variantIds);
@@ -41,19 +44,32 @@ export class ShopOrdersService {
   }
 
   async listMine(clientId: string): Promise<ShopOrder[]> {
+    await assertIsActiveClient(this.prisma, clientId);
     const rows = await this.prisma.shopOrder.findMany({
       where: { clientId }, include: ORDER_INCLUDE, orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     });
     return rows.map(toShopOrder);
   }
 
+  async approvalNotice(clientId: string): Promise<ShopOrderApprovalNotice> {
+    await assertIsActiveClient(this.prisma, clientId);
+    const row = await this.prisma.shopOrder.findFirst({
+      where: { clientId, status: ShopOrderStatus.APROVADO },
+      orderBy: { number: "desc" },
+      select: { number: true },
+    });
+    return { number: row?.number ?? null };
+  }
+
   async getMine(clientId: string, id: string): Promise<ShopOrder> {
+    await assertIsActiveClient(this.prisma, clientId);
     const row = await this.prisma.shopOrder.findFirst({ where: { id, clientId }, include: ORDER_INCLUDE });
     if (!row) throw new DomainError(ErrorCode.ORDER_NOT_FOUND, "Pedido não encontrado.", ErrorStatus.NOT_FOUND);
     return toShopOrder(row);
   }
 
   async cancel(clientId: string, id: string): Promise<ShopOrder> {
+    await assertIsActiveClient(this.prisma, clientId);
     return this.prisma.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT id FROM shop_orders WHERE id = ${id} AND "clientId" = ${clientId} FOR UPDATE`;
       const order = await tx.shopOrder.findFirst({ where: { id, clientId }, include: { items: true } });

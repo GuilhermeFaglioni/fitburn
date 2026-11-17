@@ -53,3 +53,7 @@ export const shopOrderSchema = z.object({
   events: z.array(shopOrderEventSchema),
 });
 export type ShopOrder = z.infer<typeof shopOrderSchema>;
+
+/** Resposta mínima para avisar o cliente sobre retirada de pedido aprovado. */
+export const shopOrderApprovalNoticeSchema = z.object({ number: z.number().int().positive().nullable() });
+export type ShopOrderApprovalNotice = z.infer<typeof shopOrderApprovalNoticeSchema>;

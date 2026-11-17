@@ -2,6 +2,7 @@ import { Body, Controller, Get, Param, Post, Req, UseGuards } from "@nestjs/comm
 import {
   createShopOrderRequestSchema,
   type CreateShopOrderRequest,
+  type ShopOrderApprovalNotice,
   type ShopOrder,
 } from "@fitburn/contracts";
 import { JwtAuthGuard, type AuthenticatedRequest } from "../auth/jwt-auth.guard.js";
@@ -27,6 +28,11 @@ export class ShopOrdersController {
   @Get()
   listMine(@Req() req: AuthenticatedRequest): Promise<ShopOrder[]> {
     return this.ordersService.listMine(req.authUser.sub);
+  }
+
+  @Get("approval-notice")
+  approvalNotice(@Req() req: AuthenticatedRequest): Promise<ShopOrderApprovalNotice> {
+    return this.ordersService.approvalNotice(req.authUser.sub);
   }
 
   @Get(":id")
