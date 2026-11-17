@@ -576,12 +576,60 @@ describe("Home do cliente", () => {
     });
   });
 
-  it("não tem o bloco de atalhos (o design não o tem: a navegação fica na casca)", async () => {
-    mockHome();
-    renderPage();
+  describe("atalhos deslizantes (N2, #201)", () => {
+    it("ficam logo abaixo da saudação, antes das próximas aulas e dos FitPoints", async () => {
+      mockHome();
+      server.use(
+        http.get("/api/shop/featured", () =>
+          HttpResponse.json([
+            {
+              id: "p-1",
+              name: "Garrafa térmica",
+              description: null,
+              category: null,
+              startingPriceCents: 7990,
+              originalPriceCents: null,
+              hasPriceVariation: false,
+              availability: "DISPONIVEL",
+              destaque: true,
+              coverImage: null,
+            },
+          ]),
+        ),
+      );
+      renderPage();
 
-    await screen.findByRole("heading", { name: "Olá, Usuário" });
-    expect(screen.queryByRole("navigation", { name: "Atalhos" })).not.toBeInTheDocument();
+      const corpo = await screen.findByRole("group", { name: "Composição corporal" });
+      const loja = await screen.findByRole("group", { name: "Loja Fitburn" });
+      const heading = screen.getByRole("heading", { level: 1, name: "Olá, Usuário" });
+      const aulas = await screen.findByRole("region", { name: "Próximas aulas" });
+      const fitpoints = screen.getByRole("region", { name: "FitPoints" });
+      const before = Node.DOCUMENT_POSITION_FOLLOWING;
+      expect(heading.compareDocumentPosition(corpo) & before).toBeTruthy();
+      expect(corpo.compareDocumentPosition(loja) & before).toBeTruthy();
+      expect(loja.compareDocumentPosition(aulas) & before).toBeTruthy();
+      expect(loja.compareDocumentPosition(fitpoints) & before).toBeTruthy();
+    });
+
+    it("um atalho que falha não derruba o Início nem o outro atalho", async () => {
+      mockHome();
+      server.use(
+        http.get("/api/bioimpedance/assessments/mine", () =>
+          HttpResponse.json({ code: "X", message: "x" }, { status: 500 }),
+        ),
+        http.get("/api/shop/featured", () =>
+          HttpResponse.json({ code: "X", message: "x" }, { status: 500 }),
+        ),
+      );
+      renderPage();
+
+      expect(
+        await screen.findByText("Não foi possível carregar sua composição corporal."),
+      ).toBeInTheDocument();
+      expect(await screen.findByText("Não foi possível carregar a loja.")).toBeInTheDocument();
+      expect(await screen.findByText("Você não tem aulas reservadas.")).toBeInTheDocument();
+      expect(screen.getByRole("heading", { level: 1, name: "Olá, Usuário" })).toBeInTheDocument();
+    });
   });
 
   it("mostra erro em cada bloco que não carrega, sem derrubar os outros", async () => {
@@ -720,7 +768,8 @@ describe("Home do cliente: visual e estados (D-038)", () => {
 
       const offline = await waitFor(() => {
         const found = document.querySelectorAll('[data-state="offline"]');
-        expect(found).toHaveLength(2);
+        // Aulas, FitPoints e os dois atalhos (Corpo e Loja) têm o próprio estado offline.
+        expect(found).toHaveLength(4);
         return Array.from(found);
       });
       for (const node of offline) {
@@ -734,7 +783,7 @@ describe("Home do cliente: visual e estados (D-038)", () => {
       onlineManager.setOnline(false);
       mockHome();
       renderPage();
-      await waitFor(() => expect(document.querySelectorAll('[data-state="offline"]')).toHaveLength(2));
+      await waitFor(() => expect(document.querySelectorAll('[data-state="offline"]')).toHaveLength(4));
 
       onlineManager.setOnline(true);
 

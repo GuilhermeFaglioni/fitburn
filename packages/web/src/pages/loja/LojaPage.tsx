@@ -6,32 +6,9 @@ import { Button } from "../../components/ui/Button";
 import { Pill } from "../../components/ui/Pill";
 import { EmptyState } from "../../components/ui/States";
 import { useClientCategories, useClientProducts } from "../../lib/shop/client-api";
-import { formatCents } from "../../lib/shop/money";
 import { ProductImage } from "./ProductImage";
+import { ProductPrice } from "./ProductPrice";
 import { ShopTopBar } from "./ShopTopBar";
-
-/** Preço do cartão: "a partir de" quando as variações diferem; senão o preço, com o cheio riscado na promoção. */
-function Price({ product }: { product: ClientShopProduct }) {
-  if (product.hasPriceVariation) {
-    return (
-      <span className="fb-loja-price">
-        a partir de {formatCents(product.startingPriceCents)}
-      </span>
-    );
-  }
-  return (
-    <span className="fb-loja-price">
-      {product.originalPriceCents !== null && (
-        <>
-          <span className="fb-ui-sr-only">De </span>
-          <s className="fb-loja-price__was">{formatCents(product.originalPriceCents)}</s>
-          <span className="fb-ui-sr-only"> por </span>
-        </>
-      )}
-      {formatCents(product.startingPriceCents)}
-    </span>
-  );
-}
 
 function ProductCard({ product }: { product: ClientShopProduct }) {
   const soldOut = product.availability === "ESGOTADO";
@@ -56,7 +33,7 @@ function ProductCard({ product }: { product: ClientShopProduct }) {
           )}
         </span>
         <b className="fb-loja-card__name">{product.name}</b>
-        <Price product={product} />
+        <ProductPrice product={product} />
       </Link>
     </li>
   );

@@ -10,6 +10,12 @@ export const handlers: HttpHandler[] = [
   ),
   // O Início do cliente pergunta por pedido aprovado a retirar (L6, #199); o padrão é "nenhum".
   http.get("/api/shop/orders/approval-notice", () => HttpResponse.json({ number: null })),
+  // Os atalhos Corpo e Loja do Início (N2, #201): o padrão é cliente sem avaliações, sem autorização e sem destaques.
+  http.get("/api/bioimpedance/assessments/mine", () => HttpResponse.json([])),
+  http.get("/api/bioimpedance/consent", () =>
+    HttpResponse.json({ consented: false, manifestation: null, currentVersion: "v1" }),
+  ),
+  http.get("/api/shop/featured", () => HttpResponse.json([])),
   // O bloco Compras do Perfil lista os pedidos do cliente; o padrão é "nenhum pedido".
   http.get("/api/shop/orders", () => HttpResponse.json([])),
   // O card "Pedidos aguardando" do Dashboard do admin (L7, #200); o padrão é "nenhum".

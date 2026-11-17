@@ -13,6 +13,7 @@ import { markTutorialSeen, shouldAutoOpenTutorial } from "../lib/pwa/install-tut
 import { HomeReservations } from "./home/HomeReservations";
 import { formatGreetingDate } from "./home/format";
 import { HomeOrderNotice } from "./home/HomeOrderNotice";
+import { HomeShortcuts } from "./home/HomeShortcuts";
 import { HomeEmpty } from "./home/HomeEmpty";
 import { InstallTutorial } from "../components/InstallTutorial";
 import { QueryBlockState } from "../components/QueryBlockState";
@@ -39,10 +40,10 @@ function CheckIcon() {
 }
 
 /**
- * Home do cliente (D-038, D-043): kicker da data e saudação, próximas aulas e o resumo de FitPoints, nessa ordem
- * no celular; no desktop, coluna de 400px (saudação, FitPoints) ao lado das aulas (grade em home.css). Sem o
- * cartão do plano: o plano e o histórico vivem no Perfil, e os atalhos entram em outra issue. Cada bloco carrega,
- * falha e fica sem conexão sozinho (QueryBlockState).
+ * Home do cliente (D-038, D-043): kicker da data e saudação, atalhos Corpo e Loja, próximas aulas e o resumo de FitPoints, nessa
+ * ordem no celular; no desktop, coluna de 400px (saudação, atalhos, FitPoints) ao lado das aulas (grade em home.css).
+ * Sem o cartão do plano: o plano e o histórico vivem no Perfil. Os atalhos deslizantes Corpo e Loja (N2) ficam logo
+ * abaixo da saudação. Cada bloco carrega, falha e fica sem conexão sozinho (QueryBlockState).
  * No primeiro acesso neste aparelho abre o tutorial de instalação do PWA; fechar de qualquer jeito marca como visto.
  */
 export function ClientHomePage() {
@@ -60,6 +61,8 @@ export function ClientHomePage() {
       </div>
 
       <HomeOrderNotice />
+
+      <HomeShortcuts />
 
       <HomeReservations />
 

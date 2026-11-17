@@ -24,6 +24,12 @@ export async function getClientProduct(id: string): Promise<ClientShopProductDet
   return clientShopProductDetailSchema.parse(await parseOrThrow(response));
 }
 
+/** Destaques do Início: até 3 em destaque ou, sem nenhum, os 3 mais recentes (a API decide). */
+export async function listFeaturedProducts(): Promise<ClientShopProduct[]> {
+  const response = await authFetch("/api/shop/featured");
+  return z.array(clientShopProductSchema).parse(await parseOrThrow(response));
+}
+
 export async function listClientCategories(): Promise<ClientShopCategory[]> {
   const response = await authFetch("/api/shop/categories");
   return z.array(clientShopCategorySchema).parse(await parseOrThrow(response));
@@ -34,6 +40,7 @@ export const clientShopKeys = {
   products: (categoryId: string) => ["client-shop", "products", categoryId] as const,
   product: (id: string) => ["client-shop", "product", id] as const,
   categories: ["client-shop", "categories"] as const,
+  featured: ["client-shop", "featured"] as const,
 };
 
 /** Mantém a grade anterior na tela enquanto o filtro novo carrega (sem piscar o estado de carregando). */
@@ -51,4 +58,8 @@ export function useClientProduct(id: string) {
 
 export function useClientCategories() {
   return useQuery({ queryKey: clientShopKeys.categories, queryFn: listClientCategories });
+}
+
+export function useFeaturedProducts() {
+  return useQuery({ queryKey: clientShopKeys.featured, queryFn: listFeaturedProducts });
 }

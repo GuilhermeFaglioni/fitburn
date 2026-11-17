@@ -261,12 +261,12 @@
 }
 
 /* Duas colunas só quando cabem ao lado da barra lateral (232px + 400px + 40px + a coluna das aulas);
-   entre 768px e 1099px os blocos continuam empilhados. */
+   entre 768px e 1099px os blocos continuam empilhados. Coluna da esquerda: saudação, atalhos, FitPoints. */
 @media (min-width: 1100px) {
   .fb-home {
     display: grid;
     grid-template-columns: 400px minmax(0, 1fr);
-    grid-template-rows: auto 1fr;
+    grid-template-rows: auto auto 1fr;
     column-gap: var(--s-10);
     row-gap: var(--s-6);
   }
@@ -278,20 +278,25 @@
     grid-row: 1;
   }
 
+  .fb-home > .fb-home__shortcuts {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
   .fb-home > [aria-label="Próximas aulas"] {
     grid-column: 2;
-    grid-row: 1 / span 2;
+    grid-row: 1 / span 3;
     align-self: start;
   }
 
   .fb-home > [aria-label="FitPoints"] {
     grid-column: 1;
-    grid-row: 2;
+    grid-row: 3;
     align-self: start;
   }
 
   .fb-home:has(> .fb-home__order-notice) {
-    grid-template-rows: auto auto 1fr;
+    grid-template-rows: auto auto auto 1fr;
   }
 
   .fb-home__order-notice {
@@ -303,12 +308,16 @@
     grid-row: 2;
   }
 
+  .fb-home:has(> .fb-home__order-notice) > .fb-home__shortcuts {
+    grid-row: 3;
+  }
+
   .fb-home:has(> .fb-home__order-notice) > [aria-label="Próximas aulas"] {
-    grid-row: 2 / span 2;
+    grid-row: 2 / span 3;
   }
 
   .fb-home:has(> .fb-home__order-notice) > [aria-label="FitPoints"] {
-    grid-row: 3;
+    grid-row: 4;
   }
 }
 
@@ -365,4 +374,190 @@
 .fb-home__order-notice:focus-visible {
   outline: none;
   box-shadow: var(--sh-focus);
+}
+
+/* Atalhos deslizantes (N2): Corpo e Loja lado a lado. Cada atalho divide a largura que existe: sem a Loja, o
+   Corpo ocupa a linha toda. */
+.fb-home__shortcuts {
+  display: flex;
+  align-items: stretch;
+  gap: var(--s-3);
+}
+
+.fb-home__shortcuts > * {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.fb-home-shortcut__label {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-size: var(--text-kicker);
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--brand-strong);
+}
+
+.fb-home-shortcut__label svg {
+  width: var(--s-4);
+  height: var(--s-4);
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.fb-home-shortcut__caption {
+  font-size: var(--text-kicker);
+  color: var(--muted);
+}
+
+.fb-home-shortcut__value {
+  font-size: var(--text-h2);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-title);
+  letter-spacing: -0.04em;
+}
+
+.fb-home-shortcut__value u {
+  margin-left: var(--s-1);
+  font-size: var(--text-caption);
+  font-weight: var(--weight-medium);
+  letter-spacing: 0;
+  text-decoration: none;
+  color: var(--muted);
+}
+
+.fb-home-shortcut__headline {
+  font-size: var(--text-action);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-small);
+  letter-spacing: -0.01em;
+}
+
+.fb-home-shortcut__note {
+  font-size: var(--text-caption);
+  line-height: var(--leading-small);
+  color: var(--muted);
+}
+
+.fb-home-shortcut__delta {
+  font-size: var(--text-caption);
+  font-weight: var(--weight-medium);
+  color: var(--muted);
+}
+
+.fb-home-shortcut__delta[data-good] {
+  color: var(--success);
+}
+
+.fb-home-shortcut__spark {
+  width: 100%;
+  height: var(--s-8);
+  margin-top: var(--s-1);
+}
+
+.fb-home-shortcut__spark polyline {
+  fill: none;
+  stroke: var(--brand);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.fb-home-shortcut__spark circle {
+  fill: var(--brand);
+}
+
+/* Loja: foto de capa de ponta a ponta, selo no canto, nome e preço embaixo. */
+.fb-home-shortcut__link--photo {
+  position: relative;
+  padding: 0 0 var(--s-1);
+  gap: 0;
+}
+
+.fb-home-shortcut__photo {
+  display: block;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(160deg, var(--surface-2), var(--brand-tint));
+}
+
+.fb-home-shortcut__photo[data-soldout] {
+  opacity: 0.55;
+}
+
+.fb-home-shortcut__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.fb-home-shortcut__tag {
+  position: absolute;
+  top: var(--s-2);
+  left: var(--s-2);
+  pointer-events: none;
+}
+
+.fb-home-shortcut__text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  padding: var(--s-2) var(--s-3) 0;
+}
+
+.fb-home-shortcut__name {
+  overflow: hidden;
+  font-size: var(--text-small);
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.01em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fb-home-shortcut__link--more {
+  justify-content: center;
+  align-items: flex-start;
+  gap: var(--s-2);
+}
+
+.fb-home-shortcut__go {
+  font-size: var(--text-small);
+  font-style: normal;
+  font-weight: var(--weight-bold);
+  color: var(--brand-strong);
+}
+
+/* Estados do atalho (carregando, erro, sem conexão) dentro do cartão: compactos, sem moldura própria. */
+.fb-home-shortcut__frame-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding: var(--s-3);
+}
+
+.fb-home__state.fb-home-shortcut__state.fb-ui-state {
+  flex: 1;
+  justify-content: center;
+  padding: var(--s-2);
+  border-width: 0;
+  background: transparent;
+}
+
+.fb-home__state.fb-home-shortcut__state .fb-ui-state__icon {
+  width: var(--s-5);
+  height: var(--s-5);
+}
+
+.fb-home__state.fb-home-shortcut__state .fb-ui-state__title {
+  font-size: var(--text-caption);
 }
