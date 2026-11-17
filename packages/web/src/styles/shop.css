@@ -599,3 +599,146 @@
     scroll-behavior: auto;
   }
 }
+
+/* ---------- Meus pedidos (L6, #199) ---------- */
+.fb-loja-orders,
+.fb-loja-order-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  max-width: 640px;
+}
+
+.fb-loja-orders__list,
+.fb-loja-order-items,
+.fb-loja-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fb-loja-order {
+  display: grid;
+  gap: var(--s-1) var(--s-3);
+  grid-template-columns: 1fr auto;
+  padding: var(--s-4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.fb-loja-order:focus-visible {
+  outline: none;
+  box-shadow: var(--sh-focus);
+}
+
+.fb-loja-order__head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+}
+
+.fb-loja-order__number {
+  font-size: var(--text-body);
+}
+
+.fb-loja-order__meta {
+  grid-column: 1;
+  font-size: var(--text-small);
+  color: var(--muted);
+}
+
+.fb-loja-order > .fb-loja-price {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+}
+
+.fb-loja-order-detail__head {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s-2);
+}
+
+.fb-loja-order-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+.fb-loja-order-item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-3);
+}
+
+.fb-loja-order-item__meta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  min-width: 0;
+}
+
+/* Linha do tempo: um ponto por evento, ligado ao seguinte por um fio. */
+.fb-loja-timeline__item {
+  position: relative;
+  display: flex;
+  gap: var(--s-3);
+  padding-bottom: var(--s-2);
+}
+
+.fb-loja-timeline__item:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  top: var(--s-4);
+  bottom: 0;
+  left: var(--s-1);
+  width: 1px;
+  background: var(--line);
+}
+
+.fb-loja-timeline__dot {
+  flex: 0 0 auto;
+  width: var(--s-3);
+  height: var(--s-3);
+  margin-top: var(--s-1);
+  border-radius: var(--r-pill);
+  background: var(--brand-strong);
+}
+
+.fb-loja-timeline__item[data-status="RECUSADO"] .fb-loja-timeline__dot {
+  background: var(--danger);
+}
+
+.fb-loja-timeline__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  min-width: 0;
+}
+
+.fb-loja-timeline__when {
+  font-size: var(--text-small);
+  color: var(--muted);
+}
+
+.fb-loja-timeline__note {
+  margin: 0;
+  font-size: var(--text-small);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.fb-loja-order-detail__cancel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}

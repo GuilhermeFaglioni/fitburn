@@ -208,6 +208,40 @@ describe("Home do cliente", () => {
     mockSuccessfulLogin("Cliente");
   });
 
+  describe("aviso de pedido aprovado (L6, #199)", () => {
+    it("mostra 'Pedido #N aprovado · retire na recepção' e abre Meus pedidos", async () => {
+      mockHome();
+      server.use(http.get("/api/shop/orders/approval-notice", () => HttpResponse.json({ number: 43 })));
+      renderPage();
+
+      const notice = await screen.findByRole("status");
+      expect(notice).toHaveTextContent("Pedido #0043 aprovado · retire na recepção");
+      expect(notice).toHaveAttribute("href", "/pedidos");
+    });
+
+    it("sem pedido aprovado, não mostra o aviso", async () => {
+      mockHome();
+      renderPage();
+
+      await screen.findByRole("region", { name: "FitPoints" });
+      expect(screen.queryByText(/aprovado · retire na recepção/)).not.toBeInTheDocument();
+    });
+
+    it("se o aviso falhar, a Home segue inteira, sem o aviso", async () => {
+      mockHome();
+      server.use(
+        http.get("/api/shop/orders/approval-notice", () =>
+          HttpResponse.json({ code: "INTERNAL_ERROR", message: "x" }, { status: 500 }),
+        ),
+      );
+      renderPage();
+
+      expect(await screen.findByRole("heading", { name: "Olá, Usuário" })).toBeInTheDocument();
+      await screen.findByRole("region", { name: "FitPoints" });
+      expect(screen.queryByText(/aprovado · retire na recepção/)).not.toBeInTheDocument();
+    });
+  });
+
   describe("saudação", () => {
     it("cumprimenta o cliente pelo primeiro nome", async () => {
       mockHome();

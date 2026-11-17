@@ -12,6 +12,7 @@ import {
 import { markTutorialSeen, shouldAutoOpenTutorial } from "../lib/pwa/install-tutorial";
 import { HomeReservations } from "./home/HomeReservations";
 import { formatGreetingDate } from "./home/format";
+import { HomeOrderNotice } from "./home/HomeOrderNotice";
 import { HomeEmpty } from "./home/HomeEmpty";
 import { InstallTutorial } from "../components/InstallTutorial";
 import { QueryBlockState } from "../components/QueryBlockState";
@@ -57,6 +58,8 @@ export function ClientHomePage() {
           <h1 className="fb-home__greeting">{firstName ? `Olá, ${firstName}` : "Olá"}</h1>
         </div>
       </div>
+
+      <HomeOrderNotice />
 
       <HomeReservations />
 

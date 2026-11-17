@@ -215,6 +215,13 @@ describe("Perfil / Minha conta", () => {
       );
     });
 
+    it("tem o bloco Compras com o link para Meus pedidos", async () => {
+      renderAt("/perfil");
+
+      const block = await screen.findByRole("region", { name: "Compras" });
+      expect(within(block).getByRole("link", { name: "Meus pedidos" })).toHaveAttribute("href", "/pedidos");
+    });
+
     it("permite aderir e sair do ranking pelo Perfil", async () => {
       const user = userEvent.setup();
       renderAt("/perfil");
@@ -520,6 +527,7 @@ describe("Perfil / Minha conta", () => {
           [2, "Senha"],
           [2, "Participação no ranking"],
           [2, "Privacidade"],
+          [2, "Compras"],
           [2, "Instalar o app"],
         ]);
       });

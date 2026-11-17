@@ -426,6 +426,15 @@ export function ProfilePage({
 
       {!requiredPasswordChange && isClient && profile && <BioimpedanceConsentSwitch />}
 
+      {!requiredPasswordChange && isClient && profile && (
+        <Card as="section" flat className="fb-profile__card" aria-labelledby="fb-profile-compras">
+          <h2 id="fb-profile-compras" className="fb-profile__card-title">
+            Compras
+          </h2>
+          <Link to="/pedidos">Meus pedidos</Link>
+        </Card>
+      )}
+
       {!requiredPasswordChange && isClient && (
         <Card as="section" flat className="fb-profile__card" aria-labelledby="fb-profile-install">
           <div className="fb-profile__card-head">
