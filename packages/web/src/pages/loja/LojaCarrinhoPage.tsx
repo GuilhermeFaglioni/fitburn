@@ -1,11 +1,19 @@
-import { useQueries } from "@tanstack/react-query";
+import { useEffect, useRef, useState } from "react";
+import { useMutation, useQueries } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
+import type { CreateShopOrderRequest, ShopOrder } from "@fitburn/contracts";
+import { RequiresNetwork } from "../../components/RequiresNetwork";
+import { Alert } from "../../components/ui/Alert";
+import { Badge } from "../../components/ui/Badge";
 import { Button } from "../../components/ui/Button";
 import { Field } from "../../components/ui/Field";
 import { EmptyState } from "../../components/ui/States";
+import { ApiError, errorMessage } from "../../lib/auth/api";
+import { useNetworkRequired } from "../../lib/connectivity/useNetworkRequired";
 import { useCart, type CartLine } from "../../lib/shop/cart";
 import { clientShopKeys, getClientProduct } from "../../lib/shop/client-api";
 import { formatCents } from "../../lib/shop/money";
+import { createShopOrder, stockConflictOf } from "../../lib/shop/orders-api";
 import { ProductImage } from "./ProductImage";
 import { ShopTopBar } from "./ShopTopBar";
 
@@ -28,19 +36,131 @@ function useCurrentPrices(lines: CartLine[]): Map<string, number> {
   return prices;
 }
 
+/** "#0043": o número do pedido como a academia o chama. */
+export function formatOrderNumber(number: number): string {
+  return `#${String(number).padStart(4, "0")}`;
+}
+
+function lineLabel(line: CartLine): string {
+  return line.variantLabel ? `${line.name} · ${line.variantLabel}` : line.name;
+}
+
 /**
- * Carrinho (L4, #193, proposta-loja): itens com quantidade e remover, observação para a equipe e total. Fica no
- * aparelho até virar pedido. O botão "Fazer pedido" entra na L5; por ora o aviso diz como será o pedido.
+ * Uma chave de idempotência por tentativa de compra: a mesma enquanto o pedido a enviar for o mesmo (toque repetido,
+ * rede que oscila), nova quando o conteúdo muda (a chave já usada fica ligada ao pedido antigo na API) ou depois de
+ * uma recusa da API (a recusa também fica memorizada para a chave).
+ */
+function useOrderIdempotencyKey() {
+  const attempt = useRef<{ signature: string; key: string } | null>(null);
+  return {
+    keyFor(request: CreateShopOrderRequest): string {
+      const signature = JSON.stringify(request);
+      if (attempt.current?.signature !== signature) {
+        attempt.current = { signature, key: crypto.randomUUID() };
+      }
+      return attempt.current.key;
+    },
+    forget() {
+      attempt.current = null;
+    },
+  };
+}
+
+/** Frase do aviso para cada item que o estoque não cobre mais. */
+function stockNotice(label: string, available: number): string {
+  if (available === 0) return `${label} esgotou e saiu do carrinho.`;
+  return available === 1
+    ? `Restou só 1 unidade de ${label}.`
+    : `Restam só ${available} unidades de ${label}.`;
+}
+
+/** Tela "Pedido feito" (proposta-loja): número, status e o aviso de que pagamento e retirada são na recepção. */
+function OrderPlaced({ order }: { order: ShopOrder }) {
+  const heading = useRef<HTMLHeadingElement>(null);
+  useEffect(() => heading.current?.focus({ preventScroll: true }), []);
+  return (
+    <div className="fb-loja fb-loja-placed">
+      <h1 ref={heading} tabIndex={-1} className="fb-loja-placed__title">
+        Pedido {formatOrderNumber(order.number)} feito
+      </h1>
+      <Badge tone="warn">Aguardando aprovação</Badge>
+      <p className="fb-loja-placed__text">
+        Separamos os itens para você. A academia vai aprovar o pedido. Pagamento e retirada na recepção.
+      </p>
+      <Link to="/loja" className="fb-ui-btn fb-ui-btn--primary fb-ui-btn--block">
+        Voltar à loja
+      </Link>
+    </div>
+  );
+}
+
+/**
+ * Carrinho (L4, #193; pedido na L5, #196; proposta-loja): itens com quantidade e remover, observação para a equipe,
+ * total e "Fazer pedido". O carrinho fica no aparelho até o pedido ser aceito; se o estoque mudou, a API recusa o
+ * pedido inteiro, o carrinho é ajustado (nunca limpo) e a pessoa confirma de novo.
  */
 export function LojaCarrinhoPage() {
   const cart = useCart();
   const prices = useCurrentPrices(cart.lines);
   const priceOf = (line: CartLine) => prices.get(line.variantId) ?? line.unitPriceCents;
   const totalCents = cart.lines.reduce((sum, line) => sum + priceOf(line) * line.quantity, 0);
+  const { offline } = useNetworkRequired();
+  const idempotency = useOrderIdempotencyKey();
+  const [placed, setPlaced] = useState<ShopOrder | null>(null);
+  const [stockNotices, setStockNotices] = useState<string[]>([]);
+  const [adjusted, setAdjusted] = useState<ReadonlySet<string>>(new Set());
+
+  const placeOrder = useMutation({
+    mutationFn: () => {
+      const request: CreateShopOrderRequest = {
+        items: cart.lines.map(({ variantId, quantity }) => ({ variantId, quantity })),
+        observation: cart.note.trim() || null,
+      };
+      return createShopOrder(request, idempotency.keyFor(request));
+    },
+    onMutate: () => {
+      setStockNotices([]);
+      setAdjusted(new Set());
+    },
+    onSuccess: (order) => {
+      idempotency.forget();
+      cart.clear();
+      setPlaced(order);
+    },
+    onError: (error) => {
+      // Recusa definitiva da API: a chave ficou memorizada com ela; a próxima tentativa começa uma nova.
+      if (error instanceof ApiError && error.code !== "INTERNAL_ERROR") idempotency.forget();
+      const conflict = stockConflictOf(error);
+      if (!conflict) return;
+      const notices: string[] = [];
+      const changed = new Set<string>();
+      for (const { variantId, availableQuantity } of conflict) {
+        const line = cart.lines.find((item) => item.variantId === variantId);
+        if (!line || availableQuantity >= line.quantity) continue;
+        notices.push(stockNotice(lineLabel(line), availableQuantity));
+        changed.add(variantId);
+        if (availableQuantity === 0) cart.remove(variantId);
+        else cart.setQuantity(variantId, availableQuantity);
+      }
+      setStockNotices(notices);
+      setAdjusted(changed);
+    },
+  });
+
+  if (placed) return <OrderPlaced order={placed} />;
+
+  const stockConflict = stockConflictOf(placeOrder.error) !== null;
+  const failure = placeOrder.error && !stockConflict ? placeOrder.error : null;
 
   return (
     <div className="fb-loja fb-loja-cart">
       <ShopTopBar title="Carrinho" backTo="/loja" backLabel="Voltar à loja" />
+
+      {stockNotices.length > 0 && (
+        <Alert tone="err">
+          {stockNotices.join(" ")} Ajustamos o carrinho; confira e faça o pedido de novo.
+        </Alert>
+      )}
 
       {cart.lines.length === 0 ? (
         <EmptyState
@@ -55,7 +175,12 @@ export function LojaCarrinhoPage() {
         <>
           <ul className="fb-loja-lines">
             {cart.lines.map((line) => (
-              <li key={line.variantId} className="fb-loja-line" aria-label={line.name}>
+              <li
+                key={line.variantId}
+                className="fb-loja-line"
+                aria-label={line.name}
+                data-adjusted={adjusted.has(line.variantId) || undefined}
+              >
                 <span className="fb-loja-line__photo">
                   <ProductImage
                     url={line.imageUrl}
@@ -126,6 +251,25 @@ export function LojaCarrinhoPage() {
             <p className="fb-ui-note">
               O pedido fica aguardando a aprovação da academia. Pagamento e retirada são feitos na recepção.
             </p>
+            {failure && (
+              <Alert tone="err">
+                {errorMessage(
+                  failure,
+                  "Não foi possível enviar o pedido. Seu carrinho foi mantido; tente de novo.",
+                )}
+              </Alert>
+            )}
+            <RequiresNetwork>
+              <Button
+                variant="primary"
+                block
+                busy={placeOrder.isPending}
+                onClick={() => placeOrder.mutate()}
+              >
+                Fazer pedido
+              </Button>
+            </RequiresNetwork>
+            {offline && <p className="fb-ui-note">Conecte-se para fazer o pedido.</p>}
           </div>
         </>
       )}
