@@ -1,6 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
-import { RankingPeriod, type Dashboard, type DashboardOccupancyItem } from "@fitburn/contracts";
+import { Link } from "react-router-dom";
+import {
+  Module,
+  PermissionAction,
+  RankingPeriod,
+  type Dashboard,
+  type DashboardOccupancyItem,
+} from "@fitburn/contracts";
+import { useAuth } from "../lib/auth/AuthContext";
 import { getDashboard } from "../lib/dashboard/api";
+import { usePendingOrdersCount } from "../lib/shop/admin-orders-api";
 import { QueryBlockState } from "../components/QueryBlockState";
 import { Card } from "../components/ui/Card";
 import { Meter } from "../components/ui/Meter";
@@ -56,6 +65,25 @@ function Kpi({ label, value }: { label: string; value: string }) {
     <Card className="fb-ui-kpi">
       <dt>{label}</dt>
       <dd>{value}</dd>
+    </Card>
+  );
+}
+
+/**
+ * "Pedidos aguardando" (D-039, #200): a contagem da fila da Loja e o atalho para ela. Destacado em tom de marca; o
+ * link cobre o cartão inteiro. Sem a contagem (carregando, sem rede), mostra "—" e o atalho continua valendo.
+ */
+function PendingOrdersKpi() {
+  const countQuery = usePendingOrdersCount();
+  return (
+    <Card className="fb-ui-kpi fb-ui-kpi--link">
+      <dt>Pedidos aguardando</dt>
+      <dd>{countQuery.data ? formatNumber(countQuery.data.count) : "—"}</dd>
+      <dd className="fb-ui-kpi__link">
+        <Link to="/loja-admin" className="fb-ui-kpi__anchor">
+          Ver fila <span aria-hidden="true">→</span>
+        </Link>
+      </dd>
     </Card>
   );
 }
@@ -133,6 +161,8 @@ function GamificationPanel({
  * limitado ao escopo dela; a tela não mostra variação nem outro número que a API não devolva.
  */
 export function DashboardPage() {
+  const { can } = useAuth();
+  const canViewShop = can(Module.LOJA, PermissionAction.VIEW);
   const dashboardQuery = useQuery({
     queryKey: ["dashboard", RankingPeriod.MONTH],
     queryFn: () => getDashboard(RankingPeriod.MONTH),
@@ -151,40 +181,34 @@ export function DashboardPage() {
       />
 
       {dashboard && (
-        <>
-          <dl className="fb-ui-kpis" aria-label="Indicadores">
-            {dashboard.activeClients && (
-              <Kpi label="Clientes ativos" value={formatNumber(dashboard.activeClients.total)} />
-            )}
-            {dashboard.occupancy && (
-              <Kpi
-                label="Ocupação média da semana"
-                value={weekOccupancy(dashboard.occupancy.week)}
-              />
-            )}
-            {dashboard.gamification && (
-              <>
-                <Kpi
-                  label="Pontos distribuídos no mês"
-                  value={formatNumber(dashboard.gamification.pointsDistributed)}
-                />
-                <Kpi
-                  label="Streaks ativos"
-                  value={formatNumber(dashboard.gamification.clientsWithActiveStreak)}
-                />
-              </>
-            )}
-          </dl>
-
-          {(dashboard.occupancy || dashboard.gamification) && (
-            <div className="fb-ui-dash-panels">
-              {dashboard.occupancy && <OccupancyPanel week={dashboard.occupancy.week} />}
-              {dashboard.gamification && (
-                <GamificationPanel gamification={dashboard.gamification} />
-              )}
-            </div>
+        <dl className="fb-ui-kpis" aria-label="Indicadores">
+          {dashboard.activeClients && (
+            <Kpi label="Clientes ativos" value={formatNumber(dashboard.activeClients.total)} />
           )}
-        </>
+          {dashboard.occupancy && (
+            <Kpi label="Ocupação média da semana" value={weekOccupancy(dashboard.occupancy.week)} />
+          )}
+          {dashboard.gamification && (
+            <>
+              <Kpi
+                label="Pontos distribuídos no mês"
+                value={formatNumber(dashboard.gamification.pointsDistributed)}
+              />
+              <Kpi
+                label="Streaks ativos"
+                value={formatNumber(dashboard.gamification.clientsWithActiveStreak)}
+              />
+            </>
+          )}
+          {canViewShop && <PendingOrdersKpi />}
+        </dl>
+      )}
+
+      {dashboard && (dashboard.occupancy || dashboard.gamification) && (
+        <div className="fb-ui-dash-panels">
+          {dashboard.occupancy && <OccupancyPanel week={dashboard.occupancy.week} />}
+          {dashboard.gamification && <GamificationPanel gamification={dashboard.gamification} />}
+        </div>
       )}
     </div>
   );

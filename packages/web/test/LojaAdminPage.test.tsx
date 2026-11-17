@@ -3,7 +3,7 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider, onlineManager } from "@tanstack/react-query";
 import { http, HttpResponse } from "msw";
-import { MemoryRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import {
   Module,
   PermissionAction,
@@ -69,7 +69,7 @@ function LoggedIn() {
   return (
     <>
       <Routes>
-        <Route path="/loja-admin" element={<Navigate to="/loja-admin/produtos" replace />} />
+        <Route path="/loja-admin" element={<LojaAdminPage tab="pedidos" />} />
         <Route path="/loja-admin/produtos" element={<LojaAdminPage tab="produtos" />} />
         <Route path="/loja-admin/categorias" element={<LojaAdminPage tab="categorias" />} />
         <Route path="/loja-admin/produtos/novo" element={<ProductFormPage />} />
@@ -106,6 +106,7 @@ describe("Loja no admin", () => {
 
   function useShopHandlers() {
     server.use(
+      http.get("/api/shop/admin/orders", () => HttpResponse.json([])),
       http.get("/api/shop/admin/categories", () => HttpResponse.json(categories)),
       http.post("/api/shop/admin/categories", async ({ request }) => {
         const body = (await request.json()) as { name: string };
@@ -237,11 +238,22 @@ describe("Loja no admin", () => {
   }
 
   describe("Rotas e cabeçalho", () => {
-    it("/loja-admin redireciona para os produtos", async () => {
+    it("/loja-admin abre a aba Pedidos, a padrão, e as abas navegam até os produtos", async () => {
+      const user = userEvent.setup();
       renderAt("/loja-admin");
 
+      expect(await screen.findByRole("heading", { level: 1, name: "Pedidos" })).toBeInTheDocument();
+      const tabs = screen.getByRole("group", { name: "Seções da loja" });
+      expect(within(tabs).getByRole("button", { name: "Pedidos" })).toHaveAttribute("aria-pressed", "true");
+      expect(screen.queryByRole("button", { name: "+ Novo produto" })).not.toBeInTheDocument();
+
+      await user.click(within(tabs).getByRole("button", { name: "Produtos" }));
       expect(await screen.findByRole("heading", { level: 1, name: "Produtos" })).toBeInTheDocument();
       expect(screen.getByTestId("location")).toHaveTextContent("/loja-admin/produtos");
+
+      await user.click(within(tabs).getByRole("button", { name: "Pedidos" }));
+      expect(await screen.findByRole("heading", { level: 1, name: "Pedidos" })).toBeInTheDocument();
+      expect(screen.getByTestId("location")).toHaveTextContent(/^\/loja-admin$/);
     });
 
     it("as abas Produtos e Categorias navegam entre as rotas, e a ação do cabeçalho muda com a aba", async () => {
@@ -259,7 +271,6 @@ describe("Loja no admin", () => {
       expect(within(tabs).getByRole("button", { name: "Categorias" })).toHaveAttribute("aria-pressed", "true");
       expect(screen.getByRole("button", { name: "+ Nova categoria" })).toBeInTheDocument();
       expect(screen.queryByRole("button", { name: "+ Novo produto" })).not.toBeInTheDocument();
-      expect(screen.queryByRole("button", { name: "Pedidos" })).not.toBeInTheDocument();
     });
   });
 

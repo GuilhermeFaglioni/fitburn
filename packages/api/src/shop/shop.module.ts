@@ -12,6 +12,7 @@ import {
 import { ShopProductImagesService } from "./shop-product-images.service.js";
 import { ShopOrdersController } from "./shop-orders.controller.js";
 import { ShopOrdersService } from "./shop-orders.service.js";
+import { ShopAdminOrdersController } from "./shop-admin-orders.controller.js";
 
 /** Loja (administração): categorias e produtos, sob a permissão LOJA. */
 @Module({
@@ -23,6 +24,7 @@ import { ShopOrdersService } from "./shop-orders.service.js";
     ShopProductImagesController,
     ShopProductImageContentController,
     ShopOrdersController,
+    ShopAdminOrdersController,
   ],
   providers: [ShopCategoriesService, ShopProductsService, ShopProductImagesService, ShopOrdersService],
 })

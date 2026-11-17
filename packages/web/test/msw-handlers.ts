@@ -12,4 +12,6 @@ export const handlers: HttpHandler[] = [
   http.get("/api/shop/orders/approval-notice", () => HttpResponse.json({ number: null })),
   // O bloco Compras do Perfil lista os pedidos do cliente; o padrão é "nenhum pedido".
   http.get("/api/shop/orders", () => HttpResponse.json([])),
+  // O card "Pedidos aguardando" do Dashboard do admin (L7, #200); o padrão é "nenhum".
+  http.get("/api/shop/admin/orders/pending-count", () => HttpResponse.json({ count: 0 })),
 ];

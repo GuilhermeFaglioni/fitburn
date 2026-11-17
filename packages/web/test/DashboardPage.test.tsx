@@ -277,6 +277,7 @@ describe("Dashboard administrativo", () => {
       "Ocupação média da semana",
       "Pontos distribuídos no mês",
       "Streaks ativos",
+      "Pedidos aguardando", // o Administrador enxerga a Loja (#200)
     ]);
     expect(screen.getByRole("region", { name: "Ocupação por aula · semana atual" })).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "FitPoints" })).toBeInTheDocument();

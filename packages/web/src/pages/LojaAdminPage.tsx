@@ -8,18 +8,20 @@ import { Segmented } from "../components/ui/Segmented";
 import { useAuth } from "../lib/auth/AuthContext";
 import { CategoriesTab } from "./shop/CategoriesTab";
 import { CategoryDialog } from "./shop/CategoryDialog";
+import { OrdersTab } from "./shop/OrdersTab";
 import { ProductsTab } from "./shop/ProductsTab";
 
-export type LojaTab = "produtos" | "categorias";
+export type LojaTab = "pedidos" | "produtos" | "categorias";
 
 const TABS = [
+  { value: "pedidos", label: "Pedidos" },
   { value: "produtos", label: "Produtos" },
   { value: "categorias", label: "Categorias" },
 ] as const;
 
 /**
- * Loja no admin (D-039, #187): Produtos e Categorias num controle segmentado, cada aba na própria rota
- * (`/loja-admin/produtos`, `/loja-admin/categorias`). A aba Pedidos chega na L7. O foco vai ao conteúdo ao trocar de
+ * Loja no admin (D-039, #187, #200): Pedidos (padrão), Produtos e Categorias num controle segmentado, cada aba na
+ * própria rota (`/loja-admin`, `/loja-admin/produtos`, `/loja-admin/categorias`). O foco vai ao conteúdo ao trocar de
  * aba pelo `useFocusOnNavigation` do AdminLayout.
  */
 export function LojaAdminPage({ tab }: { tab: LojaTab }) {
@@ -32,9 +34,9 @@ export function LojaAdminPage({ tab }: { tab: LojaTab }) {
     <div className="fb-ui-page">
       <PageHeader
         kicker="Loja"
-        title={tab === "produtos" ? "Produtos" : "Categorias"}
+        title={TABS.find((option) => option.value === tab)!.label}
         actions={
-          tab === "produtos" ? (
+          tab === "pedidos" ? undefined : tab === "produtos" ? (
             <BlockedAction allowed={canCreate} reason="Você não tem permissão para criar produtos.">
               <Button variant="primary" size="sm" onClick={() => void navigate("/loja-admin/produtos/novo")}>
                 + Novo produto
@@ -54,10 +56,10 @@ export function LojaAdminPage({ tab }: { tab: LojaTab }) {
         label="Seções da loja"
         options={TABS}
         value={tab}
-        onChange={(next) => void navigate(`/loja-admin/${next}`)}
+        onChange={(next) => void navigate(next === "pedidos" ? "/loja-admin" : `/loja-admin/${next}`)}
       />
 
-      {tab === "produtos" ? <ProductsTab /> : <CategoriesTab />}
+      {tab === "pedidos" ? <OrdersTab /> : tab === "produtos" ? <ProductsTab /> : <CategoriesTab />}
 
       {creatingCategory && <CategoryDialog onClose={() => setCreatingCategory(false)} />}
     </div>

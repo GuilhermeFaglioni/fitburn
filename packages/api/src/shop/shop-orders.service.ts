@@ -1,9 +1,14 @@
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { Prisma, ShopOrderStatus } from "@prisma/client";
 import {
+  addDays,
   ErrorCode,
   ErrorStatus,
+  gymDateTimeToUtc,
   type CreateShopOrderRequest,
+  type AdminShopOrder,
+  type ListAdminShopOrdersQuery,
+  type PendingShopOrdersCount,
   type ShopOrderApprovalNotice,
   type ShopOrder,
 } from "@fitburn/contracts";
@@ -11,15 +16,21 @@ import { PrismaService } from "../prisma/prisma.service.js";
 import { lockAdvisory } from "../prisma/advisory-lock.js";
 import { DomainError } from "../common/errors/domain-error.js";
 import { assertIsActiveClient } from "../permissions/client-scope.js";
+import { assertFullScope, type ScopedRequester } from "../permissions/scoped-requester.js";
 import { replay, runIdempotent } from "../reservations/idempotency.js";
 import { effectivePriceCents } from "./shop-pricing.js";
 import { valuesOfVariant } from "./shop-variants.js";
+import { SHOP_FULL_SCOPE_MESSAGE } from "./shop-constants.js";
 
 type Tx = Prisma.TransactionClient;
 const ORDER_INCLUDE = {
   items: { orderBy: { id: "asc" as const } },
   events: { orderBy: [{ createdAt: "asc" as const }, { id: "asc" as const }] },
 };
+const ADMIN_ORDER_INCLUDE = {
+  ...ORDER_INCLUDE,
+  client: { select: { id: true, fullName: true } },
+} satisfies Prisma.ShopOrderInclude;
 
 @Injectable()
 export class ShopOrdersService {
@@ -49,6 +60,54 @@ export class ShopOrdersService {
       where: { clientId }, include: ORDER_INCLUDE, orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     });
     return rows.map(toShopOrder);
+  }
+
+  async listAdmin(query: ListAdminShopOrdersQuery, requester: ScopedRequester): Promise<AdminShopOrder[]> {
+    assertFullScope(requester, SHOP_FULL_SCOPE_MESSAGE);
+
+    const createdAt: Prisma.DateTimeFilter = {};
+    if (query.from) createdAt.gte = gymDateTimeToUtc(query.from, "00:00");
+    if (query.to) createdAt.lt = gymDateTimeToUtc(addDays(query.to, 1), "00:00");
+
+    const matchingNumbers = query.q && /^\d+$/.test(query.q)
+      ? (await this.prisma.$queryRaw<Array<{ number: number }>>`
+          SELECT number FROM shop_orders WHERE number::text LIKE ${`%${query.q}%`}
+        `).map(({ number }) => number)
+      : [];
+    const rows = await this.prisma.shopOrder.findMany({
+      where: {
+        status: query.status,
+        ...(query.from || query.to ? { createdAt } : {}),
+        ...(query.q ? {
+          OR: [
+            { number: { in: matchingNumbers } },
+            { client: { fullName: { contains: query.q, mode: "insensitive" } } },
+          ],
+        } : {}),
+      },
+      include: ADMIN_ORDER_INCLUDE,
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    });
+    return rows.map((row) => ({ ...toShopOrder(row), client: row.client }));
+  }
+
+  async pendingCount(requester: ScopedRequester): Promise<PendingShopOrdersCount> {
+    assertFullScope(requester, SHOP_FULL_SCOPE_MESSAGE);
+    return {
+      count: await this.prisma.shopOrder.count({ where: { status: ShopOrderStatus.AGUARDANDO_APROVACAO } }),
+    };
+  }
+
+  async approve(id: string, actorId: string, requester: ScopedRequester): Promise<ShopOrder> {
+    return this.transition(id, ShopOrderStatus.APROVADO, actorId, requester);
+  }
+
+  async reject(id: string, actorId: string, reason: string | undefined, requester: ScopedRequester): Promise<ShopOrder> {
+    return this.transition(id, ShopOrderStatus.RECUSADO, actorId, requester, reason);
+  }
+
+  async deliver(id: string, actorId: string, requester: ScopedRequester): Promise<ShopOrder> {
+    return this.transition(id, ShopOrderStatus.ENTREGUE, actorId, requester);
   }
 
   async approvalNotice(clientId: string): Promise<ShopOrderApprovalNotice> {
@@ -84,22 +143,36 @@ export class ShopOrdersService {
     });
   }
 
-  /** Transição usada pela fila da equipe: a recusa devolve estoque no mesmo commit. */
-  async reject(id: string, actorId: string, reason?: string | null): Promise<ShopOrder> {
-    return this.transitionAndRelease(id, ShopOrderStatus.RECUSADO, actorId, reason);
-  }
-
-  private async transitionAndRelease(id: string, status: ShopOrderStatus, actorId: string, note?: string | null): Promise<ShopOrder> {
+  /** Toda transição administrativa trava o pedido; recusa também devolve estoque no mesmo commit. */
+  private async transition(
+    id: string,
+    status: ShopOrderStatus,
+    actorId: string,
+    requester: ScopedRequester,
+    reason?: string,
+  ): Promise<ShopOrder> {
+    assertFullScope(requester, SHOP_FULL_SCOPE_MESSAGE);
     return this.prisma.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT id FROM shop_orders WHERE id = ${id} FOR UPDATE`;
       const order = await tx.shopOrder.findUnique({ where: { id }, include: { items: true } });
       if (!order) throw new DomainError(ErrorCode.ORDER_NOT_FOUND, "Pedido não encontrado.", ErrorStatus.NOT_FOUND);
-      if (order.status !== ShopOrderStatus.AGUARDANDO_APROVACAO) {
-        throw new DomainError(ErrorCode.ORDER_INVALID_TRANSITION, "Só é possível recusar um pedido que aguarda aprovação.", ErrorStatus.CONFLICT);
+      const expectedStatus = status === ShopOrderStatus.ENTREGUE
+        ? ShopOrderStatus.APROVADO
+        : ShopOrderStatus.AGUARDANDO_APROVACAO;
+      if (order.status !== expectedStatus) {
+        throw new DomainError(
+          ErrorCode.ORDER_INVALID_TRANSITION,
+          status === ShopOrderStatus.ENTREGUE
+            ? "Só é possível entregar um pedido aprovado."
+            : "Só é possível aprovar ou recusar um pedido que aguarda aprovação.",
+          ErrorStatus.CONFLICT,
+        );
       }
-      await this.releaseInventory(tx, order.items.map(({ variantId, quantity }) => ({ variantId, quantity })));
+      if (status === ShopOrderStatus.RECUSADO) {
+        await this.releaseInventory(tx, order.items.map(({ variantId, quantity }) => ({ variantId, quantity })));
+      }
       await tx.shopOrder.update({ where: { id }, data: { status } });
-      await tx.shopOrderEvent.create({ data: { orderId: id, fromStatus: order.status, toStatus: status, actorId, note: note ?? null } });
+      await tx.shopOrderEvent.create({ data: { orderId: id, fromStatus: order.status, toStatus: status, actorId, note: reason || null } });
       return toShopOrder(await tx.shopOrder.findUniqueOrThrow({ where: { id }, include: ORDER_INCLUDE }));
     });
   }
