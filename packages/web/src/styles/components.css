@@ -2938,3 +2938,116 @@
   padding-top: var(--s-3);
   border-top: 1px solid var(--line);
 }
+
+/* ---- Carrossel de atalho (N2): scroll-snap, sem troca automática, pontinhos e link no rodapé ---- */
+.fb-ui-carousel {
+  position: relative;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-1);
+  color: var(--ink);
+  font-family: var(--font-sans);
+}
+
+.fb-ui-carousel__track {
+  display: flex;
+  flex: 1;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+}
+
+.fb-ui-carousel__track::-webkit-scrollbar {
+  display: none;
+}
+
+.fb-ui-carousel__slide {
+  display: flex;
+  flex: 0 0 100%;
+  min-width: 0;
+  scroll-snap-align: start;
+}
+
+.fb-ui-carousel__link {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--s-1);
+  min-width: 0;
+  padding: var(--s-3) var(--s-3) var(--s-1);
+  color: inherit;
+  text-decoration: none;
+}
+
+/* O cartão corta o que passa da borda: o foco é um traço por dentro. */
+.fb-ui-carousel__link:focus-visible,
+.fb-ui-carousel__more:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: calc(-1 * var(--s-1));
+}
+
+.fb-ui-carousel__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2);
+  padding: var(--s-2) var(--s-3) var(--s-3);
+}
+
+.fb-ui-carousel__dots {
+  display: flex;
+  gap: var(--s-1);
+}
+
+.fb-ui-carousel__dots i {
+  width: var(--s-1);
+  height: var(--s-1);
+  border-radius: var(--r-pill);
+  background: var(--line-2);
+  transition: width var(--duration-state) var(--ease-out), background-color var(--duration-state) var(--ease-out);
+}
+
+.fb-ui-carousel__dots i[data-active] {
+  width: var(--s-3);
+  background: var(--brand);
+}
+
+/* Alvo de toque de 44px sem aumentar a linha: a área extra é um ::before invisível. */
+.fb-ui-carousel__more {
+  position: relative;
+  font-size: var(--text-caption);
+  font-weight: var(--weight-bold);
+  color: var(--brand-strong);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.fb-ui-carousel__more::before {
+  content: "";
+  position: absolute;
+  inset: calc(-1 * var(--s-3)) calc(-1 * var(--s-2));
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .fb-ui-carousel__more:hover {
+    text-decoration: underline;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fb-ui-carousel__track {
+    scroll-behavior: auto;
+  }
+
+  .fb-ui-carousel__dots i {
+    transition-property: none;
+  }
+}
