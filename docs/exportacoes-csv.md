@@ -10,15 +10,15 @@ Contrato comum das exportações CSV da API (#82 ocupação, #83 reservas e #84 
 - **Proteção contra fórmula:** texto que começa com `=`, `+`, `-`, `@`, TAB ou CR ganha `'` na frente. Vale também para os cabeçalhos. Números não recebem prefixo.
 - **Números:** vírgula decimal (`87,5`). Valor `null` vira campo vazio. `NaN` e `Infinity` são erro.
 - **Sem truncamento:** nenhuma exportação usa `take`, paginação ou limite de tamanho. O que limita as linhas é o período.
-- **Período:** por data **inicial** da ocorrência, com datas locais inclusivas (`from`, `to`, `YYYY-MM-DD`). O filtro vai de `from` 00h00 até `to + 1` 00h00 (fim exclusivo), em `America/Sao_Paulo`. Use `resolveExportPeriod` (`export-period.ts`); ele devolve `startsAtGte` e `startsAtLt` em UTC.
+- **Período:** datas locais inclusivas (`from`, `to`, `YYYY-MM-DD`). Ocupação, reservas e presenças usam a data inicial da ocorrência; pedidos usam a data de criação. O filtro vai de `from` 00h00 até `to + 1` 00h00 (fim exclusivo), em `America/Sao_Paulo`. Use `resolveExportPeriod` (`export-period.ts`); ele devolve os limites em UTC.
 - **Limite:** 92 dias, inclusive (`EXPORT_PERIOD_MAX_DAYS`, em `@fitburn/contracts`).
 - **Erros** (envelope padrão `{ code, message, details? }`):
   - Data malformada ou ausente: 400 `VALIDATION_ERROR`, com o campo em `details.fieldErrors`.
   - `from` depois de `to`: 400 `VALIDATION_ERROR`, "A data inicial não pode ser posterior à data final.".
   - Período acima de 92 dias: 400 `VALIDATION_ERROR`, "O período máximo da exportação é de 92 dias.".
-  - Sem token: 401. Sem permissão: 403 `FORBIDDEN`. Escopo sem acesso às aulas: 403.
+  - Sem token: 401. Sem permissão: 403 `FORBIDDEN`. Escopo insuficiente para o módulo: 403 `OUT_OF_SCOPE`.
 - **Resposta:** `Content-Type: text/csv; charset=utf-8`, `Content-Disposition: attachment; filename="..."` (nome só com ASCII seguro) e `Cache-Control: no-store` (global da API).
-- **Sem dado pessoal:** nada de nome, contato, documento, senha, token nem ID de reserva ou de cliente. Ocorrência e aula são permitidas. O teste `exports-occupancy.e2e-spec.ts` confere isso no texto inteiro do arquivo.
+- **Dados pessoais:** ocupação, reservas e presenças não incluem dados de pessoas nem IDs de reserva ou cliente. Pedidos incluem o nome do cliente, conforme a permissão de leitura da Loja; não incluem contato, documento, senha, token nem IDs internos de cliente ou item. Os testes conferem os dados presentes em cada exportação.
 
 ## Ocupação (`GET /api/exports/occupancy?from=YYYY-MM-DD&to=YYYY-MM-DD`)
 
@@ -85,7 +85,29 @@ Só a consulta muda. Serialização, período, resposta e escopo já existem.
 4. **Módulo:** registre o controller e o serviço em `exports.module.ts`. `ExportsModule` já está em `app.module.ts`.
 5. **Testes:**
    - Unitário da função pura e de qualquer regra nova.
-   - E2E em `packages/api/test/<nome>-export.e2e-spec.ts`, seguindo `exports-occupancy.e2e-spec.ts`. Use `asBinary` e `parseCsv` de `csv-test-utils.ts`: o parser é independente do serializador. Confira BOM, cabeçalho, 401/403, período, escopo e ausência de dado pessoal.
+   - E2E em `packages/api/test/<nome>-export.e2e-spec.ts`, seguindo `exports-occupancy.e2e-spec.ts`. Use `asBinary` e `parseCsv` de `csv-test-utils.ts`: o parser é independente do serializador. Confira BOM, cabeçalho, 401/403, período, escopo e os dados pessoais previstos para a exportação.
 6. **Web:** a tela usa `packages/web/src/lib/exports/download-csv.ts` e `components/ExportCsvButton.tsx` (criados na subtarefa web da #82). Passe a rota, os parâmetros e o nome do arquivo.
+
+## Pedidos da Loja (`GET /api/exports/shop-orders?from=YYYY-MM-DD&to=YYYY-MM-DD`)
+
+- **Permissão:** `LOJA:VIEW`, com escopo total (`ALL`), como a listagem administrativa de pedidos.
+- **Arquivo:** `pedidos_<from>_<to>.csv`.
+- **Linhas:** uma por item do pedido, em ordem de criação do pedido e do item. Os dados do pedido se repetem nas linhas de seus itens.
+- **Data:** data local da criação do pedido (`America/Sao_Paulo`); as datas são inclusivas.
+- **Valores:** preços unitários, subtotais e total do pedido são expressos em reais e formatados pelo serializador comum.
+- **Dados pessoais:** a coluna `Cliente` contém o nome que consta no pedido. E-mail, documento e IDs internos não são exportados.
+
+| Coluna | Conteúdo |
+| --- | --- |
+| `Pedido` | Número curto do pedido |
+| `Data` | Data local de criação, `YYYY-MM-DD` |
+| `Cliente` | Nome do cliente |
+| `Status` | Estado atual do pedido |
+| `Produto` | Nome do produto no momento do pedido |
+| `Variação` | Rótulo da variação no momento do pedido; vazio para produto sem opções |
+| `Quantidade` | Unidades daquele item |
+| `Preço unitário` | Preço unitário em reais |
+| `Subtotal` | Subtotal do item em reais |
+| `Total do pedido` | Total do pedido em reais, repetido em cada item |
 
 Não reimplemente formatação, escape, fuso ou limite de período dentro de uma nova exportação. Se faltar algo na parte comum, mexa no módulo comum e cubra com teste.
