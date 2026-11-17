@@ -17,7 +17,7 @@ export function ComprasCard() {
       <h2 id="fb-profile-compras" className="fb-profile__card-title">
         Compras
       </h2>
-      <nav aria-label="Compras">
+      <nav aria-label="Compras" className="fb-profile__compras-links">
         <Link to="/pedidos">Meus pedidos</Link>
         <Link to="/loja">Loja Fitburn</Link>
       </nav>

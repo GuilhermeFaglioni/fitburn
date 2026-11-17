@@ -163,6 +163,13 @@
   line-height: var(--leading-small);
 }
 
+/* Links do bloco Compras lado a lado, com espaço entre eles. */
+.fb-profile__compras-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-4);
+}
+
 /* No celular o botão principal fica em cima e ocupa a largura toda (como no preview); o cancelar vem abaixo. */
 .fb-profile__actions {
   display: flex;
