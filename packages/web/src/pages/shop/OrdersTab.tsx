@@ -85,14 +85,14 @@ function Items({ order }: { order: AdminShopOrder }) {
  * Fila de pedidos (D-039, #200, docs/design/proposta-loja.html): busca por cliente ou número, filtros de status e
  * período e a tabela com Aprovar, Recusar (diálogo com motivo opcional) e Marcar como entregue. Cada botão só aparece
  * quando a transição vale para o status do pedido; gravar exige Executar da Loja e rede. Depois de uma ação a lista
- * recarrega; se a API recusar (transição inválida, pedido mudou), a mensagem dela aparece acima da lista.
+ * recarrega; se a API recusar (transição inválida, pedido mudou), a mensagem dela aparece acima da lista. O período
+ * vive na página (`LojaAdminPage`), que o usa também como padrão do "Exportar pedidos (CSV)".
  */
-export function OrdersTab() {
+export function OrdersTab({ period, onPeriodChange }: { period: OrderPeriod; onPeriodChange: (next: OrderPeriod) => void }) {
   const { can } = useAuth();
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [status, setStatus] = useState<AdminOrderStatusFilter>("AGUARDANDO_APROVACAO");
-  const [period, setPeriod] = useState<OrderPeriod>("all");
   const [rejecting, setRejecting] = useState<AdminShopOrder | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -228,7 +228,7 @@ export function OrdersTab() {
           hideLabel
           label="Período"
           value={period}
-          onChange={(event) => setPeriod(event.target.value as OrderPeriod)}
+          onChange={(event) => onPeriodChange(event.target.value as OrderPeriod)}
         >
           {(Object.keys(PERIOD_LABEL) as OrderPeriod[]).map((value) => (
             <option key={value} value={value}>
