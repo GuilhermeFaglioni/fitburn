@@ -20,6 +20,7 @@ import {
   useUpdateShopProduct,
 } from "../../lib/shop/api";
 import { OptionsBuilder } from "./OptionsBuilder";
+import { ProductPhotos } from "./ProductPhotos";
 import {
   buildProductRequest,
   detailToVariations,
@@ -88,12 +89,15 @@ function Crumb({ current }: { current: string }) {
  * Cadastro e edição de produto simples (D-039, #187): "Dados do produto" (com a variação única e o estoque) e "Regras
  * de venda". Preço e promoção são digitados em reais e enviados em centavos. O formulário valida com os schemas do
  * contrato antes de enviar e mostra o erro em cada campo; a recusa da API (ex.: já há 3 destaques) aparece no aviso
- * do formulário. Fotos chegam na issue L3.
+ * do formulário.
  *
  * Opções e variações (L2, #190): "Opções" (nome e valores) gera a tabela "Variações e estoque" (uma linha por
  * combinação, com estoque, preço próprio e ativa). Com opções, o estoque sai do campo único e vai para a tabela.
  * Criar manda `options`/`variants` junto no `POST`; editar grava o produto (`PATCH`) e as opções (`PUT .../options`).
  * Sem a permissão de gravar, o formulário inteiro fica bloqueado, com o motivo na tela.
+ *
+ * Fotos (L3, #191): "Fotos" grava na hora, fora do "Salvar produto"; no cadastro novo só avisa que as fotos ficam
+ * disponíveis depois de salvar.
  */
 function ProductForm({ product }: { product?: ShopProductDetail }) {
   const { can } = useAuth();
@@ -292,6 +296,8 @@ function ProductForm({ product }: { product?: ShopProductDetail }) {
               )}
             </div>
           </Card>
+
+          <ProductPhotos product={product} />
 
           <OptionsBuilder
             options={options}
