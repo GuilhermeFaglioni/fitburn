@@ -8,7 +8,8 @@ import { Segmented } from "../components/ui/Segmented";
 import { useAuth } from "../lib/auth/AuthContext";
 import { CategoriesTab } from "./shop/CategoriesTab";
 import { CategoryDialog } from "./shop/CategoryDialog";
-import { OrdersTab } from "./shop/OrdersTab";
+import { defaultExportRange, ExportOrdersDialog } from "./shop/ExportOrdersDialog";
+import { OrdersTab, periodRange, type OrderPeriod } from "./shop/OrdersTab";
 import { ProductsTab } from "./shop/ProductsTab";
 
 export type LojaTab = "pedidos" | "produtos" | "categorias";
@@ -28,7 +29,11 @@ export function LojaAdminPage({ tab }: { tab: LojaTab }) {
   const { can } = useAuth();
   const navigate = useNavigate();
   const [creatingCategory, setCreatingCategory] = useState(false);
+  const [period, setPeriod] = useState<OrderPeriod>("all");
+  const [exporting, setExporting] = useState(false);
   const canCreate = can(Module.LOJA, PermissionAction.CREATE);
+  // A API da exportação exige Ver da Loja; sem a permissão o botão nem aparece.
+  const canExport = can(Module.LOJA, PermissionAction.VIEW);
 
   return (
     <div className="fb-ui-page">
@@ -36,7 +41,13 @@ export function LojaAdminPage({ tab }: { tab: LojaTab }) {
         kicker="Loja"
         title={TABS.find((option) => option.value === tab)!.label}
         actions={
-          tab === "pedidos" ? undefined : tab === "produtos" ? (
+          tab === "pedidos" ? (
+            canExport ? (
+              <Button size="sm" onClick={() => setExporting(true)}>
+                Exportar pedidos (CSV)
+              </Button>
+            ) : undefined
+          ) : tab === "produtos" ? (
             <BlockedAction allowed={canCreate} reason="Você não tem permissão para criar produtos.">
               <Button variant="primary" size="sm" onClick={() => void navigate("/loja-admin/produtos/novo")}>
                 + Novo produto
@@ -59,8 +70,11 @@ export function LojaAdminPage({ tab }: { tab: LojaTab }) {
         onChange={(next) => void navigate(next === "pedidos" ? "/loja-admin" : `/loja-admin/${next}`)}
       />
 
-      {tab === "pedidos" ? <OrdersTab /> : tab === "produtos" ? <ProductsTab /> : <CategoriesTab />}
+      {tab === "pedidos" ? <OrdersTab period={period} onPeriodChange={setPeriod} /> : tab === "produtos" ? <ProductsTab /> : <CategoriesTab />}
 
+      {exporting && (
+        <ExportOrdersDialog initialRange={defaultExportRange(periodRange(period))} onClose={() => setExporting(false)} />
+      )}
       {creatingCategory && <CategoryDialog onClose={() => setCreatingCategory(false)} />}
     </div>
   );

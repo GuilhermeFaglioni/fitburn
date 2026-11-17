@@ -11,6 +11,7 @@ import {
 } from "@fitburn/contracts";
 import { authFetch } from "../auth/authFetch";
 import { parseOrThrow } from "../auth/api";
+import { downloadCsv } from "../exports/download-csv";
 
 /** Fila de pedidos da equipe (L7, #200): lista com filtros, contagem de aguardando e as três transições. */
 
@@ -99,4 +100,9 @@ export function useRejectOrder() {
 
 export function useDeliverOrder() {
   return useOrderTransition((id: string) => transitionOrder(id, "deliver"));
+}
+
+/** Baixa o CSV de pedidos criados entre `from` e `to` (datas locais `YYYY-MM-DD`, inclusivas; até 92 dias), uma linha por item. */
+export function exportShopOrdersCsv(from: string, to: string): Promise<void> {
+  return downloadCsv("/api/exports/shop-orders", { from, to }, `pedidos_${from}_${to}.csv`);
 }

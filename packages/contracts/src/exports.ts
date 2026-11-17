@@ -46,3 +46,17 @@ export const ATTENDANCE_EXPORT_COLUMNS = [
   "faltas",
   "pendentes",
 ] as const;
+
+/** Cabeçalhos da exportação de pedidos, com uma linha por item. */
+export const SHOP_ORDERS_EXPORT_COLUMNS = [
+  "Pedido",
+  "Data",
+  "Cliente",
+  "Status",
+  "Produto",
+  "Variação",
+  "Quantidade",
+  "Preço unitário",
+  "Subtotal",
+  "Total do pedido",
+] as const;

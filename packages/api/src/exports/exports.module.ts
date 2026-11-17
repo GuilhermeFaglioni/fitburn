@@ -6,6 +6,8 @@ import { OccupancyExportController } from "./occupancy-export.controller.js";
 import { OccupancyExportService } from "./occupancy-export.service.js";
 import { ReservationsExportController } from "./reservations-export.controller.js";
 import { ReservationsExportService } from "./reservations-export.service.js";
+import { ShopOrdersExportController } from "./shop-orders-export.controller.js";
+import { ShopOrdersExportService } from "./shop-orders-export.service.js";
 
 @Module({
   imports: [PermissionsModule],
@@ -13,7 +15,13 @@ import { ReservationsExportService } from "./reservations-export.service.js";
     OccupancyExportController,
     ReservationsExportController,
     AttendanceExportController,
+    ShopOrdersExportController,
   ],
-  providers: [OccupancyExportService, ReservationsExportService, AttendanceExportService],
+  providers: [
+    OccupancyExportService,
+    ReservationsExportService,
+    AttendanceExportService,
+    ShopOrdersExportService,
+  ],
 })
 export class ExportsModule {}
