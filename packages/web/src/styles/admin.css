@@ -325,6 +325,24 @@
   opacity: 0.6;
 }
 
+.fb-shop-photo[draggable="true"] {
+  cursor: grab;
+}
+
+.fb-shop-photo__menu {
+  width: 100%;
+}
+
+.fb-shop-photo__menu .fb-ui-menu__trigger {
+  width: 100%;
+}
+
+/* O menu tem 200px e o espaço da foto é menor: nas primeiras colunas ele abre para a direita, para não sair da tela. */
+.fb-shop-photo:nth-child(-n + 2) .fb-ui-menu__popover {
+  right: auto;
+  left: 0;
+}
+
 .fb-shop-photo__sending {
   flex-direction: column;
   padding: var(--s-2);
@@ -456,6 +474,16 @@
 @media (max-width: 900px) {
   .fb-shop-photos {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .fb-shop-photo:nth-child(2) .fb-ui-menu__popover {
+    right: 0;
+    left: auto;
+  }
+
+  .fb-shop-photo:nth-child(3n + 1) .fb-ui-menu__popover {
+    right: auto;
+    left: 0;
   }
 }
 

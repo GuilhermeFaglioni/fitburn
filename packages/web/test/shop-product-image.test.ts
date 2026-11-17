@@ -35,7 +35,8 @@ function stubBrowser({
 }
 
 const blobOf = (type: string, size: number) => new Blob([new Uint8Array(size)], { type });
-const photo = (name = "camiseta.png", type = "image/png") => new File([new Uint8Array(10)], name, { type });
+const photo = (name = "camiseta.png", type = "image/png") =>
+  new File([new Uint8Array(10)], name, { type });
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -78,7 +79,8 @@ describe("prepareProductImage", () => {
       width: 800,
       height: 600,
       // Sem suporte a WebP o canvas devolve PNG, ignorando o formato pedido.
-      encode: (type) => (type === "image/jpeg" ? blobOf("image/jpeg", 50_000) : blobOf("image/png", 50_000)),
+      encode: (type) =>
+        type === "image/jpeg" ? blobOf("image/jpeg", 50_000) : blobOf("image/png", 50_000),
     });
 
     const result = await prepareProductImage(photo("garrafa.webp", "image/webp"));
@@ -94,7 +96,10 @@ describe("prepareProductImage", () => {
       height: 1200,
       encode: (type, quality) => {
         qualities.push(quality);
-        return blobOf(type, quality > 0.7 ? MAX_PRODUCT_IMAGE_SIZE_BYTES + 1 : MAX_PRODUCT_IMAGE_SIZE_BYTES);
+        return blobOf(
+          type,
+          quality > 0.7 ? MAX_PRODUCT_IMAGE_SIZE_BYTES + 1 : MAX_PRODUCT_IMAGE_SIZE_BYTES,
+        );
       },
     });
 
@@ -106,7 +111,11 @@ describe("prepareProductImage", () => {
   });
 
   it("recusa a foto que não cabe em 1,5 MB nem com a menor qualidade", async () => {
-    stubBrowser({ width: 1200, height: 1200, encode: (type) => blobOf(type, MAX_PRODUCT_IMAGE_SIZE_BYTES + 1) });
+    stubBrowser({
+      width: 1200,
+      height: 1200,
+      encode: (type) => blobOf(type, MAX_PRODUCT_IMAGE_SIZE_BYTES + 1),
+    });
 
     await expect(prepareProductImage(photo())).rejects.toThrow(/1,5 MB/);
   });

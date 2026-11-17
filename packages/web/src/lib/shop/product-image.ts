@@ -72,7 +72,8 @@ export async function prepareProductImage(file: File): Promise<File> {
         type = FALLBACK_TYPE;
         blob = await encode(canvas, type, quality);
       }
-      if (!blob) throw new ProductImageError("Não foi possível reduzir esta foto. Tente outro arquivo.");
+      if (!blob)
+        throw new ProductImageError("Não foi possível reduzir esta foto. Tente outro arquivo.");
       if (blob.size <= MAX_PRODUCT_IMAGE_SIZE_BYTES) {
         return new File([blob], renamed(file.name, type), { type });
       }

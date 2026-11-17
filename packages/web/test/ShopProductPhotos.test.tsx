@@ -1,6 +1,6 @@
 import { Blob as NodeBlob, File as NodeFile } from "node:buffer";
 import { useEffect, useState } from "react";
-import { act, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { http, HttpResponse } from "msw";
@@ -27,11 +27,17 @@ const ALL_ACTIONS = [
   PermissionAction.EXECUTE,
 ];
 
-function lojaPermissions(actions: EffectivePermission["actions"] = ALL_ACTIONS): EffectivePermission[] {
+function lojaPermissions(
+  actions: EffectivePermission["actions"] = ALL_ACTIONS,
+): EffectivePermission[] {
   return [{ module: Module.LOJA, actions, scope: PermissionScope.ALL }];
 }
 
-function image(id: string, position: number, overrides: Partial<ShopProductImage> = {}): ShopProductImage {
+function image(
+  id: string,
+  position: number,
+  overrides: Partial<ShopProductImage> = {},
+): ShopProductImage {
   return {
     id,
     mimeType: "image/webp",
@@ -129,7 +135,9 @@ describe("Fotos do produto (L3)", () => {
       http.get("/api/shop/product-images/:id", ({ params, request }) => {
         imageRequests.push(String(params.id));
         authorizations.push(request.headers.get("Authorization") ?? "");
-        return new HttpResponse(new Uint8Array([1, 2, 3]), { headers: { "Content-Type": "image/webp" } });
+        return new HttpResponse(new Uint8Array([1, 2, 3]), {
+          headers: { "Content-Type": "image/webp" },
+        });
       }),
     );
   });
@@ -139,7 +147,9 @@ describe("Fotos do produto (L3)", () => {
       renderAt("/loja-admin/produtos/p-camiseta");
 
       const section = await photosSection();
-      expect(within(section).getByRole("heading", { level: 2, name: /Fotos/ })).toHaveTextContent("3 de 5");
+      expect(within(section).getByRole("heading", { level: 2, name: /Fotos/ })).toHaveTextContent(
+        "3 de 5",
+      );
       await waitFor(() => expect(within(section).getAllByRole("img")).toHaveLength(3));
       const photos = within(section).getAllByRole("img");
       expect(photos.map((photo) => photo.getAttribute("alt"))).toEqual([
@@ -147,7 +157,9 @@ describe("Fotos do produto (L3)", () => {
         "Foto 2 de 3",
         "Foto 3 de 3",
       ]);
-      await waitFor(() => expect(photos.every((photo) => photo.getAttribute("src")?.startsWith("blob:"))).toBe(true));
+      await waitFor(() =>
+        expect(photos.every((photo) => photo.getAttribute("src")?.startsWith("blob:"))).toBe(true),
+      );
       expect(imageRequests.sort()).toEqual(["img-1", "img-2", "img-3"]);
       expect(authorizations.every((value) => value.startsWith("Bearer "))).toBe(true);
       expect(within(section).getAllByText("CAPA")).toHaveLength(1);
@@ -157,9 +169,13 @@ describe("Fotos do produto (L3)", () => {
       renderAt("/loja-admin/produtos/p-camiseta");
 
       const section = await photosSection();
-      expect(await within(section).findAllByRole("button", { name: /Adicionar foto/ })).toHaveLength(2);
+      expect(
+        await within(section).findAllByRole("button", { name: /Adicionar foto/ }),
+      ).toHaveLength(2);
       expect(within(section).getByText(/JPG, PNG ou WebP/)).toBeInTheDocument();
-      expect(within(section).getByText(/reduzidas no navegador antes do envio/)).toBeInTheDocument();
+      expect(
+        within(section).getByText(/reduzidas no navegador antes do envio/),
+      ).toBeInTheDocument();
     });
 
     it("sem foto: estado vazio com os 5 espaços para adicionar", async () => {
@@ -167,7 +183,9 @@ describe("Fotos do produto (L3)", () => {
       renderAt("/loja-admin/produtos/p-camiseta");
 
       const section = await photosSection();
-      expect(within(section).getByRole("heading", { level: 2, name: /Fotos/ })).toHaveTextContent("0 de 5");
+      expect(within(section).getByRole("heading", { level: 2, name: /Fotos/ })).toHaveTextContent(
+        "0 de 5",
+      );
       expect(within(section).getByText("Nenhuma foto ainda.")).toBeInTheDocument();
       expect(within(section).getAllByRole("button", { name: /Adicionar foto/ })).toHaveLength(5);
       expect(within(section).queryByRole("img")).not.toBeInTheDocument();
@@ -186,20 +204,27 @@ describe("Fotos do produto (L3)", () => {
       renderAt("/loja-admin/produtos/p-camiseta");
 
       const section = await photosSection();
-      expect(within(section).queryByRole("button", { name: /Adicionar foto/ })).not.toBeInTheDocument();
+      expect(
+        within(section).queryByRole("button", { name: /Adicionar foto/ }),
+      ).not.toBeInTheDocument();
       expect(within(section).getByText(/Limite de 5 fotos/)).toBeInTheDocument();
     });
 
     it("mostra um espaço de carregamento até a foto chegar e um aviso quando ela não carrega", async () => {
       current = detail([image("img-1", 0), image("img-2", 1)]);
       server.use(
-        http.get("/api/shop/product-images/img-1", () => HttpResponse.json({ code: "NOT_FOUND", message: "x" }, { status: 404 })),
+        http.get("/api/shop/product-images/img-1", () =>
+          HttpResponse.json({ code: "NOT_FOUND", message: "x" }, { status: 404 }),
+        ),
       );
       renderAt("/loja-admin/produtos/p-camiseta");
 
       const section = await photosSection();
       expect(await within(section).findByText("Foto 1 não carregou.")).toBeInTheDocument();
-      expect(await within(section).findByAltText("Foto 2 de 2")).toHaveAttribute("src", expect.stringMatching(/^blob:/));
+      expect(await within(section).findByAltText("Foto 2 de 2")).toHaveAttribute(
+        "src",
+        expect.stringMatching(/^blob:/),
+      );
     });
   });
 
@@ -208,8 +233,12 @@ describe("Fotos do produto (L3)", () => {
       renderAt("/loja-admin/produtos/novo");
 
       const section = await photosSection();
-      expect(within(section).getByText(/As fotos ficam disponíveis depois de salvar o produto/)).toBeInTheDocument();
-      expect(within(section).queryByRole("button", { name: /Adicionar foto/ })).not.toBeInTheDocument();
+      expect(
+        within(section).getByText(/As fotos ficam disponíveis depois de salvar o produto/),
+      ).toBeInTheDocument();
+      expect(
+        within(section).queryByRole("button", { name: /Adicionar foto/ }),
+      ).not.toBeInTheDocument();
     });
   });
 
@@ -278,13 +307,16 @@ describe("Fotos do produto (L3)", () => {
       // enquanto envia: o espaço mostra o carregamento e o envio fica indisponível
       expect(await within(section).findByText("Enviando foto…")).toBeInTheDocument();
       expect(within(section).getAllByRole("button", { name: /Adicionar foto/ })).toSatisfy(
-        (buttons: HTMLElement[]) => buttons.every((button) => (button as HTMLButtonElement).disabled),
+        (buttons: HTMLElement[]) =>
+          buttons.every((button) => (button as HTMLButtonElement).disabled),
       );
       await waitFor(() => expect(uploads).toHaveLength(1));
       act(() => gate.release?.());
 
       await waitFor(() => expect(within(section).getAllByRole("img")).toHaveLength(4));
-      expect(within(section).getByRole("heading", { level: 2, name: /Fotos/ })).toHaveTextContent("4 de 5");
+      expect(within(section).getByRole("heading", { level: 2, name: /Fotos/ })).toHaveTextContent(
+        "4 de 5",
+      );
       expect(within(section).queryByText("Enviando foto…")).not.toBeInTheDocument();
       expect(context.drawImage).toHaveBeenCalledWith(bitmap, 0, 0, 1200, 800);
       const [upload] = uploads;
@@ -311,9 +343,13 @@ describe("Fotos do produto (L3)", () => {
 
       await user.upload(within(section).getByLabelText("Arquivo da foto"), pick());
 
-      expect(await within(section).findByRole("alert")).toHaveTextContent("O produto já tem 5 fotos.");
+      expect(await within(section).findByRole("alert")).toHaveTextContent(
+        "O produto já tem 5 fotos.",
+      );
       expect(within(section).queryByText("Enviando foto…")).not.toBeInTheDocument();
-      expect(within(section).getByRole("heading", { level: 2, name: /Fotos/ })).toHaveTextContent("3 de 5");
+      expect(within(section).getByRole("heading", { level: 2, name: /Fotos/ })).toHaveTextContent(
+        "3 de 5",
+      );
     });
 
     it("recusa formato fora de JPG, PNG e WebP sem chamar a API", async () => {
@@ -322,9 +358,14 @@ describe("Fotos do produto (L3)", () => {
       renderAt("/loja-admin/produtos/p-camiseta");
       const section = await photosSection();
 
-      await user.upload(within(section).getByLabelText("Arquivo da foto"), pick("animacao.gif", "image/gif"));
+      await user.upload(
+        within(section).getByLabelText("Arquivo da foto"),
+        pick("animacao.gif", "image/gif"),
+      );
 
-      expect(await within(section).findByRole("alert")).toHaveTextContent("Use uma foto JPG, PNG ou WebP.");
+      expect(await within(section).findByRole("alert")).toHaveTextContent(
+        "Use uma foto JPG, PNG ou WebP.",
+      );
       expect(uploads).toHaveLength(0);
     });
 
@@ -357,6 +398,256 @@ describe("Fotos do produto (L3)", () => {
     });
   });
 
-  // Ordem, capa, remoção, offline e permissão entram nos blocos seguintes.
+  describe("ordem, capa e remoção", () => {
+    let calls: string[];
+
+    /** Espelha a API: `order` só reordena, `cover` só troca a marca de capa, `DELETE` compacta e promove a posição 0. */
+    function sorted() {
+      return [...(current.images ?? [])].sort((a, b) => a.position - b.position);
+    }
+    function save(images: ShopProductImage[]) {
+      current = detail(images);
+      return images;
+    }
+
+    beforeEach(() => {
+      calls = [];
+      server.use(
+        http.put("/api/shop/admin/products/:id/images/order", async ({ request }) => {
+          const { imageIds } = (await request.json()) as { imageIds: string[] };
+          calls.push(`order ${imageIds.join(",")}`);
+          const byId = new Map(sorted().map((item) => [item.id, item]));
+          return HttpResponse.json(
+            save(imageIds.map((id, position) => ({ ...byId.get(id)!, position }))),
+          );
+        }),
+        http.put("/api/shop/admin/products/:id/images/cover", async ({ request }) => {
+          const { imageId } = (await request.json()) as { imageId: string };
+          calls.push(`cover ${imageId}`);
+          return HttpResponse.json(
+            save(sorted().map((item) => ({ ...item, isCover: item.id === imageId }))),
+          );
+        }),
+        http.delete("/api/shop/admin/products/:id/images/:imageId", ({ params }) => {
+          calls.push(`delete ${String(params.imageId)}`);
+          const remaining = sorted().filter((item) => item.id !== params.imageId);
+          const hadCover = (current.images ?? []).find(
+            (item) => item.id === params.imageId,
+          )?.isCover;
+          save(
+            remaining.map((item, position) => ({
+              ...item,
+              position,
+              isCover: hadCover ? position === 0 : item.isCover,
+            })),
+          );
+          return new HttpResponse(null, { status: 204 });
+        }),
+      );
+    });
+
+    const altsOf = (section: HTMLElement) =>
+      within(section)
+        .getAllByRole("img")
+        .map((photo) => photo.getAttribute("alt"));
+
+    async function openMenu(
+      user: ReturnType<typeof userEvent.setup>,
+      section: HTMLElement,
+      number: number,
+    ) {
+      await user.click(
+        await within(section).findByRole("button", { name: `Ações da foto ${number}` }),
+      );
+      return screen.getByRole("menu", { name: `Ações da foto ${number}` });
+    }
+
+    it("tornar capa põe a foto em primeiro e a marca como capa (ordem e capa, nesta ordem)", async () => {
+      const user = userEvent.setup();
+      renderAt("/loja-admin/produtos/p-camiseta");
+      const section = await photosSection();
+
+      const menu = await openMenu(user, section, 3);
+      await user.click(within(menu).getByRole("menuitem", { name: "Tornar capa" }));
+
+      await waitFor(() => expect(calls).toEqual(["order img-3,img-1,img-2", "cover img-3"]));
+      await waitFor(() =>
+        expect(within(section).getByAltText("Foto 1 de 3 (capa)")).toBeInTheDocument(),
+      );
+      expect(within(section).getAllByText("CAPA")).toHaveLength(1);
+      expect(within(section).queryByText("Salvando as fotos…")).not.toBeInTheDocument();
+    });
+
+    it("a foto que já é a capa não oferece 'Tornar capa' nem 'Mover para antes'; a última não oferece 'depois'", async () => {
+      const user = userEvent.setup();
+      renderAt("/loja-admin/produtos/p-camiseta");
+      const section = await photosSection();
+
+      const first = await openMenu(user, section, 1);
+      expect(
+        within(first)
+          .getAllByRole("menuitem")
+          .map((item) => item.textContent),
+      ).toEqual(["Mover para depois", "Remover"]);
+      await user.keyboard("{Escape}");
+
+      const last = await openMenu(user, section, 3);
+      expect(
+        within(last)
+          .getAllByRole("menuitem")
+          .map((item) => item.textContent),
+      ).toEqual(["Tornar capa", "Mover para antes", "Remover"]);
+    });
+
+    it("mover uma foto que não é a primeira só reordena, sem mexer na capa", async () => {
+      const user = userEvent.setup();
+      renderAt("/loja-admin/produtos/p-camiseta");
+      const section = await photosSection();
+
+      await user.click(
+        within(await openMenu(user, section, 3)).getByRole("menuitem", {
+          name: "Mover para antes",
+        }),
+      );
+
+      await waitFor(() =>
+        expect(altsOf(section)).toEqual(["Foto 1 de 3 (capa)", "Foto 2 de 3", "Foto 3 de 3"]),
+      );
+      expect(calls).toEqual(["order img-1,img-3,img-2"]);
+      expect(sorted().map((item) => item.id)).toEqual(["img-1", "img-3", "img-2"]);
+      expect(sorted().find((item) => item.isCover)?.id).toBe("img-1");
+    });
+
+    it("mover a capa para depois passa a capa para a foto que ficou em primeiro", async () => {
+      const user = userEvent.setup();
+      renderAt("/loja-admin/produtos/p-camiseta");
+      const section = await photosSection();
+
+      await user.click(
+        within(await openMenu(user, section, 1)).getByRole("menuitem", {
+          name: "Mover para depois",
+        }),
+      );
+
+      await waitFor(() => expect(calls).toEqual(["order img-2,img-1,img-3", "cover img-2"]));
+      await waitFor(() => expect(within(section).getAllByText("CAPA")).toHaveLength(1));
+      expect(current.images?.find((item) => item.isCover)?.id).toBe("img-2");
+    });
+
+    it("arrastar uma foto sobre outra muda a ordem", async () => {
+      renderAt("/loja-admin/produtos/p-camiseta");
+      const section = await photosSection();
+      await waitFor(() => expect(within(section).getAllByRole("img")).toHaveLength(3));
+      const slots = within(section).getAllByRole("listitem").slice(0, 3);
+
+      fireEvent.dragStart(slots[2]!);
+      fireEvent.dragOver(slots[0]!);
+      fireEvent.drop(slots[0]!);
+
+      await waitFor(() => expect(calls).toEqual(["order img-3,img-1,img-2", "cover img-3"]));
+    });
+
+    it("soltar a foto sobre ela mesma não grava nada", async () => {
+      renderAt("/loja-admin/produtos/p-camiseta");
+      const section = await photosSection();
+      await waitFor(() => expect(within(section).getAllByRole("img")).toHaveLength(3));
+      const slots = within(section).getAllByRole("listitem");
+
+      fireEvent.dragStart(slots[1]!);
+      fireEvent.drop(slots[1]!);
+
+      expect(calls).toEqual([]);
+    });
+
+    it("a recusa da API ao reordenar aparece na seção e a grade mostra o que ficou", async () => {
+      server.use(
+        http.put("/api/shop/admin/products/:id/images/order", () =>
+          HttpResponse.json(
+            {
+              code: "VALIDATION_ERROR",
+              message: "Informe todas as fotos do produto na nova ordem.",
+            },
+            { status: 400 },
+          ),
+        ),
+      );
+      const user = userEvent.setup();
+      renderAt("/loja-admin/produtos/p-camiseta");
+      const section = await photosSection();
+
+      await user.click(
+        within(await openMenu(user, section, 3)).getByRole("menuitem", { name: "Tornar capa" }),
+      );
+
+      expect(await within(section).findByRole("alert")).toHaveTextContent(
+        "Informe todas as fotos do produto na nova ordem.",
+      );
+      expect(altsOf(section)).toEqual(["Foto 1 de 3 (capa)", "Foto 2 de 3", "Foto 3 de 3"]);
+    });
+
+    it("remover pede confirmação, apaga a foto e passa a capa para a próxima quando era a capa", async () => {
+      const user = userEvent.setup();
+      renderAt("/loja-admin/produtos/p-camiseta");
+      const section = await photosSection();
+
+      await user.click(
+        within(await openMenu(user, section, 1)).getByRole("menuitem", { name: "Remover" }),
+      );
+      const dialog = await screen.findByRole("dialog");
+      expect(dialog).toHaveTextContent("Remover a foto 1 (capa)?");
+      expect(calls).toEqual([]);
+      await user.click(within(dialog).getByRole("button", { name: "Confirmar exclusão" }));
+
+      await waitFor(() => expect(calls).toEqual(["delete img-1"]));
+      await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+      await waitFor(() => expect(within(section).getAllByRole("img")).toHaveLength(2));
+      expect(within(section).getByRole("heading", { level: 2, name: /Fotos/ })).toHaveTextContent(
+        "2 de 5",
+      );
+      expect(within(section).getByAltText("Foto 1 de 2 (capa)")).toBeInTheDocument();
+    });
+
+    it("cancelar a confirmação não remove nada", async () => {
+      const user = userEvent.setup();
+      renderAt("/loja-admin/produtos/p-camiseta");
+      const section = await photosSection();
+
+      await user.click(
+        within(await openMenu(user, section, 2)).getByRole("menuitem", { name: "Remover" }),
+      );
+      await user.click(
+        within(await screen.findByRole("dialog")).getByRole("button", { name: "Cancelar" }),
+      );
+
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+      expect(calls).toEqual([]);
+      expect(within(section).getAllByRole("img")).toHaveLength(3);
+    });
+
+    it("com a foto removida, volta a oferecer o espaço livre", async () => {
+      current = detail([0, 1, 2, 3, 4].map((position) => image(`img-${position}`, position)));
+      const user = userEvent.setup();
+      renderAt("/loja-admin/produtos/p-camiseta");
+      const section = await photosSection();
+      expect(
+        within(section).queryByRole("button", { name: /Adicionar foto/ }),
+      ).not.toBeInTheDocument();
+
+      await user.click(
+        within(await openMenu(user, section, 5)).getByRole("menuitem", { name: "Remover" }),
+      );
+      await user.click(
+        within(await screen.findByRole("dialog")).getByRole("button", {
+          name: "Confirmar exclusão",
+        }),
+      );
+
+      expect(
+        await within(section).findByRole("button", { name: /Adicionar foto/ }),
+      ).toBeInTheDocument();
+    });
+  });
+
+  // Offline e permissão entram no bloco seguinte.
   void setBrowserOnline;
 });
