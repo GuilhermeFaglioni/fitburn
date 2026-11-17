@@ -648,6 +648,69 @@ describe("Fotos do produto (L3)", () => {
     });
   });
 
-  // Offline e permissão entram no bloco seguinte.
-  void setBrowserOnline;
+  describe("sem conexão", () => {
+    it("desabilita enviar, mover e remover com o motivo, e avisa na própria seção", async () => {
+      const user = userEvent.setup();
+      renderAt("/loja-admin/produtos/p-camiseta");
+      const section = await photosSection();
+      await waitFor(() => expect(within(section).getAllByRole("img")).toHaveLength(3));
+
+      act(() => setBrowserOnline(false));
+
+      expect(within(section).getByText(/Sem conexão: enviar e alterar fotos/)).toBeInTheDocument();
+      for (const add of within(section).getAllByRole("button", { name: /Adicionar foto/ })) {
+        expect(add).toBeDisabled();
+        expect(add).toHaveAttribute("title", expect.stringContaining("sem conexão"));
+      }
+      await user.click(within(section).getByRole("button", { name: "Ações da foto 3" }));
+      const menu = screen.getByRole("menu", { name: "Ações da foto 3" });
+      for (const item of within(menu).getAllByRole("menuitem")) {
+        expect(item).toHaveAttribute("aria-disabled", "true");
+      }
+      expect(screen.getByText(/Você está sem conexão/)).toBeInTheDocument();
+      expect(within(section).getAllByRole("listitem")[0]).not.toHaveAttribute("draggable");
+
+      act(() => setBrowserOnline(true));
+      expect(
+        within(section).queryByText(/Sem conexão: enviar e alterar fotos/),
+      ).not.toBeInTheDocument();
+      expect(within(section).getAllByRole("button", { name: /Adicionar foto/ })[0]).toBeEnabled();
+    });
+  });
+
+  describe("permissões", () => {
+    it("sem Criar, o envio fica bloqueado com o motivo; Editar ainda permite mover e Excluir some", async () => {
+      mockSuccessfulLogin(
+        "Professor",
+        lojaPermissions([PermissionAction.VIEW, PermissionAction.EDIT]),
+      );
+      const user = userEvent.setup();
+      renderAt("/loja-admin/produtos/p-camiseta");
+      const section = await photosSection();
+      await waitFor(() => expect(within(section).getAllByRole("img")).toHaveLength(3));
+
+      for (const add of within(section).getAllByRole("button", { name: /Adicionar foto/ })) {
+        expect(add).toBeDisabled();
+        expect(add).toHaveAttribute("title", "Você não tem permissão para adicionar fotos.");
+      }
+      await user.click(within(section).getByRole("button", { name: "Ações da foto 2" }));
+      expect(
+        within(screen.getByRole("menu"))
+          .getAllByRole("menuitem")
+          .map((item) => item.textContent),
+      ).toEqual(["Tornar capa", "Mover para antes", "Mover para depois"]);
+    });
+
+    it("sem Editar nem Excluir, as fotos aparecem sem nenhuma ação", async () => {
+      mockSuccessfulLogin("Professor", lojaPermissions([PermissionAction.VIEW]));
+      renderAt("/loja-admin/produtos/p-camiseta");
+      const section = await photosSection();
+      await waitFor(() => expect(within(section).getAllByRole("img")).toHaveLength(3));
+
+      expect(
+        within(section).queryByRole("button", { name: /Ações da foto/ }),
+      ).not.toBeInTheDocument();
+      expect(within(section).getAllByRole("listitem")[0]).not.toHaveAttribute("draggable");
+    });
+  });
 });

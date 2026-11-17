@@ -243,6 +243,11 @@ function PhotosGrid({ productId, images }: { productId: string; images: ShopProd
           </li>
         ))}
       </ol>
+      {offline && (
+        <p className="fb-ui-note">
+          Sem conexão: enviar e alterar fotos fica indisponível até a conexão voltar.
+        </p>
+      )}
       {arrange.isPending && <LoadingState label="Salvando as fotos…" />}
       {free === 0 && (
         <p className="fb-ui-help">Limite de {MAX_PRODUCT_IMAGES} fotos por produto.</p>
